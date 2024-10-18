@@ -3,46 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trent Sterling | Link Tree</title>
+    <title>Trent Sterling | 🔗 Link Tree</title>
+    <meta name="description" content="Game Developer and Creator Trent Sterling's official link hub, featuring his work on Discord, Itch.io, Twitch, GitHub, and more.">
+    <meta property="og:title" content="Trent Sterling | Game Developer & Creator">
+    <meta property="og:description" content="Discover Trent Sterling's projects, including games, streams, development blogs, and more.">
+    <meta property="og:url" content="https://trentsterling.com">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Trent Sterling | Game Developer & Creator">
+    <meta name="twitter:description" content="Explore Trent Sterling's work in game development and content creation.">
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * {
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+            font-family: Arial, sans-serif;
             background-color: #121212;
             color: #e0e0e0;
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        header {
-            margin-bottom: 40px;
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            padding: 40px 20px;
         }
         header h1 {
-            margin: 0;
-            font-size: 4em;
+            font-size: 5em;
         }
         header p {
-            margin: 10px 0;
+            margin: 15px 0 30px;
             color: #b0b0b0;
-            font-size: 2em;
+            font-size: 2.5em;
         }
         .links {
             list-style: none;
             padding: 0;
-            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex-grow: 1;
         }
         .links li {
-            margin: 20px 0;
+            margin: 25px 0;
         }
         .links a {
             text-decoration: none;
             color: #d4a5f0;
-            font-size: 2em;
-            padding: 20px;
+            font-size: 2.5em;
+            padding: 25px;
             display: block;
             border-radius: 10px;
             background-color: #1e1e1e;
@@ -54,11 +72,26 @@
             color: #121212;
         }
         footer {
-            margin-top: 40px;
+            margin-top: 20px;
             font-size: 1.5em;
             color: #b0b0b0;
         }
         @media (max-width: 768px) {
+            header h1 {
+                font-size: 3em;
+            }
+            header p {
+                font-size: 2em;
+            }
+            .links a {
+                font-size: 1.5em;
+                padding: 20px;
+            }
+            footer {
+                font-size: 1em;
+            }
+        }
+        @media (max-width: 480px) {
             header h1 {
                 font-size: 2.5em;
             }
@@ -70,44 +103,31 @@
                 padding: 15px;
             }
             footer {
-                font-size: 1em;
-            }
-        }
-        @media (max-width: 480px) {
-            header h1 {
-                font-size: 2em;
-            }
-            header p {
-                font-size: 1.2em;
-            }
-            .links a {
-                font-size: 1em;
-                padding: 10px;
-            }
-            footer {
                 font-size: 0.9em;
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Trent Sterling</h1>
-        <p>Game Developer & Creator</p>
-    </header>
-    <ul class="links">
-        <li><a href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Discord Server</a></li>
-        <li><a href="http://trent.itch.io/" target="_blank">Itch Portfolio</a></li>
-        <li><a href="http://trentsterling.com/" target="_blank">Dev Blog</a></li>
-        <li><a href="http://www.twitch.tv/trent_sterling" target="_blank">Twitch</a></li>
-        <li><a href="http://youtube.com/user/MTOMalley" target="_blank">YouTube</a></li>
-        <li><a href="https://github.com/TrentSterling" target="_blank">GitHub</a></li>
-        <li><a href="https://twitter.com/Trent_Sterling" target="_blank">Twitter</a></li>
-        <li><a href="https://www.linkedin.com/in/trentdev" target="_blank">LinkedIn</a></li>
-        <li><a href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a></li>
-    </ul>
-    <footer>
-        <p>&copy; 2024 Trent Sterling. All rights reserved.</p>
-    </footer>
+    <div class="container">
+        <header>
+            <h1>Trent Sterling 🔗</h1>
+            <p>Game Developer & Creator</p>
+        </header>
+        <ul class="links">
+            <li><a href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Discord Server</a></li>
+            <li><a href="http://trent.itch.io/" target="_blank">Itch Portfolio</a></li>
+            <li><a href="http://trentsterling.com/" target="_blank">Dev Blog</a></li>
+            <li><a href="http://www.twitch.tv/trent_sterling" target="_blank">Twitch</a></li>
+            <li><a href="http://youtube.com/user/MTOMalley" target="_blank">YouTube</a></li>
+            <li><a href="https://github.com/TrentSterling" target="_blank">GitHub</a></li>
+            <li><a href="https://twitter.com/Trent_Sterling" target="_blank">Twitter</a></li>
+            <li><a href="https://www.linkedin.com/in/trentdev" target="_blank">LinkedIn</a></li>
+            <li><a href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a></li>
+        </ul>
+        <footer>
+            <p>&copy; 2024 Trent Sterling. All rights reserved.</p>
+        </footer>
+    </div>
 </body>
 </html>
