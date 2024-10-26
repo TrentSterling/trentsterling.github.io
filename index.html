@@ -38,12 +38,15 @@
             padding: 40px 20px;
         }
         header h1 {
-            font-size: 5em;
+            font-size: 4em;
         }
         header p {
             margin: 15px 0 30px;
             color: #b0b0b0;
-            font-size: 2.5em;
+            font-size: 2em;
+        }
+        .section {
+            margin: 40px 0;
         }
         .links {
             list-style: none;
@@ -54,26 +57,36 @@
             flex-grow: 1;
         }
         .links li {
-            margin: 25px 0;
+            margin: 15px 0;
         }
         .links a {
             text-decoration: none;
-            color: #d4a5f0;
-            font-size: 2.5em;
-            padding: 25px;
+            font-size: 2em;
+            padding: 20px;
             display: block;
             border-radius: 10px;
-            background-color: #1e1e1e;
             transition: background-color 0.3s, color 0.3s;
             font-weight: bold;
         }
-        .links a:hover {
-            background-color: #d4a5f0;
+        .links a.game {
+            color: #e67e22; /* Orange color for games */
+            background-color: #1e1e1e;
+        }
+        .links a.game:hover {
+            background-color: #e67e22; /* Orange hover */
+            color: #121212;
+        }
+        .links a.social {
+            color: #d4a5f0; /* Purple color for socials */
+            background-color: #1e1e1e;
+        }
+        .links a.social:hover {
+            background-color: #d4a5f0; /* Purple hover */
             color: #121212;
         }
         footer {
             margin-top: 20px;
-            font-size: 1.5em;
+            font-size: 1.2em;
             color: #b0b0b0;
         }
         @media (max-width: 768px) {
@@ -81,11 +94,11 @@
                 font-size: 3em;
             }
             header p {
-                font-size: 2em;
+                font-size: 1.8em;
             }
             .links a {
                 font-size: 1.5em;
-                padding: 20px;
+                padding: 15px;
             }
             footer {
                 font-size: 1em;
@@ -100,7 +113,7 @@
             }
             .links a {
                 font-size: 1.2em;
-                padding: 15px;
+                padding: 10px;
             }
             footer {
                 font-size: 0.9em;
@@ -114,17 +127,30 @@
             <h1>Trent Sterling 🔗</h1>
             <p>Game Developer & Creator</p>
         </header>
-        <ul class="links">
-            <li><a href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Discord Server</a></li>
-            <li><a href="http://trent.itch.io/" target="_blank">Itch Portfolio</a></li>
-            <li><a href="http://trentsterling.com/" target="_blank">Dev Blog</a></li>
-            <li><a href="http://www.twitch.tv/trent_sterling" target="_blank">Twitch</a></li>
-            <li><a href="http://youtube.com/user/MTOMalley" target="_blank">YouTube</a></li>
-            <li><a href="https://github.com/TrentSterling" target="_blank">GitHub</a></li>
-            <li><a href="https://twitter.com/Trent_Sterling" target="_blank">Twitter</a></li>
-            <li><a href="https://www.linkedin.com/in/trentdev" target="_blank">LinkedIn</a></li>
-            <li><a href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a></li>
-        </ul>
+
+        <div class="section">
+            <h2>Games & Projects</h2>
+            <ul class="links">
+                <li><a class="game" href="https://monke.tront.xyz" target="_blank">MonkePortals</a></li>
+                <li><a class="game" href="https://punk.tront.xyz" target="_blank">HackerPunk</a></li>
+                <li><a class="game" href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a></li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Social Links</h2>
+            <ul class="links">
+                <li><a class="social" href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Discord Server</a></li>
+                <li><a class="social" href="http://trent.itch.io/" target="_blank">Itch Portfolio</a></li>
+                <li><a class="social" href="http://trentsterling.com/" target="_blank">Dev Blog</a></li>
+                <li><a class="social" href="http://www.twitch.tv/trent_sterling" target="_blank">Twitch</a></li>
+                <li><a class="social" href="http://youtube.com/user/MTOMalley" target="_blank">YouTube</a></li>
+                <li><a class="social" href="https://github.com/TrentSterling" target="_blank">GitHub</a></li>
+                <li><a class="social" href="https://twitter.com/Trent_Sterling" target="_blank">Twitter</a></li>
+                <li><a class="social" href="https://www.linkedin.com/in/trentdev" target="_blank">LinkedIn</a></li>
+            </ul>
+        </div>
+
         <footer>
             <p>&copy; 2024 Trent Sterling. All rights reserved.</p>
         </footer>
