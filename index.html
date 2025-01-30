@@ -15,30 +15,31 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; font-family: Arial, sans-serif; background-color: #121212; color: #e0e0e0; display: flex; justify-content: center; align-items: center; }
-        .container { max-width: 600px; width: 100%; text-align: center; display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding: 40px 20px; }
-        header h1 { font-size: 4em; }
-        header p { margin: 15px 0 30px; color: #b0b0b0; font-size: 2em; }
-        .section { margin: 40px 0; }
-        .section p { font-size: 1.5em; }
+        .container { max-width: 56.25rem; width: 100%; text-align: center; display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding: 3.75rem 1.875rem; }
+        header h1 { font-size: 4.5rem; }
+        header p { margin: 1.5rem 0 2.8125rem; color: #b0b0b0; font-size: 2.25rem; }
+        .section { margin: 3.75rem 0; }
+        .section p { font-size: 1.6875rem; margin-bottom: 1.875rem; }
+        .about-me { max-width: 75rem; text-align: left; margin: 0 auto; }
         .links { list-style: none; padding: 0; display: flex; flex-direction: column; justify-content: center; flex-grow: 1; }
-        .links li { margin: 15px 0; }
-        .links a { text-decoration: none; font-size: 2em; padding: 20px; display: block; border-radius: 10px; transition: background-color 0.3s, color 0.3s; font-weight: bold; }
+        .links li { margin: 1.5rem 0; }
+        .links a { text-decoration: none; font-size: 2.25rem; padding: 1.875rem; display: block; border-radius: 0.9375rem; transition: background-color 0.3s, color 0.3s; font-weight: bold; }
         .links a.game { color: #e67e22; background-color: #1e1e1e; }
         .links a.game:hover { background-color: #e67e22; color: #121212; }
         .links a.social { color: #d4a5f0; background-color: #1e1e1e; }
         .links a.social:hover { background-color: #d4a5f0; color: #121212; }
-        footer { margin-top: 20px; font-size: 1.2em; color: #b0b0b0; }
-        @media (max-width: 768px) {
-            header h1 { font-size: 3em; }
-            header p { font-size: 1.8em; }
-            .links a { font-size: 1.5em; padding: 15px; }
-            footer { font-size: 1em; }
+        footer { margin-top: 1.875rem; font-size: 1.5rem; color: #b0b0b0; padding-bottom: 1.875rem; }
+        @media (max-width: 48rem) {
+            header h1 { font-size: 3.375rem; }
+            header p { font-size: 1.6875rem; }
+            .links a { font-size: 1.875rem; padding: 1.5rem; }
+            footer { font-size: 1.3125rem; }
         }
-        @media (max-width: 480px) {
-            header h1 { font-size: 2.5em; }
-            header p { font-size: 1.5em; }
-            .links a { font-size: 1.2em; padding: 10px; }
-            footer { font-size: 0.9em; }
+        @media (max-width: 30rem) {
+            header h1 { font-size: 3rem; }
+            header p { font-size: 1.5rem; }
+            .links a { font-size: 1.6875rem; padding: 1.125rem; }
+            footer { font-size: 1.125rem; }
         }
     </style>
 </head>
@@ -50,7 +51,10 @@
         </header>
         <div class="section">
             <h2>About Me</h2>
-            <p>I'm Trent Sterling, a game developer with almost 10 years of experience, specializing in Unity, C#, and multiplayer networking. I've worked on everything from Minecraft mods to Garry's Mod gamemodes and educational games. My focus is on creating solid gameplay, efficient networking, and high-performance VR experiences at 120hz. I'm constantly pushing the boundaries of game tech, exploring network traffic optimization, shaders, and procedural generation.</p>
+            <div class="about-me">
+                <p>I'm Trent Sterling, a game developer with almost 10 years of experience, specializing in Unity, C#, and multiplayer networking. I've worked on everything from Minecraft mods to Garry's Mod gamemodes and educational games.</p>
+                <p>My focus is on creating solid gameplay, efficient networking, and high-performance VR experiences at 120hz. I'm constantly pushing the boundaries of game tech, exploring network traffic optimization, shaders, and procedural generation.</p>
+            </div>
         </div>
         <div class="section">
             <h2>Games & Projects</h2>
@@ -74,7 +78,7 @@
             </ul>
         </div>
         <footer>
-            <p>&copy; 2024 Trent Sterling. All rights reserved.</p>
+            <p>&copy; 2025 Trent Sterling. All rights reserved.</p>
         </footer>
     </div>
 </body>
