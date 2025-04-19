@@ -36,17 +36,36 @@
         .links a.game:hover { background-color: #e67e22; color: #121212; }
         .links a.social { color: #d4a5f0; background-color: #1e1e1e; }
         .links a.social:hover { background-color: #d4a5f0; color: #121212; }
+
+        .blurb {
+            font-size: 1.25rem;
+            color: #a0a0a0;
+            margin-top: 0.625rem;
+            margin-bottom: 0;
+            padding: 0 1.25rem;
+            max-width: 800px;
+            width: auto;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            font-weight: normal;
+            line-height: 1.4;
+            text-align: center;
+        }
+
         footer { margin-top: 1.875rem; font-size: 1.5rem; color: #b0b0b0; padding-bottom: 1.875rem; }
         @media (max-width: 48rem) {
             header h1 { font-size: 3.375rem; }
             header p { font-size: 1.6875rem; }
             .links a { font-size: 1.875rem; padding: 1.5rem; }
+            .blurb { font-size: 1.1rem; }
             footer { font-size: 1.3125rem; }
         }
         @media (max-width: 30rem) {
             header h1 { font-size: 3rem; }
             header p { font-size: 1.5rem; }
             .links a { font-size: 1.6875rem; padding: 1.125rem; }
+            .blurb { font-size: 1rem; }
             footer { font-size: 1.125rem; }
         }
         ul {
@@ -75,7 +94,8 @@
                 font-weight: bold;
                 max-width: 800px;
                 width: 100%;
-                margin: 0 auto;
+                margin-left: auto;
+                margin-right: auto;
             }
 
             header img.logo {
@@ -84,6 +104,11 @@
                 margin-bottom: 1.5rem;
             }
 
+            .blurb {
+                max-width: 800px;
+                margin-left: auto;
+                margin-right: auto;
+            }
         }
     </style>
 
@@ -100,42 +125,56 @@
         <div class="section">
             <h2>About Me</h2>
             <div class="about-me">
-                <p>I'm Trent Sterling (Tront), a game developer with over 10 years of experience, specializing in Unity, C#, and multiplayer networking. I’ve worked on projects ranging from Minecraft mods to Garry's Mod gamemodes and educational games.</p>
-                <p>My focus is on creating solid gameplay, efficient networking, and high-performance VR experiences at 120hz. I'm constantly pushing the boundaries of game tech, exploring network traffic optimization, shaders, and procedural generation.</p>
-                <h3>My Focus Areas</h3>
-                <ul>
-                    <li><strong>Unity & C#</strong> – Creating high-performance systems for gameplay, AI, and multiplayer.</li>
-                    <li><strong>Shaders & Procedural Generation</strong> – Designing dynamic worlds and custom shaders, particularly for VR.</li>
-                    <li><strong>VR Optimization</strong> – Ensuring smooth, immersive VR experiences at 120Hz+.</li>
-                    <li><strong>Multiplayer Systems</strong> – Building scalable cross-platform multiplayer with optimized network traffic, including crossplay between PC, Android, and Oculus Quest.</li>
-                    <li><strong>NodeJS & Web Development</strong> – Back into web dev with a focus on NodeJS, Phaser, and IoT integration.</li>
-                </ul>
-                <h3>My Background</h3>
-                <p>I started with Halo CE/2 modding and later worked on Minecraft mods and Garry’s Mod gamemodes. These early experiences taught me game mechanics, scripting, and community-driven development.</p>
-                <p>I’ve since focused on indie game development and multiplayer games, especially VR performance optimization and network traffic optimization for smoother gameplay.</p>
-                <p>I’ve also explored machine learning, IoT, and home automation, constantly expanding my skill set.</p>
-                <h3>Random Skills</h3>
-                <ul>
-                    <li>Videography – Creating devlogs, tutorials, and trailers.</li>
-                    <li>Web Design – Building minimalist, user-friendly sites.</li>
-                    <li>3D Modeling – Asset creation and optimization using Blender.</li>
-                    <li>Photoshop – Graphics, textures, and visual assets for games.</li>
-                </ul>
+                 <p>I'm Trent Sterling (Tront), a game developer with over 10 years of experience, specializing in Unity, C#, and multiplayer networking. I’ve worked on projects ranging from Minecraft mods to Garry's Mod gamemodes and educational games.</p>
+                 <p>My focus is on creating solid gameplay, efficient networking, and high-performance VR experiences at 120hz. I'm constantly pushing the boundaries of game tech, exploring network traffic optimization, shaders, and procedural generation.</p>
+                 <h3>My Focus Areas</h3>
+                 <ul>
+                     <li><strong>Unity & C#</strong> – Creating high-performance systems for gameplay, AI, and multiplayer.</li>
+                     <li><strong>Shaders & Procedural Generation</strong> – Designing dynamic worlds and custom shaders, particularly for VR.</li>
+                     <li><strong>VR Optimization</strong> – Ensuring smooth, immersive VR experiences at 120Hz+.</li>
+                     <li><strong>Multiplayer Systems</strong> – Building scalable cross-platform multiplayer with optimized network traffic, including crossplay between PC, Android, and Oculus Quest.</li>
+                     <li><strong>NodeJS & Web Development</strong> – Back into web dev with a focus on NodeJS, Phaser, and IoT integration.</li>
+                 </ul>
+                 <h3>My Background</h3>
+                 <p>I started with Halo CE/2 modding and later worked on Minecraft mods and Garry’s Mod gamemodes. These early experiences taught me game mechanics, scripting, and community-driven development.</p>
+                 <p>I’ve since focused on indie game development and multiplayer games, especially VR performance optimization and network traffic optimization for smoother gameplay.</p>
+                 <p>I’ve also explored machine learning, IoT, and home automation, constantly expanding my skill set.</p>
+                 <h3>Random Skills</h3>
+                 <ul>
+                     <li>Videography – Creating devlogs, tutorials, and trailers.</li>
+                     <li>Web Design – Building minimalist, user-friendly sites.</li>
+                     <li>3D Modeling – Asset creation and optimization using Blender.</li>
+                     <li>Photoshop – Graphics, textures, and visual assets for games.</li>
+                 </ul>
             </div>
         </div>
         <div class="section">
             <h2>Blog</h2>
             <ul class="links">
-                <li><a class="blog" href="https://blog.tront.xyz" target="_blank">Tront Dev Blog</a></li>
+                <li>
+                    <a class="blog" href="https://blog.tront.xyz" target="_blank">Tront Dev Blog</a>
+                    <p class="blurb">My development journey: Unity, C#, VR, networking insights, and project updates.</p>
+                </li>
             </ul>
         </div>
         <div class="section">
             <h2>Games & Projects</h2>
             <ul class="links">
-                <li><a class="game" href="https://monke.tront.xyz" target="_blank">MonkePortals</a></li>
-                <li><a class="game" href="https://punk.tront.xyz" target="_blank">HackerPunk</a></li>
-                <li><a class="game" href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a></li>
-                <li><a class="game" href="https://trent.itch.io/" target="_blank">View All My Games on itch.io</a></li>
+                <li>
+                    <a class="game" href="https://monke.tront.xyz" target="_blank">MonkePortals</a>
+                    <p class="blurb">A VR multiplayer game inspired by Gorilla Tag, featuring portals, custom maps, and upcoming procedural generation.</p>
+                </li>
+                <li>
+                    <a class="game" href="https://punk.tront.xyz" target="_blank">HackerPunk</a>
+                    <p class="blurb">VR multiplayer shooter with spatial voice, vehicles, weapons, and hookshot grapple guns set in a cyberpunk world.</p>
+                </li>
+                <li>
+                    <a class="game" href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a>
+                    <p class="blurb">A simple web utility to split large text files for easier use with language models like ChatGPT.</p>
+                </li>
+                <li>
+                    <a class="game" href="https://trent.itch.io/" target="_blank">View All My Games on itch.io</a>
+                </li>
             </ul>
         </div>
         <div class="section">
