@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,7 +23,54 @@
     <meta name="twitter:image" content="https://blog.tront.xyz/assets/img/tront.png">
     <link rel="icon" href="https://blog.tront.xyz/assets/img/tront.png" type="image/png">
     <style>
-        /* CSS Removed as requested */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; font-family: Arial, sans-serif; background-color: #121212; color: #e0e0e0; display: flex; justify-content: center; align-items: center; }
+        .container { max-width: 56.25rem; width: 100%; text-align: center; display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding: 3.75rem 1.875rem; }
+        header h1 { font-size: 4.5rem; }
+        header p { margin: 1.5rem 0 2.8125rem; color: #b0b0b0; font-size: 2.25rem; }
+        .section { margin: 3.75rem 0; }
+        .section p { font-size: 1.6875rem; margin-bottom: 1.875rem; }
+        .about-me { max-width: 75rem; text-align: left; margin: 0 auto; }
+        .about-me p, .about-me ul { font-size: 1.5rem; margin-bottom: 1rem; line-height: 1.6; }
+        .about-me h3 { font-size: 1.8rem; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #1e90ff; }
+        .about-me ul { list-style-position: inside; padding-left: 0.5rem; }
+        .about-me ul li { margin-bottom: 0.5rem; }
+        .links { list-style: none; padding: 0; display: flex; flex-direction: column; justify-content: center; flex-grow: 1; }
+        .links li { margin: 1.5rem 0; }
+        .links a { text-decoration: none; font-size: 2.25rem; padding: 1.875rem; display: block; border-radius: 0.9375rem; transition: background-color 0.3s, color 0.3s; font-weight: bold; }
+        .links a.blog { color: #1e90ff; background-color: #1e1e1e; }
+        .links a.blog:hover { background-color: #1e90ff; color: #121212; }
+        .links a.game { color: #e67e22; background-color: #1e1e1e; }
+        .links a.game:hover { background-color: #e67e22; color: #121212; }
+        .links a.social { color: #d4a5f0; background-color: #1e1e1e; }
+        .links a.social:hover { background-color: #d4a5f0; color: #121212; }
+        .blurb { font-size: 1.25rem; color: #a0a0a0; margin-top: 0.625rem; margin-bottom: 0; padding: 0 1.25rem; max-width: 800px; width: auto; display: block; margin-left: auto; margin-right: auto; font-weight: normal; line-height: 1.4; text-align: center; }
+        footer { margin-top: 1.875rem; font-size: 1.5rem; color: #b0b0b0; padding-bottom: 1.875rem; }
+        @media (max-width: 48rem) {
+            header h1 { font-size: 3.375rem; }
+            header p { font-size: 1.6875rem; }
+            .links a { font-size: 1.875rem; padding: 1.5rem; }
+            .blurb { font-size: 1.1rem; }
+            footer { font-size: 1.3125rem; }
+            .about-me p, .about-me ul { font-size: 1.3rem; }
+            .about-me h3 { font-size: 1.6rem; }
+        }
+        @media (max-width: 30rem) {
+            header h1 { font-size: 3rem; }
+            header p { font-size: 1.5rem; }
+            .links a { font-size: 1.6875rem; padding: 1.125rem; }
+            .blurb { font-size: 1rem; }
+            footer { font-size: 1.125rem; }
+            .about-me p, .about-me ul { font-size: 1.1rem; }
+            .about-me h3 { font-size: 1.4rem; }
+        }
+        .container { max-width: 100%; width: 100%; }
+        @media (min-width: 800px) {
+            .container { padding: 5rem; }
+            .links a { text-decoration: none; font-size: 2.25rem; padding: 1.875rem; display: block; border-radius: 0.9375rem; transition: background-color 0.3s, color 0.3s; font-weight: bold; max-width: 800px; width: 100%; margin-left: auto; margin-right: auto; }
+            header img.logo { max-width: 100px; height: auto; margin-bottom: 1.5rem; display: block; margin-left:auto; margin-right:auto;}
+            .blurb { max-width: 800px; margin-left: auto; margin-right: auto; }
+        }
     </style>
     <script type="application/ld+json">
     {
@@ -62,12 +110,12 @@
         <header>
             <img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo - Trent Sterling Game Developer" class="logo">
             <h1>Trent Sterling (Tront) 🔗</h1>
-            <p>Indie Game Developer | Unity, C#, VR & Multiplayer Specialist</p>
+            <p>Game Developer & Creator</p>
         </header>
 
         <main>
             <div class="section" id="about">
-                <h2>About Me - Trent Sterling (Tront)</h2>
+                <h2>About Me</h2>
                 <div class="about-me">
                      <p>
                         <strong>Welcome! I'm Trent Sterling (Tront), a passionate and experienced game developer (gamedev) with over a decade dedicated to crafting engaging experiences using Unity and C#.</strong>
@@ -99,54 +147,54 @@
             </div>
 
             <div class="section" id="blog">
-                <h2>Developer Blog</h2>
+                <h2>Blog</h2>
                 <ul class="links">
                     <li>
-                        <a class="blog" href="https://blog.tront.xyz" target="_blank">Tront Dev Blog - Insights & Updates</a>
-                        <p class="blurb">Follow my game development journey! Detailed posts on Unity, C#, VR challenges, networking techniques, project progress, and gamedev insights.</p>
+                        <a class="blog" href="https://blog.tront.xyz" target="_blank">Tront Dev Blog</a>
+                        <p class="blurb">My development journey: Unity, C#, VR, networking insights, and project updates.</p>
                     </li>
                 </ul>
             </div>
 
             <div class="section" id="projects">
-                <h2>Games & Projects Portfolio</h2>
+                <h2>Games & Projects</h2>
                 <ul class="links">
                     <li>
-                        <a class="game" href="https://monke.tront.xyz" target="_blank">MonkePortals (VR Game)</a>
-                        <p class="blurb">A multiplayer VR game inspired by Gorilla Tag mechanics, featuring unique portal systems, custom map support, and ongoing development towards procedural content.</p>
+                        <a class="game" href="https://monke.tront.xyz" target="_blank">MonkePortals</a>
+                        <p class="blurb">A VR multiplayer game inspired by Gorilla Tag, featuring portals, custom maps, and upcoming procedural generation.</p>
                     </li>
                     <li>
-                        <a class="game" href="https://punk.tront.xyz" target="_blank">HackerPunk (VR Shooter Concept)</a>
-                        <p class="blurb">Concept for a VR multiplayer shooter leveraging spatial voice chat, vehicles, diverse weaponry, and grapple hooks in a cyberpunk setting. Focus on core mechanics.</p>
+                        <a class="game" href="https://punk.tront.xyz" target="_blank">HackerPunk</a>
+                        <p class="blurb">VR multiplayer shooter with spatial voice, vehicles, weapons, and hookshot grapple guns set in a cyberpunk world.</p>
                     </li>
                     <li>
-                        <a class="game" href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT (Web Utility)</a>
-                        <p class="blurb">A practical browser-based tool designed to split large text files into smaller chunks, useful for interacting with character-limited AI models like ChatGPT.</p>
+                        <a class="game" href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a>
+                        <p class="blurb">A simple web utility to split large text files for easier use with language models like ChatGPT.</p>
                     </li>
                     <li>
                         <a class="game" href="https://trent.itch.io/" target="_blank">View All My Games on itch.io</a>
-                         <p class="blurb">Explore my full collection of released games, prototypes, and game jam entries hosted on my itch.io profile.</p>
+                        <p class="blurb"></p>
                     </li>
                 </ul>
             </div>
 
             <div class="section" id="social">
-                <h2>Social & Professional Links</h2>
+                <h2>Social Links</h2>
                 <ul class="links">
-                    <li><a class="social" href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Join the Discord Community</a></li>
-                    <li><a class="social" href="http://youtube.com/user/MTOMalley" target="_blank">YouTube Channel (Devlogs & More)</a></li>
-                    <li><a class="social" href="http://www.twitch.tv/trent_sterling" target="_blank">Twitch Stream (Live Development)</a></li>
-                    <li><a class="social" href="https://github.com/TrentSterling" target="_blank">GitHub Profile (Code & Projects)</a></li>
-                    <li><a class="social" href="https://twitter.com/Trent_Sterling" target="_blank">Twitter / X (@Trent_Sterling)</a></li>
-                    <li><a class="social" href="https://www.linkedin.com/in/trentdev" target="_blank">LinkedIn Profile (Professional Network)</a></li>
-                    <li><a class="social" href="http://trent.itch.io/" target="_blank">Itch.io Portfolio (Games)</a></li>
-                    <li><a class="social" href="http://trentsterling.com/" target="_blank">Old Developer Blog Archive</a></li>
+                    <li><a class="social" href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Discord Server</a></li>
+                    <li><a class="social" href="http://youtube.com/user/MTOMalley" target="_blank">YouTube</a></li>
+                    <li><a class="social" href="http://www.twitch.tv/trent_sterling" target="_blank">Twitch</a></li>
+                    <li><a class="social" href="https://github.com/TrentSterling" target="_blank">GitHub</a></li>
+                    <li><a class="social" href="https://twitter.com/Trent_Sterling" target="_blank">Twitter (@Trent_Sterling)</a></li>
+                    <li><a class="social" href="https://www.linkedin.com/in/trentdev" target="_blank">LinkedIn</a></li>
+                    <li><a class="social" href="http://trent.itch.io/" target="_blank">Itch Portfolio</a></li>
+                    <li><a class="social" href="http://trentsterling.com/" target="_blank">Old Dev Blog</a></li>
                 </ul>
             </div>
         </main>
 
         <footer>
-            <p>© <span id="current-year"></span> Trent Sterling (Tront). Game Developer. All rights reserved.</p>
+            <p>© <span id="current-year"></span> Trent Sterling (Tront). All rights reserved.</p>
         </footer>
 
         <script>
