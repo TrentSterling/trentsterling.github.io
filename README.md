@@ -1,2 +1,3 @@
+# tront.xyz
 # trentsterling.github.io
-Personal Site
+Personal Site for TrontDev
