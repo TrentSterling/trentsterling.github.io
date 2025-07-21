@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,32 +24,9 @@
     <link rel="icon" href="https://blog.tront.xyz/assets/img/tront.png" type="image/png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html {
-            font-size: max(0.85rem, calc(4px + 0.6vw));
-        }
-        body {
-             min-height: 100%;
-             font-family: Arial, sans-serif;
-             background-color: #121212;
-             color: #e0e0e0;
-             display: flex;
-             justify-content: center;
-             align-items: flex-start;
-             padding-top: 0.5rem;
-             line-height: 1.4;
-             }
-        .container {
-            max-width: 56.25rem;
-            width: 100%;
-            margin: 0 auto;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            min-height: calc(100vh - 1rem);
-            height: auto;
-            padding: 0 1.5rem 1rem 1.5rem;
-            justify-content: flex-start;
-            }
+        html { font-size: max(0.85rem, calc(4px + 0.6vw)); }
+        body { min-height: 100%; font-family: Arial, sans-serif; background-color: #121212; color: #e0e0e0; display: flex; justify-content: center; align-items: flex-start; padding-top: 0.5rem; line-height: 1.4; }
+        .container { max-width: 56.25rem; width: 100%; margin: 0 auto; text-align: center; display: flex; flex-direction: column; min-height: calc(100vh - 1rem); height: auto; padding: 0 1.5rem 1rem 1.5rem; justify-content: flex-start; }
         header { flex-shrink: 0; }
         header h1 { font-size: 3.2rem; line-height: 1; margin-bottom: 0.1rem;}
         header p { margin: 0.1rem 0 0.6rem; color: #b0b0b0; font-size: 1.4rem; }
@@ -75,15 +53,46 @@
         footer { margin-top: 0.8rem; color: #b0b0b0; padding-bottom: 0.8rem; flex-shrink: 0; }
         footer p { color: inherit; }
 
-        @media (max-width: 48rem) {
+        @keyframes background-aurora {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        @media (max-width: 30rem) {
+
+        .discord-widget {
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            padding: 1.25rem;
+            text-align: left;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+            max-width: 30rem;
+            margin: 1.5rem auto 0 auto;
         }
-        .container { max-width: 100%; width: 100%; }
+        .discord-widget .widget-loading { color: #b0b0b0; text-align: center; width: 100%; font-size: 1rem; padding: 2rem 0; }
+        .discord-widget .widget-header { font-size: 1.2rem; font-weight: bold; color: #ff8b3d; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.6rem; }
+        .discord-widget .widget-header svg { width: 28px; height: 28px; fill: #ff8b3d; flex-shrink: 0; }
+        .discord-widget .widget-description { font-size: 0.85rem; color: #a0a0a0; line-height: 1.5; margin-bottom: 1rem; }
+        .discord-widget .widget-description a { color: #1e90ff; text-decoration: none; font-weight: bold; }
+        .discord-widget .widget-description a:hover { text-decoration: underline; }
+        .discord-widget .avatar-constellation { position: relative; margin-bottom: 1rem; cursor: pointer; overflow: hidden; }
+        .discord-widget .constellation-inner-wrapper { position: relative; transform-origin: top left; }
+        .discord-widget .avatar-wrapper { position: absolute; width: 42px; height: 42px; border-radius: 50%; border: 2px solid #5865F2; background-color: #1a1a1a; will-change: transform, border-radius; transition: border-radius 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: auto; display: flex; align-items: center; justify-content: center; }
+        .discord-widget .avatar-wrapper.is-zoomed { border-radius: 12px; }
+        .discord-widget .avatar { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; transition: border-radius 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .discord-widget .online-text { position: absolute; top: 50%; right: 0.5rem; transform: translateY(-50%); font-weight: bold; display: flex; flex-direction: column; align-items: center; pointer-events: all; z-index: 99; cursor: pointer; transition: transform 0.2s ease-in-out; }
+        .discord-widget .online-text:hover { transform: translateY(-50%) scale(1.05); }
+        .discord-widget .online-count { font-size: 1.8rem; color: #9b59b6; text-shadow: -1.5px -1.5px 0 #FFF, 1.5px -1.5px 0 #FFF, -1.5px 1.5px 0 #FFF, 1.5px 1.5px 0 #FFF, 0px 0px 8px rgba(0,0,0,0.8); }
+        .discord-widget .online-label { font-size: 0.9rem; color: #1e8449; margin-top: -0.25rem; font-weight: 900; text-shadow: -1.5px -1.5px 0 #FFF, 1.5px -1.5px 0 #FFF, -1.5px 1.5px 0 #FFF, 1.5px 1.5px 0 #FFF, 0px 0px 5px rgba(0,0,0,0.7); }
+        .discord-widget .join-button { display: block; width: 100%; text-align: center; text-decoration: none; font-size: 1.1rem; padding: 0.8rem; border-radius: 0.4rem; transition: all 0.2s ease-in-out; font-weight: bold; color: #ffffff; background-image: linear-gradient(90deg, #c874e8, #ff8b3d, #2ee6d7, #58a6ff, #c874e8); background-size: 400% 100%; animation: background-aurora 6s ease-in-out infinite; text-shadow: 1px 1px 2px rgba(0,0,0,0.9), -1px -1px 2px rgba(0,0,0,0.9), 1px -1px 2px rgba(0,0,0,0.9), -1px 1px 2px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7); cursor: pointer; }
+        .discord-widget .join-button:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        
         @media (min-width: 800px) {
             .container { padding: 0.5rem 2rem 1rem 2rem; max-width: 56.25rem;}
             .links a { max-width: 24rem; } 
-            .blurb { max-width: 24rem; } 
+            .blurb { max-width: 24rem; }
+            .discord-widget { max-width: 24rem; }
         }
     </style>
     <script type="application/ld+json">
@@ -96,25 +105,10 @@
       "image": "https://blog.tront.xyz/assets/img/tront.png",
       "jobTitle": "Game Developer",
       "description": "Trent Sterling (Tront) is a professional game developer (gamedev) specializing in Unity, C#, VR development, and multiplayer networking. Explore his portfolio, projects, and social links.",
-      "sameAs": [
-        "https://blog.tront.xyz",
-        "https://discord.gg/0hyoWZyM6y7kkFCN",
-        "http://youtube.com/user/MTOMalley",
-        "http://www.twitch.tv/trent_sterling",
-        "https://github.com/TrentSterling",
-        "https://twitter.com/Trent_Sterling",
-        "https://www.linkedin.com/in/trentdev",
-        "http://trent.itch.io/"
-      ],
+      "sameAs": ["https://blog.tront.xyz","https://discord.gg/0hyoWZyM6y7kkFCN","http://youtube.com/user/MTOMalley","http://www.twitch.tv/trent_sterling","https://github.com/TrentSterling","https://twitter.com/Trent_Sterling","https://www.linkedin.com/in/trentdev","http://trent.itch.io/"],
       "knowsAbout": ["Unity", "C#", "VR", "Virtual Reality", "Multiplayer Networking", "Game Development", "Gamedev", "Indie Game Development", "Procedural Generation", "Shaders", "NodeJS", "Web Development", "Game Optimization"],
-      "worksFor": {
-        "@type": "Organization",
-        "name": "Self-Employed / Indie Developer"
-      },
-      "mainEntityOfPage": {
-         "@type": "WebPage",
-         "@id": "https://tront.xyz/"
-      }
+      "worksFor": { "@type": "Organization", "name": "Self-Employed / Indie Developer" },
+      "mainEntityOfPage": { "@type": "WebPage", "@id": "https://tront.xyz/" }
     }
     </script>
 </head>
@@ -131,60 +125,49 @@
             <div class="section" id="about">
                  <h2>About Me</h2>
                  <div class="about-me">
-                      <p>
-                        <strong>I'm Trent Sterling (Tront), a game developer with over 10 years of experience specializing in Unity, C#, VR, and multiplayer networking.</strong> This page serves as my central hub, connecting you to my portfolio, projects, dev blog insights, and online profiles. My expertise lies in high-performance VR (120Hz+), robust multiplayer networking, and solid gameplay systems. If you seek technical excellence in Unity, VR, and online games, you're here.
-                     </p>
-                     <p>My journey started modding Halo CE/2, Minecraft, and Garry's Mod. These taught me game mechanics, scripting, and community-driven development.</p>
-                     <h3>My Core Focus Areas</h3>
-                     <ul>
-                         <li><strong>Unity Engine & C# Mastery:</strong> Architecting high-performance systems for gameplay, AI, UI, and multiplayer within Unity.</li>
-                         <li><strong>Virtual Reality (VR) Development & Optimization:</strong> Building immersive VR experiences optimized for 120Hz+ comfort and presence (Oculus Quest & PC VR).</li>
-                         <li><strong>Multiplayer Systems & Networking:</strong> Scalable, efficient cross-platform multiplayer (PC, Android, VR) with optimized network traffic and crossplay.</li>
-                         <li><strong>Shaders & Procedural Generation:</strong> Creating custom shaders and exploring procedural generation for dynamic worlds, especially for VR.</li>
-                         <li><strong>Full-Stack Web Development (NodeJS Focus):</strong> Using NodeJS, Phaser, WebSockets for backend services, companion apps, and web elements.</li>
-                     </ul>
-                     <h3>Technical Background</h3>
-                     <p>From modding, I shifted to indie game development, focusing on the technical challenges of optimizing network traffic and rendering performance. I constantly explore cutting-edge tech.</p>
-                     <p>Beyond game dev, I've explored machine learning, IoT, and home automation, always expanding my skillset.</p>
-                     <h3>Additional Skills</h3>
-                     <ul>
-                         <li><strong>Videography & Content Creation:</strong> Producing devlogs, tutorials, trailers (YouTube/Twitch).</li>
-                         <li><strong>Web Design & Development:</strong> Crafting minimalist, functional websites and apps.</li>
-                         <li><strong>3D Modeling & Asset Optimization:</strong> Proficiency in Blender for game-ready assets.</li>
-                         <li><strong>Graphic Design (Photoshop):</strong> Creating textures, UI, and promotional graphics.</li>
-                     </ul>
+                    <p><strong>I'm Trent Sterling (Tront), a game developer with over 10 years of experience specializing in Unity, C#, VR, and multiplayer networking.</strong> This page serves as my central hub, connecting you to my portfolio, projects, dev blog insights, and online profiles. My expertise lies in high-performance VR (120Hz+), robust multiplayer networking, and solid gameplay systems. If you seek technical excellence in Unity, VR, and online games, you're here.</p>
+                    <p>My journey started modding Halo CE/2, Minecraft, and Garry's Mod. These taught me game mechanics, scripting, and community-driven development.</p>
+                    <h3>My Core Focus Areas</h3>
+                    <ul>
+                        <li><strong>Unity Engine & C# Mastery:</strong> Architecting high-performance systems for gameplay, AI, UI, and multiplayer within Unity.</li>
+                        <li><strong>Virtual Reality (VR) Development & Optimization:</strong> Building immersive VR experiences optimized for 120Hz+ comfort and presence (Oculus Quest & PC VR).</li>
+                        <li><strong>Multiplayer Systems & Networking:</strong> Scalable, efficient cross-platform multiplayer (PC, Android, VR) with optimized network traffic and crossplay.</li>
+                        <li><strong>Shaders & Procedural Generation:</strong> Creating custom shaders and exploring procedural generation for dynamic worlds, especially for VR.</li>
+                        <li><strong>Full-Stack Web Development (NodeJS Focus):</strong> Using NodeJS, Phaser, WebSockets for backend services, companion apps, and web elements.</li>
+                    </ul>
+                    <h3>Technical Background</h3>
+                    <p>From modding, I shifted to indie game development, focusing on the technical challenges of optimizing network traffic and rendering performance. I constantly explore cutting-edge tech.</p>
+                    <p>Beyond game dev, I've explored machine learning, IoT, and home automation, always expanding my skillset.</p>
+                    <h3>Additional Skills</h3>
+                    <ul>
+                        <li><strong>Videography & Content Creation:</strong> Producing devlogs, tutorials, trailers (YouTube/Twitch).</li>
+                        <li><strong>Web Design & Development:</strong> Crafting minimalist, functional websites and apps.</li>
+                        <li><strong>3D Modeling & Asset Optimization:</strong> Proficiency in Blender for game-ready assets.</li>
+                        <li><strong>Graphic Design (Photoshop):</strong> Creating textures, UI, and promotional graphics.</li>
+                    </ul>
                  </div>
+            </div>
+
+            <div class="section" id="discord-section">
+                <aside id="discord-widget-container" class="discord-widget">
+                    <div class="widget-loading">Loading Discord Status...</div>
+                </aside>
             </div>
 
             <div class="section" id="blog">
                 <h2>Blog</h2>
                 <ul class="links">
-                    <li>
-                        <a class="blog" href="https://blog.tront.xyz" target="_blank">Tront Dev Blog</a>
-                        <p class="blurb">My development journey: Unity, C#, VR, networking insights, and project updates.</p>
-                    </li>
+                    <li><a class="blog" href="https://blog.tront.xyz" target="_blank">Tront Dev Blog</a><p class="blurb">My development journey: Unity, C#, VR, networking insights, and project updates.</p></li>
                 </ul>
             </div>
 
             <div class="section" id="projects">
                 <h2>Games & Projects</h2>
                 <ul class="links">
-                    <li>
-                        <a class="game" href="https://monke.tront.xyz" target="_blank">MonkePortals</a>
-                        <p class="blurb">A VR multiplayer game inspired by Gorilla Tag, featuring portals, custom maps, and upcoming procedural generation.</p>
-                    </li>
-                    <li>
-                        <a class="game" href="https://punk.tront.xyz" target="_blank">HackerPunk</a>
-                        <p class="blurb">VR multiplayer shooter with spatial voice, vehicles, weapons, and hookshot grapple guns set in a cyberpunk world.</p>
-                    </li>
-                    <li>
-                        <a class="game" href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a>
-                        <p class="blurb">A simple web utility to split large text files for easier use with language models like ChatGPT.</p>
-                    </li>
-                    <li>
-                        <a class="game" href="https://trent.itch.io/" target="_blank">View All My Games on itch.io</a>
-                         <p class="blurb"></p>
-                    </li>
+                    <li><a class="game" href="https://monke.tront.xyz" target="_blank">MonkePortals</a><p class="blurb">A VR multiplayer game inspired by Gorilla Tag, featuring portals, custom maps, and upcoming procedural generation.</p></li>
+                    <li><a class="game" href="https://punk.tront.xyz" target="_blank">HackerPunk</a><p class="blurb">VR multiplayer shooter with spatial voice, vehicles, weapons, and hookshot grapple guns set in a cyberpunk world.</p></li>
+                    <li><a class="game" href="https://trentsterling.github.io/splitter/" target="_blank">Splitter4GPT</a><p class="blurb">A simple web utility to split large text files for easier use with language models like ChatGPT.</p></li>
+                    <li><a class="game" href="https://trent.itch.io/" target="_blank">View All My Games on itch.io</a><p class="blurb"></p></li>
                 </ul>
             </div>
 
@@ -211,6 +194,153 @@
         <script>
             document.getElementById('current-year').textContent = new Date().getFullYear();
         </script>
-    </div>
+        <script>
+        (function() {
+            const WIDGET_URL = 'https://discord.com/api/guilds/126995334109986817/widget.json';
+            const widgetContainer = document.getElementById('discord-widget-container');
+
+            const fetchWidgetData = async () => {
+                try {
+                    const response = await fetch(WIDGET_URL + '?cache_bust=' + new Date().getTime());
+                    if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
+                    const data = await response.json();
+                    renderWidget(data);
+                } catch (error) {
+                    widgetContainer.innerHTML = `<div class="widget-loading">Discord widget failed to load.</div>`;
+                }
+            };
+
+            const renderWidget = (data) => {
+                if (!data || !data.presence_count || !data.instant_invite) {
+                    widgetContainer.innerHTML = `<div class="widget-loading">Discord widget failed to load.</div>`;
+                    return;
+                }
+                const { name, presence_count, members, instant_invite } = data;
+                
+                const widgetHTML = `
+                    <h3 class="widget-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+                           <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+                        </svg>
+                        <span>${name}</span>
+                    </h3>
+                    <p class="widget-description">A developer's backchannel for game tech, VR, AI, LLMs, and hardware like ESP8266/32. Active since 2015. <a href="https://tront.xyz/discord/" target="_blank">Read More</a></p>
+                    <div class="avatar-constellation">
+                        <div class="constellation-inner-wrapper"></div>
+                    </div>
+                    <a href="${instant_invite}" target="_blank" rel="noopener noreferrer" class="join-button">Join Discord</a>
+                `;
+                widgetContainer.innerHTML = widgetHTML;
+
+                const constellation = widgetContainer.querySelector('.avatar-constellation');
+                const constellationInner = widgetContainer.querySelector('.constellation-inner-wrapper');
+                const joinButton = widgetContainer.querySelector('.join-button');
+                
+                const onlineText = document.createElement('div');
+                onlineText.className = 'online-text';
+                onlineText.innerHTML = `<div class="online-count">${presence_count}</div><div class="online-label">Online</div>`;
+                constellation.appendChild(onlineText);
+
+                const baseWidth = 380;
+                const baseHeight = 80;
+                constellationInner.style.width = `${baseWidth}px`;
+                constellationInner.style.height = `${baseHeight}px`;
+
+                const maxAvatars = 50;
+                const onlineMembers = members.filter(m => m.status !== 'offline');
+                const avatars = onlineMembers.slice(0, maxAvatars).map(member => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'avatar-wrapper';
+                    const el = document.createElement('img');
+                    el.src = member.avatar_url;
+                    el.className = 'avatar';
+                    wrapper.appendChild(el);
+                    constellationInner.appendChild(wrapper);
+                    
+                    const avatarState = {
+                        el: wrapper,
+                        x: Math.random() * baseWidth,
+                        y: Math.random() * (baseHeight - 42),
+                        vx: (Math.random() + 0.5) * 0.7,
+                        amp: Math.random() * 10 + 5,
+                        freq: 0.01 + Math.random() * 0.01,
+                        phase: Math.random() * Math.PI * 2,
+                        scale: 1,
+                        targetScale: 1,
+                        isHovered: false
+                    };
+                    
+                    wrapper.addEventListener('mouseenter', () => {
+                        avatarState.isHovered = true;
+                        avatarState.targetScale = 1.5;
+                        wrapper.style.zIndex = 100;
+                        wrapper.classList.add('is-zoomed');
+                    });
+                    wrapper.addEventListener('mouseleave', () => {
+                        avatarState.isHovered = false;
+                        avatarState.targetScale = 1;
+                        wrapper.style.zIndex = 1;
+                        wrapper.classList.remove('is-zoomed');
+                    });
+                    
+                    return avatarState;
+                });
+
+                let speedMultiplier = 1;
+                let targetSpeedMultiplier = 1;
+
+                const resizeObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        const currentWidth = entry.contentRect.width;
+                        const scale = currentWidth / baseWidth;
+                        constellationInner.style.transform = `scale(${scale})`;
+                        constellation.style.height = `${baseHeight * scale}px`;
+                    }
+                });
+
+                resizeObserver.observe(widgetContainer);
+                
+                joinButton.addEventListener('mouseenter', () => targetSpeedMultiplier = 12);
+                joinButton.addEventListener('mouseleave', () => targetSpeedMultiplier = 1);
+                
+                onlineText.addEventListener('mouseenter', () => targetSpeedMultiplier = 0.2);
+                onlineText.addEventListener('mouseleave', () => targetSpeedMultiplier = 1);
+
+                function update() {
+                    speedMultiplier += (targetSpeedMultiplier - speedMultiplier) * 0.1;
+
+                    let fadeOutStartX = baseWidth * 0.40;
+                    let fadeOutEnd = baseWidth * 0.75;
+                    let fadeOutRange = fadeOutEnd - fadeOutStartX;
+
+                    avatars.forEach(avatar => {
+                        if (!avatar.isHovered) {
+                            avatar.x += avatar.vx * speedMultiplier;
+                            if (avatar.x > baseWidth) {
+                                avatar.x = -42;
+                            }
+                        }
+                        
+                        let finalScale = avatar.scale;
+                        if (avatar.x > fadeOutStartX) {
+                            const progress = Math.min(1, Math.max(0, (avatar.x - fadeOutStartX) / fadeOutRange));
+                            finalScale *= (1 - progress);
+                        }
+                        
+                        avatar.scale += (avatar.targetScale - avatar.scale) * 0.2;
+                        
+                        const waveY = avatar.y + Math.sin(avatar.phase + avatar.x * avatar.freq) * avatar.amp;
+                        avatar.el.style.transform = `translate(${avatar.x}px, ${waveY}px) scale(${finalScale})`;
+                    });
+                    
+                    requestAnimationFrame(update);
+                }
+                
+                update();
+            };
+
+            fetchWidgetData();
+        })();
+    </script>
 </body>
 </html>
