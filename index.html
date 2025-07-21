@@ -287,7 +287,9 @@
                 });
 
                 let speedMultiplier = 1;
+                let scaleMultiplier = 1;
                 let targetSpeedMultiplier = 1;
+                let targetScaleMultiplier = 1;
 
                 const resizeObserver = new ResizeObserver(entries => {
                     for (let entry of entries) {
@@ -303,11 +305,18 @@
                 joinButton.addEventListener('mouseenter', () => targetSpeedMultiplier = 12);
                 joinButton.addEventListener('mouseleave', () => targetSpeedMultiplier = 1);
                 
-                onlineText.addEventListener('mouseenter', () => targetSpeedMultiplier = 0.2);
-                onlineText.addEventListener('mouseleave', () => targetSpeedMultiplier = 1);
+                onlineText.addEventListener('mouseenter', () => {
+                    targetSpeedMultiplier = 0.2;
+                    targetScaleMultiplier = 0.6;
+                });
+                onlineText.addEventListener('mouseleave', () => {
+                    targetSpeedMultiplier = 1;
+                    targetScaleMultiplier = 1;
+                });
 
                 function update() {
                     speedMultiplier += (targetSpeedMultiplier - speedMultiplier) * 0.1;
+                    scaleMultiplier += (targetScaleMultiplier - scaleMultiplier) * 0.1;
 
                     let fadeOutStartX = baseWidth * 0.40;
                     let fadeOutEnd = baseWidth * 0.75;
@@ -321,13 +330,19 @@
                             }
                         }
                         
-                        let finalScale = avatar.scale;
-                        if (avatar.x > fadeOutStartX) {
-                            const progress = Math.min(1, Math.max(0, (avatar.x - fadeOutStartX) / fadeOutRange));
-                            finalScale *= (1 - progress);
-                        }
-                        
                         avatar.scale += (avatar.targetScale - avatar.scale) * 0.2;
+                        
+                        let finalScale;
+                        if (avatar.isHovered) {
+                            finalScale = scaleMultiplier * avatar.scale;
+                        } else {
+                            let animationScale = scaleMultiplier;
+                            if (avatar.x > fadeOutStartX) {
+                                const progress = Math.min(1, Math.max(0, (avatar.x - fadeOutStartX) / fadeOutRange));
+                                animationScale *= (1 - progress);
+                            }
+                            finalScale = animationScale * avatar.scale;
+                        }
                         
                         const waveY = avatar.y + Math.sin(avatar.phase + avatar.x * avatar.freq) * avatar.amp;
                         avatar.el.style.transform = `translate(${avatar.x}px, ${waveY}px) scale(${finalScale})`;
