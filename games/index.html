@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trent Sterling (Tront) - Games Portfolio</title>
+    <meta name="description" content="The complete, chronological portfolio of Trent 'Tront' Sterling, showcasing over 60+ projects in VR, game development, mods, and tools since 2009.">
+    <link rel="canonical" href="https://tront.xyz/games/" />
+    <meta property="og:title" content="Trent Sterling's Games">
+    <meta property="og:description" content="A comprehensive, chronological wall of projects, experiments, screenshots, and videos from game developer Trent Sterling.">
+    <meta property="og:image" content="https://blog.tront.xyz/assets/img/tront.png">
+    <meta property="og:url" content="https://tront.xyz/games/">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="https://blog.tront.xyz/assets/img/tront.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg-color:#0d0f14;--item-bg:#1a1c23;--surface-color:#161b22;--widget-bg-color:#1c2128;--border-color:#30363d;--text-color:#e0e0e0;--text-muted:#8b949e;--grid-gap:1rem;--accent-purple:#a855f7;--accent-orange:#ff8b3d;--accent-teal:#2ee6d7;--status-online:#23a55a;--status-idle:#f0b232;--status-dnd:#f23f43;--font-display:'Fira Code',monospace;--font-body:'Inter',sans-serif}
+        @keyframes spin-once{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{font-size:max(.85rem,calc(4px + .6vw))}
+        body{font-family:var(--font-body),Arial,sans-serif;background-color:var(--bg-color);color:var(--text-color);padding-top:80px;position:relative;overflow-x:hidden;opacity:0;visibility:hidden;transition:opacity .4s ease-in-out}
+        body.fonts-loaded{opacity:1;visibility:visible}
+        body::before,body::after{content:'';position:fixed;z-index:-2;width:80vmax;height:80vmax;border-radius:50%;filter:blur(150px);opacity:.15;top:50%;left:50%}
+        body::before{background-color:var(--accent-purple);transform:translate(-80%,-20%)}
+        body::after{background-color:var(--accent-teal);transform:translate(20%,-40%)}
+        .grid-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:50px 50px;z-index:-1}
+        #magic-navbar-container{position:fixed;top:0;left:0;width:100%;height:60px;z-index:9999;display:flex;flex-direction:row-reverse;justify-content:center;align-items:center;gap:1rem;background-color:rgba(18,18,22,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.1);padding:0 1rem}
+        .nav-link{position:relative;display:flex;align-items:center;height:40px;padding:0 1.25rem;color:#c0c0c0;text-decoration:none;font-size:.95rem;font-weight:600;border-radius:10px;background-color:rgba(40,40,45,.7);border:1px solid rgba(255,255,255,.1);transition:all .2s ease}
+        .nav-link:hover{color:#fff;background-color:rgba(50,50,55,.9);border-color:rgba(255,255,255,.2);box-shadow:0 0 20px -5px rgba(200,116,232,.5)}
+        .logo-image{height:30px;width:30px;border-radius:50%;margin-right:.75rem;border:2px solid rgba(255,255,255,.2);transition:transform .8s cubic-bezier(.16,1,.3,1)}
+        .nav-link.home-link{padding-left:.5rem}
+        .nav-link:hover ~ .home-link .logo-image,.home-link:hover .logo-image{animation:spin-once .8s cubic-bezier(.16,1,.3,1)}
+        .nav-link.active{color:#fff;background-color:var(--accent-purple);border-color:var(--accent-purple)}
+        .main-container{max-width:1600px;width:100%;margin:0 auto;padding:0 1rem}
+        .main-header{display:flex;flex-direction:column;align-items:center;padding:2rem 1rem;text-align:center;margin-bottom:2rem}
+        .main-header img.logo{width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.3);margin-bottom:1.5rem;box-shadow:0 0 25px rgba(138,43,226,.4)}
+        .main-header h1{font-family:var(--font-display);font-size:3.2rem;margin-bottom:.1rem;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+        .main-header p{color:#b0b0b0;font-size:1.4rem;max-width:65ch;line-height:1.6}
+        .filter-controls{display:none}
+        .filter-nav{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;padding:0 1rem 2rem}
+        .filter-nav label{font-family:var(--font-display);font-size:.9rem;padding:.5rem 1.2rem;border:1px solid var(--border-color);border-radius:20px;cursor:pointer;transition:all .2s ease}
+        .filter-nav label:hover{background-color:var(--item-bg);border-color:var(--accent-teal);color:var(--accent-teal)}
+        #filter-all:checked~.main-container .filter-nav label[for=filter-all],#filter-vr:checked~.main-container .filter-nav label[for=filter-vr],#filter-game-jam:checked~.main-container .filter-nav label[for=filter-game-jam],#filter-tool:checked~.main-container .filter-nav label[for=filter-tool],#filter-prototype:checked~.main-container .filter-nav label[for=filter-prototype],#filter-mod:checked~.main-container .filter-nav label[for=filter-mod],#filter-game:checked~.main-container .filter-nav label[for=filter-game],#filter-flash-game:checked~.main-container .filter-nav label[for=filter-flash-game]{background-color:var(--accent-purple);border-color:var(--accent-purple);color:#111;font-weight:700}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--grid-gap)}
+        .item{display:none;flex-direction:column;background:rgba(26,29,35,.7);backdrop-filter:blur(10px);border-radius:12px;border:2px solid var(--highlight-color);overflow:hidden;transition:box-shadow .2s ease-in-out, border-color .2s ease-in-out;text-decoration:none}
+        .item:hover{box-shadow:0 0 25px -5px var(--highlight-color);border-color:var(--highlight-color);z-index:10}
+        .image-container{width:100%;aspect-ratio:16/9;flex-shrink:0;border-bottom:2px solid var(--highlight-color);overflow:hidden;position:relative;background-color:#161a22;transition:border-color .2s ease-in-out}
+        .bg-image{width:100%;height:100%;object-fit:cover}
+        .placeholder-content{display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:clamp(1.4rem,4vw,2rem);font-weight:700;color:var(--highlight-color);text-align:center;padding:1rem}
+        .card-content{padding:.8rem 1rem;flex-grow:1;display:flex;flex-direction:column}
+        .card-title{font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin-bottom:.4rem;color:#fff}
+        .card-title span{color:var(--highlight-color)}
+        .blurb{font-size:.9rem;color:var(--text-muted);line-height:1.5;margin-bottom:.5rem;flex-grow:1}
+        .tags{margin-top:auto;display:flex;flex-wrap:wrap;gap:.25rem;justify-content:flex-end}
+        .tag{background-color:rgba(255,255,255,.1);border:1px solid var(--highlight-color);color:var(--highlight-color);padding:.15rem .5rem;border-radius:5px;font-size:.6rem;font-weight:700;font-family:var(--font-display)}
+        #filter-all:checked~.main-container .grid .item,#filter-vr:checked~.main-container .grid .item.tag-vr,#filter-game-jam:checked~.main-container .grid .item.tag-game-jam,#filter-tool:checked~.main-container .grid .item.tag-tool,#filter-prototype:checked~.main-container .grid .item.tag-prototype,#filter-mod:checked~.main-container .grid .item.tag-mod,#filter-game:checked~.main-container .grid .item.tag-game,#filter-flash-game:checked~.main-container .grid .item.tag-flash-game{display:flex}
+        #discord-section{margin:3rem auto 0;text-align:center}
+        #discord-section h2{font-family:var(--font-display);font-size:1.8rem;margin-bottom:1rem;text-shadow:0 2px 2px rgba(0,0,0,.3)}
+        .discord-preview-container{max-width:1000px;margin:0 auto;border:1px solid var(--border-color);background:var(--surface-color);padding:1.5rem;border-radius:8px}
+        .discord-preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border-color)}
+        .discord-preview-header h3{margin:0;font-size:1.1rem;text-align:left;font-family:var(--font-body);font-weight:700}
+        .discord-preview-header .online-count{font-size:.8rem;color:var(--accent-purple);font-weight:700}
+        .avatar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:1rem;list-style:none;padding:0;margin:0}
+        .avatar-wrapper{position:relative;width:48px;height:48px;margin:0 auto;cursor:pointer}
+        .avatar-wrapper .avatar{display:block;width:100%;height:100%;border-radius:8px}
+        .avatar-wrapper .status-dot{position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;border-radius:50%;border:3px solid var(--surface-color)}
+        .status-dot.online{background-color:var(--status-online)}
+        .status-dot.idle{background-color:var(--status-idle)}
+        .status-dot.dnd{background-color:var(--status-dnd)}
+        .avatar-wrapper .tooltip{visibility:hidden;opacity:0;position:absolute;bottom:115%;left:50%;transform:translateX(-50%);background-color:var(--widget-bg-color);color:var(--text-color);padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border-color);font-size:.85rem;white-space:pre;text-align:left;z-index:100;pointer-events:none;transition:opacity .2s ease,transform .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+        .avatar-wrapper .tooltip strong{color:#fff;display:block;margin-bottom:.25rem;font-weight:700}
+        .avatar-wrapper .tooltip .status-text{color:var(--text-muted)}
+        .avatar-wrapper:hover .tooltip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(-5px)}
+        .join-button{display:inline-block;text-decoration:none;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:#fff;padding:.8rem 2rem;border-radius:8px;margin-top:1.5rem;background-image:linear-gradient(90deg,var(--accent-purple),var(--accent-teal));transition:box-shadow .3s ease;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+        .join-button:hover{box-shadow:0 6px 20px rgba(0,0,0,.3)}
+        footer{text-align:center;padding:4rem 1rem 3rem;color:var(--text-muted);font-size:.9rem;margin-top:2rem;border-top:1px solid #30363d}
+        footer a{color:#e0e0e0;text-decoration:underline}
+    </style>
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <nav id="magic-navbar-container">
+        <a href="https://tront.xyz/discord/" class="nav-link">Discord</a>
+        <a href="https://blog.tront.xyz/" class="nav-link">Blog</a>
+        <a href="javascript:void(0);" class="nav-link active">Games</a>
+        <a href="https://tront.xyz/" class="nav-link home-link">
+            <img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+            <span>Home</span>
+        </a>
+    </nav>
+    
+    <input type="radio" name="filter" id="filter-all" class="filter-controls" checked>
+    <input type="radio" name="filter" id="filter-vr" class="filter-controls">
+    <input type="radio" name="filter" id="filter-game-jam" class="filter-controls">
+    <input type="radio" name="filter" id="filter-tool" class="filter-controls">
+    <input type="radio" name="filter" id="filter-prototype" class="filter-controls">
+    <input type="radio" name="filter" id="filter-mod" class="filter-controls">
+    <input type="radio" name="filter" id="filter-game" class="filter-controls">
+    <input type="radio" name="filter" id="filter-flash-game" class="filter-controls">
+    
+    <div class="main-container">
+        <header class="main-header">
+            <a href="https://tront.xyz/"><img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo"></a>
+            <h1>Tront's Games</h1>
+            <p>A chronological wall of projects, experiments, screenshots, and videos from 10+ years in game development. I specialize in Unity, C#, and building high-performance systems.</p>
+        </header>
+
+        <nav class="filter-nav">
+            <label for="filter-all">All</label> <label for="filter-vr">VR</label> <label for="filter-game-jam">Game Jam</label> <label for="filter-tool">Tool</label> <label for="filter-prototype">Prototype</label> <label for="filter-mod">Mod</label> <label for="filter-game">Game</label> <label for="filter-flash-game">Flash Game</label>
+        </nav>
+
+        <main class="grid">
+            <a href="https://store.steampowered.com/app/1646580/Project_Demigod/" target="_blank" class="item tag-game tag-vr" style="--highlight-color: #4682B4;"><div class="image-container"><img class="bg-image" src="https://cdn.akamai.steamstatic.com/steam/apps/1646580/header.jpg" alt="Project Demigod" loading="lazy"></div><div class="card-content"><h3 class="card-title">Project Demigod <span>(2025-Present)</span></h3><p class="blurb">My contributions to this physics-driven VR superhero sandbox include networking architecture, VR-specific shader optimization, ragdoll physics enhancements, and general performance improvements.</p><div class="tags"><span class="tag">Game</span><span class="tag">VR</span></div></div></a>
+            <a href="https://tront.xyz/sudoku" class="item tag-game" style="--highlight-color: #ff79c6;"><div class="image-container"><div class="placeholder-content">MakeupBeachSudoku</div></div><div class="card-content"><h3 class="card-title">MakeupBeachSudoku <span>(2025)</span></h3><p class="blurb">A mobile-first Sudoku recreation built in Phaser 3, inspired by classic makeup-themed girl games from Cosmopolitan.com.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="https://tront.xyz/pachinko" class="item tag-prototype" style="--highlight-color: #ff8b3d;"><div class="image-container"><div class="placeholder-content">PizzaPachinko</div></div><div class="card-content"><h3 class="card-title">PizzaPachinko <span>(2025)</span></h3><p class="blurb">A heavily 'juiced' vanilla JS reimagining of the classic 'Pizza Pachinko' minigame from the Papa Louie series.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="https://tront.xyz/shortpath" class="item tag-prototype" style="--highlight-color: #2ee6d7;"><div class="image-container"><div class="placeholder-content">ShortPath</div></div><div class="card-content"><h3 class="card-title">ShortPath <span>(2025)</span></h3><p class="blurb">A vanilla JS visualizer exploring the 2025 Duan-Mao pathfinding breakthrough that bypasses Dijkstra's 40-year sorting bottleneck.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="https://tront.xyz/vibespace" class="item tag-prototype" style="--highlight-color: #c874e8;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/vibespace.jpg" alt="VibeSpace" loading="lazy"></div><div class="card-content"><h3 class="card-title">VibeSpace <span>(2025)</span></h3><p class="blurb">An interactive 3D space flight prototype using Three.js. Features a procedurally generated universe, a web worker for performance, and a "boosty" autopilot.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #39FF14;"><div class="image-container"><div class="placeholder-content">VibePong</div></div><div class="card-content"><h3 class="card-title">VibePong <span>(2025)</span></h3><p class="blurb">A hyper-stylized, audio-visual CPU vs CPU Pong simulation with dynamic physics and powerups.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="https://tront.xyz/vibemaze" class="item tag-prototype" style="--highlight-color: #FFD700;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/vibemaze.png" alt="VibeMaze" loading="lazy"></div><div class="card-content"><h3 class="card-title">VibeMaze <span>(2025)</span></h3><p class="blurb">A 3D maze game rendered entirely in ASCII characters. Built with vanilla JS to explore 3D rasterization, collision, and lighting.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game tag-vr" style="--highlight-color: #ff8b3d;"><div class="image-container"><img class="bg-image" src="https://cdn.akamai.steamstatic.com/steam/apps/2481930/header.jpg" alt="Scamper" loading="lazy"></div><div class="card-content"><h3 class="card-title">Scamper <span>(2024-2025)</span></h3><p class="blurb">A tense VR horror-adventure. My primary contribution was networking architecture.</p><div class="tags"><span class="tag">Game</span><span class="tag">VR</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-tool" style="--highlight-color: #F23F43;"><div class="image-container"><div class="placeholder-content">Splitter4GPT</div></div><div class="card-content"><h3 class="card-title">Splitter4GPT <span>(2024)</span></h3><p class="blurb">A web utility to intelligently split large text files into smaller, manageable chunks suitable for LLMs.</p><div class="tags"><span class="tag">Tool</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game tag-vr" style="--highlight-color: #c874e8;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/monkeportalsrender.jpg" alt="MonkePortals" loading="lazy"></div><div class="card-content"><h3 class="card-title">MonkePortals <span>(2023)</span></h3><p class="blurb">A Gorilla Tag-inspired VR game featuring dynamic portal mechanics for traversal and puzzle-solving.</p><div class="tags"><span class="tag">Game</span><span class="tag">VR</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game tag-vr" style="--highlight-color: #2ee6d7;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/ScreenshotFarmVR.jpg" alt="FarmVR" loading="lazy"></div><div class="card-content"><h3 class="card-title">FarmVR <span>(2022)</span></h3><p class="blurb">A cross-platform VR farming simulator with a dynamic market system and real-time economy.</p><div class="tags"><span class="tag">Game</span><span class="tag">VR</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game tag-vr" style="--highlight-color: #4ade80;"><div class="image-container"><div class="placeholder-content">Punchin' Duders</div></div><div class="card-content"><h3 class="card-title">Punchin' Duders <span>(2021)</span></h3><p class="blurb">A ragdoll punching VR game. Cause chaos in an office space, punching dudes and breaking stuff before the cops show up.</p><div class="tags"><span class="tag">Game</span><span class="tag">VR</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype tag-vr" style="--highlight-color: #58a6ff;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/hackerpunk1.png" alt="HackerPunk VR" loading="lazy"></div><div class="card-content"><h3 class="card-title">HackerPunk VR <span>(2021)</span></h3><p class="blurb">Cyberpunk VR multiplayer shooter prototype focusing on fast-paced combat and environmental interaction.</p><div class="tags"><span class="tag">Prototype</span><span class="tag">VR</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #ff79c6;"><div class="image-container"><img class="bg-image" src="https://img.itch.zone/aW1nLzk3MDE1MTIuZ2lm/original/jaa%2FSt.gif" alt="Heist And Jam" loading="lazy"></div><div class="card-content"><h3 class="card-title">Heist And Jam <span>(2020)</span></h3><p class="blurb">A simulation game about planning the perfect heist, focusing on strategic decision-making and resource management.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #00dd00;"><div class="image-container"><img class="bg-image" src="https://img.itch.zone/aW1nLzk3MDEyNDguZ2lm/original/ZSwS3V.gif" alt="Death Island" loading="lazy"></div><div class="card-content"><h3 class="card-title">Death Island <span>(2020)</span></h3><p class="blurb">A zombie survival game set on a desolate island, emphasizing resource gathering and base building.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #F0B232;"><div class="image-container"><div class="placeholder-content">RigidbodyDuder</div></div><div class="card-content"><h3 class="card-title">RigidbodyDuder <span>(2019)</span></h3><p class="blurb">Unity demo for a robust character controller implemented using Rigidbody physics for smooth movement.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #F23F43;"><div class="image-container"><img class="bg-image" src="https://img.itch.zone/aW1nLzk3MDEwMzEuZ2lm/original/WYQlDO.gif" alt="LoopStuck" loading="lazy"></div><div class="card-content"><h3 class="card-title">LoopStuck <span>(2019)</span></h3><p class="blurb">A 2D platformer jam entry based on a time loop mechanic, challenging players to manipulate repeated events.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #ff8b3d;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/roland_small.gif" alt="Roland" loading="lazy"></div><div class="card-content"><h3 class="card-title">Roland <span>(2018)</span></h3><p class="blurb">Cute 3D platformer starring an orange ball character navigating imaginative worlds and solving physics-based puzzles.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #c874e8;"><div class="image-container"><div class="placeholder-content">AI1</div></div><div class="card-content"><h3 class="card-title">AI1 <span>(2018)</span></h3><p class="blurb">Provided code support, refactoring, and optimization for combat systems in this scifi Metroidvania.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #2ee6d7;"><div class="image-container"><img class="bg-image" src="https://img.itch.zone/aW1nLzk3MDI2NzQuZ2lm/original/iaGaLX.gif" alt="Jenn's Cafe" loading="lazy"></div><div class="card-content"><h3 class="card-title">Jenn's Cafe <span>(2017)</span></h3><p class="blurb">A restaurant simulation game prototype where players manage staff, menus, and customer satisfaction.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #58a6ff;"><div class="image-container"><img class="bg-image" src="https://img.itch.zone/aW1nLzk3MDA4ODAuZ2lm/original/fkIYRz.gif" alt="Humanity's Last Breath" loading="lazy"></div><div class="card-content"><h3 class="card-title">Humanity's Last Breath <span>(2017)</span></h3><p class="blurb">An adventure game about submarines and nuclear threats, made during a game jam.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #ff79c6;"><div class="image-container"><img class="bg-image" src="https://img.itch.zone/aW1nLzk3MDEzNTEuZ2lm/original/K%2BlUTg.gif" alt="7DaySpaceJam" loading="lazy"></div><div class="card-content"><h3 class="card-title">7DaySpaceJam <span>(2016)</span></h3><p class="blurb">A space simulation game made in one week for a jam, featuring galactic exploration and resource management.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #00dd00;"><div class="image-container"><img class="bg-image" src="https://img.itch.zone/aW1nLzk3MDMwODkuZ2lm/original/RozKGV.gif" alt="Dash Till Dawn" loading="lazy"></div><div class="card-content"><h3 class="card-title">Dash Till Dawn <span>(2016)</span></h3><p class="blurb">An endless runner where players must jump over hordes of oncoming zombies to achieve the highest score.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #F0B232;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/ZombiesGame.jpg" alt="Guys, Girls, and Guns" loading="lazy"></div><div class="card-content"><h3 class="card-title">Guys, Girls, and Guns <span>(2016)</span></h3><p class="blurb">Top-down zombie shooter with a strong multiplayer focus. Team up with friends to survive endless waves.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #F23F43;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/consoleworks.jpg" alt="JS Runtime in Unity" loading="lazy"></div><div class="card-content"><h3 class="card-title">JS Runtime in Unity <span>(2015)</span></h3><p class="blurb">Ludum Dare 34 entry exploring runtime JavaScript execution within a Unity application for dynamic scripting.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #ff8b3d;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2015-07-10_02-16-47.jpg" alt="MP Zombie Shooter" loading="lazy"></div><div class="card-content"><h3 class="card-title">MP Zombie Shooter <span>(2015)</span></h3><p class="blurb">Photon-powered top-down zombie shooter prototype. Explored multiplayer networking concepts.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #c874e8;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2015-06-14_16-34-46.png" alt="BUTTLOADS!" loading="lazy"></div><div class="card-content"><h3 class="card-title">BUTTLOADS! <span>(2015)</span></h3><p class="blurb">A Motherload-inspired mining game made for Bacon Game Jam 09. Drill deep into the earth to find riches and reach the core.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #2ee6d7;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2015-08-22_01-30-36.png" alt="Bear Party" loading="lazy"></div><div class="card-content"><h3 class="card-title">Bear Party <span>(2015)</span></h3><p class="blurb">Ludum Dare 33 entry under the theme "You Are the Monster". Play as a giant bear, smashing buses and eating children.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #58a6ff;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/thumb2.jpg" alt="Super Turbo Ship Puncher 3" loading="lazy"></div><div class="card-content"><h3 class="card-title">Super Turbo Ship Puncher 3 <span>(2015)</span></h3><p class="blurb">An action shooter made for Bacon Game Jam 08, featuring retro pixel art and intense arcade-style combat.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #ff79c6;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2015-01-10_08-36-05.png" alt="Tiny Zombies" loading="lazy"></div><div class="card-content"><h3 class="card-title">Tiny Zombies <span>(2015)</span></h3><p class="blurb">A Unity prototype demonstrating pathfinding and flocking behavior for a large number of agents.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #00dd00;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2015-04-18_03-20-02.jpg" alt="Voxel Blocky Dungeon" loading="lazy"></div><div class="card-content"><h3 class="card-title">Voxel Blocky Dungeon <span>(2015)</span></h3><p class="blurb">A 3D remake of an earlier project, featuring procedural voxel dungeons, towns, NPCs, and quests.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #F0B232;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2015-05-15_02-29-22.png" alt="VoxeFire" loading="lazy"></div><div class="card-content"><h3 class="card-title">VoxeFire <span>(2015)</span></h3><p class="blurb">A voxel twinstick shooter for Amazon FireTV, featuring destructive environments and fast-paced gameplay.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-tool" style="--highlight-color: #F23F43;"><div class="image-container"><div class="placeholder-content">CellGen</div></div><div class="card-content"><h3 class="card-title">CellGen <span>(2014)</span></h3><p class="blurb">A Unity editor tool for procedural dungeon generation and culling using a spatial hash grid.</p><div class="tags"><span class="tag">Tool</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-tool" style="--highlight-color: #ff8b3d;"><div class="image-container"><div class="placeholder-content">CobbleConverter</div></div><div class="card-content"><h3 class="card-title">CobbleConverter <span>(2014)</span></h3><p class="blurb">A command-line utility for the Cobblemon Minecraft mod, providing tools for asset conversion.</p><div class="tags"><span class="tag">Tool</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #c874e8;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2014-12-08_14-16-21-550x309.jpg" alt="platformershooter" loading="lazy"></div><div class="card-content"><h3 class="card-title">platformershooter <span>(2014)</span></h3><p class="blurb">A Super Crate Box clone made for Ludum Dare 31. Weapon pickups randomly change your firearm.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #2ee6d7;"><div class="image-container"><div class="placeholder-content">Isaac Clone</div></div><div class="card-content"><h3 class="card-title">Binding of Isaac Clone <span>(2014)</span></h3><p class="blurb">Twitch-streamed prototype of a Binding of Isaac-like dungeon crawler with procedural generation.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #58a6ff;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/screen1.jpg" alt="Don't Touch the Red Stuff!" loading="lazy"></div><div class="card-content"><h3 class="card-title">Don't Touch the Red Stuff! <span>(2014)</span></h3><p class="blurb">A simple and challenging 1-day platformer game. Players must navigate treacherous levels avoiding red obstacles.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #ff79c6;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/dungeonman.jpg" alt="Blocky Dungeon" loading="lazy"></div><div class="card-content"><h3 class="card-title">Blocky Dungeon <span>(2014)</span></h3><p class="blurb">A multi-version voxel RPG experiment focused on procedural dungeon generation and block-based interaction.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #00dd00;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/halfgridstuff.jpg" alt="FezCraft" loading="lazy"></div><div class="card-content"><h3 class="card-title">FezCraft <span>(2014)</span></h3><p class="blurb">A Minecraft prototype implementing Fez-style rotating 3D blocks to reveal new pathways and perspectives.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #F0B232;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2014-09-06_04-27-54.png" alt="Voxel Bomberman" loading="lazy"></div><div class="card-content"><h3 class="card-title">Voxel Bomberman <span>(2014)</span></h3><p class="blurb">A Bomberman-style game built with a 3D voxel art style, featuring destructible environments.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-prototype" style="--highlight-color: #F23F43;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2014-09-06_18-32-33.png" alt="Voxel Helicopter Shooter" loading="lazy"></div><div class="card-content"><h3 class="card-title">Voxel Helicopter Shooter <span>(2014)</span></h3><p class="blurb">A PlayMaker experiment in voxel-based vehicle combat, controlling a helicopter in a destructible environment.</p><div class="tags"><span class="tag">Prototype</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #ff8b3d;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/2015-02-03_18-23-19.png" alt="Thomas Was A Clone" loading="lazy"></div><div class="card-content"><h3 class="card-title">Thomas Was A Clone <span>(2014)</span></h3><p class="blurb">Minimalist platformer inspired by "Thomas Was Alone," focusing on cooperative puzzle-solving.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game" style="--highlight-color: #c874e8;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/icon.jpg" alt="Planet Jumper" loading="lazy"></div><div class="card-content"><h3 class="card-title">Planet Jumper <span>(2014)</span></h3><p class="blurb">PlayMaker tutorial that evolved into a full HTML5 game. Players jump between orbiting planets.</p><div class="tags"><span class="tag">Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #2ee6d7;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/weirdsoniccontrathing.gif" alt="New Years Game Jam" loading="lazy"></div><div class="card-content"><h3 class="card-title">New Years Game Jam <span>(2013)</span></h3><p class="blurb">A multi-day game development jam challenge focusing on rapid prototyping and innovative mechanics.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #58a6ff;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/img1.jpg" alt="3 Day RPG" loading="lazy"></div><div class="card-content"><h3 class="card-title">3 Day RPG <span>(2013)</span></h3><p class="blurb">An RPG created in just three days for a game jam, showcasing basic combat and quest systems.</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-game-jam" style="--highlight-color: #ff79c6;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/20238-shot0.png" alt="Ludum Dare 26" loading="lazy"></div><div class="card-content"><h3 class="card-title">Ludum Dare 26 <span>(2013)</span></h3><p class="blurb">My first Ludum Dare entry on the theme of "Minimalism."</p><div class="tags"><span class="tag">Game Jam</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-mod" style="--highlight-color: #00dd00;"><div class="image-container"><div class="placeholder-content">SuperSpy</div></div><div class="card-content"><h3 class="card-title">SuperSpy <span>(2013)</span></h3><p class="blurb">A Minecraft plugin for spying on commands and private chat messages on a server.</p><div class="tags"><span class="tag">Mod</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-mod" style="--highlight-color: #F0B232;"><div class="image-container"><div class="placeholder-content">CommandControl</div></div><div class="card-content"><h3 class="card-title">CommandControl <span>(2013)</span></h3><p class="blurb">A Minecraft server plugin for advanced command management, allowing owners to customize permissions.</p><div class="tags"><span class="tag">Mod</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-tool" style="--highlight-color: #F23F43;"><div class="image-container"><div class="placeholder-content">DungeonGen</div></div><div class="card-content"><h3 class="card-title">DungeonGen <span>(2013)</span></h3><p class="blurb">A procedural dungeon generator built with three.js, capable of generating complex 3D mazes on the fly.</p><div class="tags"><span class="tag">Tool</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-mod" style="--highlight-color: #ff8b3d;"><div class="image-container"><div class="placeholder-content">MobControl</div></div><div class="card-content"><h3 class="card-title">MobControl <span>(2013)</span></h3><p class="blurb">A Minecraft server plugin for managing mob spawns, behaviors, and environmental interactions.</p><div class="tags"><span class="tag">Mod</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-mod" style="--highlight-color: #c874e8;"><div class="image-container"><div class="placeholder-content">KittyScript</div></div><div class="card-content"><h3 class="card-title">KittyScript <span>(2012)</span></h3><p class="blurb">A 100% bespoke Garry's Mod gamemode designed from scratch, with unique mechanics and a custom rule set.</p><div class="tags"><span class="tag">Mod</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-flash-game" style="--highlight-color: #2ee6d7;"><div class="image-container"><div class="placeholder-content">That Dummy</div></div><div class="card-content"><h3 class="card-title">That Dummy <span>(2012)</span></h3><p class="blurb">A FlashPunk collaboration with Andrew Sandifer, featuring challenging platforming puzzles.</p><div class="tags"><span class="tag">Flash Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-flash-game" style="--highlight-color: #58a6ff;"><div class="image-container"><div class="placeholder-content">Dynamite Max</div></div><div class="card-content"><h3 class="card-title">Dynamite Max <span>(2011)</span></h3><p class="blurb">An early physics-based Flash game involving explosions and chain reactions to clear levels.</p><div class="tags"><span class="tag">Flash Game</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-mod" style="--highlight-color: #ff79c6;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/vaultscript.jpg" alt="VaultScript" loading="lazy"></div><div class="card-content"><h3 class="card-title">VaultScript <span>(2010)</span></h3><p class="blurb">A Fallout-themed Garry's Mod gamemode that recreated aspects of the post-apocalyptic RPG world.</p><div class="tags"><span class="tag">Mod</span></div></div></a>
+            <a href="javascript:void(0);" class="item tag-flash-game" style="--highlight-color: #00dd00;"><div class="image-container"><img class="bg-image" src="https://tront.xyz/img/bomberman1.jpg" alt="BomberTank" loading="lazy"></div><div class="card-content"><h3 class="card-title">BomberTank <span>(2009)</span></h3><p class="blurb">A long-lost Bomberman-style Flash game that featured customizable tanks and arena battles.</p><div class="tags"><span class="tag">Flash Game</span></div></div></a>
+        </main>
+        
+        <section id="discord-section">
+            <h2>Live Server Preview</h2>
+            <div class="discord-preview-container" id="widget-container">
+                <p>Connecting to host...</p>
+            </div>
+            <a href="https://discord.gg/0hyoWZyM6y7kkFCN" class="join-button" target="_blank" rel="noopener noreferrer">Join The Discord</a>
+        </section>
+
+        <footer>
+            <p>© <span id="current-year">2025</span> Trent Sterling. Visit my main hub at <a href="https://tront.xyz/">tront.xyz</a> or my code on <a href="https://github.com/TrentSterling">GitHub</a>.</p>
+        </footer>
+    </div>
+
+    <script>
+        (function(){
+            document.fonts.ready.then(() => { document.body.classList.add('fonts-loaded'); });
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+        })();
+
+        (function() {
+            const WIDGET_URL = 'https://discord.com/api/guilds/126995334109986817/widget.json';
+            const widgetContainer = document.getElementById('widget-container');
+
+            const fetchWidgetData = async () => {
+                try {
+                    const response = await fetch(WIDGET_URL + '?cache_bust=' + new Date().getTime());
+                    if (!response.ok) throw new Error(`API error: ${response.status}`);
+                    const data = await response.json();
+                    renderWidget(data);
+                } catch (error) {
+                    console.error('Failed to fetch Discord widget data:', error);
+                    widgetContainer.innerHTML = `<p style="text-align:center; color: var(--text-muted);">Live preview unavailable. <a href="https://discord.gg/0hyoWZyM6y7kkFCN">Join directly</a>.</p>`;
+                }
+            };
+
+            const renderWidget = (data) => {
+                const { name, presence_count, members } = data;
+                const memberList = members || []; 
+
+                const avatarGridHTML = memberList.map(member => {
+                    const gameName = member.game ? member.game.name : member.status.charAt(0).toUpperCase() + member.status.slice(1);
+                    const tooltipContent = `<strong>${member.username}</strong><span class="status-text">${gameName}</span>`;
+                    
+                    return `
+                        <li class="avatar-wrapper">
+                            <img src="${member.avatar_url}" alt="${member.username}" class="avatar" loading="lazy">
+                            <span class="status-dot ${member.status}"></span>
+                            <div class="tooltip">${tooltipContent}</div>
+                        </li>
+                    `;
+                }).join('');
+                
+                const widgetHTML = `
+                    <div class="discord-preview-header">
+                        <h3>${name}</h3>
+                        <div class="online-count">${presence_count} ONLINE</div>
+                    </div>
+                    <ul class="avatar-grid">
+                        ${avatarGridHTML}
+                    </ul>
+                `;
+                widgetContainer.innerHTML = widgetHTML;
+            };
+
+            fetchWidgetData();
+        })();
+    </script>
+</body>
+</html>
