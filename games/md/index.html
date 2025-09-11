@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tront's Games - Data-Driven Portfolio</title>
+    <meta name="description" content="The complete, chronological portfolio of Trent 'Tront' Sterling.">
+    <link rel="icon" href="https://blog.tront.xyz/assets/img/tront.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root{--bg-color:#0d0f14;--item-bg:#1a1c23;--surface-color:#161b22;--widget-bg-color:#1c2128;--border-color:#30363d;--text-color:#e0e0e0;--text-muted:#8b949e;--grid-gap:1rem;--accent-purple:#a855f7;--accent-orange:#ff8b3d;--accent-teal:#2ee6d7;--status-online:#23a55a;--status-idle:#f0b232;--status-dnd:#f23f43;--font-display:'Fira Code',monospace;--font-body:'Inter',sans-serif}
+        @keyframes spin-once{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        *{margin:0;padding:0;box-sizing:border-box}
+        html{font-size:max(.85rem,calc(4px + .6vw))}
+        body{font-family:var(--font-body),sans-serif;background-color:var(--bg-color);color:var(--text-color);transition:opacity .4s ease-in-out;opacity:0}
+        body.loaded{opacity:1}
+        a{text-decoration:none;color:inherit}
+
+        /* --- STATE MANAGEMENT --- */
+        .js-active #activation-layer { display: none; }
+        .js-inactive .main-container, .js-inactive #magic-navbar-container, .js-inactive .grid-overlay, .js-inactive body::before, .js-inactive body::after { display: none; }
+        
+        /* --- ACTIVATED VIEW STYLES --- */
+        body.js-active{padding-top:60px;position:relative;overflow-x:hidden}
+        body.js-active::before,body.js-active::after{content:'';position:fixed;z-index:-2;width:80vmax;height:80vmax;border-radius:50%;filter:blur(150px);opacity:.15;top:50%;left:50%}
+        body.js-active::before{background-color:var(--accent-purple);transform:translate(-80%,-20%)}
+        body.js-active::after{background-color:var(--accent-teal);transform:translate(20%,-40%)}
+        .grid-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:50px 50px;z-index:-1}
+        #magic-navbar-container{position:fixed;top:0;left:0;width:100%;height:60px;z-index:9999;display:flex;flex-direction:row-reverse;justify-content:center;align-items:center;gap:1rem;background-color:rgba(18,18,22,.6);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.1);padding:0 1rem}
+        .nav-link{position:relative;display:flex;align-items:center;height:40px;padding:0 1.25rem;color:#c0c0c0;font-size:.95rem;font-weight:600;border-radius:10px;background-color:rgba(40,40,45,.7);border:1px solid rgba(255,255,255,.1);transition:all .2s ease; cursor:pointer;}
+        .nav-link:hover{color:#fff;background-color:rgba(50,50,55,.9);border-color:rgba(255,255,255,.2);box-shadow:0 0 20px -5px rgba(200,116,232,.5)}
+        .logo-image{height:30px;width:30px;border-radius:50%;margin-right:.75rem;border:2px solid rgba(255,255,255,.2);transition:transform .8s cubic-bezier(.16,1,.3,1)}
+        .nav-link.home-link{padding-left:.5rem}
+        .nav-link:hover ~ .home-link .logo-image,.home-link:hover .logo-image{animation:spin-once .8s cubic-bezier(.16,1,.3,1)}
+        .nav-link.active{color:#fff;background-color:var(--accent-purple);border-color:var(--accent-purple)}
+        .main-container{max-width:1600px;width:100%;margin:0 auto;padding:80px 1rem 1rem}
+        .main-header{text-align:center;padding:2rem 1rem;margin-bottom:2rem}
+        .main-header .logo{width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.3);margin-bottom:1.5rem;box-shadow:0 0 25px rgba(138,43,226,.4)}
+        .main-header h1{font-family:var(--font-display);font-size:3.2rem;margin-bottom:.1rem}
+        .main-header p{color:var(--text-muted);font-size:1.4rem;max-width:65ch;margin:.5rem auto 0;line-height:1.6}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--grid-gap)}
+        .item{display:flex;flex-direction:column;background:rgba(26,29,35,.7);backdrop-filter:blur(10px);border-radius:12px;border:2px solid var(--highlight-color);overflow:hidden;transition:box-shadow .2s ease-in-out, border-color .2s ease-in-out;}
+        .item:hover{box-shadow:0 0 25px -5px var(--highlight-color);border-color:var(--highlight-color);z-index:10}
+        .image-container{width:100%;aspect-ratio:16/9;flex-shrink:0;overflow:hidden;background-color:#000;border-bottom:2px solid var(--highlight-color)}
+        .image-container img{width:100%;height:100%;object-fit:cover}
+        .placeholder-content{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-family:var(--font-display);font-size:clamp(1.4rem,4vw,2rem);font-weight:700;color:var(--highlight-color);text-align:center;padding:1rem}
+        .card-content{padding:1rem;flex-grow:1;display:flex;flex-direction:column}
+        .card-title{font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin:0 0 .5rem 0;color:#fff}
+        .card-title span{color:var(--highlight-color)}
+        .blurb{font-size:.9rem;color:var(--text-muted);line-height:1.5;margin-bottom:1rem;flex-grow:1}
+        .tags{display:flex;flex-wrap:wrap;gap:.25rem;justify-content:flex-end}
+        .tag{background-color:rgba(255,255,255,.1);border:1px solid var(--highlight-color);color:var(--highlight-color);padding:.15rem .5rem;border-radius:5px;font-size:.6rem;font-weight:700;font-family:var(--font-display)}
+        #discord-section{margin:3rem auto 0;text-align:center}
+        #discord-section h2{font-family:var(--font-display);font-size:1.8rem;margin-bottom:1rem}
+        .discord-preview-container{max-width:1000px;margin:0 auto;border:1px solid var(--border-color);background:var(--surface-color);padding:1.5rem;border-radius:8px;min-height:100px}
+        .discord-preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border-color)}
+        .discord-preview-header h3{margin:0;font-size:1.1rem;text-align:left;font-family:var(--font-body);font-weight:700}
+        .discord-preview-header .online-count{font-size:.8rem;color:var(--accent-purple);font-weight:700}
+        .avatar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:1rem;list-style:none;padding:0;margin:0}
+        .avatar-wrapper{position:relative;width:48px;height:48px;margin:0 auto;cursor:pointer}
+        .avatar-wrapper .avatar{display:block;width:100%;height:100%;border-radius:8px}
+        .avatar-wrapper .status-dot{position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;border-radius:50%;border:3px solid var(--surface-color)}
+        .status-dot.online{background-color:var(--status-online)}.status-dot.idle{background-color:var(--status-idle)}.status-dot.dnd{background-color:var(--status-dnd)}
+        .avatar-wrapper .tooltip{visibility:hidden;opacity:0;position:absolute;bottom:115%;left:50%;transform:translateX(-50%);background-color:var(--widget-bg-color);color:var(--text-color);padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border-color);font-size:.85rem;white-space:pre;text-align:left;z-index:100;pointer-events:none;transition:opacity .2s ease,transform .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+        .avatar-wrapper:hover .tooltip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(-5px)}
+        .join-button{display:inline-block;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:#fff;padding:.8rem 2rem;border-radius:8px;margin-top:1.5rem;background-image:linear-gradient(90deg,var(--accent-purple),var(--accent-teal));transition:box-shadow .3s ease}
+        .join-button:hover{box-shadow:0 6px 20px rgba(0,0,0,.2)}
+        footer{text-align:center;padding:4rem 1rem 2rem;color:var(--text-muted);font-size:.9rem;margin-top:2rem;border-top:1px solid var(--border-color)}
+        
+        /* --- STYLES FOR PRE-ACTIVATION VIEW --- */
+        #activation-layer { padding: 2rem; }
+        #js-toggle-button { display:block; margin:0 auto 2rem auto; font-family:var(--font-display); font-size:1.2rem; padding:1rem 2rem; cursor:pointer; background-color:var(--accent-purple); color:#fff; border:none; border-radius:8px; transition:background-color .2s; }
+        #js-toggle-button:hover { background-color:#8e44ad; }
+        #portfolio-data { display:block; white-space:pre-wrap; font-family:monospace; line-height:1.6; color:#ccc; }
+    </style>
+</head>
+<body class="js-inactive">
+
+    <div id="activation-layer">
+        <button id="js-toggle-button">[ ACTIVATE INTERFACE ]</button>
+        <pre id="portfolio-data">
+# Tront's Games
+A chronological wall of projects, experiments, screenshots, and videos from 10+ years in game development. I specialize in Unity, C#, and building high-performance systems.
+
+## Live Server Preview
+https://discord.gg/0hyoWZyM6y7kkFCN
+
+## Filters
+All, VR, Game Jam, Tool, Prototype, Mod, Game, Flash Game
+
+---
+
+### Project Demigod :: (2025-Present)
+https://store.steampowered.com/app/1646580/Project_Demigod/
+https://cdn.akamai.steamstatic.com/steam/apps/1646580/header.jpg
+My contributions to this physics-driven VR superhero sandbox include networking architecture, VR-specific shader optimization, ragdoll physics enhancements, and general performance improvements.
+#Game #VR
+---
+### MakeupBeachSudoku :: (2025)
+https://tront.xyz/sudoku
+_
+A mobile-first Sudoku recreation built in Phaser 3, inspired by classic makeup-themed girl games from Cosmopolitan.com.
+#Game
+---
+### PizzaPachinko :: (2025)
+https://tront.xyz/pachinko
+_
+A heavily 'juiced' vanilla JS reimagining of the classic 'Pizza Pachinko' minigame from the Papa Louie series.
+#Prototype
+---
+### ShortPath :: (2025)
+https://tront.xyz/shortpath
+_
+A vanilla JS visualizer exploring the 2025 Duan-Mao pathfinding breakthrough that bypasses Dijkstra's 40-year sorting bottleneck.
+#Prototype
+---
+### VibeSpace :: (2025)
+https://tront.xyz/vibespace
+https://tront.xyz/img/vibespace.jpg
+An interactive 3D space flight prototype using Three.js. Features a procedurally generated universe, a web worker for performance, and a "boosty" autopilot.
+#Prototype
+---
+### VibePong :: (2025)
+_
+_
+A hyper-stylized, audio-visual CPU vs CPU Pong simulation with dynamic physics and powerups.
+#Prototype
+---
+### VibeMaze :: (2025)
+https://tront.xyz/vibemaze
+https://tront.xyz/img/vibemaze.png
+A 3D maze game rendered entirely in ASCII characters. Built with vanilla JS to explore 3D rasterization, collision, and lighting.
+#Prototype
+---
+### Scamper :: (2024-2025)
+_
+https://cdn.akamai.steamstatic.com/steam/apps/2481930/header.jpg
+A tense VR horror-adventure. My primary contribution was networking architecture.
+#Game #VR
+---
+### Splitter4GPT :: (2024)
+_
+_
+A web utility to intelligently split large text files into smaller, manageable chunks suitable for LLMs.
+#Tool
+---
+### MonkePortals :: (2023)
+_
+https://tront.xyz/img/monkeportalsrender.jpg
+A Gorilla Tag-inspired VR game featuring dynamic portal mechanics for traversal and puzzle-solving.
+#Game #VR
+---
+### FarmVR :: (2022)
+_
+https://tront.xyz/img/ScreenshotFarmVR.jpg
+A cross-platform VR farming simulator with a dynamic market system and real-time economy.
+#Game #VR
+---
+### Punchin' Duders :: (2021)
+_
+_
+A ragdoll punching VR game. Cause chaos in an office space, punching dudes and breaking stuff before the cops show up.
+#Game #VR
+---
+### HackerPunk VR :: (2021)
+_
+https://tront.xyz/img/hackerpunk1.png
+Cyberpunk VR multiplayer shooter prototype focusing on fast-paced combat and environmental interaction.
+#Prototype #VR
+---
+### Heist And Jam :: (2020)
+_
+https://img.itch.zone/aW1nLzk3MDE1MTIuZ2lm/original/jaa%2FSt.gif
+A simulation game about planning the perfect heist, focusing on strategic decision-making and resource management.
+#GameJam
+---
+### Death Island :: (2020)
+_
+https://img.itch.zone/aW1nLzk3MDEyNDguZ2lm/original/ZSwS3V.gif
+A zombie survival game set on a desolate island, emphasizing resource gathering and base building.
+#Game
+---
+### RigidbodyDuder :: (2019)
+_
+_
+Unity demo for a robust character controller implemented using Rigidbody physics for smooth movement.
+#Prototype
+---
+### LoopStuck :: (2019)
+_
+https://img.itch.zone/aW1nLzk3MDEwMzEuZ2lm/original/WYQlDO.gif
+A 2D platformer jam entry based on a time loop mechanic, challenging players to manipulate repeated events.
+#GameJam
+---
+### Roland :: (2018)
+_
+https://tront.xyz/img/roland_small.gif
+Cute 3D platformer starring an orange ball character navigating imaginative worlds and solving physics-based puzzles.
+#Game
+---
+### AI1 :: (2018)
+_
+_
+Provided code support, refactoring, and optimization for combat systems in this scifi Metroidvania.
+#Prototype
+---
+### Jenn's Cafe :: (2017)
+_
+https://img.itch.zone/aW1nLzk3MDI2NzQuZ2lm/original/iaGaLX.gif
+A restaurant simulation game prototype where players manage staff, menus, and customer satisfaction.
+#Game
+---
+### Humanity's Last Breath :: (2017)
+_
+https://img.itch.zone/aW1nLzk3MDA4ODAuZ2lm/original/fkIYRz.gif
+An adventure game about submarines and nuclear threats, made during a game jam.
+#GameJam
+---
+### 7DaySpaceJam :: (2016)
+_
+https://img.itch.zone/aW1nLzk3MDEzNTEuZ2lm/original/K%2BlUTg.gif
+A space simulation game made in one week for a jam, featuring galactic exploration and resource management.
+#GameJam
+---
+### Dash Till Dawn :: (2016)
+_
+https://img.itch.zone/aW1nLzk3MDMwODkuZ2lm/original/RozKGV.gif
+An endless runner where players must jump over hordes of oncoming zombies to achieve the highest score.
+#Game
+---
+### Guys, Girls, and Guns :: (2016)
+_
+https://tront.xyz/img/ZombiesGame.jpg
+Top-down zombie shooter with a strong multiplayer focus. Team up with friends to survive endless waves.
+#Game
+---
+### JS Runtime in Unity :: (2015)
+_
+https://tront.xyz/img/consoleworks.jpg
+Ludum Dare 34 entry exploring runtime JavaScript execution within a Unity application for dynamic scripting.
+#GameJam
+---
+### MP Zombie Shooter :: (2015)
+_
+https://tront.xyz/img/2015-07-10_02-16-47.jpg
+Photon-powered top-down zombie shooter prototype. Explored multiplayer networking concepts.
+#Game
+---
+### BUTTLOADS! :: (2015)
+_
+https://tront.xyz/img/2015-06-14_16-34-46.png
+A Motherload-inspired mining game made for Bacon Game Jam 09. Drill deep into the earth to find riches and reach the core.
+#GameJam
+---
+### Bear Party :: (2015)
+_
+https://tront.xyz/img/2015-08-22_01-30-36.png
+Ludum Dare 33 entry under the theme "You Are the Monster". Play as a giant bear, smashing buses and eating children.
+#GameJam
+---
+### Super Turbo Ship Puncher 3 :: (2015)
+_
+https://tront.xyz/img/thumb2.jpg
+An action shooter made for Bacon Game Jam 08, featuring retro pixel art and intense arcade-style combat.
+#GameJam
+---
+### Tiny Zombies :: (2015)
+_
+https://tront.xyz/img/2015-01-10_08-36-05.png
+A Unity prototype demonstrating pathfinding and flocking behavior for a large number of agents.
+#Prototype
+---
+### Voxel Blocky Dungeon :: (2015)
+_
+https://tront.xyz/img/2015-04-18_03-20-02.jpg
+A 3D remake of an earlier project, featuring procedural voxel dungeons, towns, NPCs, and quests.
+#Prototype
+---
+### VoxeFire :: (2015)
+_
+https://tront.xyz/img/2015-05-15_02-29-22.png
+A voxel twinstick shooter for Amazon FireTV, featuring destructive environments and fast-paced gameplay.
+#Game
+---
+### CellGen :: (2014)
+_
+_
+A Unity editor tool for procedural dungeon generation and culling using a spatial hash grid.
+#Tool
+---
+### CobbleConverter :: (2014)
+_
+_
+A command-line utility for the Cobblemon Minecraft mod, providing tools for asset conversion.
+#Tool
+---
+### platformershooter :: (2014)
+_
+https://tront.xyz/img/2014-12-08_14-16-21-550x309.jpg
+A Super Crate Box clone made for Ludum Dare 31. Weapon pickups randomly change your firearm.
+#GameJam
+---
+### Binding of Isaac Clone :: (2014)
+_
+_
+Twitch-streamed prototype of a Binding of Isaac-like dungeon crawler with procedural generation.
+#Prototype
+---
+### Don't Touch the Red Stuff! :: (2014)
+_
+https://tront.xyz/img/screen1.jpg
+A simple and challenging 1-day platformer game. Players must navigate treacherous levels avoiding red obstacles.
+#Game
+---
+### Blocky Dungeon :: (2014)
+_
+https://tront.xyz/img/dungeonman.jpg
+A multi-version voxel RPG experiment focused on procedural dungeon generation and block-based interaction.
+#Prototype
+---
+### FezCraft :: (2014)
+_
+https://tront.xyz/img/halfgridstuff.jpg
+A Minecraft prototype implementing Fez-style rotating 3D blocks to reveal new pathways and perspectives.
+#Prototype
+---
+### Voxel Bomberman :: (2014)
+_
+https://tront.xyz/img/2014-09-06_04-27-54.png
+A Bomberman-style game built with a 3D voxel art style, featuring destructible environments.
+#Prototype
+---
+### Voxel Helicopter Shooter :: (2014)
+_
+https://tront.xyz/img/2014-09-06_18-32-33.png
+A PlayMaker experiment in voxel-based vehicle combat, controlling a helicopter in a destructible environment.
+#Prototype
+---
+### Thomas Was A Clone :: (2014)
+_
+https://tront.xyz/img/2015-02-03_18-23-19.png
+Minimalist platformer inspired by "Thomas Was Alone," focusing on cooperative puzzle-solving.
+#Game
+---
+### Planet Jumper :: (2014)
+_
+https://tront.xyz/img/icon.jpg
+PlayMaker tutorial that evolved into a full HTML5 game. Players jump between orbiting planets.
+#Game
+---
+### New Years Game Jam :: (2013)
+_
+https://tront.xyz/img/weirdsoniccontrathing.gif
+A multi-day game development jam challenge focusing on rapid prototyping and innovative mechanics.
+#GameJam
+---
+### 3 Day RPG :: (2013)
+_
+https://tront.xyz/img/img1.jpg
+An RPG created in just three days for a game jam, showcasing basic combat and quest systems.
+#GameJam
+---
+### Ludum Dare 26 :: (2013)
+_
+https://tront.xyz/img/20238-shot0.png
+My first Ludum Dare entry on the theme of "Minimalism."
+#GameJam
+---
+### SuperSpy :: (2013)
+_
+_
+A Minecraft plugin for spying on commands and private chat messages on a server.
+#Mod
+---
+### CommandControl :: (2013)
+_
+_
+A Minecraft server plugin for advanced command management, allowing owners to customize permissions.
+#Mod
+---
+### DungeonGen :: (2013)
+_
+_
+A procedural dungeon generator built with three.js, capable of generating complex 3D mazes on the fly.
+#Tool
+---
+### MobControl :: (2013)
+_
+_
+A Minecraft server plugin for managing mob spawns, behaviors, and environmental interactions.
+#Mod
+---
+### KittyScript :: (2012)
+_
+_
+A 100% bespoke Garry's Mod gamemode designed from scratch, with unique mechanics and a custom rule set.
+#Mod
+---
+### That Dummy :: (2012)
+_
+_
+A FlashPunk collaboration with Andrew Sandifer, featuring challenging platforming puzzles.
+#FlashGame
+---
+### Dynamite Max :: (2011)
+_
+_
+An early physics-based Flash game involving explosions and chain reactions to clear levels.
+#FlashGame
+---
+### VaultScript :: (2010)
+_
+https://tront.xyz/img/vaultscript.jpg
+A Fallout-themed Garry's Mod gamemode that recreated aspects of the post-apocalyptic RPG world.
+#Mod
+---
+### BomberTank :: (2009)
+_
+https://tront.xyz/img/bomberman1.jpg
+A long-lost Bomberman-style Flash game that featured customizable tanks and arena battles.
+#FlashGame
+        </pre>
+    </div>
+    
+    <div class="main-container">
+        <div class="grid-overlay"></div>
+        <nav id="magic-navbar-container"></nav>
+        <header class="main-header"></header>
+        <main class="grid"></main>
+        <section id="discord-section"></section>
+        <footer></footer>
+    </div>
+
+    <script>
+        (function() {
+            const body = document.body;
+            const toggleButton = document.getElementById('js-toggle-button');
+            const dataEl = document.getElementById('portfolio-data');
+            const activationLayer = document.getElementById('activation-layer');
+            const mainContainer = document.querySelector('.main-container');
+
+            let isInterfaceActive = false;
+            let hasBeenBuilt = false;
+
+            if (!toggleButton || !dataEl || !mainContainer) {
+                console.error("Core elements for initialization are missing.");
+                body.classList.add('loaded');
+                return;
+            }
+
+            const toggleInterface = () => {
+                isInterfaceActive = !isInterfaceActive;
+                body.classList.toggle('js-active', isInterfaceActive);
+                body.classList.toggle('js-inactive', !isInterfaceActive);
+
+                if (isInterfaceActive && !hasBeenBuilt) {
+                    buildFullInterface();
+                    hasBeenBuilt = true;
+                }
+            };
+
+            const buildFullInterface = () => {
+                renderHeaderAndNav();
+                renderPortfolioGrid();
+                renderDiscordSection();
+                renderFooter();
+            };
+            
+            const renderHeaderAndNav = () => {
+                const navContainer = document.getElementById('magic-navbar-container');
+                navContainer.innerHTML = `
+                    <a href="https://tront.xyz/discord/" target="_blank" rel="noopener noreferrer" class="nav-link">Discord</a>
+                    <a href="https://blog.tront.xyz/" target="_blank" rel="noopener noreferrer" class="nav-link">Blog</a>
+                    <a href="#" class="nav-link active">Games</a>
+                    <a href="https://tront.xyz/" target="_blank" rel="noopener noreferrer" class="nav-link home-link">
+                        <img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+                        <span>Home</span>
+                    </a>
+                    <a href="javascript:void(0);" id="js-toggle-button-nav" class="nav-link">[ DEACTIVATE HACKER MODE ]</a>`;
+                document.getElementById('js-toggle-button-nav').addEventListener('click', toggleInterface);
+                
+                document.querySelector('.main-header').innerHTML = `
+                    <a href="https://tront.xyz/"><img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo"></a>
+                    <h1>Tront's Games</h1>
+                    <p>A chronological wall of projects, experiments, screenshots, and videos from 10+ years in game development.</p>`;
+            };
+
+            const renderPortfolioGrid = () => {
+                const gridEl = document.querySelector('.grid');
+                gridEl.innerHTML = '';
+                const rawData = dataEl.textContent;
+                const projects = rawData.trim().split('---').map(p => p.trim()).filter(p => p.startsWith('###'));
+                
+                const tagColorMap = {'Game':'#ff79c6','Prototype':'#ff8b3d','Tool':'#c874e8','GameJam':'#58a6ff','Mod':'#4ade80','FlashGame':'#f0b232','VR':'#2ee6d7'};
+
+                projects.forEach(projectText => {
+                    const lines = projectText.split('\n').map(l => l.trim());
+                    const [header, link, imageUrl, description, tagsLine] = lines;
+                    const headerMatch = header.match(/### (.*?) :: \((.*?)\)/);
+                    if (!headerMatch) return;
+                    
+                    const [, title, date] = headerMatch;
+                    const tags = tagsLine.split(' ').map(t => t.substring(1));
+                    
+                    const item = document.createElement('a');
+                    item.href = (link === '_') ? 'javascript:void(0);' : link;
+                    if (link !== '_' && link.startsWith('http')) item.target = '_blank';
+                    
+                    item.className = 'item';
+                    const primaryColor = tagColorMap[tags[0]] || '#e0e0e0';
+                    item.style.setProperty('--highlight-color', primaryColor);
+
+                    const imageHTML = (imageUrl === '_')
+                        ? `<div class="image-container"><div class="placeholder-content">${title}</div></div>`
+                        : `<div class="image-container"><img class="bg-image" src="${imageUrl}" alt="${title}" loading="lazy"></div>`;
+
+                    const tagsHTML = tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+
+                    item.innerHTML = `
+                        ${imageHTML}
+                        <div class="card-content">
+                            <h3 class="card-title">${title} <span>(${date})</span></h3>
+                            <p class="blurb">${description}</p>
+                            <div class="tags">${tagsHTML}</div>
+                        </div>`;
+                    gridEl.appendChild(item);
+                });
+            };
+
+            const renderDiscordSection = () => {
+                const sectionEl = document.getElementById('discord-section');
+                sectionEl.innerHTML = `
+                    <h2>Live Server Preview</h2>
+                    <div class="discord-preview-container" id="widget-container"><p>Connecting to Discord API...</p></div>
+                    <a href="https://discord.gg/0hyoWZyM6y7kkFCN" class="join-button" target="_blank" rel="noopener noreferrer">Join The Discord</a>`;
+                
+                const WIDGET_URL = 'https://discord.com/api/guilds/126995334109986817/widget.json';
+                const widgetContainer = document.getElementById('widget-container');
+
+                fetch(`${WIDGET_URL}?t=${new Date().getTime()}`)
+                    .then(response => { if (!response.ok) throw new Error('Network response was not ok'); return response.json(); })
+                    .then(data => {
+                        const { name, presence_count, members } = data;
+                        const memberList = members || [];
+                        const avatarGridHTML = memberList.slice(0, 50).map(member => `
+                            <li class="avatar-wrapper">
+                                <img src="${member.avatar_url}" alt="${member.username}" class="avatar" loading="lazy">
+                                <span class="status-dot ${member.status}"></span>
+                                <div class="tooltip"><strong>${member.username}</strong><span class="status-text">${member.game ? member.game.name : member.status}</span></div>
+                            </li>`).join('');
+                        
+                        widgetContainer.innerHTML = `
+                            <div class="discord-preview-header">
+                                <h3>${name} (198 Members)</h3>
+                                <div class="online-count">${presence_count} ONLINE</div>
+                            </div>
+                            <ul class="avatar-grid">${avatarGridHTML}</ul>`;
+                    })
+                    .catch(error => {
+                        console.error('Discord widget fetch error:', error);
+                        widgetContainer.innerHTML = `<p>Live preview unavailable. <a href="https://discord.gg/0hyoWZyM6y7kkFCN">Join directly</a>.</p>`;
+                    });
+            };
+
+            const renderFooter = () => {
+                document.querySelector('footer').innerHTML = `
+                    <p>© ${new Date().getFullYear()} Trent Sterling. Visit <a href="https://tront.xyz/">tront.xyz</a> or <a href="https://github.com/TrentSterling">GitHub</a>.</p>`;
+            };
+            
+            toggleButton.addEventListener('click', toggleInterface);
+            body.classList.add('loaded');
+
+        })();
+    </script>
+
+</body>
+</html>
