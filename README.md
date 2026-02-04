@@ -12,7 +12,7 @@ Portfolio website for **Trent Sterling** - game developer shipping since 2009.
 |------|-------------|
 | [/](https://tront.xyz) | Landing page with Three.js particle background |
 | [/games](https://tront.xyz/games) | All 76 projects with filtering by category |
-| [/grid](https://tront.xyz/grid) | Visual timeline of projects (2009-2025) |
+| [/grid](https://tront.xyz/grid) | Visual timeline of projects (2009-2026) |
 | [/blog](https://blog.tront.xyz) | Dev blog - tutorials, postmortems, experiments |
 | [/demos](https://tront.xyz/demos) | Interactive experiments showcase |
 | [/shaders](https://tront.xyz/shaders) | WebGL shader playground |
