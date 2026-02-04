@@ -1,0 +1,414 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrontDev Discord :: The Dev Hub</title>
+
+    <!-- SEO & Metadata -->
+    <meta name="description" content="The definitive developer hub for Trent 'Tront' Sterling's community. Join for no-fluff technical discussions on Unity, C#, VR, multiplayer networking (FishNet, EOS, Steamworks, Mirror, Photon), hardware (ESP32/Arduino), LLMs, AI art, and performance optimization.">
+    <meta name="keywords" content="Trent Sterling, Tront, Discord, game developer, gamedev, Unity, C#, VR, multiplayer, networking, FishNet, EOS, Steamworks, Mirror, Photon, PUN, Fusion, PurrNet, procedural generation, shaders, performance, ESP32, Arduino, LLMs, AI, game jam, indie dev">
+
+    <!-- Open Graph / Social -->
+    <meta property="og:title" content="TrontDev Discord :: The Hub for Serious Developers">
+    <meta property="og:description" content="A raw, technical backchannel for developers who build things. Active since 2015.">
+    <meta property="og:image" content="https://blog.tront.xyz/assets/img/tront.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Fonts & Favicon -->
+    <link rel="icon" href="https://blog.tront.xyz/assets/img/tront.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <style>
+        :root {
+            --bg-color: #0d0f14;
+            --surface-color: #1a1c23;
+            --widget-bg-color: #1c2128;
+            --border-color: #30363d;
+            --text-color: #e0e0e0;
+            --text-muted: #8b949e;
+            --accent-purple: #c874e8;
+            --accent-orange: #ff8b3d;
+            --accent-teal: #2ee6d7;
+            --accent-pink: #ff79c6;
+            --accent-red: #f472b6;
+            --accent-yellow: #f0b232;
+            --accent-green: #4ade80;
+            --accent-blue: #58a6ff;
+            --status-online: #23a55a;
+            --status-idle: #f0b232;
+            --status-dnd: #f23f43;
+            --font-display: 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        @keyframes animated-grid { from { background-position: 0 0; } to { background-position: -50px 0; } }
+        @keyframes background-aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes continuous-sheen { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body), sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding-top: 80px;
+            background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: animated-grid 6s linear infinite;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.5s ease-in-out;
+        }
+        body.fonts-loaded { opacity: 1; visibility: visible; }
+
+        #magic-navbar-container {
+            position: fixed; top: 0; left: 0; width: 100%;
+            height: 60px; z-index: 9999;
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center; align-items: center;
+            gap: 1rem;
+            background-color: rgba(18, 18, 22, 0.6);
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0 1rem;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+        
+        #magic-navbar-container::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            background-image: linear-gradient(110deg, rgba(200, 116, 232, 0.1), rgba(255, 139, 61, 0.15), rgba(46, 230, 215, 0.1));
+            background-size: 400% 400%;
+            animation: background-aurora 12s ease infinite;
+            opacity: 0;
+            transition: opacity 0.7s ease-out;
+        }
+        #magic-navbar-container:hover::before { opacity: 1; }
+
+        .nav-link {
+            position: relative; display: flex; align-items: center;
+            height: 40px; padding: 0 1.25rem;
+            color: #c0c0c0; text-decoration: none;
+            font-size: 0.95rem; font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            border-radius: 10px;
+            background-color: rgba(40, 40, 45, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            will-change: transform, box-shadow;
+            transform-style: preserve-3d;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+        }
+        
+        .nav-link::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 200%; height: 100%;
+            background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.2) 50%, transparent 60%);
+            transform: translateX(-100%);
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .nav-link:hover {
+            color: #ffffff;
+            background-color: rgba(50, 50, 55, 0.9);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: perspective(1000px) rotateX(10deg) translateY(-4px);
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.25), 0 0 20px -5px rgba(200, 116, 232, 0.8), 0 0 20px -5px rgba(255, 139, 61, 0.8);
+        }
+        .nav-link:hover::before { transform: translateX(100%); }
+        .logo-image { height: 30px; width: 30px; border-radius: 50%; margin-right: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.2); }
+        .nav-link.home-link { padding-left: 0.5rem; }
+
+        .nav-link:hover ~ .home-link .logo-image,
+        .home-link:hover .logo-image {
+            animation: spin-once 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .nav-link.active {
+            color: #ffffff; background-color: rgba(88, 101, 242, 0.8); border-color: #5865F2;
+            transform: perspective(1000px) rotateX(10deg) translateY(-4px);
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.25), 0 0 20px -5px rgba(88, 101, 242, 0.8);
+        }
+        .nav-link.active::before { animation: continuous-sheen 3s infinite linear; }
+
+        .main-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem 2rem; }
+        a { color: var(--accent-teal); text-decoration: none; font-weight: 500;}
+        a:hover { text-decoration: underline; }
+        .main-header { text-align: center; padding: 4rem 1rem 3rem; border-bottom: 1px solid var(--border-color); margin-bottom: 3rem; }
+        .header-logo { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent-purple); margin-bottom: 1.5rem; box-shadow: 0 0 35px rgba(138,43,226,.4); }
+        h1 { font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 4rem); margin: 0; line-height: 1.1; }
+        .subtitle { font-family: var(--font-display); font-size: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 1rem; }
+        .tag-cloud { max-width: 800px; margin: 2rem auto; font-family: var(--font-display); font-size: 1rem; color: var(--text-muted); line-height: 1.8; border-top: 1px dotted var(--border-color); border-bottom: 1px dotted var(--border-color); padding: 1rem 0; }
+        .tag-cloud span { color: var(--text-color); }
+        .tag-cloud .c-teal {color: var(--accent-teal);} .tag-cloud .c-pink {color: var(--accent-pink);} .tag-cloud .c-orange {color: var(--accent-orange);}
+        .main-text { text-align: left; max-width: 80ch; margin: 0 auto; line-height: 1.7; font-size: 1.1rem; }
+        .main-text p:not(:last-child) { margin-bottom: 1.5rem; }
+        .main-text strong { color: var(--accent-yellow); font-weight: 600; }
+        .cta-button { display: inline-block; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; color: #111; text-decoration: none; padding: 1rem 2.5rem; border: none; border-radius: 8px; cursor: pointer; margin-top: 2.5rem; background-image: linear-gradient(90deg, var(--accent-purple), var(--accent-orange), var(--accent-teal), var(--accent-pink), var(--accent-purple)); background-size: 400% 100%; transition: transform 0.3s ease, box-shadow 0.3s ease; animation: background-aurora 8s linear infinite; }
+        .cta-button:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        .section-header { font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; margin: 4rem 0 2rem 0; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+        .primary-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 2.5rem; }
+        @media (max-width: 1024px) { .primary-grid { grid-template-columns: 1fr; } }
+        .dev-topic-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+        .dev-topic-list li { background: var(--surface-color); padding: 1.25rem; border-radius: 6px; border-left: 3px solid var(--border-color); font-size: 0.95rem; color: var(--text-muted); }
+        .dev-topic-list strong { display: block; margin-bottom: 0.5rem; font-family: var(--font-display); font-size: 1.05rem; }
+        .dev-topic-list li:nth-child(8n+1) strong { color: var(--accent-purple); } .dev-topic-list li:nth-child(8n+2) strong { color: var(--accent-blue); } .dev-topic-list li:nth-child(8n+3) strong { color: var(--accent-teal); } .dev-topic-list li:nth-child(8n+4) strong { color: var(--accent-green); } .dev-topic-list li:nth-child(8n+5) strong { color: var(--accent-yellow); } .dev-topic-list li:nth-child(8n+6) strong { color: var(--accent-orange); } .dev-topic-list li:nth-child(8n+7) strong { color: var(--accent-red); } .dev-topic-list li:nth-child(8n+8) strong { color: var(--accent-pink); }
+        .channel-list-container { background: var(--surface-color); border-radius: 6px; padding: 1.5rem; border: 1px solid var(--border-color); }
+        .channel-list { list-style: none; padding: 0; margin: 0; }
+        .channel-list li { margin-bottom: 0.6rem; color: var(--text-muted); font-size: 1rem; font-family: var(--font-display); display: flex; align-items: center; }
+        .channel-list .emoji { margin-right: 0.75ch; font-size: 1.2rem; }
+        .channel-list strong { display: block; color: var(--text-color); margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: 700; font-size: 1.1rem; }
+        .channel-list li:first-child strong { margin-top: 0; }
+        .roles-container { margin-top: 2.5rem; }
+        .roles-list { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; margin: 0; }
+        .roles-list li { display: inline-flex; align-items: center; background: var(--widget-bg-color); border: 1px solid var(--border-color); padding: 0.3rem 0.8rem; border-radius: 1rem; font-family: var(--font-display); font-size: 0.9rem; }
+        .roles-list .emoji { font-size: 1rem; margin-right: 0.5ch; }
+        .discord-preview-container { border: 1px solid var(--border-color); background: var(--surface-color); padding: 2rem; border-radius: 8px; }
+        .discord-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .discord-preview-header h3 { margin: 0; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+        .discord-preview-header .online-count { font-size: 0.8rem; font-family: var(--font-display); color: var(--accent-purple); font-weight: 700; letter-spacing: 0.5px; }
+        .discord-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; list-style: none; padding: 0; margin: 0; }
+        .user-card { background: var(--widget-bg-color); border-radius: 6px; padding: 0.75rem; display: flex; align-items: center; gap: 0.8rem; position: relative; cursor: pointer; transition: background-color 0.2s ease; }
+        .user-card:not(.user-card--more):hover { background-color: #2a2f37; }
+        .user-card--more { cursor: default; }
+        .avatar-wrapper { position: relative; flex-shrink: 0; }
+        .avatar { display: block; width: 36px; height: 36px; border-radius: 50%; }
+        .status-dot { position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--widget-bg-color); }
+        .status-dot.online { background-color: var(--status-online); } .status-dot.idle { background-color: var(--status-idle); } .status-dot.dnd { background-color: var(--status-dnd); }
+        .user-info { overflow: hidden; }
+        .username { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; margin-bottom: 0.1rem; }
+        .username.online { color: var(--status-online); } .username.idle { color: var(--status-idle); } .username.dnd { color: var(--status-dnd); }
+        .user-status { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .hover-card { opacity: 0; visibility: hidden; position: absolute; bottom: calc(100% + 8px); left: 0; transform: translateY(5px); background-color: #1c1f26; padding: 1em; border-radius: 6px; width: max-content; max-width: 280px; z-index: 10; border: 1px solid var(--border-color); transition: all 0.2s ease-in-out; pointer-events: none; display: flex; align-items: flex-start; gap: 1em; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .user-card:hover .hover-card { opacity: 1; visibility: visible; transform: translateY(0); }
+        .hover-card .full-avatar { width: 64px; height: 64px; border-radius: 6px; flex-shrink: 0; }
+        .hover-card-info { text-align: left; }
+        .hover-card .full-username { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 0.5em; }
+        .hover-card .full-status { font-size: 0.9em; margin-bottom: 0.25em; }
+        .hover-card .status-key { color: var(--text-muted); }
+        footer { text-align: center; padding: 4rem 1rem 3rem; color: var(--text-muted); font-size: .9rem; border-top: 1px solid var(--border-color); }
+    </style>
+</head>
+<body>
+
+    <nav id="magic-navbar-container">
+        <a href="#" class="nav-link active">Discord</a>
+        <a href="https://blog.tront.xyz/" class="nav-link">Blog</a>
+        <a href="/games/" class="nav-link">Games</a>
+        <a href="/" class="nav-link home-link">
+            <img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+            <span>Home</span>
+        </a>
+    </nav>
+
+    <div class="main-container">
+        <header class="main-header">
+            <img src="https://blog.tront.xyz/assets/img/tront.png" alt="TrontDev Logo" class="header-logo">
+            <h1>Trent's Cool Developer Spot</h1>
+            <p class="subtitle">A Functional Dev Hub Since 2015</p>
+            <div class="tag-cloud">
+                <span class="c-teal">Unity & C#</span> :: <span class="c-pink">Multiplayer & Networking</span> :: <span class="c-orange">VR/AR Performance</span>
+                <br>
+                <span class="c-teal">Shaders & Optimization</span> :: <span class="c-pink">LLMs, AI Art & Procgen</span> :: <span class="c-orange">ESP32 & Arduino</span>
+            </div>
+            <div class="main-text">
+                <p>This isn't just another Discord server. It's a functional dev hub, a high-trust community of builders, and a live backchannel for solving hard problems. It's the place where we share builds, test multiplayer mechanics, and get direct, unsentimental feedback to move our projects forward.</p>
+                <p>The culture here is about <strong>helping people who are genuinely trying to build</strong>. Whether you're a seasoned pro optimizing shaders or just getting started with networking, you'll find your place here if you're serious about the craft. We value practical solutions, learning by doing, and the kind of direct discourse that makes everyone better.</p>
+            </div>
+            <a href="https://discord.gg/0hyoWZyM6y7kkFCN" class="cta-button" target="_blank" rel="noopener noreferrer">Join the Discord</a>
+        </header>
+
+        <div class="primary-grid">
+            <div>
+                <h2 class="section-header">// Core Discussions & Technical Topics</h2>
+                <ul class="dev-topic-list">
+                    <li><strong>Production Netcode</strong>Mastering frameworks like FishNet, Mirror, and Photon (PUN/Fusion) and pairing them with robust backends like EOS & Steamworks. We also explore the bleeding edge with libraries like PurrNet.</li>
+                    <li><strong>Physics-Based VR Interactions</strong>Engineering high-fidelity VR rigs and interactions. We master the "magic" of object manipulation using advanced techniques like PID and Stable-PID controllers.</li>
+                    <li><strong>High-Performance C#</strong>Unlocking performance with the C# Jobs System, Burst compiler, DOTS, threading, and modern async/await patterns for massively concurrent tasks.</li>
+                    <li><strong>Shader Craft & GPU Wizardry</strong>Writing raw HLSL from scratch, creating complex compute shaders, and mastering visual editors (Amplify/Shader Graph) with custom HLSL function nodes.</li>
+                    <li><strong>Advanced Enemy & NPC AI</strong>Implementing Behavior Trees, GOAP, Utility AI, NavMesh, A*, and steering for dynamic combat with stackable abilities.</li>
+                    <li><strong>VR Performance Profiling</strong>Mastering the frame debugger to optimize for single-pass stereo, reduce draw calls, and solve bottlenecks unique to VR across all render pipelines (BiRP, URP, HDRP).</li>
+                    <li><strong>Hardware Hacking & Prototyping</strong>From soldering custom microcontrollers (ESP32/Arduino) to 3D printing dev tools and enclosures, we are a full-stack maker community.</li>
+                    <li><strong>AR & Passthrough Experiments</strong>Pushing the limits of mixed reality with custom full-body AR rigs, passthrough shaders, and novel interactive experiences on Quest 3 and beyond.</li>
+                    <li><strong>LLMs in Production</strong>Using language models and other AI to generate dynamic game content and character behavior.</li>
+                    <li><strong>API & SDK Integration Woes</strong>Integrating, debugging, and optimizing stubborn SDKs like the Meta Quest SDK.</li>
+                    <li><strong>Godot Engine Deep Dives</strong>Exploring the pros and cons of GDScript vs. C# and solving engine-specific problems.</li>
+                    <li><strong>AI Art & Diffusion Pipelining</strong>Using Stable Diffusion & Midjourney for concepting, textures, and sprites efficiently.</li>
+                    <li><strong>Dedicated Server Deployment</strong>Managing and optimizing headless Linux builds on AWS, PlayFab, and bare metal.</li>
+                    <li><strong>Garbage Collection & Memory Mgmt</strong>Strategies for minimizing GC spikes and managing memory in resource-intensive C# apps.</li>
+                    <li><strong>Cross-Platform Development Hell</strong>Solving the unique challenges of shipping on PC, console, and standalone VR.</li>
+                    <li><strong>Rapid Prototyping & Feedback</strong>A culture of quickly sharing playable prototypes for immediate, blunt, unsentimental feedback.</li>
+                    <li><strong>3D Printing for Dev Tools</strong>Creating custom mounts, enclosures, controller mods, and tools to aid the development process.</li>
+                    <li><strong>Build Pipeline Automation</strong>Using CI/CD (GitHub Actions) and scripting to automate project builds and deployments.</li>
+                    <li><strong>Shipping & Store Logistics</strong>Blunt talk about Steam wishlists, marketing, and the business reality of releasing a game.</li>
+                    <li><strong>Bizarre Physics & Collision Bugs</strong>Collaborative debugging of obscure, physics-driven edge cases that make no logical sense.</li>
+                    <li><strong>Complex UI/UX Design</strong>Designing usable interfaces for data-heavy or interaction-rich applications.</li>
+                    <li><strong>Custom Editor Tooling</strong>Writing scripts and custom inspectors to extend the Unity editor for a faster workflow.</li>
+                    <li><strong>Voxel Tech & Procedural Worlds</strong>Techniques for generating, meshing, and rendering large voxel-based environments.</li>
+                    <li><strong>Reverse Engineering & Modding</strong>Tearing apart game code to understand systems or to build modifications for existing games.</li>
+                    <li><strong>Engine Source Code Exploration</strong>Diving into Unity or Unreal source to understand why something is *really* broken.</li>
+                    <li><strong>Efficient Serialization</strong>Choosing and implementing binary vs. text-based formats for saving game state and assets.</li>
+                    <li><strong>Peer Code Review Culture</strong>A dedicated channel for sharing code snippets and getting direct, constructive criticism.</li>
+                    <li><strong>The Shitpost Nexus</strong>The essential pressure-release valve for memes, programmer humor, and blowing off steam.</li>
+                </ul>
+            </div>
+            <aside>
+                <h2 class="section-header">// Channel Manifest</h2>
+                 <div class="channel-list-container">
+                    <ul class="channel-list">
+                        <li><strong>// GENERAL</strong></li>
+                        <li><span class="emoji">#️⃣</span> general-lobby</li>
+                        <li><span class="emoji">💩</span> meme-shit</li>
+                        <li><span class="emoji">🗳️</span> pol</li>
+                        <li><span class="emoji">🤝</span> collabs-jobs</li>
+                        <li><strong>// AI_STUFF</strong></li>
+                        <li><span class="emoji">🎨</span> ai-gen-art</li>
+                        <li><span class="emoji">💬</span> ai-chat-stuff</li>
+                        <li><strong>// DEVELOPMENT</strong></li>
+                        <li><span class="emoji">💬</span> gamedev-chat</li>
+                        <li><span class="emoji">📦</span> assets-tools</li>
+                        <li><span class="emoji">⭐</span> showoff-threads</li>
+                        <li><span class="emoji">🏗️</span> dev-forum</li>
+                        <li><span class="emoji">✨</span> showcase</li>
+                        <li><span class="emoji">💾</span> hardware</li>
+                        <li><span class="emoji">🖼️</span> art-2d-or-3d</li>
+                        <li><span class="emoji">🎵</span> music-and-audio</li>
+                        <li><span class="emoji">🍋</span> programming</li>
+                        <li><span class="emoji">💡</span> tuts-snippets-ideas</li>
+                        <li><span class="emoji">🕹️</span> gamejams</li>
+                        <li><strong>// ENGINE_SPECIFIC</strong></li>
+                        <li><span class="emoji">🧊</span> unityboiz</li>
+                        <li><span class="emoji">✔️</span> unreal-duders</li>
+                        <li><span class="emoji">🤖</span> godots</li>
+                        <li><span class="emoji">🥽</span> vr-stuff</li>
+                        <li><strong>// ACTIVE_PROJECTS</strong></li>
+                        <li><span class="emoji">🚧</span> trontdev-projects</li>
+                        <li><span class="emoji">🚜</span> farm-vr</li>
+                        <li><span class="emoji">🤖</span> hackerpunk2169</li>
+                        <li><span class="emoji">🔫</span> guys-girls-guns</li>
+                        <li><span class="emoji">☕</span> jenns-cafe</li>
+                        <li><strong>// SERVER</strong></li>
+                        <li><span class="emoji">💡</span> server-suggestions</li>
+                    </ul>
+                    <div class="roles-container">
+                        <h2 class="section-header" style="margin-top: 2.5rem; margin-bottom: 1rem; border: none; padding: 0;">// Onboarding Roles</h2>
+                        <ul class="roles-list">
+                            <li><span class="emoji">👨‍💻</span> Developer</li>
+                            <li><span class="emoji">🤔</span> Unity Dev</li>
+                            <li><span class="emoji">👋</span> Unreal Dev</li>
+                            <li><span class="emoji">🤘</span> Godot Dev</li>
+                            <li><span class="emoji">🥽</span> VR Dev</li>
+                            <li><span class="emoji">🛠️</span> Hardware Dev</li>
+                            <li><span class="emoji">🤖</span> AI Dev</li>
+                            <li><span class="emoji">🐧</span> Linux</li>
+                            <li><span class="emoji">🕸️</span> NETDEV</li>
+                            <li><span class="emoji">🚫</span> No Dev (homie)</li>
+                        </ul>
+                    </div>
+                 </div>
+            </aside>
+        </div>
+
+        <div id="live-preview-section">
+            <h2 class="section-header">// Live Server Preview</h2>
+            <div class="discord-preview-container" id="widget-container">
+                <p style="text-align:center; color:var(--text-muted);">Connecting to host...</p>
+            </div>
+        </div>
+
+        <footer>
+             <a href="https://discord.gg/0hyoWZyM6y7kkFCN" class="cta-button" style="margin: 0 0 2rem 0;" target="_blank" rel="noopener noreferrer">Join the Discord</a>
+            <p>&copy; 2026 Trent Sterling. // <a href="/" target="_blank" rel="noopener noreferrer">tront.xyz</a> // <a href="https://github.com/TrentSterling" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+        </footer>
+    </div>
+
+    <script>
+    (function() {
+        document.fonts.ready.then(() => {
+            document.body.classList.add('fonts-loaded');
+        });
+
+        const WIDGET_URL = 'https://discord.com/api/guilds/126995334109986817/widget.json';
+        const widgetContainer = document.getElementById('widget-container');
+
+        const fetchWidgetData = async () => {
+            try {
+                const response = await fetch(WIDGET_URL);
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+                const data = await response.json();
+                renderWidget(data);
+            } catch (error) {
+                console.error('Failed to fetch Discord widget data:', error);
+                widgetContainer.innerHTML = `<p style="text-align: center; color: var(--text-muted);">Live preview is currently unavailable. Please <a href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank" rel="noopener noreferrer">join directly</a>.</p>`;
+            }
+        };
+
+        const renderWidget = (data) => {
+            const { name, presence_count, members } = data;
+            const memberList = members.slice(0, 50);
+
+            const memberCardsHTML = memberList.map(member => {
+                const { username, avatar_url, status, game } = member;
+                const gameName = game ? game.name : null;
+                
+                const mainStatusText = gameName ? gameName : `Status: ${status}`;
+                
+                let hoverStatusHTML = `<div class="full-status"><span class="status-key">Status:</span> ${status}</div>`;
+                if (gameName) {
+                    hoverStatusHTML += `<div class="full-status"><span class="status-key">Playing:</span> ${gameName}</div>`;
+                }
+
+                return `
+                    <li class="user-card">
+                        <div class="avatar-wrapper">
+                            <img src="${avatar_url}" alt="${username}" class="avatar" loading="lazy" width="36" height="36">
+                            <span class="status-dot ${status}"></span>
+                        </div>
+                        <div class="user-info">
+                            <div class="username ${status}" title="${username}">${username}</div>
+                            <div class="user-status" title="${mainStatusText}">${mainStatusText}</div>
+                        </div>
+                        <div class="hover-card">
+                            <img src="${avatar_url}" alt="" class="full-avatar" loading="lazy" width="64" height="64">
+                            <div class="hover-card-info">
+                                <div class="full-username">${username}</div>
+                                ${hoverStatusHTML}
+                            </div>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+            
+            let moreUsersHTML = '';
+            const remainingCount = presence_count - memberList.length;
+            if (remainingCount > 0) {
+                 moreUsersHTML = `<li class="user-card user-card--more" style="justify-content: center; color: var(--text-muted); font-family: var(--font-display); cursor: default; grid-column: 1 / -1;">+${remainingCount} more online...</li>`;
+            }
+
+            const widgetHTML = `
+                <div class="discord-preview-header">
+                    <h3>${name}</h3>
+                    <div class="online-count">${presence_count} ONLINE</div>
+                </div>
+                <ul class="discord-grid">
+                    ${memberCardsHTML}
+                    ${moreUsersHTML}
+                </ul>
+            `;
+            
+            widgetContainer.innerHTML = widgetHTML;
+        };
+
+        fetchWidgetData();
+    })();
+    </script>
+</body>
+</html>
