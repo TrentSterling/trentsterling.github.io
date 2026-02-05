@@ -1,17 +1,17 @@
 # tront.xyz
 
-Portfolio website for **Trent Sterling** - game developer shipping since 2009.
+Portfolio website for Trent Sterling - game developer since 2009.
 
-🌐 **Live site:** [tront.xyz](https://tront.xyz)
+Live site: [tront.xyz](https://tront.xyz)
 
 ---
 
-## What's On The Site
+## Pages
 
 | Page | Description |
 |------|-------------|
 | [/](https://tront.xyz) | Landing page with Three.js particle background |
-| [/games](https://tront.xyz/games) | All 76 projects with filtering by category |
+| [/games](https://tront.xyz/games) | All projects with filtering by category |
 | [/grid](https://tront.xyz/grid) | Visual timeline of projects (2009-2026) |
 | [/blog](https://blog.tront.xyz) | Dev blog - tutorials, postmortems, experiments |
 | [/demos](https://tront.xyz/demos) | Interactive experiments showcase |
@@ -30,14 +30,13 @@ Portfolio website for **Trent Sterling** - game developer shipping since 2009.
 - Three.js for 3D backgrounds
 - Vanilla JavaScript
 - GitHub Pages hosting
-- Netlify for clean URLs
 
 ## Project Demos (GitHub Pages)
 
-Many experiments are hosted as separate repos with GitHub Pages:
+Each experiment is its own repo with GitHub Pages enabled; the custom domain routes them under tront.xyz:
 
-| Demo | Repo |
-|------|------|
+| Demo | Description |
+|------|-------------|
 | [/vibesand](https://tront.xyz/vibesand) | WebGPU voxel sandbox (2M particles) |
 | [/vibewater](https://tront.xyz/vibewater) | WebGPU water simulation |
 | [/vibeduders](https://tront.xyz/vibeduders) | 100k enemies WebGPU demo |
@@ -49,11 +48,4 @@ Many experiments are hosted as separate repos with GitHub Pages:
 
 ## Links
 
-- **Discord:** [TrontDev](https://discord.gg/0hyoWZyM6y7kkFCN)
-- **GitHub:** [TrentSterling](https://github.com/TrentSterling)
-- **Twitter:** [@Trent_Sterling](https://twitter.com/Trent_Sterling)
-- **Bluesky:** [@tront.xyz](https://bsky.app/profile/tront.xyz)
-
----
-
-*"76 projects shipped. Most are playable, documented, and open source."*
+- [Discord](https://discord.gg/0hyoWZyM6y7kkFCN) ; [GitHub](https://github.com/TrentSterling) ; [Twitter](https://twitter.com/Trent_Sterling) ; [Bluesky](https://bsky.app/profile/tront.xyz)
