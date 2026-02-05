@@ -37,6 +37,27 @@
   </url>
 
   <url>
+    <loc>https://tront.xyz/csharp-gentle-formatter/</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://tront.xyz/speedslap/</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://tront.xyz/FishNet-EOS-Native/</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
     <loc>https://trent.itch.io/</loc>
     <lastmod>2026-02-05</lastmod> <!-- Update if itch profile changes -->
     <changefreq>monthly</changefreq>
