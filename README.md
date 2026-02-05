@@ -45,6 +45,8 @@ Each experiment is its own repo with GitHub Pages enabled; the custom domain rou
 | [/pachinko](https://tront.xyz/pachinko) | Pizza Pachinko game |
 | [/lerp](https://tront.xyz/lerp) | FRIM lerp tutorial |
 | [/quantumvibes](https://tront.xyz/quantumvibes) | Quantum mechanics simulator |
+| [/csharp-gentle-formatter](https://tront.xyz/csharp-gentle-formatter/) | C# Gentle Formatter landing page |
+| [/speedslap](https://tront.xyz/speedslap/) | SpeedSlap Chrome extension landing page |
 
 ## Links
 
