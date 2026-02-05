@@ -9,6 +9,34 @@
   </url>
 
   <url>
+    <loc>https://tront.xyz/games</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://tront.xyz/discord</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://tront.xyz/demos</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://tront.xyz/shaders</loc>
+    <lastmod>2026-02-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
     <loc>https://blog.tront.xyz/</loc>
     <lastmod>2026-02-05</lastmod> <!-- Update when blog changes -->
     <changefreq>weekly</changefreq>
@@ -30,7 +58,7 @@
   </url>
 
   <url>
-    <loc>https://trentsterling.github.io/splitter/</loc>
+    <loc>https://tront.xyz/splitter/</loc>
     <lastmod>2026-02-05</lastmod> <!-- Update if utility changes -->
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
