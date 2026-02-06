@@ -22,19 +22,6 @@
     <priority>0.8</priority>
   </url>
 
-  <url>
-    <loc>https://tront.xyz/demos</loc>
-    <lastmod>2026-02-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://tront.xyz/shaders</loc>
-    <lastmod>2026-02-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
 
   <url>
     <loc>https://blog.tront.xyz/</loc>
