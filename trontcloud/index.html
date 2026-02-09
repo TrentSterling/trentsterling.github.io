@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrontCloud - Self-Hosted Game Backend</title>
+    <meta name="description" content="TrontCloud is a self-hosted game backend with 109 API endpoints, three-tier auth, admin dashboard, and Unity SDK. Own your stack.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tront.xyz/trontcloud/">
+    <meta property="og:title" content="TrontCloud - Self-Hosted Game Backend">
+    <meta property="og:description" content="PlayFab/LootLocker clone you actually own. 109 endpoints, three-tier auth, Unity SDK. Single binary deploy.">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="TrontCloud - Self-Hosted Game Backend">
+    <meta name="twitter:description" content="PlayFab/LootLocker clone you actually own. 109 endpoints, three-tier auth, Unity SDK. Single binary deploy.">
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: max(0.85rem, calc(4px + 0.6vw)); scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: #121212; color: #e0e0e0; line-height: 1.6; padding-top: 60px; background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 50px 50px; }
+        a { color: #58a6ff; text-decoration: none; transition: color 0.2s; }
+        a:hover { color: #79b8ff; }
+        @keyframes background-aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        #magic-navbar-container { position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 9999; display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; gap: 1rem; background-color: rgba(18, 18, 22, 0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0 1rem; perspective: 1000px; overflow: hidden; }
+        #magic-navbar-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; background-image: linear-gradient(110deg, rgba(200, 116, 232, 0.1), rgba(255, 139, 61, 0.15), rgba(46, 230, 215, 0.1)); background-size: 400% 400%; animation: background-aurora 12s ease infinite; opacity: 0; transition: opacity 0.7s ease-out; }
+        #magic-navbar-container:hover::before { opacity: 1; }
+        .nav-link { position: relative; display: flex; align-items: center; height: 40px; padding: 0 1.25rem; color: #c0c0c0; text-decoration: none; font-size: 0.95rem; font-weight: 600; font-family: 'Inter', sans-serif; border-radius: 10px; background-color: rgba(40, 40, 45, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); will-change: transform, box-shadow; transform-style: preserve-3d; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; }
+        .nav-link::before { content: ''; position: absolute; top: 0; left: 0; width: 200%; height: 100%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.2) 50%, transparent 60%); transform: translateX(-100%); transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+        .nav-link:hover { color: #ffffff; background-color: rgba(50, 50, 55, 0.9); border-color: rgba(255, 255, 255, 0.2); transform: perspective(1000px) rotateX(10deg) translateY(-4px); box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.25), 0 0 20px -5px rgba(200, 116, 232, 0.8), 0 0 20px -5px rgba(255, 139, 61, 0.8); }
+        .nav-link:hover::before { transform: translateX(100%); }
+        .logo-image { height: 30px; width: 30px; border-radius: 50%; margin-right: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.2); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+        .nav-link.home-link { padding-left: 0.5rem; }
+        .nav-link:hover ~ .home-link .logo-image, .home-link:hover .logo-image { animation: spin-once 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .container { max-width: 64rem; width: 100%; margin: 0 auto; padding: 0 1.5rem; }
+        section { padding: 3rem 0; }
+        section + section { border-top: 1px solid rgba(255,255,255,0.06); }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 700; }
+        .hero { text-align: center; padding: 4rem 0 3rem; }
+        .hero-label { display: inline-block; font-family: 'Fira Code', monospace; font-size: 0.8rem; font-weight: 500; color: #2ee6d7; background: rgba(46, 230, 215, 0.1); border: 1px solid rgba(46, 230, 215, 0.2); padding: 0.3rem 0.8rem; border-radius: 999px; margin-bottom: 1.2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .hero h1 { font-size: 3.5rem; line-height: 1.1; margin-bottom: 0.8rem; background: linear-gradient(135deg, #c874e8, #ff8b3d, #2ee6d7); background-size: 200% 200%; animation: background-aurora 6s ease-in-out infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero .subtitle { font-size: 1.3rem; color: #b0b0b0; margin-bottom: 1.5rem; max-width: 32rem; margin-left: auto; margin-right: auto; }
+        .hero-links { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.4rem; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; transition: all 0.2s ease; text-decoration: none; }
+        .btn-primary { background: rgba(200, 116, 232, 0.15); color: #c874e8; border: 1px solid rgba(200, 116, 232, 0.3); }
+        .btn-primary:hover { background: rgba(200, 116, 232, 0.25); color: #d89cf0; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(200, 116, 232, 0.2); }
+        .btn-secondary { background: rgba(255,255,255,0.05); color: #c0c0c0; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #ffffff; transform: translateY(-2px); }
+        .private-badge { font-size: 0.7rem; background: rgba(255,139,61,0.15); color: #ff8b3d; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 500; vertical-align: middle; }
+        .section-header { margin-bottom: 1.5rem; }
+        .section-header h2 { font-size: 1.8rem; margin-bottom: 0.4rem; }
+        .section-header p { color: #888; font-size: 1rem; max-width: 40rem; }
+        .why-content { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+        .why-problem, .why-solution { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.5rem; }
+        .why-problem { border-color: rgba(255, 139, 61, 0.2); }
+        .why-solution { border-color: rgba(46, 230, 215, 0.2); }
+        .why-problem h3 { color: #ff8b3d; font-size: 1.1rem; margin-bottom: 0.6rem; }
+        .why-solution h3 { color: #2ee6d7; font-size: 1.1rem; margin-bottom: 0.6rem; }
+        .why-problem p, .why-solution p { color: #b0b0b0; font-size: 0.95rem; line-height: 1.6; }
+        .why-problem code, .why-solution code { font-family: 'Fira Code', monospace; font-size: 0.85rem; background: rgba(255,255,255,0.06); padding: 0.15rem 0.4rem; border-radius: 4px; }
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .feature-card { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.4rem; transition: border-color 0.2s, transform 0.2s; }
+        .feature-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); }
+        .feature-icon { font-family: 'Fira Code', monospace; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.6rem; display: block; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 0.4rem; color: #e0e0e0; }
+        .feature-card p { font-size: 0.85rem; color: #888; line-height: 1.5; }
+        .feature-card p code { font-family: 'Fira Code', monospace; font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 0.1rem 0.35rem; border-radius: 3px; }
+        .accent-purple { color: #c874e8; }
+        .accent-orange { color: #ff8b3d; }
+        .accent-teal { color: #2ee6d7; }
+        .accent-blue { color: #58a6ff; }
+        .code-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .code-block { background: #0d0f14; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
+        .code-block-header { background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0.6rem 1rem; font-family: 'Fira Code', monospace; font-size: 0.75rem; font-weight: 500; color: #888; display: flex; align-items: center; gap: 0.5rem; }
+        .code-block-header .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .dot-red { background: #ff5f57; }
+        .dot-yellow { background: #febc2e; }
+        .dot-green { background: #28c840; }
+        .code-block pre { padding: 1rem; overflow-x: auto; font-family: 'Fira Code', monospace; font-size: 0.82rem; line-height: 1.7; color: #c0c0c0; }
+        .code-block pre .comment { color: #6a737d; }
+        .code-block pre .keyword { color: #c874e8; }
+        .code-block pre .string { color: #2ee6d7; }
+        .code-block pre .func { color: #ff8b3d; }
+        .code-block pre .type { color: #58a6ff; }
+        .arch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .arch-card { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.2rem; text-align: center; }
+        .arch-card h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+        .arch-card .arch-count { font-family: 'Fira Code', monospace; font-size: 1.4rem; font-weight: 700; display: block; margin-bottom: 0.4rem; }
+        .arch-card p { font-size: 0.8rem; color: #888; line-height: 1.4; }
+        .arch-card:nth-child(1) .arch-count { color: #c874e8; }
+        .arch-card:nth-child(2) .arch-count { color: #ff8b3d; }
+        .arch-card:nth-child(3) .arch-count { color: #2ee6d7; }
+        .arch-card:nth-child(4) .arch-count { color: #58a6ff; }
+        .page-footer { padding: 2rem 0; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; color: #666; font-size: 0.85rem; }
+        .page-footer a { color: #888; margin: 0 0.6rem; transition: color 0.2s; }
+        .page-footer a:hover { color: #c874e8; }
+        .footer-sep { color: #444; }
+        @media (max-width: 768px) { .hero h1 { font-size: 2.4rem; } .hero .subtitle { font-size: 1.1rem; } .why-content { grid-template-columns: 1fr; } .features-grid { grid-template-columns: 1fr; } .code-section { grid-template-columns: 1fr; } .arch-grid { grid-template-columns: repeat(2, 1fr); } section { padding: 2rem 0; } }
+        @media (max-width: 480px) { .arch-grid { grid-template-columns: 1fr; } .hero h1 { font-size: 2rem; } }
+    </style>
+</head>
+<body>
+    <nav id="magic-navbar-container">
+        <a href="/discord/" class="nav-link">Discord</a>
+        <a href="https://blog.tront.xyz/" class="nav-link">Blog</a>
+        <a href="/games/" class="nav-link">Games</a>
+        <a href="/" class="nav-link home-link">
+            <img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+            <span>Tront</span>
+        </a>
+    </nav>
+    <div class="container">
+        <section class="hero">
+            <span class="hero-label">Self-Hosted Game Backend</span>
+            <h1>TrontCloud</h1>
+            <p class="subtitle">Own your stack. A PlayFab/LootLocker alternative you control; single binary, 109 endpoints, three-tier auth.</p>
+            <div class="hero-links">
+                <a href="https://github.com/TrentSterling/trontcloud" class="btn btn-primary" target="_blank">GitHub <span class="private-badge">private</span></a>
+                <a href="#quick-start" class="btn btn-secondary">Quick Start</a>
+            </div>
+        </section>
+        <section id="why">
+            <div class="section-header">
+                <h2>Why Build Your Own?</h2>
+            </div>
+            <div class="why-content">
+                <div class="why-problem">
+                    <h3>The Problem</h3>
+                    <p>PlayFab and LootLocker expose API keys in your game files. Their client SDKs let modders make arbitrary calls with your title key. You end up writing server-side validation anyway - so why not own the whole stack?</p>
+                </div>
+                <div class="why-solution">
+                    <h3>TrontCloud's Approach</h3>
+                    <p>Three-tier auth keeps your game secure. Game clients use <code>PublicAuth</code> to browse and <code>SessionAuth</code> after login. Admin keys (<code>APIKeyAuth</code>) stay on your server, never shipped in builds. Rate limited per IP. Bcrypt everything.</p>
+                </div>
+            </div>
+        </section>
+        <section id="features">
+            <div class="section-header">
+                <h2>Features</h2>
+                <p>Everything you need for a multiplayer game backend, nothing you don't.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon accent-purple">109</span>
+                    <h3>API Endpoints</h3>
+                    <p>Players, stats, leaderboards, economy, inventory, achievements, progression, loot tables, messaging, analytics, and more.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-teal">3</span>
+                    <h3>Auth Tiers</h3>
+                    <p>PublicAuth for browsing store and leaderboards. SessionAuth for logged-in game clients. APIKeyAuth for server and admin tools.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-orange">14</span>
+                    <h3>Admin Dashboard</h3>
+                    <p>Embedded HTML admin UI with 14 tabs, grouped sidebar, 12 stat cards, and 16 admin API endpoints. No separate deploy needed.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-blue">329</span>
+                    <h3>Unity SDK Methods</h3>
+                    <p>UPM package with callback and async/await support. Dual mode: <code>Init()</code> for servers, <code>InitClient()</code> for game clients.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-teal">1</span>
+                    <h3>Single Binary</h3>
+                    <p>Go compiles to one executable. Pair it with PostgreSQL and you have a complete backend. Auto-migrates 20 tables on first run.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-purple">60/s</span>
+                    <h3>Security Hardened</h3>
+                    <p>Per-IP rate limiting (60/s general, 5/s auth). Bcrypt password hashing. FOR UPDATE row locks on currency. Atomic transactions.</p>
+                </div>
+            </div>
+        </section>
+        <section id="quick-start">
+            <div class="section-header">
+                <h2>Quick Start</h2>
+            </div>
+            <div class="code-section">
+                <div class="code-block">
+                    <div class="code-block-header">
+                        <span class="dot dot-red"></span>
+                        <span class="dot dot-yellow"></span>
+                        <span class="dot dot-green"></span>
+                        server
+                    </div>
+                    <pre><span class="comment"># Build</span>
+<span class="func">go</span> build -o trontcloud.exe .
+
+<span class="comment"># Generate an API key for your game</span>
+./trontcloud.exe <span class="keyword">--generate-key</span> <span class="string">mygame</span>
+<span class="comment"># prints key once; save it</span>
+
+<span class="comment"># Run (auto-migrates DB, opens admin)</span>
+./trontcloud.exe
+
+<span class="comment"># Or without auto-opening browser</span>
+./trontcloud.exe <span class="keyword">--no-browser</span></pre>
+                </div>
+<div class="code-block"><div class="code-block-header"><span class="dot dot-red"></span><span class="dot dot-yellow"></span><span class="dot dot-green"></span> unity</div><pre>// UPM: https://github.com/TrentSterling/trontcloud.git?path=sdk/unity
+TrontCloud.Init(url, apiKey);
+TrontCloud.InitClient(url, titleId);
+TrontCloud.GuestLogin(deviceId, ok, err);</pre></div></div></section>
+<section id="architecture"><div class="section-header"><h2>Architecture</h2><p>109 endpoints organized into four areas. Go + PostgreSQL. 20 auto-migrated tables.</p></div><div class="arch-grid"><div class="arch-card"><span class="arch-count">Core</span><h3>Players &amp; Data</h3><p>Register, login, sessions, player data (JSON blob), stats, leaderboards with best-score tracking</p></div><div class="arch-card"><span class="arch-count">Economy</span><h3>Currency &amp; Items</h3><p>Currencies with caps, atomic grant/spend, catalog items, stackable inventory, store with atomic purchases</p></div><div class="arch-card"><span class="arch-count">Progress</span><h3>Levels &amp; Loot</h3><p>Achievements with stat-based auto-unlock, XP/level progressions, weighted drop tables with optional auto-grant</p></div><div class="arch-card"><span class="arch-count">System</span><h3>Config &amp; Analytics</h3><p>Title data key-value store, player inbox/messages, analytics events (single + batch up to 1000), summary aggregation</p></div></div></section>
+<footer class="page-footer"><p><a href="https://github.com/TrentSterling/trontcloud" target="_blank">GitHub</a> <span class="footer-sep">|</span> <a href="https://blog.tront.xyz" target="_blank">Blog</a> <span class="footer-sep">|</span> <a href="https://tront.xyz" target="_blank">tront.xyz</a> <span class="footer-sep">|</span> <a href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Discord</a></p><p style="margin-top: 0.5rem;">Built by <a href="https://tront.xyz">Trent Sterling</a>. Go + PostgreSQL. Own your stack.</p></footer></div></body></html>
