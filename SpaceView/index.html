@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpaceView - Disk Space Visualizer</title>
+    <meta name="description" content="SpaceView is a fast disk space visualizer built in Rust + egui. Squarified treemaps, lazy LOD, smooth camera, background scanning. A modern SpaceMonger clone.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tront.xyz/SpaceView/">
+    <meta property="og:title" content="SpaceView - Disk Space Visualizer">
+    <meta property="og:description" content="Modern SpaceMonger clone built in Rust + egui. Squarified treemaps, lazy LOD, smooth camera, background scanning. 3.6 MB binary.">
+    <meta property="og:image" content="https://blog.tront.xyz/assets/img/blog/spaceview-og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SpaceView - Disk Space Visualizer">
+    <meta name="twitter:description" content="Modern SpaceMonger clone built in Rust + egui. Squarified treemaps, lazy LOD, smooth camera, background scanning. 3.6 MB binary.">
+    <meta name="twitter:image" content="https://blog.tront.xyz/assets/img/blog/spaceview-og.png">
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: #121212; color: #e0e0e0; line-height: 1.6; padding-top: 60px; background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 50px 50px; }
+        a { color: #58a6ff; text-decoration: none; transition: color 0.2s; }
+        a:hover { color: #79b8ff; }
+        @keyframes background-aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Constellation canvas */
+        #constellation-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+        #magic-navbar-container { position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 9999; display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; gap: 1rem; background-color: rgba(18, 18, 22, 0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0 1rem; perspective: 1000px; overflow: hidden; }
+        #magic-navbar-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; background-image: linear-gradient(110deg, rgba(59, 130, 246, 0.1), rgba(56, 189, 248, 0.15), rgba(59, 130, 246, 0.1)); background-size: 400% 400%; animation: background-aurora 12s ease infinite; opacity: 0; transition: opacity 0.7s ease-out; }
+        #magic-navbar-container:hover::before { opacity: 1; }
+        .nav-link { position: relative; display: flex; align-items: center; height: 40px; padding: 0 1.25rem; color: #c0c0c0; text-decoration: none; font-size: 0.95rem; font-weight: 600; font-family: 'Inter', sans-serif; border-radius: 10px; background-color: rgba(40, 40, 45, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); will-change: transform, box-shadow; transform-style: preserve-3d; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; }
+        .nav-link::before { content: ''; position: absolute; top: 0; left: 0; width: 200%; height: 100%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.2) 50%, transparent 60%); transform: translateX(-100%); transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+        .nav-link:hover { color: #ffffff; background-color: rgba(50, 50, 55, 0.9); border-color: rgba(255, 255, 255, 0.2); transform: perspective(1000px) rotateX(10deg) translateY(-4px); box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.25), 0 0 20px -5px rgba(59, 130, 246, 0.8), 0 0 20px -5px rgba(56, 189, 248, 0.8); }
+        .nav-link:hover::before { transform: translateX(100%); }
+        .logo-image { height: 30px; width: 30px; border-radius: 50%; margin-right: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.2); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+        .nav-link.home-link { padding-left: 0.5rem; }
+        .nav-link:hover ~ .home-link .logo-image, .home-link:hover .logo-image { animation: spin-once 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        .container { max-width: 64rem; width: 100%; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 1; }
+        section { padding: 3rem 0; }
+        section + section { border-top: 1px solid rgba(255,255,255,0.06); }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 700; }
+
+        .hero { text-align: center; padding: 4rem 0 3rem; }
+        .hero-label { display: inline-block; font-family: 'Fira Code', monospace; font-size: 0.8rem; font-weight: 500; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); padding: 0.3rem 0.8rem; border-radius: 999px; margin-bottom: 1.2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .hero h1 { font-size: 3.5rem; line-height: 1.1; margin-bottom: 0.8rem; background: linear-gradient(135deg, #3b82f6, #38bdf8, #818cf8); background-size: 200% 200%; animation: background-aurora 6s ease-in-out infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero .subtitle { font-size: 1.3rem; color: #b0b0b0; margin-bottom: 1.5rem; max-width: 32rem; margin-left: auto; margin-right: auto; }
+        .hero-links { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.4rem; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; transition: all 0.2s ease; text-decoration: none; }
+        .btn-primary { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .btn-primary:hover { background: rgba(59, 130, 246, 0.25); color: #60a5fa; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.2); }
+        .btn-secondary { background: rgba(255,255,255,0.05); color: #c0c0c0; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #ffffff; transform: translateY(-2px); }
+
+        .version-badge { font-family: 'Fira Code', monospace; font-size: 0.75rem; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 500; vertical-align: middle; margin-left: 0.3rem; }
+
+        .section-header { margin-bottom: 1.5rem; }
+        .section-header h2 { font-size: 1.8rem; margin-bottom: 0.4rem; }
+        .section-header p { color: #888; font-size: 1rem; max-width: 40rem; }
+
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .feature-card { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.4rem; transition: border-color 0.2s, transform 0.2s; }
+        .feature-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); }
+        .feature-icon { font-family: 'Fira Code', monospace; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.6rem; display: block; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 0.4rem; color: #e0e0e0; }
+        .feature-card p { font-size: 0.85rem; color: #888; line-height: 1.5; }
+        .feature-card p code { font-family: 'Fira Code', monospace; font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 0.1rem 0.35rem; border-radius: 3px; }
+
+        .accent-blue { color: #3b82f6; }
+        .accent-cyan { color: #38bdf8; }
+        .accent-indigo { color: #818cf8; }
+        .accent-sky { color: #7dd3fc; }
+
+        .how-it-works { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+        .how-card { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.5rem; }
+        .how-card:first-child { border-color: rgba(59, 130, 246, 0.2); }
+        .how-card:last-child { border-color: rgba(56, 189, 248, 0.2); }
+        .how-card h3 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+        .how-card:first-child h3 { color: #3b82f6; }
+        .how-card:last-child h3 { color: #38bdf8; }
+        .how-card p { color: #b0b0b0; font-size: 0.95rem; line-height: 1.6; }
+        .how-card code { font-family: 'Fira Code', monospace; font-size: 0.85rem; background: rgba(255,255,255,0.06); padding: 0.15rem 0.4rem; border-radius: 4px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .stat-card { background: #1e1e1e; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.2rem; text-align: center; }
+        .stat-card .stat-value { font-family: 'Fira Code', monospace; font-size: 1.4rem; font-weight: 700; display: block; margin-bottom: 0.4rem; }
+        .stat-card h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+        .stat-card p { font-size: 0.8rem; color: #888; line-height: 1.4; }
+        .stat-card:nth-child(1) .stat-value { color: #3b82f6; }
+        .stat-card:nth-child(2) .stat-value { color: #38bdf8; }
+        .stat-card:nth-child(3) .stat-value { color: #818cf8; }
+        .stat-card:nth-child(4) .stat-value { color: #7dd3fc; }
+
+        .download-section { text-align: center; padding: 3rem 0; }
+        .download-section h2 { font-size: 1.8rem; margin-bottom: 0.6rem; }
+        .download-section p { color: #888; font-size: 1rem; margin-bottom: 1.5rem; max-width: 32rem; margin-left: auto; margin-right: auto; }
+
+        .page-footer { padding: 2rem 0; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; color: #666; font-size: 0.85rem; }
+        .page-footer a { color: #888; margin: 0 0.6rem; transition: color 0.2s; }
+        .page-footer a:hover { color: #3b82f6; }
+        .footer-sep { color: #444; }
+
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.4rem; }
+            .hero .subtitle { font-size: 1.1rem; }
+            .how-it-works { grid-template-columns: 1fr; }
+            section { padding: 2rem 0; }
+        }
+        @media (max-width: 560px) {
+            .features-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="constellation-canvas"></canvas>
+    <nav id="magic-navbar-container">
+        <a href="/discord/" class="nav-link">Discord</a>
+        <a href="https://blog.tront.xyz/" class="nav-link">Blog</a>
+        <a href="/games/" class="nav-link">Games</a>
+        <a href="/" class="nav-link home-link">
+            <img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+            <span>Tront</span>
+        </a>
+    </nav>
+    <div class="container">
+        <section class="hero">
+            <span class="hero-label">Disk Space Visualizer</span>
+            <h1>SpaceView</h1>
+            <p class="subtitle">See where your disk space went. A modern SpaceMonger clone built in Rust + egui - fast, tiny, and actually useful.</p>
+            <div class="hero-links">
+                <a href="https://github.com/TrentSterling/SpaceView/releases" class="btn btn-primary">Download <span class="version-badge">v0.7.0</span></a>
+                <a href="https://github.com/TrentSterling/SpaceView" class="btn btn-secondary" target="_blank">GitHub</a>
+                <a href="https://blog.tront.xyz/posts/spaceview/" class="btn btn-secondary" target="_blank">Blog Post</a>
+            </div>
+        </section>
+
+        <section id="features">
+            <div class="section-header">
+                <h2>Features</h2>
+                <p>Everything you need to find what's eating your disk, nothing you don't.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon accent-blue">{}</span>
+                    <h3>Treemap Layout</h3>
+                    <p>Squarified treemap algorithm packs folders and files into nested rectangles proportional to their size. Big files jump out immediately.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-cyan">LOD</span>
+                    <h3>Lazy LOD</h3>
+                    <p>Only expands nodes that are large enough on screen. Prunes detail you can't see. Stays smooth even on multi-terabyte drives.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-indigo">5000x</span>
+                    <h3>Smooth Camera</h3>
+                    <p>Click to zoom into any folder. Smooth interpolation with zoom clamping from 1x to 5000x. Right-click or breadcrumbs to go back.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-sky">%%</span>
+                    <h3>Background Scanning</h3>
+                    <p>Scanning runs on a background thread with atomic progress counters. UI stays responsive while the filesystem is being walked.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-blue">/></span>
+                    <h3>Breadcrumbs</h3>
+                    <p>Clickable breadcrumb trail shows exactly where you are in the directory tree. Jump back to any parent with one click.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-cyan">3.6</span>
+                    <h3>Tiny Binary</h3>
+                    <p>The whole thing compiles down to a 3.6 MB binary. About 1,200 lines of Rust. No installer, no runtime, just run it.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="how-it-works">
+            <div class="section-header">
+                <h2>How It Works</h2>
+            </div>
+            <div class="how-it-works">
+                <div class="how-card">
+                    <h3>Squarified Treemaps</h3>
+                    <p>The classic treemap algorithm splits a rectangle into sub-rectangles proportional to file sizes. The "squarified" variant optimizes the aspect ratios so you get fat squares instead of thin slivers - much easier to read and click. Each depth level nests inside its parent, so the spatial hierarchy matches your actual folder structure.</p>
+                </div>
+                <div class="how-card">
+                    <h3>Lazy Level of Detail</h3>
+                    <p>Instead of rendering every file on every frame, SpaceView only expands tree nodes when they're large enough on screen to matter. When you zoom in, deeper nodes expand. When you zoom out, they prune back. This keeps the render budget constant regardless of how many files are on disk - the treemap adapts to whatever you're actually looking at.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="stats">
+            <div class="section-header">
+                <h2>By The Numbers</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">Rust</span>
+                    <h3>Language</h3>
+                    <p>Fast, safe, no garbage collector. Perfect for filesystem-heavy work.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">egui</span>
+                    <h3>UI Framework</h3>
+                    <p>Immediate mode GUI. Redraws every frame, no retained widget state to manage.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">~1.2K</span>
+                    <h3>Lines of Code</h3>
+                    <p>Entire app in about 1,200 lines. Small enough to read in one sitting.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">3.6 MB</span>
+                    <h3>Binary Size</h3>
+                    <p>No installer, no runtime dependencies. Just a single executable.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="download" class="download-section">
+            <h2>Download SpaceView</h2>
+            <p>Grab the latest release from GitHub. Windows binary, no install needed - just unzip and run.</p>
+            <div class="hero-links">
+                <a href="https://github.com/TrentSterling/SpaceView/releases" class="btn btn-primary">Download v0.7.0</a>
+                <a href="https://github.com/TrentSterling/SpaceView" class="btn btn-secondary" target="_blank">View Source</a>
+            </div>
+        </section>
+
+        <footer class="page-footer">
+            <p>
+                <a href="https://tront.xyz">tront.xyz</a>
+                <span class="footer-sep">|</span>
+                <a href="https://blog.tront.xyz/posts/spaceview/" target="_blank">Blog Post</a>
+                <span class="footer-sep">|</span>
+                <a href="https://github.com/TrentSterling/SpaceView" target="_blank">GitHub</a>
+                <span class="footer-sep">|</span>
+                <a href="https://github.com/TrentSterling/SpaceView/releases" target="_blank">Download</a>
+                <span class="footer-sep">|</span>
+                <a href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Discord</a>
+            </p>
+            <p style="margin-top: 0.5rem;">Built by <a href="https://tront.xyz">Trent Sterling</a>. Rust + egui. See where your space went.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Constellation background animation
+        (function() {
+            var canvas = document.getElementById('constellation-canvas');
+            var ctx = canvas.getContext('2d');
+            var stars = [];
+            var numStars = 80;
+            var maxDist = 150;
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            for (var i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    r: Math.random() * 1.5 + 0.5
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw connections
+                for (var i = 0; i < stars.length; i++) {
+                    for (var j = i + 1; j < stars.length; j++) {
+                        var dx = stars[i].x - stars[j].x;
+                        var dy = stars[i].y - stars[j].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < maxDist) {
+                            var alpha = (1 - dist / maxDist) * 0.15;
+                            ctx.strokeStyle = 'rgba(59, 130, 246, ' + alpha + ')';
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(stars[i].x, stars[i].y);
+                            ctx.lineTo(stars[j].x, stars[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // Draw stars
+                for (var i = 0; i < stars.length; i++) {
+                    var s = stars[i];
+                    ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Move
+                    s.x += s.vx;
+                    s.y += s.vy;
+
+                    // Wrap
+                    if (s.x < 0) s.x = canvas.width;
+                    if (s.x > canvas.width) s.x = 0;
+                    if (s.y < 0) s.y = canvas.height;
+                    if (s.y > canvas.height) s.y = 0;
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+    </script>
+</body>
+</html>
