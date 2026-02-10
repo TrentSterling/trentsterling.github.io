@@ -9,13 +9,13 @@
     <meta property="og:url" content="https://tront.xyz/craftmine/">
     <meta property="og:title" content="CraftMine — Vibe-Coded Minecraft Clone">
     <meta property="og:description" content="AI-generated Minecraft clone — 46 blocks, 36 mobs, 19 weapons. One HTML file. Play in your browser.">
-    <meta property="og:image" content="https://tront.xyz/img/craftmine.png">
-    <meta property="og:image:width" content="640">
-    <meta property="og:image:height" content="360">
+    <meta property="og:image" content="https://tront.xyz/craftmine/craftmine.png">
+    <meta property="og:image:width" content="1808">
+    <meta property="og:image:height" content="993">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="CraftMine — Vibe-Coded Minecraft Clone">
     <meta name="twitter:description" content="AI-generated Minecraft clone — 46 blocks, 36 mobs, 19 weapons. One HTML file. Play in your browser.">
-    <meta name="twitter:image" content="https://tront.xyz/img/craftmine.png">
+    <meta name="twitter:image" content="https://tront.xyz/craftmine/craftmine.png">
     <link rel="icon" href="/favicon.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -53,6 +53,12 @@
         .btn-play:hover { background: linear-gradient(135deg, rgba(74, 222, 128, 0.35), rgba(34, 197, 94, 0.35)); color: #86efac; transform: translateY(-2px); box-shadow: 0 4px 25px rgba(74, 222, 128, 0.3); }
         .btn-secondary { background: rgba(255,255,255,0.05); color: #c0c0c0; border: 1px solid rgba(255,255,255,0.1); }
         .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #ffffff; transform: translateY(-2px); }
+
+        /* Screenshots */
+        .screenshots-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        .screenshots-grid img { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); transition: transform 0.2s; }
+        .screenshots-grid img:hover { transform: scale(1.01); }
+        .screenshots-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
         /* Stats */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
@@ -138,6 +144,16 @@
             <div class="hero-links">
                 <a href="/craftmine/play/" class="btn btn-play">Play Now</a>
                 <a href="https://github.com/TrentSterling/CraftMine" class="btn btn-secondary" target="_blank">GitHub</a>
+            </div>
+        </section>
+
+        <section id="screenshots">
+            <div class="screenshots-grid">
+                <img src="/craftmine/craftmine.png" alt="CraftMine — snowy biome with trees at sunrise" loading="lazy">
+                <div class="screenshots-row">
+                    <img src="/craftmine/craftmine-mountains.png" alt="CraftMine — mountain landscape with snowy peaks" loading="lazy">
+                    <img src="/craftmine/craftmine-landscape.png" alt="CraftMine — flying over snowy mountains" loading="lazy">
+                </div>
             </div>
         </section>
 
