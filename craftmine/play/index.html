@@ -6107,6 +6107,10 @@
                 this.showUI = true;
 
                 this.findSpawnPoint();
+                this.player.camera.position.set(this.player.position.x, this.player.position.y + CONFIG.PLAYER_EYE_HEIGHT, this.player.position.z);
+                this.player.camera.rotation.order = 'YXZ';
+                this.player.camera.rotation.y = this.player.yaw;
+                this.player.camera.rotation.x = this.player.pitch;
                 this.updateChunks();
                 this.animate();
 
