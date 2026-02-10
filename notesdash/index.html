@@ -10,7 +10,11 @@
     <meta property="og:url" content="https://tront.xyz/notesdash/">
     <meta property="og:title" content="Notesdash - Local AI-Powered Notes Dashboard">
     <meta property="og:description" content="Scan your drives for .txt files, analyze with local AI, search everything. Native Rust GUI with FTS5 search, favorites, topic distribution, and Ollama integration.">
+    <meta property="og:image" content="https://tront.xyz/notesdash/og-image.png">
+    <meta property="og:image:width" content="2400">
+    <meta property="og:image:height" content="1260">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://tront.xyz/notesdash/og-image.png">
     <link rel="icon" href="/favicon.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,6 +111,9 @@
         .btn-secondary { color: #c0c0c0; background: rgba(40,40,45,0.7); border: 1px solid rgba(255,255,255,0.1); }
         .btn-secondary:hover { color: #fff; background: rgba(50,50,55,0.9); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
 
+        .hero-screenshot { margin-top: 2rem; border-radius: 0.75rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .hero-screenshot img { width: 100%; height: auto; display: block; }
+
         /* Feature grid */
         .features { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 3rem; }
         @media (max-width: 600px) { .features { grid-template-columns: 1fr; } }
@@ -190,6 +197,9 @@
             <div class="cta-row">
                 <a href="https://github.com/TrentSterling/notesdash" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/TrentSterling/notesdash/releases" class="btn btn-secondary">Download</a>
+            </div>
+            <div class="hero-screenshot">
+                <img src="screenshot.png" alt="Notesdash app screenshot showing note table, sidebar, preview pane, and topic chart" loading="lazy">
             </div>
         </div>
 
