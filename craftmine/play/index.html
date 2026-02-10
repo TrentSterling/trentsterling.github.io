@@ -3666,10 +3666,10 @@
                 this.scene = scene; this.world = world; this.chunkMeshes = new Map();
                 this.pendingChunks = new Set();
                 this.textureGen = new TextureGenerator(64);
-                this.materials = this.createMaterials();
-                this.workerPool = new WorkerPool(CONFIG.WORKER_COUNT);
                 this.waterTime = 0;
                 this.waterMaterials = [];
+                this.materials = this.createMaterials();
+                this.workerPool = new WorkerPool(CONFIG.WORKER_COUNT);
             }
             createMaterials() {
                 const materials = {};
