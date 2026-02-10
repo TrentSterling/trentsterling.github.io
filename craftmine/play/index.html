@@ -5906,6 +5906,7 @@
                 this.fallDistance = 0;
                 this.lastY = this.position.y;
                 this.spawnGrace = 1.0;
+                this.camera.position.set(this.position.x, this.position.y + CONFIG.PLAYER_EYE_HEIGHT, this.position.z);
             }
 
             toggleCreativeMode() {
