@@ -165,6 +165,11 @@
             background: rgba(0, 0, 0, 0.75); padding: 8px 12px;
             border-radius: 6px; z-index: 100;
         }
+        #game-version {
+            position: fixed; bottom: 10px; right: 10px; color: rgba(255,255,255,0.5);
+            font-family: 'Consolas', monospace; font-size: 11px;
+            z-index: 100; pointer-events: none;
+        }
 
         .rain {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -204,6 +209,7 @@
     </div>
     <div id="health-bar"></div>
     <div id="game-mode">Survival</div>
+    <div id="game-version">v0.7.1</div>
     <div id="time-display">Day 1 - 12:00</div>
     <div class="rain"></div>
 
@@ -6107,10 +6113,10 @@
                 this.showUI = true;
 
                 this.findSpawnPoint();
-                this.player.camera.position.set(this.player.position.x, this.player.position.y + CONFIG.PLAYER_EYE_HEIGHT, this.player.position.z);
-                this.player.camera.rotation.order = 'YXZ';
-                this.player.camera.rotation.y = this.player.yaw;
-                this.player.camera.rotation.x = this.player.pitch;
+                this.camera.position.set(this.player.position.x, this.player.position.y + CONFIG.PLAYER_EYE_HEIGHT, this.player.position.z);
+                this.camera.rotation.order = 'YXZ';
+                this.camera.rotation.y = this.player.yaw;
+                this.camera.rotation.x = this.player.pitch;
                 this.updateChunks();
                 this.animate();
 
