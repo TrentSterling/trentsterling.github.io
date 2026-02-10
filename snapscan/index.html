@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SnapScan - AI-Powered Screenshot Manager</title>
-  <meta name="description" content="Scan, organize, and AI-label thousands of screenshots instantly. Free, local, and private.">
+  <title>SnapScan - Screenshot Capture, Organize & AI Label</title>
+  <meta name="description" content="Capture, scan, organize, and AI-label thousands of screenshots instantly. Built-in screen capture with global hotkeys. Free, local, and private.">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tront.xyz/snapscan/">
-  <meta property="og:title" content="SnapScan - AI-Powered Screenshot Manager">
-  <meta property="og:description" content="Scan thousands of screenshots, auto-label them with local AI, and find anything instantly. No cloud, no subscriptions.">
+  <meta property="og:title" content="SnapScan - Screenshot Capture, Organize & AI Label">
+  <meta property="og:description" content="Built-in screen capture with global hotkeys. Scan thousands of screenshots, auto-label them with local AI, and find anything instantly. No cloud, no subscriptions.">
   <meta property="og:image" content="https://tront.xyz/snapscan/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -18,8 +18,8 @@
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://tront.xyz/snapscan/">
-  <meta name="twitter:title" content="SnapScan - AI-Powered Screenshot Manager">
-  <meta name="twitter:description" content="Scan thousands of screenshots, auto-label them with local AI, and find anything instantly. No cloud, no subscriptions.">
+  <meta name="twitter:title" content="SnapScan - Screenshot Capture, Organize & AI Label">
+  <meta name="twitter:description" content="Built-in screen capture with global hotkeys. Scan thousands of screenshots, auto-label them with local AI, and find anything instantly. No cloud, no subscriptions.">
   <meta name="twitter:image" content="https://tront.xyz/snapscan/og.png">
   <meta name="twitter:creator" content="@Trent_Sterling">
 
@@ -37,6 +37,7 @@
       --accent: #6366f1;
       --accent-glow: rgba(99, 102, 241, 0.3);
       --success: #22c55e;
+      --capture: #f97316;
       --text: #e2e8f0;
       --text-muted: #94a3b8;
       --border: #1e293b;
@@ -177,7 +178,7 @@
     .hero p {
       font-size: 18px;
       color: var(--text-muted);
-      max-width: 600px;
+      max-width: 640px;
       margin: 0 auto 36px;
     }
 
@@ -186,6 +187,31 @@
       gap: 12px;
       justify-content: center;
       flex-wrap: wrap;
+    }
+
+    /* Replaces ShareX banner */
+    .replaces-banner {
+      text-align: center;
+      padding: 40px 0 0;
+    }
+
+    .replaces-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: rgba(249,115,22,0.08);
+      border: 1px solid rgba(249,115,22,0.2);
+      border-radius: 24px;
+      font-size: 14px;
+      color: var(--capture);
+      font-weight: 500;
+    }
+
+    .replaces-tag .old {
+      text-decoration: line-through;
+      color: var(--text-muted);
+      font-weight: 400;
     }
 
     /* Screenshot mockup */
@@ -257,6 +283,14 @@
       background: rgba(99,102,241,0.15);
       color: var(--accent);
       font-weight: 600;
+    }
+
+    .mock-nav-item.capture-btn {
+      background: rgba(249,115,22,0.15);
+      color: var(--capture);
+      font-weight: 600;
+      margin-top: 8px;
+      border: 1px solid rgba(249,115,22,0.25);
     }
 
     .mock-gallery {
@@ -359,6 +393,16 @@
       transform: translateY(-2px);
     }
 
+    .feature-card.highlight {
+      border-color: rgba(249,115,22,0.3);
+      background: linear-gradient(135deg, var(--bg-card), rgba(249,115,22,0.05));
+    }
+
+    .feature-card.highlight:hover {
+      border-color: rgba(249,115,22,0.5);
+      background: linear-gradient(135deg, var(--bg-card-hover), rgba(249,115,22,0.08));
+    }
+
     .feature-icon {
       font-size: 28px;
       margin-bottom: 16px;
@@ -374,6 +418,17 @@
       font-size: 14px;
       color: var(--text-muted);
       line-height: 1.5;
+    }
+
+    .hotkey {
+      display: inline-block;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      color: var(--text);
     }
 
     /* Tech stack */
@@ -529,13 +584,13 @@
 
     <!-- Hero -->
     <section class="hero">
-      <div class="badge">100% Local &middot; 100% Private</div>
+      <div class="badge">100% Local &middot; 100% Private &middot; Built-in Capture</div>
       <h1>
-        Your screenshots,<br>
-        <span class="gradient">organized by AI</span>
+        Capture, organize &amp;<br>
+        <span class="gradient">AI-label your screenshots</span>
       </h1>
       <p>
-        Scan thousands of screenshots, auto-label them with local AI, and find anything instantly. No cloud, no subscriptions, no data leaves your machine.
+        Built-in screen capture with global hotkeys, AI-powered labeling with local Gemma 3, and instant search across your entire screenshot library. No cloud, no subscriptions.
       </p>
       <div class="hero-buttons">
         <a href="https://github.com/TrentSterling/SnapScan/releases" class="btn btn-primary">
@@ -546,6 +601,15 @@
         </a>
       </div>
     </section>
+
+    <!-- Replaces ShareX -->
+    <div class="replaces-banner">
+      <div class="replaces-tag">
+        <span class="old">ShareX</span>
+        <span>&rarr;</span>
+        <span>SnapScan captures + organizes + labels with AI</span>
+      </div>
+    </div>
 
     <!-- App mockup -->
     <section class="screenshot-section">
@@ -566,6 +630,7 @@
             <div class="mock-nav-item">Processing</div>
             <div class="mock-nav-item">Sources</div>
             <div class="mock-nav-item">Settings</div>
+            <div class="mock-nav-item capture-btn">Capture Screen</div>
           </div>
           <div class="mock-gallery">
             <div class="mock-card">
@@ -649,9 +714,14 @@
     <section class="features" id="features">
       <div class="features-header">
         <h2>Everything you need</h2>
-        <p>Built for people with thousands of screenshots and no way to find them.</p>
+        <p>Capture, organize, and search thousands of screenshots. All in one app.</p>
       </div>
       <div class="features-grid">
+        <div class="feature-card highlight">
+          <div class="feature-icon">&#128247;</div>
+          <h3>Built-in Screen Capture</h3>
+          <p>Global hotkeys for fullscreen (<span class="hotkey">Shift+PrtSc</span>) and region select (<span class="hotkey">Alt+PrtSc</span>). Auto-copies to clipboard, plays a sound, and flows straight into the AI pipeline. No ShareX needed.</p>
+        </div>
         <div class="feature-card">
           <div class="feature-icon">&#129504;</div>
           <h3>AI Vision Labeling</h3>
@@ -692,17 +762,17 @@
         <div class="step">
           <div class="step-num">1</div>
           <h3>Install & Launch</h3>
-          <p>Download the single .exe, install Ollama, and launch SnapScan. It auto-discovers your screenshot folders.</p>
+          <p>Download the single .exe, install Ollama, and launch SnapScan.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <h3>Scan</h3>
-          <p>Hit "Scan Now" and SnapScan indexes every screenshot it finds, generating thumbnails and metadata.</p>
+          <h3>Capture or Scan</h3>
+          <p>Use built-in hotkeys to capture new screenshots, or scan existing folders to index what you already have.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
           <h3>AI Labels</h3>
-          <p>Click "Start AI Processing" and Gemma 3 analyzes each image, adding descriptions, tags, and categories.</p>
+          <p>Gemma 3 analyzes each image locally, adding descriptions, tags, categories, and OCR text.</p>
         </div>
         <div class="step">
           <div class="step-num">4</div>
@@ -752,8 +822,8 @@
     <!-- CTA -->
     <section class="cta">
       <div class="cta-box">
-        <h2>Ready to organize your screenshots?</h2>
-        <p>Download SnapScan and let AI sort through your mess.</p>
+        <h2>Replace ShareX with something smarter</h2>
+        <p>Capture, organize, and AI-label all your screenshots in one app.</p>
         <div class="hero-buttons">
           <a href="https://github.com/TrentSterling/SnapScan/releases" class="btn btn-primary">
             Download for Windows
@@ -766,7 +836,7 @@
     </section>
 
     <footer>
-      <p>Built by <a href="https://github.com/TrentSterling">Trent Sterling</a>. Open source on <a href="https://github.com/TrentSterling/SnapScan">GitHub</a>.</p>
+      <p>Built by <a href="https://github.com/TrentSterling">Trent Sterling</a>. Source on <a href="https://github.com/TrentSterling/SnapScan">GitHub</a>.</p>
     </footer>
   </div>
 </body>
