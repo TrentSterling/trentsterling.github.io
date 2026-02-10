@@ -3,23 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CraftMine — Vibe-Coded Minecraft | tront.xyz</title>
-    <meta name="description" content="AI-generated Minecraft clone with 46 blocks, 36 mobs, 19 weapons, day/night cycle, weather, and survival mode. Runs entirely in your browser with Three.js.">
-    <link rel="icon" href="/favicon.png" type="image/png">
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="CraftMine — Vibe-Coded Minecraft">
-    <meta property="og:description" content="AI-generated Minecraft clone — 46 blocks, 36 mobs, 19 weapons. Runs in your browser.">
-    <meta property="og:image" content="https://tront.xyz/img/craftmine.png">
-    <meta property="og:url" content="https://tront.xyz/craftmine/">
-    <meta property="og:type" content="website">
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="CraftMine — Vibe-Coded Minecraft">
-    <meta name="twitter:description" content="AI-generated Minecraft clone — 46 blocks, 36 mobs, 19 weapons. Runs in your browser.">
-    <meta name="twitter:image" content="https://tront.xyz/img/craftmine.png">
-
+    <title>CraftMine - Minecraft Clone</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { overflow: hidden; background: #000; font-family: 'Segoe UI', Arial, sans-serif; }
@@ -197,20 +181,9 @@
             background: rgba(0, 0, 0, 0.75); padding: 8px 12px;
             border-radius: 6px; z-index: 100;
         }
-
-        #back-link {
-            position: fixed; top: 12px; right: 12px;
-            color: rgba(255,255,255,0.6); font-family: 'Consolas', monospace;
-            font-size: 13px; text-decoration: none; z-index: 500;
-            background: rgba(0,0,0,0.5); padding: 6px 12px;
-            border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);
-            transition: all 0.2s ease;
-        }
-        #back-link:hover { color: #fff; background: rgba(0,0,0,0.7); border-color: rgba(255,255,255,0.3); }
     </style>
 </head>
 <body>
-    <a id="back-link" href="https://tront.xyz/games/">&#8592; tront.xyz</a>
     <div id="game-container"></div>
     <div id="crosshair" class="default"></div>
     <div id="muzzle-flash"></div>
@@ -5893,7 +5866,7 @@
                 this.camera = camera; this.world = world;
                 this.position = new THREE.Vector3(8, 60, 8);
                 this.velocity = new THREE.Vector3(0, 0, 0);
-                this.yaw = 0; this.pitch = 0;
+                this.yaw = 0; this.pitch = -0.4;
                 this.onGround = false; this.sneaking = false;
                 this.keys = { forward: false, backward: false, left: false, right: false, jump: false, sneak: false };
                 this.hotbar = [
@@ -5911,6 +5884,7 @@
                 this.health = CONFIG.MAX_HEALTH;
                 this.lastY = 60;
                 this.fallDistance = 0;
+                this.spawnGrace = 1.0;
             }
             get width() { return CONFIG.PLAYER_WIDTH; }
             get height() { return CONFIG.PLAYER_HEIGHT; }
@@ -5930,6 +5904,8 @@
                 this.velocity.set(0, 0, 0);
                 this.health = CONFIG.MAX_HEALTH;
                 this.fallDistance = 0;
+                this.lastY = this.position.y;
+                this.spawnGrace = 1.0;
             }
 
             toggleCreativeMode() {
@@ -5975,6 +5951,12 @@
                     this.velocity.y = Math.max(this.velocity.y, -50);
                 }
 
+                // Spawn grace period — immune to fall damage briefly after spawn/respawn
+                if (this.spawnGrace > 0) {
+                    this.spawnGrace -= dt;
+                    this.fallDistance = 0;
+                }
+
                 // Track fall distance for fall damage
                 if (!this.flying && !this.onGround && this.velocity.y < 0) {
                     this.fallDistance += this.lastY - this.position.y;
@@ -6017,7 +5999,7 @@
                     this.position.z = newZ;
                 }
 
-                if (this.position.y < -10) { this.position.y = 60; this.velocity.y = 0; }
+                if (this.position.y < -10) { this.position.y = 60; this.velocity.y = 0; this.fallDistance = 0; this.lastY = 60; this.spawnGrace = 1.0; }
             }
             moveWithCollision(dt) {
                 if (this.velocity.x !== 0) {
@@ -6052,7 +6034,7 @@
                         this.velocity.y = 0;
                     }
                 }
-                if (this.position.y < -10) { this.position.y = 60; this.velocity.y = 0; }
+                if (this.position.y < -10) { this.position.y = 60; this.velocity.y = 0; this.fallDistance = 0; this.lastY = 60; this.spawnGrace = 1.0; }
             }
             checkCollisionAt(x, y, z) {
                 const hw = this.width / 2 - 0.01, h = this.height - 0.01;
@@ -6627,7 +6609,13 @@
             findSpawnPoint() {
                 for (let cx = -1; cx <= 1; cx++) for (let cz = -1; cz <= 1; cz++) this.world.generateChunk(cx, cz);
                 for (let y = CONFIG.WORLD_HEIGHT - 1; y >= 0; y--) {
-                    if (this.world.isSolid(8, y, 8)) { this.player.position.set(8.5, y + 1.5, 8.5); break; }
+                    if (this.world.isSolid(8, y, 8)) {
+                        this.player.position.set(8.5, y + 1.5, 8.5);
+                        this.player.lastY = y + 1.5;
+                        this.player.fallDistance = 0;
+                        this.player.spawnGrace = 1.0;
+                        break;
+                    }
                 }
             }
 
