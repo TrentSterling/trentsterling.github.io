@@ -110,6 +110,7 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .btn-secondary { color: #c0c0c0; background: rgba(40,40,45,0.7); border: 1px solid rgba(255,255,255,0.1); }
         .btn-secondary:hover { color: #fff; background: rgba(50,50,55,0.9); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        .private-badge { font-size: 0.65rem; background: rgba(255,139,61,0.12); color: #cc7a35; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 600; letter-spacing: 0.03em; margin-left: 0.3rem; }
 
         .hero-screenshot { margin-top: 2rem; border-radius: 0.75rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
         .hero-screenshot img { width: 100%; height: auto; display: block; }
@@ -195,8 +196,8 @@
             <h1><span>Notesdash</span></h1>
             <p class="tagline">Local AI-powered notes dashboard for Windows.<br>Scan your drives. Analyze with Ollama. Search everything.</p>
             <div class="cta-row">
-                <a href="https://github.com/TrentSterling/notesdash" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/TrentSterling/notesdash/releases" class="btn btn-secondary">Download</a>
+                <a href="https://github.com/TrentSterling/notesdash" class="btn btn-secondary">View on GitHub<span class="private-badge">private</span></a>
+                <a href="https://discord.gg/tront" class="btn btn-primary">Request Access</a>
             </div>
             <div class="hero-screenshot">
                 <img src="screenshot.png" alt="Notesdash app screenshot showing note table, sidebar, preview pane, and topic chart" loading="lazy">
@@ -263,10 +264,8 @@
         <div class="quickstart">
             <h2>Quickstart</h2>
             <div class="code-block">
-                <span class="comment"># clone and build</span><br>
-                <span class="cmd">git clone</span> https://github.com/TrentSterling/notesdash.git<br>
-                <span class="cmd">cd</span> notesdash<br>
-                <span class="cmd">cargo run</span> <span class="flag">--release</span><br>
+                <span class="comment"># download the latest release</span><br>
+                <span class="comment"># → request access on Discord</span><br>
                 <br>
                 <span class="comment"># make sure ollama is running for AI analysis</span><br>
                 <span class="cmd">ollama</span> serve<br>
@@ -278,7 +277,7 @@
             <h2>Requirements</h2>
             <ul class="req-list">
                 <li><span class="req-check">&#x2713;</span> Windows 10/11</li>
-                <li><span class="req-check">&#x2713;</span> Rust toolchain (for building from source)</li>
+                <li><span class="req-check">&#x2713;</span> Windows 10/11 binary (or build from source with Rust)</li>
                 <li><span class="req-check">&#x2713;</span> Ollama running locally (for AI features)</li>
                 <li><span class="req-check">&#x2713;</span> NVIDIA GPU recommended (CUDA acceleration)</li>
             </ul>
