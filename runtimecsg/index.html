@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RuntimeCSG - Real-time CSG for Unity</title>
+    <meta name="description" content="Non-destructive CSG brush modeling for Unity. Boolean operations on brush primitives in real-time, in-editor and at runtime.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="RuntimeCSG">
+    <meta property="og:description" content="Non-destructive CSG brush modeling for Unity. Real-time boolean operations, in-editor and at runtime.">
+    <meta property="og:image" content="https://tront.xyz/runtimecsg/og-image.png">
+    <meta property="og:url" content="https://tront.xyz/runtimecsg/">
+    <meta property="og:site_name" content="RuntimeCSG">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="RuntimeCSG">
+    <meta name="twitter:description" content="Non-destructive CSG brush modeling for Unity. Real-time boolean operations, in-editor and at runtime.">
+    <meta name="twitter:image" content="https://tront.xyz/runtimecsg/og-image.png">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        :root {
+            --bg: #080808;
+            --bg2: #0e0e0e;
+            --bg3: #181818;
+            --border: #222;
+            --text: #e0e0e0;
+            --text-dim: #777;
+            --accent: #3b82f6;
+            --accent2: #10b981;
+            --accent3: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a { color: #7db4ff; text-decoration: none; }
+        a:hover { color: #a8ccff; }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== HERO ===== */
+        @keyframes icon-glow {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(59,130,246,0.4)) drop-shadow(0 0 60px rgba(16,185,129,0.15)); }
+            50% { filter: drop-shadow(0 0 30px rgba(59,130,246,0.6)) drop-shadow(0 0 80px rgba(16,185,129,0.25)); }
+        }
+        .hero {
+            text-align: center;
+            padding: 48px 0 24px;
+        }
+        .hero-icon {
+            width: 220px; height: 220px;
+            margin: 0 auto 24px;
+            display: block;
+            animation: icon-glow 4s ease-in-out infinite;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        .hero .tagline {
+            font-size: 1.15rem;
+            color: var(--text-dim);
+            margin-bottom: 24px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+        .hero .buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary {
+            background: #fff;
+            color: #080808;
+        }
+        .btn-primary:hover { background: #ddd; }
+        .btn-secondary {
+            background: var(--bg3);
+            color: #ccc;
+            border: 1px solid #2a2a2a;
+        }
+        .btn-secondary:hover { background: #1c1c1c; border-color: #444; }
+        .private-badge { font-size: 0.7rem; background: rgba(255,139,61,0.15); color: #ff8b3d; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 500; vertical-align: middle; }
+
+        /* ===== SCREENSHOT ===== */
+        .screenshot {
+            text-align: center;
+            padding: 0 0 40px;
+        }
+        .screenshot-frame {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 16px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .screenshot-frame img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .screenshot-frame img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .screenshot-frame p {
+            margin-top: 12px;
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 10000;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+        .lightbox.active { display: flex; }
+        .lightbox img {
+            max-width: 100%; max-height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 0 80px rgba(59,130,246,0.3);
+            cursor: default;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 20px; right: 28px;
+            color: var(--text-dim);
+            font-size: 36px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .lightbox-close:hover { color: var(--text); }
+
+        /* ===== STATS ===== */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            padding: 24px 0;
+            border-top: 1px solid #161616;
+            border-bottom: 1px solid #161616;
+        }
+        .stat .num {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            display: block;
+            text-align: center;
+        }
+        .stat .lbl {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-align: center;
+            display: block;
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            padding: 48px 0;
+            border-top: 1px solid #161616;
+        }
+        .section h2 {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 28px;
+        }
+        .section .sub {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 15px;
+            max-width: 500px;
+            margin: -16px auto 32px;
+        }
+
+        /* ===== BOOLEAN OPS ===== */
+        .ops-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        @media(max-width:640px) { .ops-grid { grid-template-columns: 1fr; } }
+        .op-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 28px;
+            text-align: center;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .op-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .op-card svg { width: 80px; height: 80px; margin-bottom: 12px; }
+        .op-card h3 { font-size: 18px; margin-bottom: 4px; }
+        .op-card code { color: var(--text-dim); font-size: 13px; font-family: 'SF Mono','Fira Code',monospace; }
+        .op-card p { color: var(--text-dim); font-size: 14px; margin-top: 8px; line-height: 1.5; }
+
+        /* ===== SPLIT (text + image) ===== */
+        .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+        @media(max-width:768px) { .split { grid-template-columns: 1fr; } }
+        .split-text h2 { text-align: left; font-size: 28px; margin-bottom: 12px; }
+        .split-text p { color: var(--text-dim); line-height: 1.7; margin-bottom: 16px; font-size: 15px; }
+        .split-text ul { list-style: none; padding: 0; }
+        .split-text li { padding: 5px 0; color: var(--text-dim); font-size: 14px; }
+        .split-text li::before {
+            content: "";
+            display: inline-block;
+            width: 7px; height: 7px;
+            background: var(--accent2);
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .split-img {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+        }
+        .split-img img { width: 100%; display: block; }
+
+        /* ===== FEATURE GRID ===== */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .feature-card:hover {
+            border-color: var(--accent2);
+            transform: translateY(-2px);
+        }
+        .feature-card h3 { font-size: 16px; margin-bottom: 6px; }
+        .feature-card p { color: var(--text-dim); font-size: 14px; line-height: 1.5; }
+
+        /* ===== PRIMITIVES ===== */
+        .prims {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .prim {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 15px;
+            color: var(--text);
+            font-weight: 500;
+            transition: border-color 0.2s, transform 0.15s;
+        }
+        .prim:hover {
+            border-color: var(--accent3);
+            transform: translateY(-1px);
+        }
+
+        /* ===== STEPS ===== */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            counter-reset: s;
+        }
+        @media(max-width:768px) { .steps-grid { grid-template-columns: repeat(2, 1fr); } }
+        .step-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            padding-top: 48px;
+            position: relative;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .step-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .step-card::before {
+            counter-increment: s;
+            content: counter(s);
+            position: absolute;
+            top: 14px; left: 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            background: rgba(59,130,246,0.1);
+            width: 28px; height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 8px;
+        }
+        .step-card h3 { font-size: 15px; margin-bottom: 4px; }
+        .step-card p { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+
+        /* ===== CODE BLOCK ===== */
+        .codeblock {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 24px 28px;
+            font-family: 'SF Mono','Fira Code',monospace;
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.8;
+            overflow-x: auto;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .codeblock .kw { color: #c084fc; }
+        .codeblock .fn { color: #7db4ff; }
+        .codeblock .str { color: #4ade80; }
+        .codeblock .cm { color: #484f58; }
+
+        /* ===== SHORTCUTS ===== */
+        .controls-table { max-width: 520px; margin: 0 auto; }
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .control-key {
+            background: var(--bg3);
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-family: 'SF Mono','Fira Code',monospace;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .control-action { color: var(--text-dim); font-size: 14px; }
+
+        /* ===== INSTALL ===== */
+        .install-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        @media(max-width:640px) { .install-options { grid-template-columns: 1fr; } }
+        .install-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .install-card h3 { margin-bottom: 12px; font-size: 17px; }
+        .install-card p { color: var(--text-dim); font-size: 13px; margin-top: 10px; line-height: 1.6; }
+        .install-card .coming-soon {
+            display: block;
+            background: var(--bg);
+            padding: 18px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            color: var(--accent3);
+            border: 1px dashed rgba(245,158,11,0.3);
+        }
+
+        /* ===== CALLOUT ===== */
+        .callout {
+            background: rgba(16,185,129,0.06);
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: 12px;
+            padding: 24px 28px;
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .callout h3 { font-size: 18px; margin-bottom: 8px; color: var(--accent2); }
+        .callout p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 32px 0;
+            border-top: 1px solid #161616;
+            text-align: center;
+            color: #333;
+            font-size: 13px;
+        }
+        footer a { color: #444; }
+        footer a:hover { color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+        <img src="icon.png" alt="RuntimeCSG" class="hero-icon">
+        <h1>RuntimeCSG</h1>
+        <p class="tagline">Non-destructive CSG brush modeling for Unity. Build geometry with boolean operations in real-time.</p>
+        <div class="buttons">
+            <a href="https://github.com/TrentSterling/runtimecsg" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                GitHub <span class="private-badge">private</span>
+            </a>
+            <a href="#install" class="btn btn-secondary">Install</a>
+        </div>
+    </section>
+
+    <!-- ===== DEMO ===== -->
+    <section class="screenshot">
+        <div class="screenshot-frame">
+            <img src="editor-demo.gif" alt="RuntimeCSG editor demo - real-time face hover and selection" onclick="openLightbox(this)">
+            <p>Real-time face hover, operation-colored wireframes, and click-to-select in the Unity editor.</p>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <div class="stats-bar">
+        <div class="stat"><span class="num">3</span><span class="lbl">Boolean Ops</span></div>
+        <div class="stat"><span class="num">5</span><span class="lbl">Primitives</span></div>
+        <div class="stat"><span class="num">185</span><span class="lbl">Unit Tests</span></div>
+        <div class="stat"><span class="num">3</span><span class="lbl">Unity Versions</span></div>
+    </div>
+
+    <!-- ===== RUNTIME READY CALLOUT ===== -->
+    <section class="section">
+        <div class="callout">
+            <h3>Runtime Ready</h3>
+            <p>Not just an editor tool. RuntimeCSG works at runtime for procedural levels, destructible environments, and player-built worlds. Tested across Unity 2022.3, 6000.1, and 6000.3 with 185 passing tests (143 editor + 42 runtime).</p>
+        </div>
+    </section>
+
+    <!-- ===== BOOLEAN OPS ===== -->
+    <section class="section">
+        <h2>Three Operations, Infinite Shapes</h2>
+        <p class="sub">Combine simple brushes into complex geometry with real-time boolean operations.</p>
+        <div class="ops-grid">
+            <div class="op-card">
+                <svg viewBox="0 0 120 120"><rect x="15" y="25" width="55" height="55" rx="6" fill="#3b82f6" opacity=".6"/><circle cx="75" cy="60" r="30" fill="#3b82f6" opacity=".6"/><rect x="15" y="25" width="55" height="55" rx="6" fill="none" stroke="#60a5fa" stroke-width="1.5"/><circle cx="75" cy="60" r="30" fill="none" stroke="#60a5fa" stroke-width="1.5"/></svg>
+                <h3>Union</h3><code>A + B</code>
+                <p>Merge brushes together. Add geometry to build up your scene.</p>
+            </div>
+            <div class="op-card">
+                <svg viewBox="0 0 120 120"><defs><mask id="m"><rect width="120" height="120" fill="#fff"/><circle cx="75" cy="60" r="30" fill="#000"/></mask></defs><rect x="15" y="25" width="55" height="55" rx="6" fill="#f59e0b" opacity=".6" mask="url(#m)"/><rect x="15" y="25" width="55" height="55" rx="6" fill="none" stroke="#fbbf24" stroke-width="1.5"/><circle cx="75" cy="60" r="30" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3"/></svg>
+                <h3>Subtract</h3><code>A &minus; B</code>
+                <p>Carve and cut. Remove geometry to create holes, doorways, windows.</p>
+            </div>
+            <div class="op-card">
+                <svg viewBox="0 0 120 120"><defs><clipPath id="c"><circle cx="75" cy="60" r="30"/></clipPath></defs><rect x="15" y="25" width="55" height="55" rx="6" fill="#10b981" opacity=".6" clip-path="url(#c)"/><rect x="15" y="25" width="55" height="55" rx="6" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4 3"/><circle cx="75" cy="60" r="30" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4 3"/></svg>
+                <h3>Intersect</h3><code>A &cap; B</code>
+                <p>Keep only the overlap. Create complex shapes from simple primitives.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== EDITOR SPLIT ===== -->
+    <section class="section">
+        <div class="split">
+            <div class="split-text">
+                <h2>Built for the Unity Editor</h2>
+                <p>Scene overlay toolbar, keyboard shortcuts, and visual feedback so you never leave the viewport.</p>
+                <ul>
+                    <li>Mode toggle between Add and Subtract</li>
+                    <li>One-key brush creation (Shift+B/W/C/S)</li>
+                    <li>Per-brush wireframe overlays with operation coloring</li>
+                    <li>Face drag handles for direct manipulation</li>
+                    <li>Inspector buttons for shape and operation changes</li>
+                </ul>
+            </div>
+            <div class="split-img">
+                <img src="screenshot-editor-mockup.png" alt="RuntimeCSG editor with wireframe overlays and toolbar" onclick="openLightbox(this)">
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section class="section" id="features">
+        <h2>Features</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>Per-Brush CSG Engine</h3>
+                <p>Chisel-style algorithm processes each brush independently. Fragments are split and evaluated against the full boolean chain.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Chunk System</h3>
+                <p>World-space grid chunking with dirty tracking. Only affected chunks rebuild. Time-sliced across frames for smooth performance.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Runtime API</h3>
+                <p>Full runtime API for procedural generation. Create, modify, and rebuild CSG geometry from code with 42 dedicated runtime tests.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Double Precision Math</h3>
+                <p>Plane math uses doubles internally. No precision collapse at world-scale distances. Float only at mesh output.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Coplanar Handling</h3>
+                <p>Later-brush-wins tiebreaker prevents z-fighting. No duplicate surfaces or flickering between overlapping faces.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Auto Colliders</h3>
+                <p>Each chunk generates a MeshCollider automatically. Physics-ready geometry with zero extra setup.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Undo Support</h3>
+                <p>Full Unity Undo integration. Every brush add, shape change, and face drag is undoable.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Multi-Version Tested</h3>
+                <p>185 tests passing across Unity 2022.3, 6000.1, and 6000.3. Editor and runtime coverage with CI validation.</p>
+            </div>
+            <div class="feature-card">
+                <h3>UPM Package</h3>
+                <p>Clean runtime/editor assembly split. No dependencies. Drop-in integration for any Unity project.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PRIMITIVES ===== -->
+    <section class="section">
+        <h2>Brush Primitives</h2>
+        <p class="sub">Start with built-in shapes. Combine them to build anything.</p>
+        <div class="prims">
+            <span class="prim">Box</span>
+            <span class="prim">Wedge</span>
+            <span class="prim">Cylinder</span>
+            <span class="prim">Arch</span>
+            <span class="prim">Sphere</span>
+        </div>
+    </section>
+
+    <!-- ===== HOW IT WORKS ===== -->
+    <section class="section">
+        <h2>How It Works</h2>
+        <p class="sub">Chisel-style per-brush CSG in four steps.</p>
+        <div class="steps-grid">
+            <div class="step-card"><h3>Split</h3><p>Each brush's polygons are split against planes of all overlapping brushes, creating convex fragments.</p></div>
+            <div class="step-card"><h3>Categorize</h3><p>Each fragment is classified as inside, outside, or coplanar relative to every other brush.</p></div>
+            <div class="step-card"><h3>Evaluate</h3><p>The boolean chain is evaluated for both sides of each fragment to determine visibility.</p></div>
+            <div class="step-card"><h3>Build Mesh</h3><p>Visible fragments are clipped to chunk bounds and built into Unity meshes with colliders.</p></div>
+        </div>
+    </section>
+
+    <!-- ===== QUICK START ===== -->
+    <section class="section">
+        <h2>Quick Start</h2>
+        <p class="sub">CSG at runtime in a few lines.</p>
+        <div class="codeblock">
+<span class="cm">// Create a model, add brushes, rebuild</span>
+<span class="kw">var</span> model = <span class="kw">new</span> <span class="fn">GameObject</span>(<span class="str">"Level"</span>).AddComponent&lt;<span class="fn">CSGModel</span>&gt;();
+
+<span class="kw">var</span> floor = <span class="fn">CreateBrush</span>(model, <span class="fn">BrushFactory</span>.<span class="fn">Box</span>(<span class="kw">new</span> Vector3(10, 0.1f, 10)));
+<span class="kw">var</span> wall  = <span class="fn">CreateBrush</span>(model, <span class="fn">BrushFactory</span>.<span class="fn">Box</span>(<span class="kw">new</span> Vector3(0.1f, 3, 10)));
+<span class="kw">var</span> door  = <span class="fn">CreateBrush</span>(model, <span class="fn">BrushFactory</span>.<span class="fn">Box</span>(<span class="kw">new</span> Vector3(0.5f, 2, 1)));
+door.Operation = CSGOperation.<span class="fn">Subtractive</span>;
+
+model.<span class="fn">RebuildAll</span>();
+        </div>
+    </section>
+
+    <!-- ===== SHORTCUTS ===== -->
+    <section class="section">
+        <h2>Editor Shortcuts</h2>
+        <div class="controls-table">
+            <div class="control-row"><span class="control-key">Tab</span><span class="control-action">Toggle Add / Subtract mode</span></div>
+            <div class="control-row"><span class="control-key">Shift+B</span><span class="control-action">Add box brush</span></div>
+            <div class="control-row"><span class="control-key">Shift+W</span><span class="control-action">Add wedge brush</span></div>
+            <div class="control-row"><span class="control-key">Shift+C</span><span class="control-action">Add cylinder brush</span></div>
+            <div class="control-row"><span class="control-key">Shift+S</span><span class="control-action">Add sphere brush</span></div>
+        </div>
+    </section>
+
+    <!-- ===== INSTALL ===== -->
+    <section class="section" id="install">
+        <h2>Install</h2>
+        <div class="install-options">
+            <div class="install-card">
+                <h3>Unity Asset Store</h3>
+                <span class="coming-soon">Coming Soon</span>
+                <p>RuntimeCSG will be available on the Unity Asset Store. Stay tuned for the release.</p>
+            </div>
+            <div class="install-card">
+                <h3>Early Access</h3>
+                <span class="coming-soon">Request Access</span>
+                <p>Interested in trying RuntimeCSG now? Reach out on <a href="https://discord.gg/tront">Discord</a> or <a href="https://github.com/TrentSterling">GitHub</a> for early access.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer>
+        <p>Made by <a href="https://tront.xyz">tront</a> &middot; <a href="https://github.com/TrentSterling/runtimecsg">GitHub</a> &middot; MIT License</p>
+    </footer>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close">&times;</span>
+    <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
+</div>
+
+<script>
+function openLightbox(img) {
+    document.getElementById('lightbox-img').src = img.src;
+    document.getElementById('lightbox-img').alt = img.alt;
+    document.getElementById('lightbox').classList.add('active');
+}
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLightbox();
+});
+</script>
+
+</body>
+</html>
