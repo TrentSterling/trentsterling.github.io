@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toaster - GPU Voxelizer + Path Tracer for Unity</title>
+    <meta name="description" content="GPU voxelizer and path tracer for Unity 6 URP. Bake volumetric lighting in minutes, not hours. Triangle-dispatch voxelization, multi-bounce path tracing, froxel fog.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Toaster - GPU Voxelizer + Path Tracer for Unity">
+    <meta property="og:description" content="Bakery takes hours. A Toaster takes minutes. GPU-accelerated volumetric lighting for Unity 6 URP.">
+    <meta property="og:url" content="https://tront.xyz/toaster/">
+    <meta property="og:site_name" content="Toaster">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Toaster - GPU Voxelizer + Path Tracer for Unity">
+    <meta name="twitter:description" content="Bakery takes hours. A Toaster takes minutes. GPU-accelerated volumetric lighting for Unity 6 URP.">
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <style>
+        :root {
+            --bg: #080808;
+            --bg2: #0e0e0e;
+            --bg3: #181818;
+            --border: #222;
+            --text: #e0e0e0;
+            --text-dim: #777;
+            --accent: #f59e0b;
+            --accent2: #ef4444;
+            --accent3: #fb923c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a { color: #fbbf24; text-decoration: none; }
+        a:hover { color: #fcd34d; }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== HERO ===== */
+        @keyframes toast-glow {
+            0%, 100% { text-shadow: 0 0 40px rgba(245,158,11,0.3), 0 0 80px rgba(239,68,68,0.1); }
+            50% { text-shadow: 0 0 60px rgba(245,158,11,0.5), 0 0 120px rgba(239,68,68,0.2); }
+        }
+        .hero {
+            text-align: center;
+            padding: 56px 0 32px;
+        }
+        .hero-emoji {
+            font-size: 80px;
+            display: block;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 0 30px rgba(245,158,11,0.4));
+        }
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+            color: #fff;
+            animation: toast-glow 4s ease-in-out infinite;
+        }
+        .hero .version {
+            display: inline-block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent);
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.2);
+            padding: 0.15rem 0.6rem;
+            border-radius: 999px;
+            margin-bottom: 16px;
+            font-family: 'SF Mono','Fira Code',monospace;
+        }
+        .hero .tagline {
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero .tagline em {
+            color: var(--accent);
+            font-style: normal;
+            font-weight: 600;
+        }
+        .hero .sub-tagline {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 28px;
+            max-width: 550px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero .buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary {
+            background: var(--bg3);
+            color: #ccc;
+            border: 1px solid #2a2a2a;
+        }
+        .btn-primary:hover { background: #1c1c1c; border-color: #444; color: #fff; }
+        .btn-secondary {
+            background: var(--bg3);
+            color: #ccc;
+            border: 1px solid #2a2a2a;
+        }
+        .btn-secondary:hover { background: #1c1c1c; border-color: #444; }
+        .private-badge { font-size: 0.65rem; background: rgba(255,139,61,0.12); color: #cc7a35; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 600; letter-spacing: 0.03em; margin-left: 2px; }
+
+        /* ===== STATS ===== */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            padding: 24px 0;
+            border-top: 1px solid #161616;
+            border-bottom: 1px solid #161616;
+        }
+        .stat .num {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            display: block;
+            text-align: center;
+        }
+        .stat .lbl {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-align: center;
+            display: block;
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            padding: 48px 0;
+            border-top: 1px solid #161616;
+        }
+        .section h2 {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 28px;
+        }
+        .section .sub {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 15px;
+            max-width: 520px;
+            margin: -16px auto 32px;
+        }
+
+        /* ===== PIPELINE ===== */
+        .pipeline {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            counter-reset: stage;
+        }
+        @media(max-width:768px) { .pipeline { grid-template-columns: repeat(2, 1fr); } }
+        .pipe-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            padding-top: 48px;
+            position: relative;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .pipe-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .pipe-card::before {
+            counter-increment: stage;
+            content: counter(stage);
+            position: absolute;
+            top: 14px; left: 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            background: rgba(245,158,11,0.1);
+            width: 28px; height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 8px;
+        }
+        .pipe-card h3 { font-size: 15px; margin-bottom: 4px; }
+        .pipe-card p { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+
+        /* ===== FEATURE GRID ===== */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .feature-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .feature-card h3 { font-size: 16px; margin-bottom: 6px; }
+        .feature-card p { color: var(--text-dim); font-size: 14px; line-height: 1.5; }
+        .feature-card code {
+            font-family: 'SF Mono','Fira Code',monospace;
+            font-size: 12px;
+            background: rgba(245,158,11,0.08);
+            color: var(--accent3);
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+        }
+
+        /* ===== BROWNING LEVELS ===== */
+        .browning-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        @media(max-width:640px) { .browning-grid { grid-template-columns: 1fr; } }
+        .browning-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .browning-card:hover { transform: translateY(-2px); }
+        .browning-card:nth-child(1):hover { border-color: #666; }
+        .browning-card:nth-child(2):hover { border-color: var(--accent); }
+        .browning-card:nth-child(3):hover { border-color: var(--accent2); }
+        .browning-card .level-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .browning-card:nth-child(1) .level-name { color: #888; }
+        .browning-card:nth-child(2) .level-name { color: var(--accent); }
+        .browning-card:nth-child(3) .level-name { color: var(--accent2); }
+        .browning-card .level-spec {
+            font-family: 'SF Mono','Fira Code',monospace;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        .browning-card .level-res {
+            font-size: 12px;
+            color: #555;
+            margin-top: 4px;
+        }
+
+        /* ===== DEBUG VIS ===== */
+        .vis-grid {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .vis-chip {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 500;
+            transition: border-color 0.2s, transform 0.15s;
+        }
+        .vis-chip:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        /* ===== TECH STACK ===== */
+        .tech-chips {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .chip {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 14px;
+            font-family: 'SF Mono','Fira Code',monospace;
+            color: var(--text-dim);
+            transition: border-color 0.2s, transform 0.15s;
+        }
+        .chip:hover {
+            border-color: var(--accent3);
+            transform: translateY(-1px);
+        }
+
+        /* ===== CALLOUT ===== */
+        .callout {
+            background: rgba(245,158,11,0.06);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 12px;
+            padding: 24px 28px;
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .callout h3 { font-size: 18px; margin-bottom: 8px; color: var(--accent); }
+        .callout p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+
+        /* ===== INSTALL ===== */
+        .install-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        @media(max-width:640px) { .install-options { grid-template-columns: 1fr; } }
+        .install-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .install-card h3 { margin-bottom: 12px; font-size: 17px; }
+        .install-card p { color: var(--text-dim); font-size: 13px; margin-top: 10px; line-height: 1.6; }
+        .install-card .coming-soon {
+            display: block;
+            background: var(--bg);
+            padding: 18px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            color: var(--accent);
+            border: 1px dashed rgba(245,158,11,0.3);
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 32px 0;
+            border-top: 1px solid #161616;
+            text-align: center;
+            color: #333;
+            font-size: 13px;
+        }
+        footer a { color: #444; }
+        footer a:hover { color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+        <span class="hero-emoji">&#x1F35E;</span>
+        <h1>Toaster</h1>
+        <span class="version">v1.2 Crumb</span>
+        <p class="tagline"><em>Bakery takes hours.</em> A Toaster takes minutes.</p>
+        <p class="sub-tagline">GPU voxelizer + path tracer for Unity 6 URP. Voxelize your scene, trace light bounces, render as volumetric fog — all on the GPU.</p>
+        <div class="buttons">
+            <a href="https://github.com/TrentSterling/Toaster" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                GitHub <span class="private-badge">private</span>
+            </a>
+            <a href="#install" class="btn btn-secondary">Get Access</a>
+        </div>
+    </section>
+
+    <!-- ===== STATS ===== -->
+    <div class="stats-bar">
+        <div class="stat"><span class="num">4</span><span class="lbl">Pipeline Stages</span></div>
+        <div class="stat"><span class="num">7</span><span class="lbl">Visualizers</span></div>
+        <div class="stat"><span class="num">8</span><span class="lbl">Max Bounces</span></div>
+        <div class="stat"><span class="num">13</span><span class="lbl">SAT Axes</span></div>
+    </div>
+
+    <!-- ===== PIPELINE ===== -->
+    <section class="section">
+        <h2>The Pipeline</h2>
+        <p class="sub">Four stages from scene geometry to volumetric fog. All GPU-accelerated.</p>
+        <div class="pipeline">
+            <div class="pipe-card">
+                <h3>Bake Materials</h3>
+                <p>Renders each object's Unity Meta Pass into a texture. Extracts albedo + emission in UV space. Handles all URP Lit shaders automatically.</p>
+            </div>
+            <div class="pipe-card">
+                <h3>Voxelize</h3>
+                <p>Compute shader dispatches per triangle, not per voxel. 13-axis SAT intersection test, barycentric UV sampling, atomic fixed-point accumulation.</p>
+            </div>
+            <div class="pipe-card">
+                <h3>Path Trace</h3>
+                <p>Halton-sequence rays per occupied voxel. DDA grid marching, shadow rays to all lights, multi-bounce color bleeding with Wang hash seeding.</p>
+            </div>
+            <div class="pipe-card">
+                <h3>Froxel Fog</h3>
+                <p>Frostbite-style screen-space frustum grid. Beer-Lambert integration, Henyey-Greenstein phase function, temporal reprojection, height fog.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== WHY CALLOUT ===== -->
+    <section class="section">
+        <div class="callout">
+            <h3>Why Not Bakery?</h3>
+            <p>Bakery encodes lighting with 3 textures of L1 Spherical Harmonics. Toaster uses 1 RGBAHalf texture with L0 ambient. 75% less data, 90% less decode math. The tradeoff: isotropic light with no directional response. For volumetric fog, that's exactly what you want.</p>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
+    <section class="section" id="features">
+        <h2>Features</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>Triangle-Dispatch Voxelization</h3>
+                <p>One GPU thread per triangle, not per voxel. Only touches voxels near geometry. Dramatically faster than the textbook approach.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Atomic Accumulation</h3>
+                <p><code>RWTexture3D</code> doesn't support atomics. Workaround: <code>InterlockedAdd</code> on a <code>RWStructuredBuffer&lt;uint&gt;</code> with fixed-point RGBA packing. Zero race conditions.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Mesh Mega-Batching</h3>
+                <p>All meshes merged into mega-buffers on CPU. Vertices pre-transformed, indices offset-adjusted. One upload, one bind. Eliminates per-object rebinding.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Multi-Volume Blending</h3>
+                <p>Up to 8 fog volumes via StructuredBuffer. Per-volume density, intensity, and edge falloff. Smooth overlap compositing.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Temporal Reprojection</h3>
+                <p>EMA blend with previous ViewProj reprojection. History buffer ping-pong keeps fog stable across frames without ghosting.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Light Halos + Height Fog</h3>
+                <p>Fog density boosts near lights for natural glow. Height fog with sqrt falloff — dense at ground, thin above. All per-volume configurable.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Shader Graph Nodes</h3>
+                <p>Three custom nodes: <code>ToasterSampleVolume</code>, <code>ToasterSampleLighting</code>, <code>ToasterSampleFog</code>. Drop into any Shader Graph.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Incremental Bake</h3>
+                <p>Dirty tracking per object. Only re-voxelizes meshes that moved. Serialized Texture3D assets survive domain reloads.</p>
+            </div>
+            <div class="feature-card">
+                <h3>One-Click Demo</h3>
+                <p>Menu > Toaster > Create Demo Scene && Bake. Generates a corridor with pillars, neon emissives, and all 7 visualizers wired up.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== BROWNING LEVELS ===== -->
+    <section class="section">
+        <h2>BrowningLevel</h2>
+        <p class="sub">Quality presets. Toaster-themed, obviously.</p>
+        <div class="browning-grid">
+            <div class="browning-card">
+                <div class="level-name">Raw</div>
+                <div class="level-spec">1.0m voxels</div>
+                <div class="level-res">~32&sup3;</div>
+            </div>
+            <div class="browning-card">
+                <div class="level-name">Light</div>
+                <div class="level-spec">0.5m voxels</div>
+                <div class="level-res">~64&sup3;</div>
+            </div>
+            <div class="browning-card">
+                <div class="level-name">Burnt</div>
+                <div class="level-spec">0.25m voxels</div>
+                <div class="level-res">~128&sup3;</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== DEBUG VISUALIZERS ===== -->
+    <section class="section">
+        <h2>Debug Visualizers</h2>
+        <p class="sub">Seven built-in ways to see what the voxel grid is doing.</p>
+        <div class="vis-grid">
+            <span class="vis-chip">Slice</span>
+            <span class="vis-chip">Heatmap</span>
+            <span class="vis-chip">Isosurface</span>
+            <span class="vis-chip">Multi-Slice</span>
+            <span class="vis-chip">Point Cloud</span>
+            <span class="vis-chip">Volume Fog</span>
+            <span class="vis-chip">Froxel Fog</span>
+        </div>
+    </section>
+
+    <!-- ===== TECH STACK ===== -->
+    <section class="section">
+        <h2>Tech Stack</h2>
+        <div class="tech-chips">
+            <span class="chip">Unity 6 LTS</span>
+            <span class="chip">URP 17</span>
+            <span class="chip">Compute Shaders</span>
+            <span class="chip">HLSL</span>
+            <span class="chip">C#</span>
+            <span class="chip">RenderGraph</span>
+            <span class="chip">CommandBuffer</span>
+            <span class="chip">AsyncGPUReadback</span>
+        </div>
+    </section>
+
+    <!-- ===== INSTALL ===== -->
+    <section class="section" id="install">
+        <h2>Get Access</h2>
+        <div class="install-options">
+            <div class="install-card">
+                <h3>Unity Asset Store</h3>
+                <span class="coming-soon">Coming Soon</span>
+                <p>Toaster will be available on the Unity Asset Store once the pipeline is fully stable.</p>
+            </div>
+            <div class="install-card">
+                <h3>Early Access</h3>
+                <span class="coming-soon">Request Access</span>
+                <p>Interested in trying Toaster now? Reach out on <a href="https://discord.gg/tront">Discord</a> or <a href="https://github.com/TrentSterling">GitHub</a> for early access.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer>
+        <p>Made by <a href="https://tront.xyz">tront</a> &middot; <a href="https://github.com/TrentSterling/Toaster">GitHub</a></p>
+    </footer>
+
+</div>
+
+</body>
+</html>
