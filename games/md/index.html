@@ -481,17 +481,17 @@ A long-lost Bomberman-style Flash game that featured customizable tanks and aren
                 const navContainer = document.getElementById('magic-navbar-container');
                 navContainer.innerHTML = `
                     <a href="https://tront.xyz/discord/" target="_blank" rel="noopener noreferrer" class="nav-link">Discord</a>
-                    <a href="https://blog.tront.xyz/" target="_blank" rel="noopener noreferrer" class="nav-link">Blog</a>
+                    <a href="/blog/" target="_blank" rel="noopener noreferrer" class="nav-link">Blog</a>
                     <a href="#" class="nav-link active">Games</a>
                     <a href="https://tront.xyz/" target="_blank" rel="noopener noreferrer" class="nav-link home-link">
-                        <img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+                        <img src="/blog/assets/img/tront.png" alt="Tront Logo" class="logo-image">
                         <span>Home</span>
                     </a>
                     <a href="javascript:void(0);" id="js-toggle-button-nav" class="nav-link">[ DEACTIVATE HACKER MODE ]</a>`;
                 document.getElementById('js-toggle-button-nav').addEventListener('click', toggleInterface);
                 
                 document.querySelector('.main-header').innerHTML = `
-                    <a href="https://tront.xyz/"><img src="https://blog.tront.xyz/assets/img/tront.png" alt="Tront Logo" class="logo"></a>
+                    <a href="https://tront.xyz/"><img src="/blog/assets/img/tront.png" alt="Tront Logo" class="logo"></a>
                     <h1>Tront's Games</h1>
                     <p>A chronological wall of projects, experiments, screenshots, and videos from 10+ years in game development.</p>`;
             };

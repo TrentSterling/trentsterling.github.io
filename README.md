@@ -13,14 +13,14 @@ Live site: [tront.xyz](https://tront.xyz)
 | [/](https://tront.xyz) | Landing page with Three.js particle background |
 | [/games](https://tront.xyz/games) | All projects with filtering by category |
 | [/grid](https://tront.xyz/grid) | Visual timeline of projects (2009-2026) |
-| [/blog](https://blog.tront.xyz) | Dev blog - tutorials, postmortems, experiments |
+| [/blog](https://tront.xyz/blog) | Dev blog - tutorials, postmortems, experiments |
 | [/demos](https://tront.xyz/demos) | Interactive experiments showcase |
 | [/shaders](https://tront.xyz/shaders) | WebGL shader playground |
 | [/discord](https://tront.xyz/discord) | TrontDev community with live widget |
 
 ## Subdomains
 
-- **blog.tront.xyz** - Dev blog (Chirpy/Jekyll)
+- **tront.xyz/blog** - Dev blog (Chirpy/Jekyll, also accessible via blog.tront.xyz)
 - **monke.tront.xyz** - MonkePortals VR game landing page
 - **punk.tront.xyz** - HackerPunk VR game landing page
 
