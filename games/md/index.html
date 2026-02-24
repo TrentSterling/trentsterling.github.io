@@ -96,7 +96,7 @@
 A chronological wall of projects, experiments, screenshots, and videos from 10+ years in game development. I specialize in Unity, C#, and building high-performance systems.
 
 ## Live Server Preview
-https://discord.gg/0hyoWZyM6y7kkFCN
+https://tront.xyz/discord/
 
 ## Filters
 All, VR, Game Jam, Tool, Prototype, Mod, Game, Flash Game
@@ -547,7 +547,7 @@ A long-lost Bomberman-style Flash game that featured customizable tanks and aren
                 sectionEl.innerHTML = `
                     <h2>Live Server Preview</h2>
                     <div class="discord-preview-container" id="widget-container"><p>Connecting to Discord API...</p></div>
-                    <a href="https://discord.gg/0hyoWZyM6y7kkFCN" class="join-button" target="_blank" rel="noopener noreferrer">Join The Discord</a>`;
+                    <a href="https://tront.xyz/discord/" class="join-button" target="_blank" rel="noopener noreferrer">Join The Discord</a>`;
                 
                 const WIDGET_URL = 'https://discord.com/api/guilds/126995334109986817/widget.json';
                 const widgetContainer = document.getElementById('widget-container');
@@ -573,7 +573,7 @@ A long-lost Bomberman-style Flash game that featured customizable tanks and aren
                     })
                     .catch(error => {
                         console.error('Discord widget fetch error:', error);
-                        widgetContainer.innerHTML = `<p>Live preview unavailable. <a href="https://discord.gg/0hyoWZyM6y7kkFCN">Join directly</a>.</p>`;
+                        widgetContainer.innerHTML = `<p>Live preview unavailable. <a href="https://tront.xyz/discord/">Join directly</a>.</p>`;
                     });
             };
 
