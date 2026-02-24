@@ -36,7 +36,7 @@ export const TILE = {
     BARN: 'barn',
 };
 
-// Sparse tile storage — only farm area + special tiles
+// Sparse tile storage - only farm area + special tiles
 const farmTiles = new Map();
 const overlayMeshes = new Map();
 
@@ -47,7 +47,7 @@ function noise(x, y, seed) {
     return n - Math.floor(n);
 }
 
-// ——— Textures ———
+// --- Textures ---
 
 let textures = {};
 let sharedTileGeo;
@@ -77,7 +77,7 @@ function materialForTile(type) {
     return curvedMaterial({ map: map[type] || textures.grass });
 }
 
-// ——— Ground plane (covers entire world, grass textured) ———
+// --- Ground plane (covers entire world, grass textured) ---
 
 function createGroundPlane() {
     const grassTex = createGrassTexture();
@@ -93,7 +93,7 @@ function createGroundPlane() {
     scene.add(mesh);
 }
 
-// ——— Tile overlays (only non-grass farm tiles) ———
+// --- Tile overlays (only non-grass farm tiles) ---
 
 function createOverlay(x, z, type) {
     const key = tileKey(x, z);
@@ -115,7 +115,7 @@ function removeOverlay(key) {
     }
 }
 
-// ——— Farm tile management ———
+// --- Farm tile management ---
 
 function initFarmTiles() {
     const hs = getFarmHalfSize();
@@ -211,14 +211,14 @@ function addBuildingModel(x, z, color) {
 }
 
 function addBarnModel(x, z) {
-    // Barn body — wider than other buildings
+    // Barn body - wider than other buildings
     const bodyGeo = new THREE.BoxGeometry(1.1, 1.0, 1.1, 2, 2, 2);
     const bodyMat = curvedMaterial({ color: 0x8B3A2B });
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.set(x, 0.6, z);
     scene.add(body);
 
-    // Barn roof — steep triangle (cone with 4 sides)
+    // Barn roof - steep triangle (cone with 4 sides)
     const roofGeo = new THREE.ConeGeometry(0.9, 0.6, 4, 1);
     const roofMat = curvedMaterial({ color: 0x6B4226 });
     const roof = new THREE.Mesh(roofGeo, roofMat);
@@ -234,7 +234,7 @@ function addBarnModel(x, z) {
     scene.add(door);
 }
 
-// ——— Wild terrain decorations ———
+// --- Wild terrain decorations ---
 
 function generateDecorations() {
     for (let z = 0; z < WORLD_SIZE; z++) {
@@ -268,7 +268,7 @@ function addTree(x, z) {
     trunk.position.y = height / 2;
     group.add(trunk);
 
-    // Foliage — explicit RGB to guarantee natural greens
+    // Foliage - explicit RGB to guarantee natural greens
     const n1 = noise(x, z, 51);
     const r = 30 + Math.floor(n1 * 45);       // 30-75
     const g = 110 + Math.floor(noise(x, z, 52) * 70); // 110-180
@@ -319,7 +319,7 @@ function addFlowers(x, z) {
     }
 }
 
-// ——— Farm border markers ———
+// --- Farm border markers ---
 
 const borderMeshes = [];
 
@@ -390,7 +390,7 @@ function updateFarmBorder() {
     }
 }
 
-// ——— Farm expansion ———
+// --- Farm expansion ---
 
 export function expandFarm() {
     if (farmLevel >= EXPANSION_COSTS.length) return false;
@@ -406,7 +406,7 @@ export function setFarmLevel(level) {
     updateFarmBorder();
 }
 
-// ——— Public API ———
+// --- Public API ---
 
 export function createWorld() {
     initTextures();
@@ -440,7 +440,7 @@ export function forEachFarmTile(callback) {
     }
 }
 
-// ——— Highlight ———
+// --- Highlight ---
 
 let highlightMesh = null;
 
@@ -468,7 +468,7 @@ export function hideHighlight() {
     if (highlightMesh) highlightMesh.visible = false;
 }
 
-// ——— Serialization ———
+// --- Serialization ---
 
 export function serializeWorld() {
     const data = [];

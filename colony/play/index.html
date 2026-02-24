@@ -531,7 +531,7 @@ class NetworkManager{
             // Everyone gone, go offline
             this.disconnect();netMode='offline';
             document.getElementById('room-badge').style.display='none';
-            addLog('Disconnected — now playing solo.');
+            addLog('Disconnected - now playing solo.');
             return;
         }
         document.getElementById('migration-overlay').classList.add('show');
@@ -613,7 +613,7 @@ class NetworkManager{
                 this.lastHostMessage=now;
                 this.checkHostMigration();
             }else if(!connDead&&now-this.lastHostMessage>8.0){
-                // Connection thinks it's open but no data for 8s — force check
+                // Connection thinks it's open but no data for 8s - force check
                 this.lastHostMessage=now;
                 this.checkHostMigration();
             }
@@ -1766,7 +1766,7 @@ function loop(timestamp){
 function init(){
     resize();
     genAllTex();
-    // Show lobby — game starts when user picks a mode
+    // Show lobby - game starts when user picks a mode
     document.getElementById('lobby').style.display='flex';
     setupLobby();
 }
@@ -1836,7 +1836,7 @@ function setupLobby(){
         netMgr=new NetworkManager();
         netMgr.initAsClient(code,
             ()=>{
-                // Success — world already set up in handleJoinAccept
+                // Success - world already set up in handleJoinAccept
                 document.getElementById('lobby').style.display='none';
                 const badge=document.getElementById('room-badge');
                 badge.textContent='Room: '+code.toUpperCase();

@@ -55,14 +55,14 @@ function createCropMesh(cropId, stage) {
     const color = crop.colors[stage] || crop.colors[0];
 
     if (stage === 0) {
-        // Seed — small mound
+        // Seed - small mound
         const geo = new THREE.SphereGeometry(0.08, 6, 4, 0, Math.PI * 2, 0, Math.PI * 0.5);
         const mat = curvedMaterial({ color: 0x8b6914 });
         const mesh = new THREE.Mesh(geo, mat);
         mesh.position.y = 0.08;
         group.add(mesh);
     } else if (stage === 1) {
-        // Sprout — small green stem
+        // Sprout - small green stem
         const stemGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.2, 4);
         const stemMat = curvedMaterial({ color: 0x4a8c3f });
         const stem = new THREE.Mesh(stemGeo, stemMat);
@@ -75,7 +75,7 @@ function createCropMesh(cropId, stage) {
         leaf.position.y = 0.3;
         group.add(leaf);
     } else if (stage === 2) {
-        // Growing — taller stem with foliage
+        // Growing - taller stem with foliage
         const stemGeo = new THREE.CylinderGeometry(0.03, 0.04, 0.35, 6);
         const stemMat = curvedMaterial({ color: 0x3a7a2f });
         const stem = new THREE.Mesh(stemGeo, stemMat);
@@ -87,7 +87,7 @@ function createCropMesh(cropId, stage) {
         top.position.y = 0.48;
         group.add(top);
     } else if (stage === 3) {
-        // Mature — full plant with colored fruit/crop
+        // Mature - full plant with colored fruit/crop
         const stemGeo = new THREE.CylinderGeometry(0.04, 0.05, 0.4, 6);
         const stemMat = curvedMaterial({ color: 0x3a7a2f });
         const stem = new THREE.Mesh(stemGeo, stemMat);
@@ -96,7 +96,7 @@ function createCropMesh(cropId, stage) {
 
         // Crop-specific shape
         if (cropId === 'carrot' || cropId === 'potato') {
-            // Root crop — visible top + implied underground
+            // Root crop - visible top + implied underground
             const topGeo = new THREE.ConeGeometry(0.15, 0.2, 6);
             const topMat = curvedMaterial({ color });
             const top = new THREE.Mesh(topGeo, topMat);
@@ -140,7 +140,7 @@ function createCropMesh(cropId, stage) {
     return group;
 }
 
-// ——— Public API ———
+// --- Public API ---
 
 export function plantCrop(x, z, cropId) {
     const tile = getTile(x, z);

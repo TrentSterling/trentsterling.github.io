@@ -21,7 +21,7 @@ const notifEl = document.getElementById('notification');
 
 let notifTimer = null;
 
-// ——— Hotbar ———
+// --- Hotbar ---
 
 const HOTBAR_SLOTS = [
     { id: 'move',       label: 'Walk' },
@@ -90,7 +90,7 @@ export function updateHotbar(selectedIndex, inventory, onSelect) {
     });
 }
 
-// ——— HUD ———
+// --- HUD ---
 
 export function updateHUD(coins, day, timeStr) {
     hudCoins.textContent = `🪙 ${coins}`;
@@ -102,7 +102,7 @@ export function updateToolLabel(name) {
     toolLabel.textContent = name;
 }
 
-// ——— Tooltip ———
+// --- Tooltip ---
 
 export function showTooltip(text, x, y) {
     tooltipEl.style.display = 'block';
@@ -115,7 +115,7 @@ export function hideTooltip() {
     tooltipEl.style.display = 'none';
 }
 
-// ——— Notification ———
+// --- Notification ---
 
 export function notify(text) {
     notifEl.textContent = text;
@@ -126,7 +126,7 @@ export function notify(text) {
     }, 2000);
 }
 
-// ——— Shop ———
+// --- Shop ---
 
 export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnUpgradeCost) {
     shopItems.innerHTML = '';
@@ -199,7 +199,7 @@ export function hideShop() {
     shopOverlay.classList.add('hidden');
 }
 
-// ——— Market ———
+// --- Market ---
 
 export function showMarket(inventory, onSell) {
     marketItems.innerHTML = '';
@@ -234,7 +234,7 @@ export function hideMarket() {
     marketOverlay.classList.add('hidden');
 }
 
-// ——— Barn ———
+// --- Barn ---
 
 export function showBarn(barnStorage, barnCapacity, inventory, onDeposit, onWithdraw, onDepositAll) {
     barnItems.innerHTML = '';

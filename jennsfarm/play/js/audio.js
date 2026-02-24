@@ -1,4 +1,4 @@
-// js/audio.js — Procedural audio via Web Audio API (CraftMine-inspired)
+// js/audio.js - Procedural audio via Web Audio API (CraftMine-inspired)
 
 let ctx = null;
 let masterGain = null;
@@ -57,7 +57,7 @@ function playNoise(duration, volume = 0.1, filterFreq = 1000) {
     src.stop(c.currentTime + duration);
 }
 
-// ——— Sound effects ———
+// --- Sound effects ---
 
 export function playTill() {
     playNoise(0.15, 0.15, 800);
@@ -124,7 +124,7 @@ export function playNewDay() {
     setTimeout(() => playTone(659, 0.3, 'sine', 0.1), 300);
 }
 
-// ——— Ambient system ———
+// --- Ambient system ---
 
 let ambientInterval = null;
 let currentAmbientMode = null;

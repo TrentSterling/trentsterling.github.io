@@ -188,7 +188,7 @@ export function createBuildingTexture(type) {
 export function createBarnTexture() {
     const c = createCanvas();
     const ctx = c.getContext('2d');
-    // Barn wall planks — warm reddish-brown
+    // Barn wall planks - warm reddish-brown
     for (let y = 0; y < TEX_SIZE; y++) {
         for (let x = 0; x < TEX_SIZE; x++) {
             const n = noise(x, y, 20);

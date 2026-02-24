@@ -1,4 +1,4 @@
-// tront-theme.js — 5-way theme cycle for tront.xyz
+// tront-theme.js - 5-way theme cycle for tront.xyz
 (function () {
     var THEMES = [
         { id: 'dark',         icon: '\uD83C\uDF19', label: 'Dark' },
