@@ -37,6 +37,8 @@
   <link rel="icon" href="/favicon.png" type="image/png">
   <link rel="canonical" href="https://tront.xyz/snapscan/">
 
+  <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+  <link rel="stylesheet" href="/assets/css/tront-themes.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -560,6 +562,7 @@
   <div class="glow-bg"></div>
 
   <nav id="magic-navbar-container">
+      <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
       <a href="/discord/" class="nav-link">Discord</a>
       <a href="/blog/" class="nav-link">Blog</a>
       <a href="/games/" class="nav-link">Games</a>
@@ -820,5 +823,6 @@
       <p>Built by <a href="https://tront.xyz">tront</a></p>
     </footer>
   </div>
+    <script src="/assets/js/tront-theme.js"></script>
 </body>
 </html>

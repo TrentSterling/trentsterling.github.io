@@ -1,0 +1,641 @@
+/* tront-themes.css — Layered on top of per-page inline styles.
+   Uses html[data-theme] + !important to override inline values.
+   Dark (default) = no data-theme attribute = unchanged inline styles.
+   Inspired by EOS-Native docs multi-tier theme system. */
+
+/* ───────── Theme Picker Button ───────── */
+#tront-theme-btn {
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    user-select: none;
+    white-space: nowrap;
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 1rem;
+    color: #c0c0c0;
+    text-decoration: none;
+    border-radius: 10px;
+    background-color: rgba(40, 40, 45, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+    overflow: hidden;
+    gap: 0.3rem;
+}
+#tront-theme-btn:hover {
+    color: #fff;
+    background-color: rgba(50, 50, 55, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+/* Sheen effect matching .nav-link::before */
+#tront-theme-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+#tront-theme-btn:hover::before {
+    transform: translateX(100%);
+}
+@media (max-width: 480px) {
+    #tront-theme-btn .theme-label { display: none; }
+}
+
+/* ═══════════════════════════════════════════
+   CYAN — Electric/Neon (#00f0ff)
+   ═══════════════════════════════════════════ */
+
+/* Body & grid */
+html[data-theme="tront-cyan"] body {
+    background-color: #0a1520 !important;
+    color: #d8f0f8 !important;
+}
+html[data-theme="tront-cyan"] .grid-overlay,
+html[data-theme="tront-cyan"] body {
+    background-image:
+        linear-gradient(rgba(0,220,255,.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,220,255,.14) 1px, transparent 1px) !important;
+}
+
+/* Navbar */
+html[data-theme="tront-cyan"] #magic-navbar-container {
+    background-color: rgba(8, 18, 28, 0.8) !important;
+    border-bottom-color: rgba(0, 240, 255, 0.2) !important;
+}
+html[data-theme="tront-cyan"] #magic-navbar-container::before {
+    background-image: linear-gradient(110deg, rgba(0,240,255,0.12), rgba(0,180,220,0.08), rgba(0,240,255,0.12)) !important;
+}
+html[data-theme="tront-cyan"] .nav-link,
+html[data-theme="tront-cyan"] #tront-theme-btn {
+    background-color: rgba(0, 200, 240, 0.1) !important;
+    border-color: rgba(0, 240, 255, 0.18) !important;
+}
+html[data-theme="tront-cyan"] .nav-link:hover,
+html[data-theme="tront-cyan"] #tront-theme-btn:hover {
+    color: #fff !important;
+    background-color: rgba(0, 240, 255, 0.2) !important;
+    border-color: rgba(0, 240, 255, 0.4) !important;
+    box-shadow: 0 0 20px -5px rgba(0, 240, 255, 0.5) !important;
+}
+html[data-theme="tront-cyan"] .nav-link.active {
+    background-color: #00ddf0 !important;
+    border-color: #00ddf0 !important;
+    color: #061218 !important;
+}
+
+/* Links & accent headings */
+html[data-theme="tront-cyan"] a {
+    color: #00e0ff !important;
+}
+html[data-theme="tront-cyan"] a:hover {
+    color: #66f0ff !important;
+}
+html[data-theme="tront-cyan"] .nav-link,
+html[data-theme="tront-cyan"] .nav-link:hover {
+    text-decoration: none !important;
+}
+html[data-theme="tront-cyan"] .about-me h3,
+html[data-theme="tront-cyan"] .section h2 {
+    color: #00e0ff !important;
+}
+html[data-theme="tront-cyan"] header p,
+html[data-theme="tront-cyan"] .text-muted {
+    color: #8ac4d4 !important;
+}
+
+/* Surfaces / cards */
+html[data-theme="tront-cyan"] .item,
+html[data-theme="tront-cyan"] .card,
+html[data-theme="tront-cyan"] .feature-card,
+html[data-theme="tront-cyan"] .stat-card,
+html[data-theme="tront-cyan"] .arch-card,
+html[data-theme="tront-cyan"] .discord-widget,
+html[data-theme="tront-cyan"] .discord-preview-container {
+    background: rgba(0, 30, 50, 0.7) !important;
+    border-color: rgba(0, 240, 255, 0.15) !important;
+}
+html[data-theme="tront-cyan"] .item:hover,
+html[data-theme="tront-cyan"] .card:hover,
+html[data-theme="tront-cyan"] .feature-card:hover {
+    border-color: rgba(0, 240, 255, 0.4) !important;
+    box-shadow: 0 0 25px -5px rgba(0, 240, 255, 0.25) !important;
+}
+html[data-theme="tront-cyan"] .links a {
+    background-color: rgba(0, 30, 50, 0.7) !important;
+    border: 1px solid rgba(0, 240, 255, 0.12) !important;
+}
+html[data-theme="tront-cyan"] .links a.blog {
+    color: #7dd3fc !important;
+}
+html[data-theme="tront-cyan"] .links a.game {
+    color: #fbbf24 !important;
+}
+html[data-theme="tront-cyan"] .links a.social {
+    color: #f0abfc !important;
+}
+html[data-theme="tront-cyan"] .links a:hover {
+    background-color: #00e0ff !important;
+    color: #061218 !important;
+    border-color: #00e0ff !important;
+}
+
+/* Buttons */
+html[data-theme="tront-cyan"] .btn-primary,
+html[data-theme="tront-cyan"] .cta-btn {
+    background: linear-gradient(135deg, #00c8e0, #00a0c0) !important;
+    color: #fff !important;
+    border-color: rgba(0, 240, 255, 0.3) !important;
+}
+html[data-theme="tront-cyan"] .btn-secondary,
+html[data-theme="tront-cyan"] .btn-outline {
+    background: rgba(0, 240, 255, 0.08) !important;
+    color: #00e0ff !important;
+    border-color: rgba(0, 240, 255, 0.25) !important;
+}
+
+/* Body glow pseudo-elements */
+html[data-theme="tront-cyan"] body::before {
+    background-color: #00c8e0 !important;
+    opacity: 0.12 !important;
+}
+html[data-theme="tront-cyan"] body::after {
+    background-color: #006088 !important;
+    opacity: 0.1 !important;
+}
+
+/* Footer */
+html[data-theme="tront-cyan"] footer,
+html[data-theme="tront-cyan"] .page-footer {
+    border-top-color: rgba(0, 240, 255, 0.12) !important;
+}
+
+/* ═══════════════════════════════════════════
+   PURPLE — Deep Violet (#a855f7)
+   ═══════════════════════════════════════════ */
+
+/* Body & grid */
+html[data-theme="tront-purple"] body {
+    background-color: #1a1025 !important;
+    color: #ede6f5 !important;
+}
+html[data-theme="tront-purple"] .grid-overlay,
+html[data-theme="tront-purple"] body {
+    background-image:
+        linear-gradient(rgba(168,85,247,.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(168,85,247,.14) 1px, transparent 1px) !important;
+}
+
+/* Navbar */
+html[data-theme="tront-purple"] #magic-navbar-container {
+    background-color: rgba(20, 12, 32, 0.8) !important;
+    border-bottom-color: rgba(168, 85, 247, 0.2) !important;
+}
+html[data-theme="tront-purple"] #magic-navbar-container::before {
+    background-image: linear-gradient(110deg, rgba(168,85,247,0.12), rgba(139,92,246,0.08), rgba(168,85,247,0.12)) !important;
+}
+html[data-theme="tront-purple"] .nav-link,
+html[data-theme="tront-purple"] #tront-theme-btn {
+    background-color: rgba(168, 85, 247, 0.1) !important;
+    border-color: rgba(168, 85, 247, 0.18) !important;
+}
+html[data-theme="tront-purple"] .nav-link:hover,
+html[data-theme="tront-purple"] #tront-theme-btn:hover {
+    color: #fff !important;
+    background-color: rgba(168, 85, 247, 0.2) !important;
+    border-color: rgba(168, 85, 247, 0.4) !important;
+    box-shadow: 0 0 20px -5px rgba(168, 85, 247, 0.5) !important;
+}
+html[data-theme="tront-purple"] .nav-link.active {
+    background-color: #a855f7 !important;
+    border-color: #a855f7 !important;
+    color: #110920 !important;
+}
+
+/* Links & accent headings */
+html[data-theme="tront-purple"] a {
+    color: #c084fc !important;
+}
+html[data-theme="tront-purple"] a:hover {
+    color: #d8b4fe !important;
+}
+html[data-theme="tront-purple"] .nav-link,
+html[data-theme="tront-purple"] .nav-link:hover {
+    text-decoration: none !important;
+}
+html[data-theme="tront-purple"] .about-me h3,
+html[data-theme="tront-purple"] .section h2 {
+    color: #c084fc !important;
+}
+html[data-theme="tront-purple"] header p,
+html[data-theme="tront-purple"] .text-muted {
+    color: #b8a5d6 !important;
+}
+
+/* Surfaces / cards */
+html[data-theme="tront-purple"] .item,
+html[data-theme="tront-purple"] .card,
+html[data-theme="tront-purple"] .feature-card,
+html[data-theme="tront-purple"] .stat-card,
+html[data-theme="tront-purple"] .arch-card,
+html[data-theme="tront-purple"] .discord-widget,
+html[data-theme="tront-purple"] .discord-preview-container {
+    background: rgba(30, 15, 50, 0.7) !important;
+    border-color: rgba(168, 85, 247, 0.15) !important;
+}
+html[data-theme="tront-purple"] .item:hover,
+html[data-theme="tront-purple"] .card:hover,
+html[data-theme="tront-purple"] .feature-card:hover {
+    border-color: rgba(168, 85, 247, 0.4) !important;
+    box-shadow: 0 0 25px -5px rgba(168, 85, 247, 0.25) !important;
+}
+html[data-theme="tront-purple"] .links a {
+    background-color: rgba(30, 15, 50, 0.7) !important;
+    border: 1px solid rgba(168, 85, 247, 0.12) !important;
+}
+html[data-theme="tront-purple"] .links a.blog {
+    color: #93c5fd !important;
+}
+html[data-theme="tront-purple"] .links a.game {
+    color: #fbbf24 !important;
+}
+html[data-theme="tront-purple"] .links a.social {
+    color: #f9a8d4 !important;
+}
+html[data-theme="tront-purple"] .links a:hover {
+    background-color: #c084fc !important;
+    color: #110920 !important;
+    border-color: #c084fc !important;
+}
+
+/* Buttons */
+html[data-theme="tront-purple"] .btn-primary,
+html[data-theme="tront-purple"] .cta-btn {
+    background: linear-gradient(135deg, #a855f7, #8b5cf6) !important;
+    color: #fff !important;
+    border-color: rgba(168, 85, 247, 0.3) !important;
+}
+html[data-theme="tront-purple"] .btn-secondary,
+html[data-theme="tront-purple"] .btn-outline {
+    background: rgba(168, 85, 247, 0.08) !important;
+    color: #c084fc !important;
+    border-color: rgba(168, 85, 247, 0.25) !important;
+}
+
+/* Body glow */
+html[data-theme="tront-purple"] body::before {
+    background-color: #a855f7 !important;
+    opacity: 0.12 !important;
+}
+html[data-theme="tront-purple"] body::after {
+    background-color: #7c3aed !important;
+    opacity: 0.1 !important;
+}
+
+/* Footer */
+html[data-theme="tront-purple"] footer,
+html[data-theme="tront-purple"] .page-footer {
+    border-top-color: rgba(168, 85, 247, 0.12) !important;
+}
+
+/* ═══════════════════════════════════════════
+   EMBER — Warm Orange (#f97316)
+   ═══════════════════════════════════════════ */
+
+/* Body & grid */
+html[data-theme="tront-ember"] body {
+    background-color: #1a0f05 !important;
+    color: #f5e8d8 !important;
+}
+html[data-theme="tront-ember"] .grid-overlay,
+html[data-theme="tront-ember"] body {
+    background-image:
+        linear-gradient(rgba(249,115,22,.14) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(249,115,22,.14) 1px, transparent 1px) !important;
+}
+
+/* Navbar */
+html[data-theme="tront-ember"] #magic-navbar-container {
+    background-color: rgba(22, 12, 4, 0.8) !important;
+    border-bottom-color: rgba(249, 115, 22, 0.2) !important;
+}
+html[data-theme="tront-ember"] #magic-navbar-container::before {
+    background-image: linear-gradient(110deg, rgba(249,115,22,0.12), rgba(234,88,12,0.08), rgba(249,115,22,0.12)) !important;
+}
+html[data-theme="tront-ember"] .nav-link,
+html[data-theme="tront-ember"] #tront-theme-btn {
+    background-color: rgba(249, 115, 22, 0.1) !important;
+    border-color: rgba(249, 115, 22, 0.18) !important;
+}
+html[data-theme="tront-ember"] .nav-link:hover,
+html[data-theme="tront-ember"] #tront-theme-btn:hover {
+    color: #fff !important;
+    background-color: rgba(249, 115, 22, 0.2) !important;
+    border-color: rgba(249, 115, 22, 0.4) !important;
+    box-shadow: 0 0 20px -5px rgba(249, 115, 22, 0.5) !important;
+}
+html[data-theme="tront-ember"] .nav-link.active {
+    background-color: #f97316 !important;
+    border-color: #f97316 !important;
+    color: #140a02 !important;
+}
+
+/* Links & accent headings */
+html[data-theme="tront-ember"] a {
+    color: #fb923c !important;
+}
+html[data-theme="tront-ember"] a:hover {
+    color: #fdba74 !important;
+}
+html[data-theme="tront-ember"] .nav-link,
+html[data-theme="tront-ember"] .nav-link:hover {
+    text-decoration: none !important;
+}
+html[data-theme="tront-ember"] .about-me h3,
+html[data-theme="tront-ember"] .section h2 {
+    color: #fb923c !important;
+}
+html[data-theme="tront-ember"] header p,
+html[data-theme="tront-ember"] .text-muted {
+    color: #c8a080 !important;
+}
+
+/* Surfaces / cards */
+html[data-theme="tront-ember"] .item,
+html[data-theme="tront-ember"] .card,
+html[data-theme="tront-ember"] .feature-card,
+html[data-theme="tront-ember"] .stat-card,
+html[data-theme="tront-ember"] .arch-card,
+html[data-theme="tront-ember"] .discord-widget,
+html[data-theme="tront-ember"] .discord-preview-container {
+    background: rgba(40, 20, 5, 0.7) !important;
+    border-color: rgba(249, 115, 22, 0.15) !important;
+}
+html[data-theme="tront-ember"] .item:hover,
+html[data-theme="tront-ember"] .card:hover,
+html[data-theme="tront-ember"] .feature-card:hover {
+    border-color: rgba(249, 115, 22, 0.4) !important;
+    box-shadow: 0 0 25px -5px rgba(249, 115, 22, 0.25) !important;
+}
+html[data-theme="tront-ember"] .links a {
+    background-color: rgba(40, 20, 5, 0.7) !important;
+    border: 1px solid rgba(249, 115, 22, 0.12) !important;
+}
+html[data-theme="tront-ember"] .links a.blog {
+    color: #7dd3fc !important;
+}
+html[data-theme="tront-ember"] .links a.game {
+    color: #fdba74 !important;
+}
+html[data-theme="tront-ember"] .links a.social {
+    color: #f0abfc !important;
+}
+html[data-theme="tront-ember"] .links a:hover {
+    background-color: #fb923c !important;
+    color: #140a02 !important;
+    border-color: #fb923c !important;
+}
+
+/* Buttons */
+html[data-theme="tront-ember"] .btn-primary,
+html[data-theme="tront-ember"] .cta-btn {
+    background: linear-gradient(135deg, #f97316, #ea580c) !important;
+    color: #fff !important;
+    border-color: rgba(249, 115, 22, 0.3) !important;
+}
+html[data-theme="tront-ember"] .btn-secondary,
+html[data-theme="tront-ember"] .btn-outline {
+    background: rgba(249, 115, 22, 0.08) !important;
+    color: #fb923c !important;
+    border-color: rgba(249, 115, 22, 0.25) !important;
+}
+
+/* Body glow */
+html[data-theme="tront-ember"] body::before {
+    background-color: #f97316 !important;
+    opacity: 0.12 !important;
+}
+html[data-theme="tront-ember"] body::after {
+    background-color: #c2410c !important;
+    opacity: 0.1 !important;
+}
+
+/* Footer */
+html[data-theme="tront-ember"] footer,
+html[data-theme="tront-ember"] .page-footer {
+    border-top-color: rgba(249, 115, 22, 0.12) !important;
+}
+
+/* ═══════════════════════════════════════════
+   LIGHT — Clean white (#f5f5f7)
+   ═══════════════════════════════════════════ */
+
+/* Body & grid */
+html[data-theme="light"] body {
+    background-color: #f5f5f7 !important;
+    color: #1d1d1f !important;
+}
+html[data-theme="light"] .grid-overlay,
+html[data-theme="light"] body {
+    background-image:
+        linear-gradient(rgba(0,0,0,.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,.12) 1px, transparent 1px) !important;
+}
+
+/* Navbar */
+html[data-theme="light"] #magic-navbar-container {
+    background-color: rgba(245, 245, 247, 0.85) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.12) !important;
+}
+html[data-theme="light"] #magic-navbar-container::before {
+    background-image: linear-gradient(110deg, rgba(100,100,120,0.06), rgba(80,80,100,0.04), rgba(100,100,120,0.06)) !important;
+}
+html[data-theme="light"] .nav-link,
+html[data-theme="light"] #tront-theme-btn {
+    color: #444 !important;
+    background-color: rgba(0, 0, 0, 0.06) !important;
+    border-color: rgba(0, 0, 0, 0.12) !important;
+}
+html[data-theme="light"] .nav-link:hover,
+html[data-theme="light"] #tront-theme-btn:hover {
+    color: #111 !important;
+    background-color: rgba(0, 0, 0, 0.12) !important;
+    border-color: rgba(0, 0, 0, 0.22) !important;
+    box-shadow: 0 2px 12px -3px rgba(0, 0, 0, 0.15) !important;
+}
+html[data-theme="light"] .nav-link.active {
+    background-color: #333 !important;
+    border-color: #333 !important;
+    color: #fff !important;
+}
+
+/* Links — dark blue for WCAG contrast on white */
+html[data-theme="light"] a {
+    color: #0756b8 !important;
+}
+html[data-theme="light"] a:hover {
+    color: #044090 !important;
+}
+html[data-theme="light"] .nav-link,
+html[data-theme="light"] .nav-link:hover {
+    text-decoration: none !important;
+}
+
+/* Text hierarchy */
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] .card-title {
+    color: #1d1d1f !important;
+}
+html[data-theme="light"] .about-me h3,
+html[data-theme="light"] .section h2 {
+    color: #0756b8 !important;
+}
+html[data-theme="light"] p,
+html[data-theme="light"] .blurb,
+html[data-theme="light"] .about-me p,
+html[data-theme="light"] .about-me li,
+html[data-theme="light"] header p {
+    color: #444 !important;
+}
+html[data-theme="light"] .text-muted,
+html[data-theme="light"] .card-content .blurb {
+    color: #666 !important;
+}
+
+/* Surfaces */
+html[data-theme="light"] .item,
+html[data-theme="light"] .card,
+html[data-theme="light"] .feature-card,
+html[data-theme="light"] .stat-card,
+html[data-theme="light"] .arch-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+html[data-theme="light"] .item:hover,
+html[data-theme="light"] .card:hover,
+html[data-theme="light"] .feature-card:hover {
+    border-color: rgba(0, 0, 0, 0.25) !important;
+    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.12) !important;
+}
+html[data-theme="light"] .discord-widget,
+html[data-theme="light"] .discord-preview-container {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+html[data-theme="light"] .links a {
+    background-color: #fff !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+html[data-theme="light"] .links a.blog {
+    color: #0756b8 !important;
+}
+html[data-theme="light"] .links a.blog:hover {
+    background-color: #0756b8 !important;
+    color: #fff !important;
+}
+html[data-theme="light"] .links a.game {
+    color: #b84507 !important;
+}
+html[data-theme="light"] .links a.game:hover {
+    background-color: #b84507 !important;
+    color: #fff !important;
+}
+html[data-theme="light"] .links a.social {
+    color: #7c3aed !important;
+}
+html[data-theme="light"] .links a.social:hover {
+    background-color: #7c3aed !important;
+    color: #fff !important;
+}
+
+/* Buttons */
+html[data-theme="light"] .btn-primary,
+html[data-theme="light"] .cta-btn {
+    color: #fff !important;
+}
+html[data-theme="light"] .btn-secondary,
+html[data-theme="light"] .btn-outline {
+    background: rgba(0, 0, 0, 0.05) !important;
+    color: #333 !important;
+    border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Tags */
+html[data-theme="light"] .tag {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Logo border */
+html[data-theme="light"] .logo-image {
+    border-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Remove body pseudo-element glows in light mode */
+html[data-theme="light"] body::before,
+html[data-theme="light"] body::after {
+    opacity: 0.03 !important;
+}
+
+/* Filter pills (games page) */
+html[data-theme="light"] .filter-nav label {
+    border-color: rgba(0, 0, 0, 0.15) !important;
+    color: #444 !important;
+}
+html[data-theme="light"] .filter-nav label:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Image containers */
+html[data-theme="light"] .image-container {
+    background-color: #e8e8ea !important;
+}
+
+/* Code blocks */
+html[data-theme="light"] code,
+html[data-theme="light"] pre {
+    background-color: #e8e8ea !important;
+    color: #1d1d1f !important;
+}
+
+/* Hover card (discord page) */
+html[data-theme="light"] .hover-card {
+    background-color: #fff !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Footer */
+html[data-theme="light"] footer,
+html[data-theme="light"] .page-footer,
+html[data-theme="light"] .footer {
+    border-top-color: rgba(0, 0, 0, 0.1) !important;
+    color: #666 !important;
+}
+html[data-theme="light"] footer a {
+    color: #0756b8 !important;
+}
+
+/* ═══════════════════════════════════════════
+   SHARED: Prevent nav-link anchor underlines
+   when theme overrides `a` color globally
+   ═══════════════════════════════════════════ */
+html[data-theme] .nav-link {
+    color: #c0c0c0 !important;
+}
+html[data-theme] .nav-link:hover {
+    color: #fff !important;
+}
+html[data-theme] .nav-link.active {
+    color: inherit;
+}
+html[data-theme="light"] .nav-link {
+    color: #444 !important;
+}
+html[data-theme="light"] .nav-link:hover {
+    color: #111 !important;
+}
