@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 
-// Shared curvature uniforms — all patched materials reference these
+// Shared curvature uniforms - all patched materials reference these
 export const curveUniforms = {
     curvature: { value: 0.014 },
     curveOrigin: { value: new THREE.Vector3() }
 };
 
-// "Log rolling" curvature — only bends along Z (depth) axis
+// "Log rolling" curvature - only bends along Z (depth) axis
 const CURVE_VERTEX_PREAMBLE = `
 uniform float curvature;
 uniform vec3 curveOrigin;
@@ -50,12 +50,12 @@ export function curvedMaterial(opts) {
     return applyCurvature(mat);
 }
 
-// ——— Scene setup ———
+// --- Scene setup ---
 
 export let scene, camera, renderer, raycaster;
 const mouse = new THREE.Vector2();
 
-// Camera config — pitch and offset are matched so player appears at screen center.
+// Camera config - pitch and offset are matched so player appears at screen center.
 // Math: atan(HEIGHT / DISTANCE) must equal |PITCH| for center-screen alignment.
 const CAMERA_PITCH = -0.70;     // ~40 degrees down
 const CAMERA_HEIGHT = 7;
@@ -67,7 +67,7 @@ let sunLight, ambientLight, hemiLight;
 export function initRenderer(container) {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
-    // Linear fog — fades objects to sky color. Hides world edges cleanly.
+    // Linear fog - fades objects to sky color. Hides world edges cleanly.
     scene.fog = new THREE.Fog(0x87ceeb, 12, 32);
 
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
@@ -82,7 +82,7 @@ export function initRenderer(container) {
 
     raycaster = new THREE.Raycaster();
 
-    // Lighting — sun starts angled from the side for depth, not behind camera
+    // Lighting - sun starts angled from the side for depth, not behind camera
     ambientLight = new THREE.AmbientLight(0xfff5e6, 0.55);
     scene.add(ambientLight);
 
@@ -102,7 +102,7 @@ export function initRenderer(container) {
     return { scene, camera, renderer, raycaster };
 }
 
-// ——— Day/Night cycle ———
+// --- Day/Night cycle ---
 // Stylized approach: night = dreamy blue/purple (not dark), sun arcs across sky for depth
 
 const DAY_PHASES = [
@@ -151,7 +151,7 @@ export function updateDayNight(progress) {
     lerpHex(scene.background, a.sky, b.sky, f);
     scene.fog.color.copy(scene.background);
 
-    // Sun light — intensity, color, and animated position
+    // Sun light - intensity, color, and animated position
     sunLight.intensity = lerpScalar(a.sun, b.sun, f);
     lerpHex(sunLight.color, a.sunClr, b.sunClr, f);
 
@@ -159,7 +159,7 @@ export function updateDayNight(progress) {
     const sy = lerpScalar(a.sunY, b.sunY, f);
     sunLight.position.set(sx, sy, -5); // Z=-5 keeps light from the front for depth
 
-    // Ambient light — intensity + color tinting
+    // Ambient light - intensity + color tinting
     ambientLight.intensity = lerpScalar(a.amb, b.amb, f);
     lerpHex(ambientLight.color, a.ambClr, b.ambClr, f);
 
@@ -173,7 +173,7 @@ export function isNightTime(progress) {
     return progress < 0.12 || progress > 0.88;
 }
 
-// Camera follow — only translates, never rotates
+// Camera follow - only translates, never rotates
 export function updateCamera(targetPos, dt) {
     const desiredX = targetPos.x;
     const desiredY = targetPos.y + CAMERA_HEIGHT;
@@ -214,7 +214,7 @@ export function raycastGround(event) {
     let t = -1;
 
     if (Math.abs(a) < 1e-8) {
-        // Nearly linear (ray parallel to Z or curvature ~0) — fallback to flat plane
+        // Nearly linear (ray parallel to Z or curvature ~0) - fallback to flat plane
         if (Math.abs(b) > 1e-8) {
             t = -d / b;
         }

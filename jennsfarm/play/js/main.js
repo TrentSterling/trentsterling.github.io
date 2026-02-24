@@ -8,7 +8,7 @@ import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showS
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, updateAmbient } from './audio.js';
 
-// ——— Game State ———
+// --- Game State ---
 
 const inventory = createInventory();
 const barnStorage = createInventory();
@@ -23,7 +23,7 @@ let pendingAction = null;
 let stepTimer = 0;
 const DAY_LENGTH = 300; // seconds per day
 
-// ——— Init ———
+// --- Init ---
 
 const container = document.getElementById('game-container');
 initRenderer(container);
@@ -54,7 +54,7 @@ if (saved) {
 
 refreshUI();
 
-// ——— Input ———
+// --- Input ---
 
 const hotbarSlots = getHotbarSlots();
 
@@ -143,7 +143,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// ——— Actions ———
+// --- Actions ---
 
 function performAction(tx, tz, tool) {
     const tile = getTile(tx, tz);
@@ -302,7 +302,7 @@ function sellItem(itemId) {
     triggerAutoSave();
 }
 
-// ——— Barn ———
+// --- Barn ---
 
 function openBarn() {
     showBarn(barnStorage, barnCapacity, inventory, barnDeposit, barnWithdraw, barnDepositAll);
@@ -367,7 +367,7 @@ function barnDepositAll() {
     triggerAutoSave();
 }
 
-// ——— UI Refresh ———
+// --- UI Refresh ---
 
 function getDayProgress() {
     return (gameTime % DAY_LENGTH) / DAY_LENGTH;
@@ -388,7 +388,7 @@ function refreshUI() {
     updateHotbar(selectedSlot, inventory, selectSlot);
 }
 
-// ——— Save ———
+// --- Save ---
 
 let saveTimer = null;
 function triggerAutoSave() {
@@ -411,7 +411,7 @@ function triggerAutoSave() {
     }, 1000);
 }
 
-// ——— Game Loop ———
+// --- Game Loop ---
 
 let lastTime = performance.now();
 

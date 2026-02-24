@@ -156,7 +156,7 @@
             const g2 = '#' + new THREE.Color(params.grassColor).clone().multiplyScalar(0.7).getHexString();
             const g3 = '#' + new THREE.Color(params.grassColor).clone().multiplyScalar(1.15).getHexString();
 
-            // Blade shape — pointed at top, wide at base
+            // Blade shape - pointed at top, wide at base
             ctx.fillStyle = g1;
             ctx.beginPath();
             ctx.moveTo(8, 0);     // tip
@@ -261,7 +261,7 @@
                     if(Math.random() < params.hilliness) {
                         // Plan a multi-cell ramp in the current direction
                         const risePerCell = Math.floor(Math.random() * params.maxRise) + 1;
-                        // Weighted toward shorter ramps — long ones are rare
+                        // Weighted toward shorter ramps - long ones are rare
                         const rampLen = Math.floor(Math.pow(Math.random(), 1.5) * params.maxRampLen) + 1;
 
                         // Check how many cells we can place ahead
@@ -287,13 +287,13 @@
                             z = z + curDir.z * canPlace;
                         }
                     } else {
-                        // Flat cell — continues the corridor
+                        // Flat cell - continues the corridor
                         grid[m.x][m.z] = { h, type: 'flat', dir: {x:0,z:0}, rise: 0 };
                         history.push({x:m.x, z:m.z});
                         x=m.x; z=m.z; blocks++;
                     }
                 } else {
-                    // Dead end — backtrack to a random previous cell, reset direction
+                    // Dead end - backtrack to a random previous cell, reset direction
                     if(!history.length) break;
                     let r = history[Math.floor(Math.random()*history.length)];
                     x=r.x; z=r.z; h=grid[x][z].h;
@@ -388,7 +388,7 @@
 
                         const capH = 1; // Always show grass-dirt trim, even on slopes
 
-                        // CAP (Group 1) — bottom verts first so winding faces outward
+                        // CAP (Group 1) - bottom verts first so winding faces outward
                         if(capH > 0) {
                             const vL_Mid = { ...vL_Top, y: vL_Top.y - capH };
                             const vR_Mid = { ...vR_Top, y: vR_Top.y - capH };
@@ -398,7 +398,7 @@
                             vR_Top = vR_Mid;
                         }
 
-                        // BODY (Group 2) — bottom verts first so winding faces outward
+                        // BODY (Group 2) - bottom verts first so winding faces outward
                         const bodyH = vL_Top.y - floorY;
                         if(bodyH > 0) {
                             const vL_Bot = { ...vL_Top, y: floorY };
@@ -455,7 +455,7 @@
             terrainMesh.receiveShadow = true;
             scene.add(terrainMesh);
 
-            // 3. Grass blades — cross-billboard sprites on terrain tops
+            // 3. Grass blades - cross-billboard sprites on terrain tops
             if(params.grassDensity > 0) {
                 const gVerts = [], gUVs = [];
                 const density = params.grassDensity;
@@ -569,7 +569,7 @@
         f.add(params, 'sunX', -100,100).onChange(v=>{sun.position.x=v; generateWorld()});
 
         let playerVelY = 0;
-        const maxClimb = 0.25; // max height change per step — blocks cliffs, allows ramps
+        const maxClimb = 0.25; // max height change per step - blocks cliffs, allows ramps
         const playerRadius = 0.3; // collision radius (slightly wider than visual capsule 0.25)
         // Sample terrain at center + ring around player radius, return max height
         const getMaxTerrainH = (wx, wz) => {
@@ -608,7 +608,7 @@
                 mx = mx/len * speed;
                 mz = mz/len * speed;
 
-                // Collision check — different thresholds for ground vs air
+                // Collision check - different thresholds for ground vs air
                 // On ground: can only step up small amounts (maxClimb)
                 // In air: can move anywhere the terrain is below your feet
                 const playerFeetY = player.position.y - 0.5; // bottom of capsule
@@ -650,7 +650,7 @@
             const dropDist = player.position.y - groundY;
 
             if(playerVelY > 0) {
-                // Rising (jump) — apply gravity, land when we hit ground
+                // Rising (jump) - apply gravity, land when we hit ground
                 playerVelY -= 0.012;
                 player.position.y += playerVelY;
                 if(player.position.y <= groundY) {
@@ -658,7 +658,7 @@
                     playerVelY = 0;
                 }
             } else if(dropDist > dropThreshold) {
-                // Falling off a cliff — use gravity
+                // Falling off a cliff - use gravity
                 playerVelY -= 0.012;
                 player.position.y += playerVelY;
                 if(player.position.y <= groundY) {
@@ -666,12 +666,12 @@
                     playerVelY = 0;
                 }
             } else {
-                // On ground or small slope step — snap to terrain
+                // On ground or small slope step - snap to terrain
                 player.position.y = groundY;
                 playerVelY = 0;
             }
 
-            // Third person camera — pinned tight to player
+            // Third person camera - pinned tight to player
             _camTarget.copy(player.position);
             _camPos.set(
                 _camTarget.x + Math.sin(camYaw) * camDist,
