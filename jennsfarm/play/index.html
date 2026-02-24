@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-27SVZGYHZ3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-27SVZGYHZ3');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jenn's Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div id="hud-coins">🪙 100</div>
+        <div id="hud-day">Day 1</div>
+        <div id="hud-time"></div>
+    </div>
+
+    <!-- Tool name display -->
+    <div id="tool-label">Walk</div>
+
+    <!-- Hotbar -->
+    <div id="hotbar"></div>
+
+    <!-- Tooltip -->
+    <div id="tooltip"></div>
+
+    <!-- Shop overlay -->
+    <div id="shop-overlay" class="overlay hidden">
+        <div class="overlay-panel">
+            <h2>Seed Shop</h2>
+            <div id="shop-items"></div>
+            <button class="close-btn" onclick="document.getElementById('shop-overlay').classList.add('hidden')">Close</button>
+        </div>
+    </div>
+
+    <!-- Market overlay -->
+    <div id="market-overlay" class="overlay hidden">
+        <div class="overlay-panel">
+            <h2>Market</h2>
+            <div id="market-items"></div>
+            <button class="close-btn" onclick="document.getElementById('market-overlay').classList.add('hidden')">Close</button>
+        </div>
+    </div>
+
+    <!-- Barn overlay -->
+    <div id="barn-overlay" class="overlay hidden">
+        <div class="overlay-panel">
+            <h2>Barn Storage</h2>
+            <div id="barn-capacity"></div>
+            <div id="barn-items"></div>
+            <button id="barn-store-all" class="action-btn">Store All Crops</button>
+            <button class="close-btn" onclick="document.getElementById('barn-overlay').classList.add('hidden')">Close</button>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification"></div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
