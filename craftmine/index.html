@@ -29,6 +29,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+    <link rel="stylesheet" href="/assets/css/tront-themes.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { font-size: 16px; scroll-behavior: smooth; }
@@ -137,6 +139,7 @@
 </head>
 <body>
     <nav id="magic-navbar-container">
+        <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
         <a href="/discord/" class="nav-link">Discord</a>
         <a href="/blog/" class="nav-link">Blog</a>
         <a href="/games/" class="nav-link">Games</a>
@@ -277,5 +280,6 @@
             <p style="margin-top: 0.5rem;">Built by <a href="https://tront.xyz">Trent Sterling</a>. One file. All vibes.</p>
         </footer>
     </div>
+    <script src="/assets/js/tront-theme.js"></script>
 </body>
 </html>

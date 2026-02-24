@@ -24,6 +24,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+    <link rel="stylesheet" href="/assets/css/tront-themes.css">
     <style>
         :root{--bg-color:#0d0f14;--item-bg:#1a1c23;--surface-color:#161b22;--widget-bg-color:#1c2128;--border-color:#30363d;--text-color:#e0e0e0;--text-muted:#8b949e;--grid-gap:1rem;--accent-purple:#a855f7;--accent-orange:#ff8b3d;--accent-teal:#2ee6d7;--status-online:#23a55a;--status-idle:#f0b232;--status-dnd:#f23f43;--font-display:'Fira Code',monospace;--font-body:'Inter',sans-serif}
         @keyframes spin-once{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -92,6 +94,7 @@
     <div class="grid-overlay"></div>
 
     <nav id="magic-navbar-container">
+        <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
         <a href="/discord/" class="nav-link">Discord</a>
         <a href="/blog/" class="nav-link">Blog</a>
         <a href="javascript:void(0);" class="nav-link active">Games</a>
@@ -270,5 +273,6 @@
             fetchWidgetData();
         })();
     </script>
+    <script src="/assets/js/tront-theme.js"></script>
 </body>
 </html>

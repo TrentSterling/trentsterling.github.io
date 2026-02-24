@@ -25,6 +25,8 @@
     <meta name="twitter:image" content="https://tront.xyz/runtimecsg/og-image.png">
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"RuntimeCSG","description":"Real-time CSG brush modeling for Unity with non-destructive boolean operations.","url":"https://tront.xyz/runtimecsg/","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, macOS, Linux","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
     <link rel="icon" type="image/png" href="favicon.png">
+    <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+    <link rel="stylesheet" href="/assets/css/tront-themes.css">
     <style>
         :root {
             --bg: #080808;
@@ -467,6 +469,7 @@
 <body>
 
 <nav id="magic-navbar-container">
+    <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
     <a href="/discord/" class="nav-link">Discord</a>
     <a href="/blog/" class="nav-link">Blog</a>
     <a href="/games/" class="nav-link">Games</a>
@@ -696,5 +699,6 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 
+    <script src="/assets/js/tront-theme.js"></script>
 </body>
 </html>

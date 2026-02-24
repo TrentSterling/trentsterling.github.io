@@ -25,6 +25,8 @@
 <meta name="twitter:image" content="https://tront.xyz/lofigen/og-image.png">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"lofigen","description":"Lo-fi music and ambient generator with procedural audio synthesis.","url":"https://tront.xyz/lofigen/","applicationCategory":"MultimediaApplication","operatingSystem":"Web Browser","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
 <link rel="icon" href="/favicon.png" type="image/png">
+<script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+<link rel="stylesheet" href="/assets/css/tront-themes.css">
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     @keyframes background-aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -418,6 +420,7 @@
 <body>
 
 <nav id="magic-navbar-container">
+    <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
     <a href="/discord/" class="nav-link">Discord</a>
     <a href="/blog/" class="nav-link">Blog</a>
     <a href="/games/" class="nav-link">Games</a>
@@ -2406,5 +2409,6 @@ class LofiVisualizer {
     });
 })();
 </script>
+    <script src="/assets/js/tront-theme.js"></script>
 </body>
 </html>
