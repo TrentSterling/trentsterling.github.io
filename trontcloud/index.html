@@ -16,13 +16,13 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://tront.xyz/trontcloud/">
     <meta property="og:title" content="TrontCloud - Self-Hosted Game Backend">
-    <meta property="og:description" content="PlayFab/LootLocker clone you actually own. 109 endpoints, three-tier auth, Unity SDK. Single binary deploy.">
+    <meta property="og:description" content="PlayFab/LootLocker clone you actually own. 116 endpoints, three-tier auth, Unity SDK. Single binary deploy.">
     <meta property="og:image" content="/blog/assets/img/blog/trontcloud.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="TrontCloud - Self-Hosted Game Backend">
-    <meta name="twitter:description" content="PlayFab/LootLocker clone you actually own. 109 endpoints, three-tier auth, Unity SDK. Single binary deploy.">
+    <meta name="twitter:description" content="PlayFab/LootLocker clone you actually own. 116 endpoints, three-tier auth, Unity SDK. Single binary deploy.">
     <meta name="twitter:image" content="/blog/assets/img/blog/trontcloud.png">
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"TrontCloud","description":"Self-hosted game backend with 116 API endpoints, three-tier auth, and single binary deployment.","url":"https://tront.xyz/trontcloud/","applicationCategory":"DeveloperApplication","operatingSystem":"Windows, macOS, Linux","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
     <link rel="icon" href="/favicon.png" type="image/png">
@@ -132,7 +132,7 @@
         <section class="hero">
             <span class="hero-label">Self-Hosted Game Backend</span>
             <h1>TrontCloud</h1>
-            <p class="subtitle">Own your stack. A PlayFab/LootLocker alternative you control; single binary, 109 endpoints, three-tier auth.</p>
+            <p class="subtitle">Own your stack. A PlayFab/LootLocker alternative you control; single binary, 116 endpoints, three-tier auth.</p>
             <div class="hero-links">
                 <a href="https://github.com/TrentSterling/trontcloud" class="btn btn-primary" target="_blank">GitHub <span class="private-badge">private</span></a>
                 <a href="#quick-start" class="btn btn-secondary">Quick Start</a>
@@ -220,6 +220,6 @@
 TrontCloud.Init(url, apiKey);
 TrontCloud.InitClient(url, titleId);
 TrontCloud.GuestLogin(deviceId, ok, err);</pre></div></div></section>
-<section id="architecture"><div class="section-header"><h2>Architecture</h2><p>109 endpoints organized into four areas. Go + PostgreSQL. 20 auto-migrated tables.</p></div><div class="arch-grid"><div class="arch-card"><span class="arch-count">Core</span><h3>Players &amp; Data</h3><p>Register, login, sessions, player data (JSON blob), stats, leaderboards with best-score tracking</p></div><div class="arch-card"><span class="arch-count">Economy</span><h3>Currency &amp; Items</h3><p>Currencies with caps, atomic grant/spend, catalog items, stackable inventory, store with atomic purchases</p></div><div class="arch-card"><span class="arch-count">Progress</span><h3>Levels &amp; Loot</h3><p>Achievements with stat-based auto-unlock, XP/level progressions, weighted drop tables with optional auto-grant</p></div><div class="arch-card"><span class="arch-count">System</span><h3>Config &amp; Analytics</h3><p>Title data key-value store, player inbox/messages, analytics events (single + batch up to 1000), summary aggregation</p></div></div></section>
+<section id="architecture"><div class="section-header"><h2>Architecture</h2><p>116 endpoints organized into four areas. Go + PostgreSQL. 20 auto-migrated tables.</p></div><div class="arch-grid"><div class="arch-card"><span class="arch-count">Core</span><h3>Players &amp; Data</h3><p>Register, login, sessions, player data (JSON blob), stats, leaderboards with best-score tracking</p></div><div class="arch-card"><span class="arch-count">Economy</span><h3>Currency &amp; Items</h3><p>Currencies with caps, atomic grant/spend, catalog items, stackable inventory, store with atomic purchases</p></div><div class="arch-card"><span class="arch-count">Progress</span><h3>Levels &amp; Loot</h3><p>Achievements with stat-based auto-unlock, XP/level progressions, weighted drop tables with optional auto-grant</p></div><div class="arch-card"><span class="arch-count">System</span><h3>Config &amp; Analytics</h3><p>Title data key-value store, player inbox/messages, analytics events (single + batch up to 1000), summary aggregation</p></div></div></section>
 <footer class="page-footer"><p><a href="https://github.com/TrentSterling/trontcloud" target="_blank">GitHub</a> <span class="footer-sep">|</span> <a href="/blog/posts/trontcloud/" target="_blank">Blog Post</a> <span class="footer-sep">|</span> <a href="https://tront.xyz" target="_blank">tront.xyz</a> <span class="footer-sep">|</span> <a href="https://tront.xyz/EOS-Native/" target="_blank">EOS-Native</a> <span class="footer-sep">|</span> <a href="https://tront.xyz/discord/" target="_blank">Discord</a></p><p style="margin-top: 0.5rem;">Built by <a href="https://tront.xyz">Trent Sterling</a>. Go + PostgreSQL. Own your stack.</p></footer></div>    <script src="/assets/js/tront-theme.js"></script>
 </body></html>
