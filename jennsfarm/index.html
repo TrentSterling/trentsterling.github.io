@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-27SVZGYHZ3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-27SVZGYHZ3');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jenn's Farm — 3D Browser Farming Game | tront.xyz</title>
+    <meta name="description" content="3D browser farming game with Animal Crossing world curvature. Click-to-play farming, procedural textures and audio, inventory system. Three.js powered.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tront.xyz/jennsfarm/">
+    <meta property="og:title" content="Jenn's Farm — 3D Browser Farming Game">
+    <meta property="og:description" content="3D browser farming game with Animal Crossing world curvature. Procedural everything, click-to-play, auto-save.">
+    <meta property="og:image" content="https://tront.xyz/blog/assets/img/tront.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Jenn's Farm — 3D Browser Farming Game">
+    <meta name="twitter:description" content="3D browser farming game with Animal Crossing world curvature. Play in your browser.">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Jenn's Farm","description":"3D browser farming game with Animal Crossing world curvature. Procedural textures, procedural audio, click-to-play farming, auto-save. Runs in your browser.","url":"https://tront.xyz/jennsfarm/","playMode":"SinglePlayer","applicationCategory":"Game","operatingSystem":"Web Browser","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+    <link rel="stylesheet" href="/assets/css/tront-themes.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: #0e150e; color: #e0e0e0; line-height: 1.6; padding-top: 60px; background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 40px 40px; }
+        a { color: #88c98a; text-decoration: none; transition: color 0.2s; }
+        a:hover { color: #a8e6a8; }
+        @keyframes background-aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        #magic-navbar-container { position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 9999; display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; gap: 1rem; background-color: rgba(14, 21, 14, 0.8); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0 1rem; }
+        .nav-link { position: relative; display: flex; align-items: center; height: 40px; padding: 0 1.25rem; color: #c0c0c0; text-decoration: none; font-size: 0.95rem; font-weight: 600; border-radius: 10px; background-color: rgba(35, 45, 35, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease; }
+        .nav-link:hover { color: #fff; background-color: rgba(45, 55, 45, 0.9); border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 0 20px -5px rgba(136, 201, 138, 0.5); }
+        .logo-image { height: 30px; width: 30px; border-radius: 50%; margin-right: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.2); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+        .nav-link.home-link { padding-left: 0.5rem; }
+        .nav-link:hover ~ .home-link .logo-image, .home-link:hover .logo-image { animation: spin-once 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        .container { max-width: 64rem; width: 100%; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 1; }
+        section { padding: 3rem 0; }
+        section + section { border-top: 1px solid rgba(255,255,255,0.06); }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 700; }
+
+        .hero { text-align: center; padding: 4rem 0 3rem; }
+        .hero-label { display: inline-block; font-family: 'Fira Code', monospace; font-size: 0.8rem; font-weight: 500; color: #88c98a; background: rgba(136, 201, 138, 0.1); border: 1px solid rgba(136, 201, 138, 0.2); padding: 0.3rem 0.8rem; border-radius: 999px; margin-bottom: 1.2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .hero h1 { font-size: 4rem; line-height: 1.1; margin-bottom: 0.8rem; background: linear-gradient(135deg, #88c98a, #f0c98a, #88c98a); background-size: 200% 200%; animation: background-aurora 6s ease-in-out infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero .subtitle { font-size: 1.3rem; color: #b0b0b0; margin-bottom: 1.5rem; max-width: 36rem; margin-left: auto; margin-right: auto; }
+        .hero-links { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.6rem; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; transition: all 0.2s ease; text-decoration: none; }
+        .btn-play { background: linear-gradient(135deg, rgba(136, 201, 138, 0.2), rgba(100, 160, 100, 0.2)); color: #88c98a; border: 1px solid rgba(136, 201, 138, 0.4); font-size: 1.1rem; }
+        .btn-play:hover { background: linear-gradient(135deg, rgba(136, 201, 138, 0.35), rgba(100, 160, 100, 0.35)); color: #a8e6a8; transform: translateY(-2px); box-shadow: 0 4px 25px rgba(136, 201, 138, 0.3); }
+        .badge-private { display: inline-flex; align-items: center; gap: 0.3rem; font-family: 'Fira Code', monospace; font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 0.4rem 0.8rem; border-radius: 6px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .stat-card { background: rgba(25, 35, 25, 0.8); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.2rem; text-align: center; }
+        .stat-card .stat-value { font-family: 'Fira Code', monospace; font-size: 1.6rem; font-weight: 700; display: block; margin-bottom: 0.3rem; }
+        .stat-card h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+        .stat-card p { font-size: 0.8rem; color: #888; line-height: 1.4; }
+        .stat-card:nth-child(1) .stat-value { color: #88c98a; }
+        .stat-card:nth-child(2) .stat-value { color: #f0c98a; }
+        .stat-card:nth-child(3) .stat-value { color: #8ab8d8; }
+        .stat-card:nth-child(4) .stat-value { color: #c88aaa; }
+
+        .section-header { margin-bottom: 1.5rem; }
+        .section-header h2 { font-size: 1.8rem; margin-bottom: 0.4rem; }
+        .section-header p { color: #888; font-size: 1rem; max-width: 40rem; }
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .feature-card { background: rgba(25, 35, 25, 0.8); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.4rem; transition: border-color 0.2s, transform 0.2s; }
+        .feature-card:hover { border-color: rgba(136, 201, 138, 0.2); transform: translateY(-2px); }
+        .feature-icon { font-family: 'Fira Code', monospace; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.6rem; display: block; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 0.4rem; color: #e0e0e0; }
+        .feature-card p { font-size: 0.85rem; color: #888; line-height: 1.5; }
+
+        .accent-green { color: #88c98a; }
+        .accent-wheat { color: #f0c98a; }
+        .accent-blue { color: #8ab8d8; }
+        .accent-pink { color: #c88aaa; }
+        .accent-purple { color: #a78bfa; }
+        .accent-yellow { color: #facc15; }
+
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .controls-card { background: rgba(25, 35, 25, 0.8); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.5rem; }
+        .controls-card h3 { font-size: 1.1rem; margin-bottom: 0.8rem; color: #88c98a; }
+        .controls-card ul { list-style: none; }
+        .controls-card li { font-size: 0.9rem; color: #b0b0b0; padding: 0.3rem 0; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .controls-card li:last-child { border-bottom: none; }
+        .key { font-family: 'Fira Code', monospace; font-size: 0.8rem; background: rgba(255,255,255,0.08); padding: 0.15rem 0.5rem; border-radius: 4px; color: #e0e0e0; }
+
+        .cta-section { text-align: center; padding: 3rem 0; }
+        .cta-section h2 { font-size: 1.8rem; margin-bottom: 0.6rem; }
+        .cta-section p { color: #888; font-size: 1rem; margin-bottom: 1.5rem; max-width: 32rem; margin-left: auto; margin-right: auto; }
+
+        .page-footer { padding: 2rem 0; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; color: #666; font-size: 0.85rem; }
+        .page-footer a { color: #888; margin: 0 0.6rem; transition: color 0.2s; }
+        .page-footer a:hover { color: #88c98a; }
+        .footer-sep { color: #444; }
+
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.8rem; }
+            .hero .subtitle { font-size: 1.1rem; }
+            .controls-grid { grid-template-columns: 1fr; }
+            section { padding: 2rem 0; }
+        }
+        @media (max-width: 560px) {
+            .features-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .hero h1 { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav id="magic-navbar-container">
+        <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
+        <a href="https://tront.xyz/discord/" class="nav-link">Discord</a>
+        <a href="https://tront.xyz/blog/" class="nav-link">Blog</a>
+        <a href="https://tront.xyz/games/" class="nav-link">Games</a>
+        <a href="https://tront.xyz/" class="nav-link home-link">
+            <img src="https://tront.xyz/blog/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+            <span>Tront</span>
+        </a>
+    </nav>
+    <div class="container">
+        <section class="hero">
+            <span class="hero-label">3D Browser Farming Game</span>
+            <h1>Jenn's Farm</h1>
+            <p class="subtitle">A cozy 3D farming game with Animal Crossing world curvature. Plant crops, sell harvest, expand your farm. Procedural textures and audio. Zero image files.</p>
+            <div class="hero-links">
+                <a href="play/" class="btn btn-play">Play Now</a>
+                <span class="badge-private">Private Repo</span>
+            </div>
+        </section>
+
+        <section id="stats">
+            <div class="section-header">
+                <h2>By The Numbers</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">4</span>
+                    <h3>Crop Types</h3>
+                    <p>Carrots, tomatoes, potatoes, wheat. Each with unique growth stages and harvest yields.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">3</span>
+                    <h3>Buildings</h3>
+                    <p>Seed shop, market, and barn. Buy seeds, sell harvest, store crops for later.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">0</span>
+                    <h3>Image Files</h3>
+                    <p>Every texture generated procedurally via Canvas. Every sound synthesized via Web Audio API.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">24h</span>
+                    <h3>Day/Night Cycle</h3>
+                    <p>Full day/night cycle with sunrise, sunset, and ambient sounds that change with time.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="features">
+            <div class="section-header">
+                <h2>Features</h2>
+                <p>A cozy farming game running entirely in your browser.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon accent-green">&#9618;</span>
+                    <h3>World Curvature Shader</h3>
+                    <p>Animal Crossing-style rolling world effect. A vertex shader bends geometry away from the camera, making the world look like a small planet.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-wheat">&#9752;</span>
+                    <h3>Farming Loop</h3>
+                    <p>Till soil, plant seeds, water crops, wait for growth, harvest. Sell at market for coins. Buy more seeds. Expand your farm.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-blue">&#9836;</span>
+                    <h3>Procedural Audio</h3>
+                    <p>All sound effects synthesized at runtime via Web Audio API. Bird chirps by day, cricket sounds at night. No audio files.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-pink">&#9733;</span>
+                    <h3>Procedural Textures</h3>
+                    <p>Grass, soil, water, buildings — all generated via Canvas 2D. Pixel-art style with noise variation. Zero external assets.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-purple">&#9881;</span>
+                    <h3>Auto-Save</h3>
+                    <p>localStorage auto-save triggers after every action. Close the tab, come back later. Your farm is exactly where you left it.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-yellow">&#9788;</span>
+                    <h3>Day/Night Cycle</h3>
+                    <p>Sun arcs across the sky. Colors shift through dawn, noon, sunset, and night. Atmospheric lighting with hemisphere lights.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="controls">
+            <div class="section-header">
+                <h2>Controls</h2>
+            </div>
+            <div class="controls-grid">
+                <div class="controls-card">
+                    <h3>Farming</h3>
+                    <ul>
+                        <li><span>Move / Interact</span> <span class="key">Left Click</span></li>
+                        <li><span>Quick Harvest</span> <span class="key">Right Click</span></li>
+                        <li><span>Select Tool</span> <span class="key">1-8</span></li>
+                        <li><span>Close Menu</span> <span class="key">Esc</span></li>
+                    </ul>
+                </div>
+                <div class="controls-card">
+                    <h3>Hotbar Tools</h3>
+                    <ul>
+                        <li><span>Walk</span> <span class="key">1</span></li>
+                        <li><span>Hoe (till soil)</span> <span class="key">2</span></li>
+                        <li><span>Water</span> <span class="key">3</span></li>
+                        <li><span>Seeds / Harvest</span> <span class="key">4-8</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta-section">
+            <h2>Ready to Farm?</h2>
+            <p>No download. No install. Just click and grow.</p>
+            <div class="hero-links">
+                <a href="play/" class="btn btn-play">Play Jenn's Farm</a>
+            </div>
+        </section>
+
+        <footer class="page-footer">
+            <p>
+                <a href="https://tront.xyz">tront.xyz</a>
+                <span class="footer-sep">|</span>
+                <a href="https://tront.xyz/games/">Games</a>
+                <span class="footer-sep">|</span>
+                <a href="https://tront.xyz/discord/" target="_blank">Discord</a>
+            </p>
+            <p style="margin-top: 0.5rem;">Built by <a href="https://tront.xyz">Trent Sterling</a>. Procedural everything. Zero assets.</p>
+        </footer>
+    </div>
+    <script src="/assets/js/tront-theme.js"></script>
+</body>
+</html>

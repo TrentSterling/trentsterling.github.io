@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-27SVZGYHZ3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-27SVZGYHZ3');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colony — Dwarf Colony Idle Game | tront.xyz</title>
+    <meta name="description" content="Dwarf colony idle game. Craft the World meets Cookie Clicker. 6 resources, 7+ buildings, tech tree, offline progress, prestige system. One HTML file.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tront.xyz/colony/">
+    <meta property="og:title" content="Colony — Dwarf Colony Idle Game">
+    <meta property="og:description" content="Dwarf colony idle game. 6 resources, 7+ buildings, tech tree, offline progress. One HTML file. Play in your browser.">
+    <meta property="og:image" content="https://tront.xyz/blog/assets/img/tront.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Colony — Dwarf Colony Idle Game">
+    <meta name="twitter:description" content="Dwarf colony idle game. Craft the World meets Cookie Clicker. One HTML file. Play in your browser.">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Colony","description":"Dwarf colony idle game. Craft the World meets Cookie Clicker. 6 resources, 7+ buildings, tech tree, offline progress, prestige system. Runs in your browser.","url":"https://tront.xyz/colony/","playMode":"SinglePlayer","applicationCategory":"Game","operatingSystem":"Web Browser","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+    <link rel="stylesheet" href="/assets/css/tront-themes.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: #15120a; color: #e0e0e0; line-height: 1.6; padding-top: 60px; background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px); background-size: 40px 40px; }
+        a { color: #d4a033; text-decoration: none; transition: color 0.2s; }
+        a:hover { color: #f0c060; }
+        @keyframes background-aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        #magic-navbar-container { position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 9999; display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; gap: 1rem; background-color: rgba(21, 18, 10, 0.8); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0 1rem; }
+        .nav-link { position: relative; display: flex; align-items: center; height: 40px; padding: 0 1.25rem; color: #c0c0c0; text-decoration: none; font-size: 0.95rem; font-weight: 600; border-radius: 10px; background-color: rgba(45, 40, 30, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease; }
+        .nav-link:hover { color: #fff; background-color: rgba(55, 50, 35, 0.9); border-color: rgba(255, 255, 255, 0.2); box-shadow: 0 0 20px -5px rgba(212, 160, 51, 0.5); }
+        .logo-image { height: 30px; width: 30px; border-radius: 50%; margin-right: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.2); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+        .nav-link.home-link { padding-left: 0.5rem; }
+        .nav-link:hover ~ .home-link .logo-image, .home-link:hover .logo-image { animation: spin-once 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        .container { max-width: 64rem; width: 100%; margin: 0 auto; padding: 0 1.5rem; position: relative; z-index: 1; }
+        section { padding: 3rem 0; }
+        section + section { border-top: 1px solid rgba(255,255,255,0.06); }
+        h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 700; }
+
+        .hero { text-align: center; padding: 4rem 0 3rem; }
+        .hero-label { display: inline-block; font-family: 'Fira Code', monospace; font-size: 0.8rem; font-weight: 500; color: #d4a033; background: rgba(212, 160, 51, 0.1); border: 1px solid rgba(212, 160, 51, 0.2); padding: 0.3rem 0.8rem; border-radius: 999px; margin-bottom: 1.2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .hero h1 { font-size: 4rem; line-height: 1.1; margin-bottom: 0.8rem; background: linear-gradient(135deg, #d4a033, #f0c060, #d4a033); background-size: 200% 200%; animation: background-aurora 6s ease-in-out infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .hero .subtitle { font-size: 1.3rem; color: #b0b0b0; margin-bottom: 1.5rem; max-width: 36rem; margin-left: auto; margin-right: auto; }
+        .hero-links { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.6rem; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; transition: all 0.2s ease; text-decoration: none; }
+        .btn-play { background: linear-gradient(135deg, rgba(212, 160, 51, 0.2), rgba(180, 130, 35, 0.2)); color: #d4a033; border: 1px solid rgba(212, 160, 51, 0.4); font-size: 1.1rem; }
+        .btn-play:hover { background: linear-gradient(135deg, rgba(212, 160, 51, 0.35), rgba(180, 130, 35, 0.35)); color: #f0c060; transform: translateY(-2px); box-shadow: 0 4px 25px rgba(212, 160, 51, 0.3); }
+        .badge-private { display: inline-flex; align-items: center; gap: 0.3rem; font-family: 'Fira Code', monospace; font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 0.4rem 0.8rem; border-radius: 6px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .stat-card { background: rgba(35, 30, 20, 0.8); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.2rem; text-align: center; }
+        .stat-card .stat-value { font-family: 'Fira Code', monospace; font-size: 1.6rem; font-weight: 700; display: block; margin-bottom: 0.3rem; }
+        .stat-card h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+        .stat-card p { font-size: 0.8rem; color: #888; line-height: 1.4; }
+        .stat-card:nth-child(1) .stat-value { color: #d4a033; }
+        .stat-card:nth-child(2) .stat-value { color: #e07040; }
+        .stat-card:nth-child(3) .stat-value { color: #6abf4b; }
+        .stat-card:nth-child(4) .stat-value { color: #5b9bd5; }
+
+        .section-header { margin-bottom: 1.5rem; }
+        .section-header h2 { font-size: 1.8rem; margin-bottom: 0.4rem; }
+        .section-header p { color: #888; font-size: 1rem; max-width: 40rem; }
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .feature-card { background: rgba(35, 30, 20, 0.8); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 1.4rem; transition: border-color 0.2s, transform 0.2s; }
+        .feature-card:hover { border-color: rgba(212, 160, 51, 0.2); transform: translateY(-2px); }
+        .feature-icon { font-family: 'Fira Code', monospace; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.6rem; display: block; }
+        .feature-card h3 { font-size: 1rem; margin-bottom: 0.4rem; color: #e0e0e0; }
+        .feature-card p { font-size: 0.85rem; color: #888; line-height: 1.5; }
+
+        .accent-gold { color: #d4a033; }
+        .accent-orange { color: #e07040; }
+        .accent-green { color: #6abf4b; }
+        .accent-blue { color: #5b9bd5; }
+        .accent-purple { color: #a78bfa; }
+        .accent-red { color: #f43f5e; }
+
+        .cta-section { text-align: center; padding: 3rem 0; }
+        .cta-section h2 { font-size: 1.8rem; margin-bottom: 0.6rem; }
+        .cta-section p { color: #888; font-size: 1rem; margin-bottom: 1.5rem; max-width: 32rem; margin-left: auto; margin-right: auto; }
+
+        .page-footer { padding: 2rem 0; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; color: #666; font-size: 0.85rem; }
+        .page-footer a { color: #888; margin: 0 0.6rem; transition: color 0.2s; }
+        .page-footer a:hover { color: #d4a033; }
+        .footer-sep { color: #444; }
+
+        @media (max-width: 900px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.8rem; }
+            .hero .subtitle { font-size: 1.1rem; }
+            section { padding: 2rem 0; }
+        }
+        @media (max-width: 560px) {
+            .features-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .hero h1 { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav id="magic-navbar-container">
+        <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
+        <a href="https://tront.xyz/discord/" class="nav-link">Discord</a>
+        <a href="https://tront.xyz/blog/" class="nav-link">Blog</a>
+        <a href="https://tront.xyz/games/" class="nav-link">Games</a>
+        <a href="https://tront.xyz/" class="nav-link home-link">
+            <img src="https://tront.xyz/blog/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+            <span>Tront</span>
+        </a>
+    </nav>
+    <div class="container">
+        <section class="hero">
+            <span class="hero-label">Idle / Incremental Game</span>
+            <h1>Colony</h1>
+            <p class="subtitle">Craft the World meets Cookie Clicker. Manage dwarves, gather resources, build your colony, unlock tech trees, and watch the numbers grow. One HTML file.</p>
+            <div class="hero-links">
+                <a href="play/" class="btn btn-play">Play Now</a>
+                <span class="badge-private">Private Repo</span>
+            </div>
+        </section>
+
+        <section id="stats">
+            <div class="section-header">
+                <h2>By The Numbers</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">6</span>
+                    <h3>Resources</h3>
+                    <p>Stone, wood, food, iron, gold, mana. Each unlocks new possibilities.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">7+</span>
+                    <h3>Buildings</h3>
+                    <p>Hut, mine, lumber mill, farm, forge, library, temple. All with scaling levels.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">5</span>
+                    <h3>Tech Trees</h3>
+                    <p>Mining, agriculture, construction, metallurgy, magic. Branch and specialize.</p>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">24/7</span>
+                    <h3>Offline Progress</h3>
+                    <p>Close the tab, come back later. Your colony keeps working while you're away.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="features">
+            <div class="section-header">
+                <h2>Features</h2>
+                <p>A complete idle game in a single file.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon accent-gold">&#9763;</span>
+                    <h3>Dwarf Workers</h3>
+                    <p>Hire dwarves to generate resources passively. Feed them, equip them, and watch your colony grow. Workers need food to survive.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-orange">&#9876;</span>
+                    <h3>Building System</h3>
+                    <p>7+ building types with exponential scaling. Each level costs more but produces more. Mines, farms, forges, and temples.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-green">&#9749;</span>
+                    <h3>Tech Tree</h3>
+                    <p>5 branching tech trees with prerequisites. Unlock new buildings, resource types, multipliers, and automation.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-blue">&#8734;</span>
+                    <h3>Exponential Scaling</h3>
+                    <p>Numbers get big. Thousands become millions become billions. Big number formatting with K/M/B/T suffixes.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-purple">&#9733;</span>
+                    <h3>Prestige System</h3>
+                    <p>Reset your colony for permanent multipliers. Prestige currency based on lifetime earnings. Start fresh, but stronger.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon accent-red">&#9760;</span>
+                    <h3>Monster Defense</h3>
+                    <p>Zombies and skeletons attack at night. Your dwarves fight back. Build defenses or lose workers to the darkness.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta-section">
+            <h2>Ready to Build?</h2>
+            <p>No download. No install. Just click and grow your colony.</p>
+            <div class="hero-links">
+                <a href="play/" class="btn btn-play">Play Colony</a>
+            </div>
+        </section>
+
+        <footer class="page-footer">
+            <p>
+                <a href="https://tront.xyz">tront.xyz</a>
+                <span class="footer-sep">|</span>
+                <a href="https://tront.xyz/games/">Games</a>
+                <span class="footer-sep">|</span>
+                <a href="https://tront.xyz/discord/" target="_blank">Discord</a>
+            </p>
+            <p style="margin-top: 0.5rem;">Built by <a href="https://tront.xyz">Trent Sterling</a>. One file. Infinite growth.</p>
+        </footer>
+    </div>
+    <script src="/assets/js/tront-theme.js"></script>
+</body>
+</html>

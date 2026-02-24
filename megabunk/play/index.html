@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-27SVZGYHZ3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-27SVZGYHZ3');
+    </script>
+    <meta charset="UTF-8">
+    <title>megabunk</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; font-family: monospace; }
+        #gui-container { position: absolute; top: 10px; right: 10px; z-index: 10; }
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #fff; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 8px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">GENERATING MESH...</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+        const params = {
+            mapSize: 50,
+            hilliness: 0.12,
+            maxRampLen: 3,
+            maxRise: 1,
+            straightChance: 0.7,
+            grassDensity: 4,
+            gapChance: 0.02,
+            floorDepth: -8,
+            waterLevel: -2,
+            grassColor: 0x5dae35,
+            dirtColor: 0x7a5635,
+            sunX: -50, sunY: 60, sunZ: 40,
+            regenerate: () => generateWorld()
+        };
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x2cb3b3);
+        scene.fog = new THREE.Fog(0x2cb3b3, 8, 40);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(25, 10, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // --- THIRD PERSON CAMERA ---
+        let camYaw = Math.PI, camPitch = 0.35, camDist = 12;
+        let mouseDown = false;
+
+        renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+        renderer.domElement.addEventListener('mousedown', e => { mouseDown = true; });
+        renderer.domElement.addEventListener('mouseup', () => { mouseDown = false; });
+        renderer.domElement.addEventListener('mouseleave', () => { mouseDown = false; });
+        renderer.domElement.addEventListener('mousemove', e => {
+            if(!mouseDown) return;
+            camYaw -= e.movementX * 0.004;
+            camPitch = Math.max(0.05, Math.min(0.85, camPitch + e.movementY * 0.004));
+        });
+        renderer.domElement.addEventListener('wheel', e => {
+            camDist = Math.max(3, Math.min(25, camDist + e.deltaY * 0.01));
+        });
+
+        // --- TEXTURE GENERATION (3 Discrete Textures) ---
+        // Each texture gets its OWN canvas so they don't overwrite each other
+        function createTextures() {
+            const size = 64;
+            const toHex = c => '#' + new THREE.Color(c).getHexString();
+            const darken = (c, s) => '#' + new THREE.Color(c).clone().multiplyScalar(s).getHexString();
+
+            const g1 = toHex(params.grassColor);
+            const g2 = darken(params.grassColor, 0.85);
+            const d1 = toHex(params.dirtColor);
+            const d2 = darken(params.dirtColor, 0.7);
+
+            const makeCanvas = () => {
+                const c = document.createElement('canvas');
+                c.width = size; c.height = size;
+                return [c, c.getContext('2d')];
+            };
+            const noise = (ctx, c1, c2, density) => {
+                ctx.fillStyle = c1; ctx.fillRect(0,0,size,size);
+                ctx.fillStyle = c2;
+                for(let i=0; i<size*size*density; i++)
+                    ctx.fillRect(Math.random()*size, Math.random()*size, 2, 2);
+            };
+
+            // 1. TOP (Grass)
+            const [c1, ctx1] = makeCanvas();
+            noise(ctx1, g1, g2, 0.15);
+            const texTop = new THREE.CanvasTexture(c1);
+            texTop.wrapS = THREE.RepeatWrapping; texTop.wrapT = THREE.RepeatWrapping;
+            texTop.magFilter = THREE.NearestFilter; texTop.colorSpace = THREE.SRGBColorSpace;
+
+            // 2. SIDE CAP (Dirt with Grass Trim at top)
+            const [c2, ctx2] = makeCanvas();
+            noise(ctx2, d1, d2, 0.2);
+            ctx2.fillStyle = g1;
+            for(let x=0; x<size; x+=4) ctx2.fillRect(x, 0, 4, Math.random()*12 + 4);
+            const texCap = new THREE.CanvasTexture(c2);
+            texCap.wrapS = THREE.RepeatWrapping; texCap.wrapT = THREE.ClampToEdgeWrapping;
+            texCap.magFilter = THREE.NearestFilter; texCap.colorSpace = THREE.SRGBColorSpace;
+
+            // 3. SIDE BODY (Pure Dirt)
+            const [c3, ctx3] = makeCanvas();
+            noise(ctx3, d1, d2, 0.2);
+            const texBody = new THREE.CanvasTexture(c3);
+            texBody.wrapS = THREE.RepeatWrapping; texBody.wrapT = THREE.RepeatWrapping;
+            texBody.magFilter = THREE.NearestFilter; texBody.colorSpace = THREE.SRGBColorSpace;
+
+            return [texTop, texCap, texBody];
+        }
+
+        let materials = [];
+        function updateMaterials() {
+            const texs = createTextures();
+            materials = [
+                new THREE.MeshStandardMaterial({ map: texs[0], roughness: 1, metalness: 0 }), // 0: Top
+                new THREE.MeshStandardMaterial({ map: texs[1], roughness: 1, metalness: 0 }), // 1: Cap
+                new THREE.MeshStandardMaterial({ map: texs[2], roughness: 1, metalness: 0 })  // 2: Body
+            ];
+        }
+        updateMaterials();
+
+        // --- GRASS BLADE TEXTURE ---
+        function createGrassBladeTexture() {
+            const w = 16, h = 32;
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, w, h);
+
+            const g1 = '#' + new THREE.Color(params.grassColor).getHexString();
+            const g2 = '#' + new THREE.Color(params.grassColor).clone().multiplyScalar(0.7).getHexString();
+            const g3 = '#' + new THREE.Color(params.grassColor).clone().multiplyScalar(1.15).getHexString();
+
+            // Blade shape — pointed at top, wide at base
+            ctx.fillStyle = g1;
+            ctx.beginPath();
+            ctx.moveTo(8, 0);     // tip
+            ctx.lineTo(2, h);     // bottom left
+            ctx.lineTo(14, h);    // bottom right
+            ctx.fill();
+
+            // Lighter highlight
+            ctx.fillStyle = g3;
+            ctx.beginPath();
+            ctx.moveTo(8, 0);
+            ctx.lineTo(8, h);
+            ctx.lineTo(12, h);
+            ctx.fill();
+
+            // Dark edge
+            ctx.fillStyle = g2;
+            ctx.beginPath();
+            ctx.moveTo(8, 2);
+            ctx.lineTo(3, h);
+            ctx.lineTo(6, h);
+            ctx.fill();
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.NearestFilter;
+            tex.minFilter = THREE.NearestFilter;
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+
+        // --- TERRAIN HELPERS (module-level for player access) ---
+        let worldGrid = null, worldSize = 0;
+
+        const getCorners = (c) => {
+            let h=c.h, tl=h, tr=h, br=h, bl=h;
+            if(c.type==='slope') {
+                const b = h - (c.rise || 1);
+                if(c.dir.z===-1) { bl=b; br=b; }
+                else if(c.dir.z===1) { tl=b; tr=b; }
+                else if(c.dir.x===1) { tl=b; bl=b; }
+                else if(c.dir.x===-1) { tr=b; br=b; }
+            }
+            return {tl,tr,br,bl};
+        };
+
+        function getTerrainHeight(wx, wz) {
+            if(!worldGrid) return 0;
+            const gx = Math.floor(wx), gz = Math.floor(wz);
+            if(gx<0 || gx>=worldSize || gz<0 || gz>=worldSize) return -Infinity;
+            const cell = worldGrid[gx][gz];
+            if(!cell) return -Infinity;
+            const co = getCorners(cell);
+            const fx = wx-gx, fz = wz-gz;
+            return (co.tl*(1-fx)+co.tr*fx)*(1-fz) + (co.bl*(1-fx)+co.br*fx)*fz;
+        }
+
+        // --- MESH GEN ---
+        let terrainMesh, grassMesh;
+
+        function generateWorld() {
+            document.getElementById('loading').style.display = 'block';
+            if(terrainMesh) { scene.remove(terrainMesh); terrainMesh.geometry.dispose(); }
+            if(grassMesh) { scene.remove(grassMesh); grassMesh.geometry.dispose(); }
+
+            // 1. Grid Logic (Snake)
+            const size = params.mapSize;
+            const grid = Array(size).fill().map(()=>Array(size).fill(null));
+            const history = [];
+
+            let x = Math.floor(size/2), z = Math.floor(size/2), h = 0;
+            grid[x][z] = { h, type: 'flat', dir: {x:0,z:0}, rise: 0 };
+            history.push({x,z});
+
+            let blocks = 1;
+            const target = size*size*(1.0-params.gapChance);
+            const dirs = [{x:0,z:-1},{x:0,z:1},{x:-1,z:0},{x:1,z:0}];
+            let curDir = null; // Track snake's heading for corridor momentum
+
+            const inBounds = (cx,cz) => cx>=0 && cx<size && cz>=0 && cz<size;
+
+            while(blocks < target) {
+                let valid = [];
+                for(let d of dirs) {
+                    let nx=x+d.x, nz=z+d.z;
+                    if(inBounds(nx,nz) && !grid[nx][nz]) valid.push({x:nx,z:nz,dx:d.x,dz:d.z});
+                }
+                if(valid.length) {
+                    // Direction momentum: prefer continuing straight to form corridors
+                    let m;
+                    if(curDir) {
+                        const straight = valid.find(v => v.dx===curDir.x && v.dz===curDir.z);
+                        if(straight && Math.random() < params.straightChance) {
+                            m = straight;
+                        } else {
+                            m = valid[Math.floor(Math.random()*valid.length)];
+                        }
+                    } else {
+                        m = valid[Math.floor(Math.random()*valid.length)];
+                    }
+                    curDir = {x:m.dx, z:m.dz};
+
+                    if(Math.random() < params.hilliness) {
+                        // Plan a multi-cell ramp in the current direction
+                        const risePerCell = Math.floor(Math.random() * params.maxRise) + 1;
+                        // Weighted toward shorter ramps — long ones are rare
+                        const rampLen = Math.floor(Math.pow(Math.random(), 1.5) * params.maxRampLen) + 1;
+
+                        // Check how many cells we can place ahead
+                        let canPlace = 0;
+                        for(let i = 0; i < rampLen; i++) {
+                            const cx = x + curDir.x * (i+1);
+                            const cz = z + curDir.z * (i+1);
+                            if(inBounds(cx,cz) && !grid[cx][cz]) canPlace++;
+                            else break;
+                        }
+
+                        if(canPlace > 0) {
+                            for(let i = 0; i < canPlace; i++) {
+                                const cx = x + curDir.x * (i+1);
+                                const cz = z + curDir.z * (i+1);
+                                h += risePerCell;
+                                grid[cx][cz] = { h, type: 'slope', dir: curDir, rise: risePerCell };
+                                history.push({x:cx, z:cz});
+                                blocks++;
+                                if(blocks >= target) break;
+                            }
+                            x = x + curDir.x * canPlace;
+                            z = z + curDir.z * canPlace;
+                        }
+                    } else {
+                        // Flat cell — continues the corridor
+                        grid[m.x][m.z] = { h, type: 'flat', dir: {x:0,z:0}, rise: 0 };
+                        history.push({x:m.x, z:m.z});
+                        x=m.x; z=m.z; blocks++;
+                    }
+                } else {
+                    // Dead end — backtrack to a random previous cell, reset direction
+                    if(!history.length) break;
+                    let r = history[Math.floor(Math.random()*history.length)];
+                    x=r.x; z=r.z; h=grid[x][z].h;
+                    curDir = null; // New branch starts fresh
+                }
+            }
+
+            // 1b. Remove dead-end ramps (slopes pointing into void or cliff drops)
+            let changed = true;
+            while(changed) {
+                changed = false;
+                for(let gx=0; gx<size; gx++) {
+                    for(let gz=0; gz<size; gz++) {
+                        const cell = grid[gx][gz];
+                        if(!cell || cell.type !== 'slope') continue;
+                        const nx = gx + cell.dir.x;
+                        const nz = gz + cell.dir.z;
+                        let deadEnd = false;
+
+                        if(!inBounds(nx,nz) || !grid[nx][nz]) {
+                            deadEnd = true; // points into void
+                        } else {
+                            // Check if neighbor's shared edge meets our high end
+                            const nc = getCorners(grid[nx][nz]);
+                            let nhMax;
+                            if(cell.dir.z===-1) nhMax = Math.max(nc.bl, nc.br);
+                            else if(cell.dir.z===1) nhMax = Math.max(nc.tl, nc.tr);
+                            else if(cell.dir.x===1) nhMax = Math.max(nc.tl, nc.bl);
+                            else nhMax = Math.max(nc.tr, nc.br);
+                            if(nhMax < cell.h) deadEnd = true; // doesn't connect
+                        }
+
+                        if(deadEnd) {
+                            cell.h = cell.h - (cell.rise || 1); // drop to low end
+                            cell.type = 'flat';
+                            cell.rise = 0;
+                            cell.dir = {x:0, z:0};
+                            changed = true;
+                        }
+                    }
+                }
+            }
+
+            // 2. Geometry Builder
+            // We use 3 arrays for vertices, one for each Material Group
+            const groups = [[], [], []];
+
+            // Helper: Push Quad to specific Group
+            // v1=BL, v2=BR, v3=TR, v4=TL
+            const push = (grpIdx, v1, v2, v3, v4, uvScaleX=1, uvScaleY=1, uvOffsetY=0) => {
+                const arr = groups[grpIdx];
+                // Tri 1
+                arr.push(v1.x,v1.y,v1.z,  0,0 + uvOffsetY);
+                arr.push(v2.x,v2.y,v2.z,  1*uvScaleX,0 + uvOffsetY);
+                arr.push(v4.x,v4.y,v4.z,  0,1*uvScaleY + uvOffsetY);
+                // Tri 2
+                arr.push(v2.x,v2.y,v2.z,  1*uvScaleX,0 + uvOffsetY);
+                arr.push(v3.x,v3.y,v3.z,  1*uvScaleX,1*uvScaleY + uvOffsetY);
+                arr.push(v4.x,v4.y,v4.z,  0,1*uvScaleY + uvOffsetY);
+            };
+
+            for(let x=0; x<size; x++) {
+                for(let z=0; z<size; z++) {
+                    const cell = grid[x][z];
+                    if(!cell) continue;
+                    const c = getCorners(cell);
+
+                    // TOP FACE (Group 0)
+                    const vTL={x:x,y:c.tl,z:z}, vTR={x:x+1,y:c.tr,z:z};
+                    const vBR={x:x+1,y:c.br,z:z+1}, vBL={x:x,y:c.bl,z:z+1};
+
+                    const arr = groups[0];
+                    // Tri 1
+                    arr.push(vBL.x,vBL.y,vBL.z, x,z+1);
+                    arr.push(vBR.x,vBR.y,vBR.z, x+1,z+1);
+                    arr.push(vTL.x,vTL.y,vTL.z, x,z);
+                    // Tri 2
+                    arr.push(vBR.x,vBR.y,vBR.z, x+1,z+1);
+                    arr.push(vTR.x,vTR.y,vTR.z, x+1,z);
+                    arr.push(vTL.x,vTL.y,vTL.z, x,z);
+
+                    // WALLS
+                    const isSlope = cell.type === 'slope';
+                    const floorY = params.floorDepth;
+
+                    // Build a wall quad from vL_Top/vR_Top down to floor,
+                    // but only if our edge is exposed above the neighbor's shared edge.
+                    // nhL/nhR = neighbor heights at the vertices matching vL_Top/vR_Top.
+                    const makeWall = (vL_Top, vR_Top, nhL, nhR) => {
+                        // Skip only if neighbor fully covers BOTH vertices
+                        if(vL_Top.y <= nhL && vR_Top.y <= nhR) return;
+
+                        const capH = 1; // Always show grass-dirt trim, even on slopes
+
+                        // CAP (Group 1) — bottom verts first so winding faces outward
+                        if(capH > 0) {
+                            const vL_Mid = { ...vL_Top, y: vL_Top.y - capH };
+                            const vR_Mid = { ...vR_Top, y: vR_Top.y - capH };
+                            push(1, vL_Mid, vR_Mid, vR_Top, vL_Top);
+
+                            vL_Top = vL_Mid;
+                            vR_Top = vR_Mid;
+                        }
+
+                        // BODY (Group 2) — bottom verts first so winding faces outward
+                        const bodyH = vL_Top.y - floorY;
+                        if(bodyH > 0) {
+                            const vL_Bot = { ...vL_Top, y: floorY };
+                            const vR_Bot = { ...vR_Top, y: floorY };
+                            push(2, vL_Bot, vR_Bot, vR_Top, vL_Top, 1, bodyH);
+                        }
+                    };
+
+                    // Helper: get neighbor shared-edge heights, or -Infinity if no neighbor
+                    const nEdge = (nx, nz, getL, getR) => {
+                        if(nx<0 || nx>=size || nz<0 || nz>=size || !grid[nx][nz])
+                            return [-Infinity, -Infinity];
+                        const nc = getCorners(grid[nx][nz]);
+                        return [getL(nc), getR(nc)];
+                    };
+
+                    // North (z-1): our vTR/vTL shared with neighbor's BR/BL
+                    { const [nhL,nhR] = nEdge(x, z-1, nc=>nc.br, nc=>nc.bl); makeWall(vTR, vTL, nhL, nhR); }
+                    // South (z+1): our vBL/vBR shared with neighbor's TL/TR
+                    { const [nhL,nhR] = nEdge(x, z+1, nc=>nc.tl, nc=>nc.tr); makeWall(vBL, vBR, nhL, nhR); }
+                    // West (x-1): our vTL/vBL shared with neighbor's TR/BR
+                    { const [nhL,nhR] = nEdge(x-1, z, nc=>nc.tr, nc=>nc.br); makeWall(vTL, vBL, nhL, nhR); }
+                    // East (x+1): our vBR/vTR shared with neighbor's BL/TL
+                    { const [nhL,nhR] = nEdge(x+1, z, nc=>nc.bl, nc=>nc.tl); makeWall(vBR, vTR, nhL, nhR); }
+                }
+            }
+
+            // Combine Groups into one Geometry
+            const combinedVertices = [];
+            const combinedUVs = [];
+
+            const geo = new THREE.BufferGeometry();
+            let offset = 0;
+
+            [0, 1, 2].forEach(grpIdx => {
+                const data = groups[grpIdx];
+                for(let i=0; i<data.length; i+=5) {
+                    combinedVertices.push(data[i], data[i+1], data[i+2]);
+                    combinedUVs.push(data[i+3], data[i+4]);
+                }
+                const count = (data.length / 5);
+                if(count > 0) {
+                    geo.addGroup(offset, count, grpIdx);
+                    offset += count;
+                }
+            });
+
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(combinedVertices, 3));
+            geo.setAttribute('uv', new THREE.Float32BufferAttribute(combinedUVs, 2));
+            geo.computeVertexNormals();
+
+            terrainMesh = new THREE.Mesh(geo, materials);
+            terrainMesh.castShadow = true;
+            terrainMesh.receiveShadow = true;
+            scene.add(terrainMesh);
+
+            // 3. Grass blades — cross-billboard sprites on terrain tops
+            if(params.grassDensity > 0) {
+                const gVerts = [], gUVs = [];
+                const density = params.grassDensity;
+
+                for(let gx=0; gx<size; gx++) {
+                    for(let gz=0; gz<size; gz++) {
+                        const cell = grid[gx][gz];
+                        if(!cell) continue;
+                        const co = getCorners(cell);
+
+                        for(let b=0; b<density; b++) {
+                            const fx = Math.random(), fz = Math.random();
+                            const bx = gx + fx, bz = gz + fz;
+
+                            // Bilinear interpolate height on the cell surface
+                            const hTop = co.tl*(1-fx) + co.tr*fx;
+                            const hBot = co.bl*(1-fx) + co.br*fx;
+                            const by = hTop*(1-fz) + hBot*fz;
+
+                            const bladeH = 0.25 + Math.random()*0.45;
+                            const bladeW = 0.12 + Math.random()*0.12;
+                            const hw = bladeW/2;
+
+                            // Two perpendicular quads (cross billboard)
+                            for(let q=0; q<2; q++) {
+                                const angle = (q * Math.PI/2) + Math.random()*0.5;
+                                const cs = Math.cos(angle), sn = Math.sin(angle);
+
+                                const x1=bx-hw*cs, z1=bz-hw*sn;
+                                const x2=bx+hw*cs, z2=bz+hw*sn;
+
+                                // Tri 1: BL, BR, TL (v=0 at bottom, v=1 at top)
+                                gVerts.push(x1,by,z1, x2,by,z2, x1,by+bladeH,z1);
+                                gUVs.push(0,0, 1,0, 0,1);
+                                // Tri 2: BR, TR, TL
+                                gVerts.push(x2,by,z2, x2,by+bladeH,z2, x1,by+bladeH,z1);
+                                gUVs.push(1,0, 1,1, 0,1);
+                            }
+                        }
+                    }
+                }
+
+                const gGeo = new THREE.BufferGeometry();
+                gGeo.setAttribute('position', new THREE.Float32BufferAttribute(gVerts, 3));
+                gGeo.setAttribute('uv', new THREE.Float32BufferAttribute(gUVs, 2));
+                gGeo.computeVertexNormals();
+
+                const gMat = new THREE.MeshStandardMaterial({
+                    map: createGrassBladeTexture(),
+                    alphaTest: 0.3,
+                    side: THREE.DoubleSide,
+                    roughness: 1,
+                    metalness: 0
+                });
+
+                grassMesh = new THREE.Mesh(gGeo, gMat);
+                grassMesh.receiveShadow = true;
+                scene.add(grassMesh);
+            }
+
+            // Store grid globally for player terrain lookup
+            worldGrid = grid;
+            worldSize = size;
+
+            // Spawn player at map center
+            const cx = size/2, cz = size/2;
+            const ch = getTerrainHeight(cx, cz);
+            player.position.set(cx, (ch > -Infinity ? ch : 0) + 0.5, cz);
+
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // --- PLAYER ---
+        const player = new THREE.Mesh(
+            new THREE.CapsuleGeometry(0.25, 0.5, 4, 8),
+            new THREE.MeshStandardMaterial({ color: 0xff6644 })
+        );
+        player.castShadow = true;
+        scene.add(player);
+
+        const keys = {};
+        window.addEventListener('keydown', e => { keys[e.code] = true; });
+        window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+        // --- EXTRAS ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const sun = new THREE.DirectionalLight(0xffdec2, 1.2);
+        sun.castShadow = true; sun.shadow.mapSize.set(2048,2048);
+        sun.shadow.camera.left=-50; sun.shadow.camera.right=50;
+        sun.shadow.camera.top=50; sun.shadow.camera.bottom=-50;
+        scene.add(sun);
+
+        const waterMesh = new THREE.Mesh(new THREE.PlaneGeometry(1000,1000).rotateX(-Math.PI/2),
+            new THREE.MeshStandardMaterial({color: 0x44aaff, transparent:true, opacity:0.6}));
+        scene.add(waterMesh);
+
+        // GUI
+        const gui = new GUI({ container: document.getElementById('gui-container') });
+        const f = gui.addFolder('MEGABONK');
+        f.add(params, 'mapSize', 10,100,1).onFinishChange(generateWorld);
+        f.add(params, 'hilliness', 0,1).onFinishChange(generateWorld);
+        f.add(params, 'straightChance', 0,1).name('corridor').onFinishChange(generateWorld);
+        f.add(params, 'maxRampLen', 1,6,1).name('ramp length').onFinishChange(generateWorld);
+        f.add(params, 'maxRise', 1,5,1).name('ramp rise').onFinishChange(generateWorld);
+        f.add(params, 'grassDensity', 0,12,1).name('grass').onFinishChange(generateWorld);
+        f.add(params, 'gapChance', 0,0.2).onFinishChange(generateWorld);
+        f.add(params, 'floorDepth', -50,-5).onFinishChange(generateWorld);
+        f.add(params, 'regenerate');
+        f.add(params, 'waterLevel', -10, 10).onChange(v=>waterMesh.position.y=v);
+        f.add(params, 'sunX', -100,100).onChange(v=>{sun.position.x=v; generateWorld()});
+
+        let playerVelY = 0;
+        const maxClimb = 0.25; // max height change per step — blocks cliffs, allows ramps
+        const playerRadius = 0.3; // collision radius (slightly wider than visual capsule 0.25)
+        // Sample terrain at center + ring around player radius, return max height
+        const getMaxTerrainH = (wx, wz) => {
+            let best = getTerrainHeight(wx, wz);
+            for(let a = 0; a < Math.PI * 2; a += Math.PI / 3) { // 6 points around ring
+                const h = getTerrainHeight(wx + Math.cos(a) * playerRadius, wz + Math.sin(a) * playerRadius);
+                if(h > best) best = h;
+            }
+            return best;
+        };
+        const _camTarget = new THREE.Vector3();
+        const _camPos = new THREE.Vector3();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Movement direction from camera yaw
+            const speed = 0.12;
+            const fwdX = -Math.sin(camYaw), fwdZ = -Math.cos(camYaw);
+            const rightX = -fwdZ, rightZ = fwdX;
+
+            let mx = 0, mz = 0;
+            if(keys['KeyW']) { mx += fwdX; mz += fwdZ; }
+            if(keys['KeyS']) { mx -= fwdX; mz -= fwdZ; }
+            if(keys['KeyA']) { mx -= rightX; mz -= rightZ; }
+            if(keys['KeyD']) { mx += rightX; mz += rightZ; }
+
+            // Terrain + ground check BEFORE movement (uses fat capsule sampling)
+            const curTH = getMaxTerrainH(player.position.x, player.position.z);
+            const curGroundY = (curTH > -Infinity ? curTH : params.waterLevel) + 0.5;
+            const onGround = player.position.y <= curGroundY + 0.08;
+
+            // Normalize diagonal + apply speed
+            if(mx || mz) {
+                const len = Math.sqrt(mx*mx + mz*mz);
+                mx = mx/len * speed;
+                mz = mz/len * speed;
+
+                // Collision check — different thresholds for ground vs air
+                // On ground: can only step up small amounts (maxClimb)
+                // In air: can move anywhere the terrain is below your feet
+                const playerFeetY = player.position.y - 0.5; // bottom of capsule
+                const curH = curTH > -Infinity ? curTH : -999;
+                const canMove = (h) => {
+                    if(h <= -Infinity) return false; // off-map
+                    if(!onGround) return h < playerFeetY; // airborne: terrain must be below feet
+                    return (h - curH) < maxClimb; // grounded: small step only
+                };
+
+                const fullH = getMaxTerrainH(player.position.x + mx, player.position.z + mz);
+                if(canMove(fullH)) {
+                    player.position.x += mx;
+                    player.position.z += mz;
+                } else {
+                    // Slide: try each axis independently
+                    const xH = getMaxTerrainH(player.position.x + mx, player.position.z);
+                    if(canMove(xH)) player.position.x += mx;
+
+                    const zH = getMaxTerrainH(player.position.x, player.position.z + mz);
+                    if(canMove(zH)) player.position.z += mz;
+                }
+
+                // Rotate player to face movement direction
+                player.rotation.y = Math.atan2(mx, mz);
+            }
+
+            // Jump (uses onGround computed above)
+            const th = getMaxTerrainH(player.position.x, player.position.z);
+            const groundY = (th > -Infinity ? th : params.waterLevel) + 0.5;
+
+            if(keys['Space'] && onGround) {
+                playerVelY = 0.22;
+            }
+
+            // Gravity + terrain following
+            // Small drops (ramps/slopes): snap smoothly. Big drops (cliffs): fall with gravity.
+            const dropThreshold = 0.35; // max instant-snap distance
+            const dropDist = player.position.y - groundY;
+
+            if(playerVelY > 0) {
+                // Rising (jump) — apply gravity, land when we hit ground
+                playerVelY -= 0.012;
+                player.position.y += playerVelY;
+                if(player.position.y <= groundY) {
+                    player.position.y = groundY;
+                    playerVelY = 0;
+                }
+            } else if(dropDist > dropThreshold) {
+                // Falling off a cliff — use gravity
+                playerVelY -= 0.012;
+                player.position.y += playerVelY;
+                if(player.position.y <= groundY) {
+                    player.position.y = groundY;
+                    playerVelY = 0;
+                }
+            } else {
+                // On ground or small slope step — snap to terrain
+                player.position.y = groundY;
+                playerVelY = 0;
+            }
+
+            // Third person camera — pinned tight to player
+            _camTarget.copy(player.position);
+            _camPos.set(
+                _camTarget.x + Math.sin(camYaw) * camDist,
+                _camTarget.y + camDist * camPitch + 2,
+                _camTarget.z + Math.cos(camYaw) * camDist
+            );
+            camera.position.lerp(_camPos, 0.25);
+            camera.lookAt(_camTarget.x, _camTarget.y + 0.5, _camTarget.z);
+
+            // Move sun shadow near player
+            sun.position.set(
+                player.position.x + params.sunX * 0.5,
+                params.sunY,
+                player.position.z + params.sunZ * 0.5
+            );
+            sun.target.position.copy(player.position);
+            sun.target.updateMatrixWorld();
+
+            renderer.render(scene, camera);
+        }
+        window.onresize = () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); };
+
+        generateWorld();
+        animate();
+    </script>
+</body>
+</html>
