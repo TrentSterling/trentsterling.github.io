@@ -50,4 +50,4 @@ Each experiment is its own repo with GitHub Pages enabled; the custom domain rou
 
 ## Links
 
-- [Discord](https://discord.gg/0hyoWZyM6y7kkFCN) ; [GitHub](https://github.com/TrentSterling) ; [Twitter](https://twitter.com/Trent_Sterling) ; [Bluesky](https://bsky.app/profile/tront.xyz)
+- [Discord](https://tront.xyz/discord/) ; [GitHub](https://github.com/TrentSterling) ; [Twitter](https://twitter.com/Trent_Sterling) ; [Bluesky](https://bsky.app/profile/tront.xyz)
