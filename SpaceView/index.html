@@ -119,6 +119,13 @@
         .page-footer a:hover { color: #3b82f6; }
         .footer-sep { color: #444; }
 
+        .screenshot-gallery { display: flex; flex-direction: column; gap: 1.5rem; }
+        .screenshot-hero { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
+        .screenshot-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .screenshot-row img { width: 100%; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .screenshot-row img:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.2); }
+        .screenshot-caption { text-align: center; color: #666; font-size: 0.8rem; margin-top: -0.5rem; }
+
         @media (max-width: 900px) {
             .features-grid { grid-template-columns: repeat(2, 1fr); }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -133,6 +140,7 @@
             .features-grid { grid-template-columns: 1fr; }
             .stats-grid { grid-template-columns: 1fr; }
             .hero h1 { font-size: 2rem; }
+            .screenshot-row { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -157,6 +165,20 @@
                 <a href="https://github.com/TrentSterling/SpaceView/releases" class="btn btn-primary">Download <span class="version-badge">v0.7.0</span></a>
                 <a href="https://github.com/TrentSterling/SpaceView" class="btn btn-secondary" target="_blank">GitHub</a>
                 <a href="/blog/posts/spaceview/" class="btn btn-secondary" target="_blank">Blog Post</a>
+            </div>
+        </section>
+
+        <section id="screenshots">
+            <div class="section-header">
+                <h2>Screenshots</h2>
+            </div>
+            <div class="screenshot-gallery">
+                <img class="screenshot-hero" src="/blog/assets/img/blog/spaceview.png" alt="SpaceView scanning a drive with rainbow color mode">
+                <div class="screenshot-row">
+                    <img src="/blog/assets/img/blog/spaceview-neon.png" alt="SpaceView neon color theme">
+                    <img src="/blog/assets/img/blog/spaceview-ocean.png" alt="SpaceView ocean color theme">
+                    <img src="/blog/assets/img/blog/spaceview-types.png" alt="SpaceView types view - extension breakdown">
+                </div>
             </div>
         </section>
 
@@ -262,7 +284,7 @@
                 <span class="footer-sep">|</span>
                 <a href="https://github.com/TrentSterling/SpaceView/releases" target="_blank">Download</a>
                 <span class="footer-sep">|</span>
-                <a href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank">Discord</a>
+                <a href="https://tront.xyz/discord/" target="_blank">Discord</a>
             </p>
             <p style="margin-top: 0.5rem;">Built by <a href="https://tront.xyz">Trent Sterling</a>. Rust + egui. See where your space went.</p>
         </footer>
