@@ -247,12 +247,20 @@ canvas{display:block;width:100%;height:100%;position:fixed;top:0;left:0}
   height:100%;width:0%;background:rgba(200,195,185,0.4);
   border-radius:2px;transition:width 0.3s ease;
 }
+#load-click{
+  font-family:'Courier New',monospace;font-size:0.9rem;
+  color:rgba(200,195,185,0.6);letter-spacing:0.25em;
+  margin-bottom:1.5rem;cursor:pointer;text-transform:uppercase;
+  animation:loadPulse 2s ease-in-out infinite;
+}
+@keyframes loadPulse{0%,100%{opacity:0.4}50%{opacity:1}}
 </style>
 </head>
 <body>
 <div id="loading">
   <div id="load-title">calm</div>
-  <div id="load-status">preparing...</div>
+  <div id="load-click">click anywhere to begin</div>
+  <div id="load-status"></div>
   <div id="load-bar-outer"><div id="load-bar-inner"></div></div>
 </div>
 <canvas id="c"></canvas>
@@ -1015,6 +1023,523 @@ function seedToFloat(s) {
 }
 
 // ============================================
+// FULL LOFIGEN ENGINE (embedded from lofigen)
+// ============================================
+const LOFI_CONFIG = {
+    midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); },
+    scales: {
+        minor: [0,2,3,5,7,8,10], dorian: [0,2,3,5,7,9,10],
+        mixolydian: [0,2,4,5,7,9,10], minorPentatonic: [0,3,5,7,10],
+    },
+    chordTypes: {
+        maj7: [0,4,7,11], min7: [0,3,7,10], dom7: [0,4,7,10],
+        dim7: [0,3,6,9], min9: [0,3,7,10,14], maj9: [0,4,7,11,14],
+    },
+    progressions: [
+        [{deg:2,type:'min7'},{deg:5,type:'dom7'},{deg:1,type:'maj7'},{deg:6,type:'min7'}],
+        [{deg:1,type:'min7'},{deg:4,type:'min7'},{deg:7,type:'dom7'},{deg:3,type:'maj7'}],
+        [{deg:1,type:'maj7'},{deg:6,type:'min7'},{deg:2,type:'min7'},{deg:5,type:'dom7'}],
+        [{deg:3,type:'min7'},{deg:6,type:'min7'},{deg:2,type:'min7'},{deg:5,type:'dom7'}],
+        [{deg:4,type:'maj7'},{deg:3,type:'min7'},{deg:2,type:'min7'},{deg:1,type:'maj7'}],
+        [{deg:1,type:'min7'},{deg:7,type:'dom7'},{deg:6,type:'maj7'},{deg:5,type:'dom7'}],
+    ],
+    tempoRange: [65, 82],
+    volumes: { rhodes:0.13, bass:0.18, kick:0.30, snare:0.14, hihat:0.06, openHat:0.05, melody:0.09, pad:0.06, vinyl:0.035, master:0.75 },
+};
+
+const TIMBRES = {
+    keys: {
+        fmRhodes(ctx,freq,time,dur,vol,buses) {
+            const mod=ctx.createOscillator();mod.type='sine';mod.frequency.value=freq*2.001;
+            const mg=ctx.createGain();mg.gain.setValueAtTime(freq*0.8,time);mg.gain.exponentialRampToValueAtTime(Math.max(freq*0.1,0.01),time+dur*0.5);mod.connect(mg);
+            const car=ctx.createOscillator();car.type='sine';car.frequency.value=freq;mg.connect(car.frequency);
+            const car2=ctx.createOscillator();car2.type='sine';car2.frequency.value=freq*1.003;
+            const c2g=ctx.createGain();c2g.gain.value=0.3;car2.connect(c2g);
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.Q.value=0.5;lpf.frequency.setValueAtTime(2200,time);lpf.frequency.exponentialRampToValueAtTime(800,time+dur*0.6);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.02);env.gain.setValueAtTime(vol,time+0.05);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.4,0.001),time+dur*0.5);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            car.connect(lpf);c2g.connect(lpf);lpf.connect(env);env.connect(buses.dry);
+            mod.start(time);mod.stop(time+dur+0.1);car.start(time);car.stop(time+dur+0.1);car2.start(time);car2.stop(time+dur+0.1);
+        },
+        wurlitzer(ctx,freq,time,dur,vol,buses) {
+            const mod=ctx.createOscillator();mod.type='sine';mod.frequency.value=freq*3.0;
+            const mg=ctx.createGain();mg.gain.setValueAtTime(freq*1.2,time);mg.gain.exponentialRampToValueAtTime(Math.max(freq*0.15,0.01),time+dur*0.4);mod.connect(mg);
+            const car=ctx.createOscillator();car.type='sine';car.frequency.value=freq;mg.connect(car.frequency);
+            const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1500;bp.Q.value=1.5;
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.012);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.3,0.001),time+dur*0.5);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            car.connect(bp);bp.connect(env);env.connect(buses.dry);
+            mod.start(time);mod.stop(time+dur+0.1);car.start(time);car.stop(time+dur+0.1);
+        },
+        musicBox(ctx,freq,time,dur,vol,buses) {
+            const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=freq*2;
+            const d=Math.min(dur,0.5);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.004);env.gain.exponentialRampToValueAtTime(0.001,time+d);
+            osc.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.2;const wet=ctx.createGain();wet.gain.value=0.8;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            osc.start(time);osc.stop(time+d+0.1);
+        },
+        warmEpiano(ctx,freq,time,dur,vol,buses) {
+            const detunes=[-0.004,0,0.004];
+            const oscs=detunes.map(d=>{const o=ctx.createOscillator();o.type='square';o.frequency.value=freq*(1+d);return o;});
+            const mix=ctx.createGain();mix.gain.value=0.33;oscs.forEach(o=>o.connect(mix));
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=1200;lpf.Q.value=0.7;
+            const del=ctx.createDelay(0.02);del.delayTime.value=0.005;
+            const lfo=ctx.createOscillator();lfo.type='sine';lfo.frequency.value=2;const lfg=ctx.createGain();lfg.gain.value=0.002;lfo.connect(lfg);lfg.connect(del.delayTime);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.03);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.5,0.001),time+dur*0.5);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            mix.connect(lpf);lpf.connect(del);del.connect(env);env.connect(buses.dry);
+            lfo.start(time);lfo.stop(time+dur+0.1);oscs.forEach(o=>{o.start(time);o.stop(time+dur+0.1);});
+        },
+    },
+    bass: {
+        triangleSub(ctx,freq,time,dur,vol,buses) {
+            const osc=ctx.createOscillator();osc.type='triangle';osc.frequency.value=freq;
+            const sub=ctx.createOscillator();sub.type='sine';sub.frequency.value=freq/2;
+            const sg=ctx.createGain();sg.gain.value=0.6;sub.connect(sg);
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.Q.value=2;lpf.frequency.setValueAtTime(1200,time);lpf.frequency.exponentialRampToValueAtTime(350,time+dur*0.3);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.01);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.5,0.001),time+dur*0.4);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            osc.connect(lpf);sg.connect(lpf);lpf.connect(env);env.connect(buses.dry);
+            osc.start(time);osc.stop(time+dur+0.05);sub.start(time);sub.stop(time+dur+0.05);
+        },
+        roundSine(ctx,freq,time,dur,vol,buses) {
+            const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=freq;
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=500;lpf.Q.value=0.5;
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol*0.8,time+0.02);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.4,0.001),time+dur*0.5);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            osc.connect(lpf);lpf.connect(env);env.connect(buses.dry);
+            osc.start(time);osc.stop(time+dur+0.05);
+        },
+        pluckedBass(ctx,freq,time,dur,vol,buses) {
+            const osc=ctx.createOscillator();osc.type='sawtooth';osc.frequency.value=freq;
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.Q.value=4;lpf.frequency.setValueAtTime(3000,time);lpf.frequency.exponentialRampToValueAtTime(200,time+0.05);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.005);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.3,0.001),time+dur*0.3);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            osc.connect(lpf);lpf.connect(env);env.connect(buses.dry);
+            osc.start(time);osc.stop(time+dur+0.05);
+        },
+        deepSub(ctx,freq,time,dur,vol,buses) {
+            const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=freq;
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=150;lpf.Q.value=0.5;
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.015);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.6,0.001),time+dur*0.5);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            osc.connect(lpf);lpf.connect(env);env.connect(buses.dry);
+            osc.start(time);osc.stop(time+dur+0.05);
+        },
+    },
+    melody: {
+        sineTriangle(ctx,freq,time,dur,vol,buses) {
+            const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=freq;
+            const tri=ctx.createOscillator();tri.type='triangle';tri.frequency.value=freq;
+            const tg=ctx.createGain();tg.gain.value=0.2;tri.connect(tg);
+            const vib=ctx.createOscillator();vib.type='sine';vib.frequency.value=4.5;const vd=ctx.createGain();vd.gain.value=freq*0.003;vib.connect(vd);vd.connect(osc.frequency);vd.connect(tri.frequency);
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=2500;
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.05);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.6,0.001),time+dur*0.5);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            osc.connect(lpf);tg.connect(lpf);lpf.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.5;const wet=ctx.createGain();wet.gain.value=0.6;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            vib.start(time);vib.stop(time+dur+0.1);osc.start(time);osc.stop(time+dur+0.1);tri.start(time);tri.stop(time+dur+0.1);
+        },
+        bellTone(ctx,freq,time,dur,vol,buses) {
+            const mod=ctx.createOscillator();mod.type='sine';mod.frequency.value=freq*3.5;
+            const mg=ctx.createGain();mg.gain.setValueAtTime(freq*2.5,time);mg.gain.exponentialRampToValueAtTime(Math.max(freq*0.1,0.01),time+Math.min(dur,0.3));mod.connect(mg);
+            const car=ctx.createOscillator();car.type='sine';car.frequency.value=freq;mg.connect(car.frequency);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.003);env.gain.exponentialRampToValueAtTime(0.001,time+Math.min(dur,0.6));
+            car.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.4;const wet=ctx.createGain();wet.gain.value=0.7;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            mod.start(time);mod.stop(time+dur+0.1);car.start(time);car.stop(time+dur+0.1);
+        },
+        fluteLike(ctx,freq,time,dur,vol,buses) {
+            const osc=ctx.createOscillator();osc.type='sine';osc.frequency.value=freq;
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=freq*2;lpf.Q.value=1;
+            const breath=ctx.createOscillator();breath.type='sawtooth';breath.frequency.value=freq*0.5+200;
+            const bbp=ctx.createBiquadFilter();bbp.type='bandpass';bbp.frequency.value=freq;bbp.Q.value=6;
+            const bg=ctx.createGain();bg.gain.value=0.08;breath.connect(bbp);bbp.connect(bg);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.06);env.gain.setValueAtTime(vol,time+dur*0.3);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            osc.connect(lpf);lpf.connect(env);bg.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.5;const wet=ctx.createGain();wet.gain.value=0.5;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            osc.start(time);osc.stop(time+dur+0.1);breath.start(time);breath.stop(time+dur+0.1);
+        },
+        vibraphone(ctx,freq,time,dur,vol,buses) {
+            const mod=ctx.createOscillator();mod.type='sine';mod.frequency.value=freq*6;
+            const mg=ctx.createGain();mg.gain.setValueAtTime(freq*1.5,time);mg.gain.exponentialRampToValueAtTime(Math.max(freq*0.05,0.01),time+dur*0.6);mod.connect(mg);
+            const car=ctx.createOscillator();car.type='sine';car.frequency.value=freq;mg.connect(car.frequency);
+            const trem=ctx.createOscillator();trem.type='sine';trem.frequency.value=5;const td=ctx.createGain();td.gain.value=0.3;
+            const tremGain=ctx.createGain();tremGain.gain.value=1;trem.connect(td);td.connect(tremGain.gain);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.005);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.4,0.001),time+dur*0.5);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+            car.connect(tremGain);tremGain.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.4;const wet=ctx.createGain();wet.gain.value=0.6;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            trem.start(time);trem.stop(time+dur+0.1);mod.start(time);mod.stop(time+dur+0.1);car.start(time);car.stop(time+dur+0.1);
+        },
+    },
+    pad: {
+        detunedSaw(ctx,freq,time,dur,vol,buses) {
+            const o1=ctx.createOscillator();o1.type='sawtooth';o1.frequency.value=freq*0.998;
+            const o2=ctx.createOscillator();o2.type='sawtooth';o2.frequency.value=freq*1.002;
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.Q.value=1;lpf.frequency.setValueAtTime(600,time);lpf.frequency.linearRampToValueAtTime(900,time+dur*0.3);lpf.frequency.linearRampToValueAtTime(500,time+dur);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+dur*0.3);env.gain.linearRampToValueAtTime(0,time+dur);
+            o1.connect(lpf);o2.connect(lpf);lpf.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.3;const wet=ctx.createGain();wet.gain.value=0.7;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            o1.start(time);o1.stop(time+dur+0.2);o2.start(time);o2.stop(time+dur+0.2);
+        },
+        stringLike(ctx,freq,time,dur,vol,buses) {
+            const detunes=[-0.006,-0.002,0.002,0.006];
+            const oscs=detunes.map(d=>{const o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=freq*(1+d);return o;});
+            const mix=ctx.createGain();mix.gain.value=0.25;oscs.forEach(o=>o.connect(mix));
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=700;lpf.Q.value=0.8;
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+1.0);env.gain.setValueAtTime(vol,time+dur*0.6);env.gain.linearRampToValueAtTime(0,time+dur);
+            mix.connect(lpf);lpf.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.25;const wet=ctx.createGain();wet.gain.value=0.75;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            oscs.forEach(o=>{o.start(time);o.stop(time+dur+0.2);});
+        },
+        choirish(ctx,freq,time,dur,vol,buses) {
+            const osc=ctx.createOscillator();osc.type='sawtooth';osc.frequency.value=freq;
+            const f1=ctx.createBiquadFilter();f1.type='bandpass';f1.frequency.value=600;f1.Q.value=4;
+            const f2=ctx.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1000;f2.Q.value=4;
+            const g1=ctx.createGain();g1.gain.value=0.5;const g2=ctx.createGain();g2.gain.value=0.5;
+            osc.connect(f1);f1.connect(g1);osc.connect(f2);f2.connect(g2);
+            const mix2=ctx.createGain();mix2.gain.value=1;g1.connect(mix2);g2.connect(mix2);
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.5);env.gain.setValueAtTime(vol,time+dur*0.6);env.gain.linearRampToValueAtTime(0,time+dur);
+            mix2.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.35;const wet=ctx.createGain();wet.gain.value=0.65;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            osc.start(time);osc.stop(time+dur+0.2);
+        },
+        organ(ctx,freq,time,dur,vol,buses) {
+            const harmonics=[1,2,3,5];const amps=[1,0.5,0.3,0.15];
+            const oscs=harmonics.map((h,i)=>{const o=ctx.createOscillator();o.type='sine';o.frequency.value=freq*h;const g=ctx.createGain();g.gain.value=amps[i]*0.25;o.connect(g);return{o,g};});
+            const mix2=ctx.createGain();mix2.gain.value=1;oscs.forEach(({g})=>g.connect(mix2));
+            const lpf=ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=1500;
+            const env=ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.15);env.gain.setValueAtTime(vol,time+dur*0.7);env.gain.linearRampToValueAtTime(0,time+dur);
+            mix2.connect(lpf);lpf.connect(env);
+            const dry=ctx.createGain();dry.gain.value=0.4;const wet=ctx.createGain();wet.gain.value=0.6;
+            env.connect(dry);env.connect(wet);dry.connect(buses.dry);wet.connect(buses.reverb);
+            oscs.forEach(({o})=>{o.start(time);o.stop(time+dur+0.2);});
+        },
+    },
+};
+
+const ARRANGEMENT_TEMPLATES = [
+    { name:'Classic Build', sections:[
+        {name:'Ambient Intro',len:4,rhodes:true,bass:false,drums:false,melody:false,pad:true},
+        {name:'Add Melody',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+        {name:'Groove In',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:true},
+        {name:'Full Groove',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Drop Out',len:4,rhodes:true,bass:true,drums:false,melody:false,pad:true},
+        {name:'Build Back',len:4,rhodes:true,bass:true,drums:true,melody:false,pad:true},
+        {name:'Full + Melody',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Outro',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+    ]},
+    { name:'Drums First', sections:[
+        {name:'Beat Intro',len:4,rhodes:false,bass:true,drums:true,melody:false,pad:false},
+        {name:'Add Chords',len:4,rhodes:true,bass:true,drums:true,melody:false,pad:false},
+        {name:'Full Band',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Pad Swell',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:true},
+        {name:'Strip Down',len:4,rhodes:false,bass:true,drums:true,melody:false,pad:true},
+        {name:'Build Up',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Peak',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:true},
+        {name:'Drums Out',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+    ]},
+    { name:'Ambient Opener', sections:[
+        {name:'Deep Ambient',len:8,rhodes:true,bass:false,drums:false,melody:false,pad:true},
+        {name:'Melody Drifts',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+        {name:'Bass Enters',len:4,rhodes:true,bass:true,drums:false,melody:true,pad:true},
+        {name:'Full Bloom',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Breathing',len:4,rhodes:true,bass:true,drums:false,melody:false,pad:true},
+        {name:'Full Return',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Fade Away',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+    ]},
+    { name:'Melody Focus', sections:[
+        {name:'Melody Solo',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:false},
+        {name:'Add Pad',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+        {name:'Bass Joins',len:4,rhodes:true,bass:true,drums:false,melody:true,pad:true},
+        {name:'Full Sound',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Melodic Break',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+        {name:'Groove Back',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Sparse End',len:4,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+    ]},
+    { name:'Stripped Back', sections:[
+        {name:'Bare Chords',len:2,rhodes:true,bass:false,drums:false,melody:false,pad:false},
+        {name:'With Bass',len:2,rhodes:true,bass:true,drums:false,melody:false,pad:false},
+        {name:'Light Beat',len:4,rhodes:true,bass:true,drums:true,melody:false,pad:false},
+        {name:'Melody Peek',len:2,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Pad Wash',len:4,rhodes:true,bass:true,drums:false,melody:false,pad:true},
+        {name:'Together',len:4,rhodes:true,bass:true,drums:true,melody:true,pad:false},
+        {name:'Wind Down',len:2,rhodes:true,bass:false,drums:false,melody:false,pad:true},
+        {name:'Quiet End',len:2,rhodes:true,bass:false,drums:false,melody:true,pad:true},
+    ]},
+];
+
+class LofiMusicSystem {
+    constructor(seed) {
+        this.seed = seed; this.rng = mulberry32(seed);
+        this.ambientRng = mulberry32(typeof seed === 'string' ? seed + '_amb' : seed + 7919);
+        this.ctx = null; this.started = false; this.muted = false;
+        this.schedulerInterval = null; this.currentStep = 0; this.nextStepTime = 0;
+        this.songParams = null; this.barCount = 0; this.onStep = null; this.onCycleComplete = null;
+        this.noteLog = []; this._ambientType = 'off'; this._ambientNodes = [];
+        this._volume = LOFI_CONFIG.volumes.master; this._prevSectionIdx = -1; this.startTime = 0;
+    }
+    init(audioCtx) {
+        this.ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        this.masterGain = this.ctx.createGain(); this.masterGain.gain.value = this._volume;
+        this.masterGain.connect(this.ctx.destination);
+        this.analyser = this.ctx.createAnalyser(); this.analyser.fftSize = 256; this.analyser.smoothingTimeConstant = 0.8;
+        this.masterGain.connect(this.analyser);
+        this.saturation = this.ctx.createWaveShaper(); this.saturation.curve = this._makeSatCurve(0.4); this.saturation.oversample = '2x';
+        this.saturation.connect(this.masterGain);
+        this.tapeDelay = this.ctx.createDelay(0.05); this.tapeDelay.delayTime.value = 0.003;
+        this.tapeWobbleLFO = this.ctx.createOscillator(); this.tapeWobbleLFO.type = 'sine'; this.tapeWobbleLFO.frequency.value = 0.55;
+        this.tapeWobbleDepth = this.ctx.createGain(); this.tapeWobbleDepth.gain.value = 0.0015;
+        this.tapeWobbleLFO.connect(this.tapeWobbleDepth); this.tapeWobbleDepth.connect(this.tapeDelay.delayTime);
+        this.tapeWobbleLFO.start(); this.tapeDelay.connect(this.saturation);
+        this.masterLPF = this.ctx.createBiquadFilter(); this.masterLPF.type = 'lowpass'; this.masterLPF.frequency.value = 3200; this.masterLPF.Q.value = 0.5;
+        this.masterLPF.connect(this.tapeDelay);
+        this.hiShelf = this.ctx.createBiquadFilter(); this.hiShelf.type = 'highshelf'; this.hiShelf.frequency.value = 4000; this.hiShelf.gain.value = -4;
+        this.hiShelf.connect(this.masterLPF);
+        this._createReverb();
+        this.reverbGain = this.ctx.createGain(); this.reverbGain.gain.value = 0.35;
+        this.reverb.connect(this.reverbGain); this.reverbGain.connect(this.saturation);
+        this.dryBus = this.ctx.createGain(); this.dryBus.gain.value = 1.0; this.dryBus.connect(this.hiShelf);
+        this.reverbSend = this.ctx.createGain(); this.reverbSend.gain.value = 0.35; this.reverbSend.connect(this.reverb);
+        this.duckBus = this.ctx.createGain(); this.duckBus.gain.value = 1.0;
+        this.duckBus.connect(this.dryBus); this.duckBus.connect(this.reverbSend);
+        this.drumBus = this.ctx.createGain(); this.drumBus.gain.value = 1.0; this.drumBus.connect(this.dryBus);
+        this.vinylGain = this.ctx.createGain(); this.vinylGain.gain.value = LOFI_CONFIG.volumes.vinyl; this.vinylGain.connect(this.masterGain);
+        this.ambientBus = this.ctx.createGain(); this.ambientBus.gain.value = 0.05; this._ambientVolume = 0.05;
+        this.ambientLPF = this.ctx.createBiquadFilter(); this.ambientLPF.type = 'lowpass'; this.ambientLPF.frequency.value = 2500;
+        this.ambientBus.connect(this.ambientLPF); this.ambientLPF.connect(this.masterGain);
+        this._generateNoiseBuffers(); this.songParams = this._generateSongParams();
+    }
+    _makeSatCurve(amount) {
+        const n=256,curve=new Float32Array(n);
+        for(let i=0;i<n;i++){const x=(i*2)/n-1;curve[i]=(Math.PI+amount)*x/(Math.PI+amount*Math.abs(x));}
+        return curve;
+    }
+    _createReverb() {
+        const len=this.ctx.sampleRate*3.5,imp=this.ctx.createBuffer(2,len,this.ctx.sampleRate),rr=mulberry32(this.seed+999);
+        for(let ch=0;ch<2;ch++){const d=imp.getChannelData(ch);for(let i=0;i<len;i++){const t=i/len;let v=(rr()*2-1);if(t<0.05)v*=0.7;v*=Math.exp(-3.5*t);if(t>0.2)v*=0.8;d[i]=v;}}
+        this.reverb=this.ctx.createConvolver();this.reverb.buffer=imp;
+    }
+    _generateNoiseBuffers() {
+        const nr=mulberry32(this.seed+777),sr=this.ctx.sampleRate;
+        const hatLen=Math.floor(sr*0.15);this.hatNoiseBuf=this.ctx.createBuffer(1,hatLen,sr);
+        const hd=this.hatNoiseBuf.getChannelData(0);for(let i=0;i<hatLen;i++)hd[i]=nr()*2-1;
+        const snareLen=Math.floor(sr*0.25);this.snareNoiseBuf=this.ctx.createBuffer(1,snareLen,sr);
+        const sd=this.snareNoiseBuf.getChannelData(0);for(let i=0;i<snareLen;i++)sd[i]=nr()*2-1;
+        const vinylLen=Math.floor(sr*3);this.vinylBuf=this.ctx.createBuffer(2,vinylLen,sr);
+        for(let ch=0;ch<2;ch++){const d=this.vinylBuf.getChannelData(ch);for(let i=0;i<vinylLen;i++){let s=(nr()*2-1)*0.015;if(nr()<0.002)s+=(nr()*2-1)*0.4;if(nr()<0.0005)s+=(nr()>0.5?1:-1)*0.25;d[i]=s;}}
+        const ambLen=Math.floor(sr*5);this.ambientNoiseBuf=this.ctx.createBuffer(1,ambLen,sr);
+        const ad=this.ambientNoiseBuf.getChannelData(0);for(let i=0;i<ambLen;i++)ad[i]=nr()*2-1;
+    }
+    _generateSongParams() {
+        const r=this.rng,scaleNames=Object.keys(LOFI_CONFIG.scales),scaleName=scaleNames[Math.floor(r()*scaleNames.length)];
+        const scale=LOFI_CONFIG.scales[scaleName],rootMidi=48+Math.floor(r()*7);
+        const[tMin,tMax]=LOFI_CONFIG.tempoRange,bpm=Math.floor(tMin+r()*(tMax-tMin)),stepDur=60/bpm/4;
+        const swing=0.12+r()*0.18,progIdx=Math.floor(r()*LOFI_CONFIG.progressions.length);
+        const progression=LOFI_CONFIG.progressions[progIdx];
+        const chords=this._buildChordVoicings(progression,scale,rootMidi,r);
+        const drums=this._genDrumPattern(r),drumFill=this._genFillPattern(r);
+        const bass=this._genBassPattern(r,chords,scale,rootMidi),melody=this._genMelodySeq(r,scale,rootMidi);
+        const arrangement=this._genArrangement(r);
+        if(this.tapeWobbleLFO)this.tapeWobbleLFO.frequency.value=0.35+r()*0.35;
+        const kv=Object.keys(TIMBRES.keys),bv=Object.keys(TIMBRES.bass),mv=Object.keys(TIMBRES.melody),pv=Object.keys(TIMBRES.pad);
+        const timbres={keys:kv[Math.floor(r()*kv.length)],bass:bv[Math.floor(r()*bv.length)],melody:mv[Math.floor(r()*mv.length)],pad:pv[Math.floor(r()*pv.length)]};
+        const drumCharacter={kickPitch:100+r()*40,kickDecay:0.3+r()*0.2,snareTone:160+r()*60,snareDecay:0.15+r()*0.1,hatColor:6000+r()*4000};
+        const ambientTypes=['rain','cafe','night'],ambientType=ambientTypes[Math.floor(r()*ambientTypes.length)];
+        return {scaleName,rootMidi,bpm,stepDur,swing,progression,chords,drums,drumFill,bass,melody,arrangement,timbres,drumCharacter,ambientType};
+    }
+    _buildChordVoicings(prog,scale,rootMidi,r) {
+        return prog.map(({deg,type})=>{
+            const di=deg-1,semi=scale[di%scale.length]+12*Math.floor(di/scale.length),cr=rootMidi+semi;
+            const iv=LOFI_CONFIG.chordTypes[type];let notes=iv.map(i=>cr+i);
+            if(notes.length>=4&&r()>0.3){notes[notes.length-2]-=12;notes.sort((a,b)=>a-b);}
+            if(r()>0.5){notes[0]+=12;notes.sort((a,b)=>a-b);}
+            while(notes[0]<48)notes=notes.map(n=>n+12);while(notes[notes.length-1]>76)notes=notes.map(n=>n-12);
+            return notes;
+        });
+    }
+    _genArrangement(r){const i=Math.floor(r()*ARRANGEMENT_TEMPLATES.length);return{name:ARRANGEMENT_TEMPLATES[i].name,sections:ARRANGEMENT_TEMPLATES[i].sections.map(s=>({...s}))};}
+    _genDrumPattern(r) {
+        const kick=Array(16).fill(0),snare=Array(16).fill(0),hihat=Array(16).fill(0),openHat=Array(16).fill(0);
+        kick[0]=1;kick[8]=0.9;if(r()>0.5)kick[6]=0.4;if(r()>0.65)kick[10]=0.35;if(r()>0.75)kick[14]=0.3;
+        snare[4]=1;snare[12]=0.95;if(r()>0.55)snare[7]=0.2;if(r()>0.6)snare[15]=0.25;if(r()>0.8)snare[3]=0.15;
+        for(let i=0;i<16;i+=2)hihat[i]=0.5+r()*0.3;for(let i=1;i<16;i+=2)if(r()>0.55)hihat[i]=0.15+r()*0.2;
+        if(r()>0.4)openHat[2]=0.4;if(r()>0.6)openHat[10]=0.35;if(r()>0.7)openHat[6]=0.3;
+        return{kick,snare,hihat,openHat};
+    }
+    _genFillPattern(r) {
+        const kick=Array(16).fill(0),snare=Array(16).fill(0),hihat=Array(16).fill(0),openHat=Array(16).fill(0);
+        kick[0]=0.8;kick[4]=0.3;if(r()>0.5)kick[12]=0.4;snare[4]=0.6;
+        for(let i=8;i<16;i++)snare[i]=0.25+(i-8)*0.09;for(let i=0;i<16;i++)hihat[i]=0.25+r()*0.25;openHat[14]=0.4;
+        return{kick,snare,hihat,openHat};
+    }
+    _genBassPattern(r,chords,scale,rootMidi) {
+        return chords.map(chord=>{
+            const pat=Array(16).fill(null),br=chord[0]-12;pat[0]={note:br,vel:0.9};
+            const fifth=br+7;pat[8]={note:r()>0.4?fifth:br,vel:0.7};
+            if(r()>0.5)pat[7]={note:pat[8].note+(r()>0.5?-1:1),vel:0.3};
+            if(r()>0.5)pat[10]={note:br+scale[Math.floor(r()*scale.length)],vel:0.45};
+            if(r()>0.6)pat[14]={note:br,vel:0.3};if(r()>0.7)pat[4]={note:br+scale[Math.floor(r()*Math.min(3,scale.length))],vel:0.35};
+            return pat;
+        });
+    }
+    _genMelodySeq(r,scale,rootMidi) {
+        const bars=[],ms=LOFI_CONFIG.scales.minorPentatonic;let prev=rootMidi+12+ms[Math.floor(r()*ms.length)];
+        for(let bar=0;bar<4;bar++){
+            const pat=Array(16).fill(null),nc=2+Math.floor(r()*3),positions=[];
+            for(let n=0;n<nc;n++){let pos,tries=0;do{const w=[0,2,4,6,8,10,12,14];pos=w[Math.floor(r()*w.length)];if(r()>0.7)pos=Math.floor(r()*16);tries++;}while(positions.includes(pos)&&tries<20);positions.push(pos);}
+            positions.sort((a,b)=>a-b);
+            for(const pos of positions){
+                const step=Math.floor(r()*3)-1,ni=this._nearScaleIdx(prev,rootMidi,ms);
+                let newIdx=ni+step,oct=0;if(newIdx<0){newIdx+=ms.length;oct=-12;}if(newIdx>=ms.length){newIdx-=ms.length;oct=12;}
+                let nn=rootMidi+12+ms[newIdx%ms.length]+oct;while(nn<rootMidi+7)nn+=12;while(nn>rootMidi+31)nn-=12;
+                prev=nn;pat[pos]={note:nn,dur:2+Math.floor(r()*4),vel:0.35+r()*0.3};
+            }
+            if(r()>0.75)for(let i=0;i<16;i++)pat[i]=null;bars.push(pat);
+        }
+        return bars;
+    }
+    _nearScaleIdx(note,root,scale){const pc=((note-root)%12+12)%12;let bi=0,bd=99;for(let i=0;i<scale.length;i++){const d=Math.abs(scale[i]-pc);if(d<bd){bd=d;bi=i;}}return bi;}
+    _getCurrentSection(){
+        const secs=this.songParams.arrangement.sections,total=secs.reduce((s,sec)=>s+sec.len,0),bic=this.barCount%total;
+        let cum=0;for(let i=0;i<secs.length;i++){if(bic<cum+secs[i].len)return{index:i,section:secs[i],barInSection:bic-cum,totalBars:total};cum+=secs[i].len;}
+        return{index:0,section:secs[0],barInSection:0,totalBars:total};
+    }
+    start(){
+        if(!this.ctx||this.started)return;this.started=true;this.currentStep=0;this.barCount=0;
+        this._prevSectionIdx=-1;this.noteLog=[];this.startTime=this.ctx.currentTime+0.1;
+        this.nextStepTime=this.startTime;this._startVinylCrackle();
+        this.schedulerInterval=setInterval(()=>this._schedulerTick(),25);
+    }
+    stop(){
+        if(this.schedulerInterval){clearInterval(this.schedulerInterval);this.schedulerInterval=null;}
+        if(this.vinylSource){try{this.vinylSource.stop();}catch(e){}this.vinylSource=null;}
+        this._stopAmbient();this.started=false;
+    }
+    setVolume(v){this._volume=v;if(!this.ctx||!this.masterGain||this.muted)return;const n=this.ctx.currentTime;this.masterGain.gain.cancelScheduledValues(n);this.masterGain.gain.setValueAtTime(this.masterGain.gain.value,n);this.masterGain.gain.linearRampToValueAtTime(v,n+0.05);}
+    setAmbient(type){
+        if(type===this._ambientType)return;const now=this.ctx.currentTime;
+        this.ambientBus.gain.cancelScheduledValues(now);this.ambientBus.gain.setValueAtTime(this.ambientBus.gain.value,now);this.ambientBus.gain.linearRampToValueAtTime(0,now+0.5);
+        const oldN=this._ambientNodes;setTimeout(()=>{oldN.forEach(n=>{try{n.stop();}catch(e){}});},600);
+        this._ambientNodes=[];this._ambientType=type;if(type==='off')return;
+        const tv=this._ambientVolume;
+        setTimeout(()=>{if(this._ambientType!==type||!this.started)return;this._createAmbient(type);
+            const t=this.ctx.currentTime;this.ambientBus.gain.cancelScheduledValues(t);this.ambientBus.gain.setValueAtTime(0,t);this.ambientBus.gain.linearRampToValueAtTime(tv,t+0.5);},550);
+    }
+    _createAmbient(type){
+        if(type==='rain'){const n=this.ctx.createBufferSource();n.buffer=this.ambientNoiseBuf;n.loop=true;const bp=this.ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=800;bp.Q.value=0.3;n.connect(bp);bp.connect(this.ambientBus);n.start();this._ambientNodes.push(n);}
+        else if(type==='cafe'){const n=this.ctx.createBufferSource();n.buffer=this.ambientNoiseBuf;n.loop=true;const lp=this.ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=200;n.connect(lp);lp.connect(this.ambientBus);const m=this.ctx.createBufferSource();m.buffer=this.ambientNoiseBuf;m.loop=true;const bp=this.ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=300;bp.Q.value=2;const mg=this.ctx.createGain();mg.gain.value=0.3;m.connect(bp);bp.connect(mg);mg.connect(this.ambientBus);n.start();m.start();this._ambientNodes.push(n,m);}
+        else if(type==='night'){const n=this.ctx.createBufferSource();n.buffer=this.ambientNoiseBuf;n.loop=true;const lp=this.ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=400;const lo=this.ctx.createOscillator();lo.type='sine';lo.frequency.value=0.15;const lg=this.ctx.createGain();lg.gain.value=200;lo.connect(lg);lg.connect(lp.frequency);n.connect(lp);lp.connect(this.ambientBus);lo.start();n.start();this._ambientNodes.push(n,lo);}
+    }
+    _stopAmbient(){this._ambientNodes.forEach(n=>{try{n.stop();}catch(e){}});this._ambientNodes=[];this._ambientType='off';}
+    _startVinylCrackle(){this.vinylSource=this.ctx.createBufferSource();this.vinylSource.buffer=this.vinylBuf;this.vinylSource.loop=true;this.vinylSource.connect(this.vinylGain);this.vinylSource.start();}
+    _schedulerTick(){
+        if(!this.started||!this.ctx)return;const la=0.1;
+        while(this.nextStepTime<this.ctx.currentTime+la){
+            this._scheduleStep(this.nextStepTime,this.currentStep);
+            let dur=this.songParams.stepDur;if(this.currentStep%2===1)dur+=this.songParams.stepDur*this.songParams.swing;
+            this.nextStepTime+=dur;this.currentStep++;
+            if(this.currentStep>=16){this.currentStep=0;this.barCount++;
+                const total=this.songParams.arrangement.sections.reduce((s,sec)=>s+sec.len,0);
+                if(this.barCount>0&&this.barCount%total===0&&this.onCycleComplete)setTimeout(()=>this.onCycleComplete(),0);
+            }
+        }
+    }
+    _scheduleStep(time,step){
+        const sp=this.songParams,ci=this.barCount%sp.chords.length,chord=sp.chords[ci];
+        const{index:si,section,barInSection}=this._getCurrentSection();
+        const isFill=section.drums&&barInSection===section.len-1;
+        const buses={dry:this.duckBus,reverb:this.reverbSend};
+        const dp=isFill?sp.drumFill:sp.drums;
+        if(step===0&&barInSection===0&&this._prevSectionIdx!==si){if(this._prevSectionIdx>=0&&section.drums)this._playCrash(time,0.7);this._prevSectionIdx=si;}
+        if(section.drums&&dp.kick[step]>0)this._applySidechain(time,dp.kick[step]);
+        if(section.drums){
+            if(dp.kick[step]>0)this._playKick(time,dp.kick[step]);
+            if(dp.snare[step]>0)this._playSnare(time,dp.snare[step]);
+            if(dp.hihat[step]>0)this._playHiHat(time,dp.openHat[step]>0,dp.hihat[step]);
+        }
+        if(section.rhodes&&step===0){const bd=sp.stepDur*16;this._playChord(time,chord,bd*0.95);}
+        if(section.pad&&step===0){const bd=sp.stepDur*16;this._playPad(time,chord,bd*1.2);}
+        if(section.bass){const bp=sp.bass[ci];if(bp[step]){const{note,vel}=bp[step];let dur=sp.stepDur*2;for(let s=step+1;s<16;s++){if(bp[s])break;dur+=sp.stepDur;}this._playBass(time,note,Math.min(dur,sp.stepDur*8),vel);}}
+        if(section.melody){const mp=sp.melody[ci];if(mp[step]){const{note,dur,vel}=mp[step];this._playMel(time,note,sp.stepDur*dur,vel);}}
+        const ar=this.ambientRng();
+        if(this._ambientType==='rain'&&ar<0.03)this._playRainDrip(time);
+        else if(this._ambientType==='cafe'&&ar<0.02)this._playCafePing(time);
+        else if(this._ambientType==='night'&&ar<0.02)this._playCricket(time);
+    }
+    _applySidechain(time,int){const g=this.duckBus.gain;g.cancelScheduledValues(time);g.setValueAtTime(1,time);g.linearRampToValueAtTime(1-0.35*int,time+0.008);g.linearRampToValueAtTime(1,time+0.18);}
+    _playChord(time,notes,dur){
+        const vol=LOFI_CONFIG.volumes.rhodes,v=this.songParams.timbres.keys,n=notes.length,buses={dry:this.duckBus,reverb:this.reverbSend};
+        for(let i=0;i<n;i++)TIMBRES.keys[v](this.ctx,LOFI_CONFIG.midiToFreq(notes[i]),time,dur,vol/Math.sqrt(n),buses);
+        for(const m of notes){this.noteLog.push({time,midi:m,dur,role:'chord'});}if(this.noteLog.length>600)this.noteLog.splice(0,100);
+    }
+    _playPad(time,cn,dur){
+        const vol=LOFI_CONFIG.volumes.pad,v=this.songParams.timbres.pad,buses={dry:this.duckBus,reverb:this.reverbSend};
+        const pn=[cn[0],cn[Math.min(2,cn.length-1)]];for(const m of pn)TIMBRES.pad[v](this.ctx,LOFI_CONFIG.midiToFreq(m),time,dur,vol,buses);
+    }
+    _playBass(time,midi,dur,vel=1){
+        const vol=LOFI_CONFIG.volumes.bass*vel,v=this.songParams.timbres.bass,buses={dry:this.duckBus,reverb:this.reverbSend};
+        TIMBRES.bass[v](this.ctx,LOFI_CONFIG.midiToFreq(midi),time,dur,vol,buses);
+        this.noteLog.push({time,midi,dur,role:'bass'});if(this.noteLog.length>600)this.noteLog.splice(0,100);
+    }
+    _playMel(time,midi,dur,vel=1){
+        const vol=LOFI_CONFIG.volumes.melody*vel,v=this.songParams.timbres.melody,buses={dry:this.duckBus,reverb:this.reverbSend};
+        TIMBRES.melody[v](this.ctx,LOFI_CONFIG.midiToFreq(midi),time,dur,vol,buses);
+        this.noteLog.push({time,midi,dur,role:'melody'});if(this.noteLog.length>600)this.noteLog.splice(0,100);
+    }
+    _playKick(time,vel=1){
+        const vol=LOFI_CONFIG.volumes.kick*vel,dc=this.songParams.drumCharacter;
+        const body=this.ctx.createOscillator();body.type='sine';body.frequency.setValueAtTime(dc.kickPitch,time);body.frequency.exponentialRampToValueAtTime(45,time+0.1);
+        const click=this.ctx.createOscillator();click.type='triangle';click.frequency.value=600;
+        const cg=this.ctx.createGain();cg.gain.setValueAtTime(vol*0.3,time);cg.gain.exponentialRampToValueAtTime(0.001,time+0.012);
+        click.connect(cg);cg.connect(this.drumBus);click.start(time);click.stop(time+0.015);
+        const env=this.ctx.createGain();env.gain.setValueAtTime(0,time);env.gain.linearRampToValueAtTime(vol,time+0.005);env.gain.setValueAtTime(vol,time+0.015);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.3,0.001),time+0.1);env.gain.exponentialRampToValueAtTime(0.001,time+dc.kickDecay);
+        const lpf=this.ctx.createBiquadFilter();lpf.type='lowpass';lpf.frequency.value=200;
+        body.connect(lpf);lpf.connect(env);env.connect(this.drumBus);body.start(time);body.stop(time+dc.kickDecay+0.05);
+    }
+    _playSnare(time,vel=1){
+        const vol=LOFI_CONFIG.volumes.snare*vel,dc=this.songParams.drumCharacter;
+        const noise=this.ctx.createBufferSource();noise.buffer=this.snareNoiseBuf;
+        const bp=this.ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2500;bp.Q.value=0.8;
+        const hpf=this.ctx.createBiquadFilter();hpf.type='highpass';hpf.frequency.value=400;
+        const ne=this.ctx.createGain();ne.gain.setValueAtTime(vol*0.8,time);ne.gain.exponentialRampToValueAtTime(Math.max(vol*0.15,0.001),time+0.08);ne.gain.exponentialRampToValueAtTime(0.001,time+dc.snareDecay);
+        noise.connect(bp);bp.connect(hpf);hpf.connect(ne);ne.connect(this.drumBus);
+        const sr2=this.ctx.createGain();sr2.gain.value=0.15;ne.connect(sr2);sr2.connect(this.reverbSend);noise.start(time);
+        const body=this.ctx.createOscillator();body.type='triangle';body.frequency.setValueAtTime(dc.snareTone,time);body.frequency.exponentialRampToValueAtTime(dc.snareTone*0.72,time+0.04);
+        const be=this.ctx.createGain();be.gain.setValueAtTime(vol*0.5,time);be.gain.exponentialRampToValueAtTime(0.001,time+0.08);
+        body.connect(be);be.connect(this.drumBus);body.start(time);body.stop(time+0.1);
+    }
+    _playHiHat(time,open=false,vel=1){
+        const vol=open?LOFI_CONFIG.volumes.openHat*vel:LOFI_CONFIG.volumes.hihat*vel,dur=open?0.15:0.035,dc=this.songParams.drumCharacter;
+        const noise=this.ctx.createBufferSource();noise.buffer=this.hatNoiseBuf;
+        const hp=this.ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=open?dc.hatColor*0.75:dc.hatColor;
+        const pk=this.ctx.createBiquadFilter();pk.type='peaking';pk.frequency.value=dc.hatColor+2000;pk.gain.value=3;pk.Q.value=1;
+        const env=this.ctx.createGain();env.gain.setValueAtTime(vol,time);env.gain.exponentialRampToValueAtTime(0.001,time+dur);
+        noise.connect(hp);hp.connect(pk);pk.connect(env);env.connect(this.drumBus);noise.start(time);
+    }
+    _playCrash(time,vel=1){
+        const vol=0.1*vel,noise=this.ctx.createBufferSource();noise.buffer=this.hatNoiseBuf;noise.loop=true;
+        const bp=this.ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=4000;bp.Q.value=0.5;
+        const env=this.ctx.createGain();env.gain.setValueAtTime(vol,time);env.gain.exponentialRampToValueAtTime(Math.max(vol*0.25,0.001),time+0.12);env.gain.exponentialRampToValueAtTime(0.001,time+0.6);
+        noise.connect(bp);bp.connect(env);env.connect(this.drumBus);
+        const wet=this.ctx.createGain();wet.gain.value=0.3;env.connect(wet);wet.connect(this.reverbSend);
+        noise.start(time);noise.stop(time+0.7);
+    }
+    _playRainDrip(time){const f=2000+this.ambientRng()*2000,o=this.ctx.createOscillator();o.type='sine';o.frequency.value=f;const e=this.ctx.createGain();e.gain.setValueAtTime(0.025,time);e.gain.exponentialRampToValueAtTime(0.001,time+0.025);o.connect(e);e.connect(this.ambientBus);o.start(time);o.stop(time+0.03);}
+    _playCafePing(time){const f=300+this.ambientRng()*300,o=this.ctx.createOscillator();o.type='sine';o.frequency.value=f;const e=this.ctx.createGain();e.gain.setValueAtTime(0.02,time);e.gain.exponentialRampToValueAtTime(0.001,time+0.08);o.connect(e);e.connect(this.ambientBus);o.start(time);o.stop(time+0.1);}
+    _playCricket(time){const f=4000+this.ambientRng()*1000,o=this.ctx.createOscillator();o.type='sine';o.frequency.value=f;const g=this.ctx.createOscillator();g.type='square';g.frequency.value=10;const gg=this.ctx.createGain();gg.gain.value=0;g.connect(gg.gain);const e=this.ctx.createGain();e.gain.setValueAtTime(0.015,time);e.gain.exponentialRampToValueAtTime(0.001,time+0.12);o.connect(gg);gg.connect(e);e.connect(this.ambientBus);g.start(time);g.stop(time+0.15);o.start(time);o.stop(time+0.15);}
+    getSongInfo(){
+        if(!this.songParams)return'';const sp=this.songParams,nn=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+        const rn=nn[sp.rootMidi%12],oct=Math.floor(sp.rootMidi/12)-1;
+        return`${rn}${oct} ${sp.scaleName} | ${sp.bpm}bpm | ${sp.arrangement.name} | ${sp.timbres.keys}/${sp.timbres.melody}`;
+    }
+}
+
+// Module-level lofigen state
+let lofiSystem = null;
+
+// ============================================
 // DEBUG LOGGING
 // ============================================
 const dbg = (ok, msg) => console.log(`%c[${ok?'OK':'FAIL'}] ${msg}`, `color:${ok?'#4f4':'#f44'};font-weight:bold`);
@@ -1035,6 +1560,32 @@ dbg(!!parallelCompile, `Parallel shader compile: ${parallelCompile ? 'yes' : 'no
 loadProgress(5, 'webgl ready');
 
 (async function init() {
+// Parse seed early (before click wait) for lofigen
+const initHash = window.location.hash.slice(1);
+const initSeed = initHash ? decodeURIComponent(initHash) : String(Math.floor(Math.random() * 99999));
+
+// Wait for user click (required for AudioContext + makes loading feel intentional)
+await new Promise(resolve => {
+    function handler() {
+        document.removeEventListener('click', handler);
+        document.removeEventListener('touchstart', handler);
+        resolve();
+    }
+    document.addEventListener('click', handler);
+    document.addEventListener('touchstart', handler, { passive: true });
+});
+
+// Start full lofigen music IMMEDIATELY — plays during shader compile
+lofiSystem = new LofiMusicSystem(initSeed);
+lofiSystem.init();
+lofiSystem.setVolume(0.55);
+lofiSystem.setAmbient(lofiSystem.songParams.ambientType);
+lofiSystem.start();
+dbg(true, `Lofigen started: ${lofiSystem.getSongInfo()}`);
+
+const loadClickEl = document.getElementById('load-click');
+if (loadClickEl) loadClickEl.style.display = 'none';
+loadProgress(5, 'music playing, compiling shader...');
 await yieldFrame();
 
 function compileShader(type, src) {
@@ -1184,7 +1735,7 @@ await yieldFrame();
 // ============================================
 // STATE
 // ============================================
-let currentSeed = 'calm';
+let currentSeed = initSeed;
 let currentSeedFloat = seedToFloat(currentSeed);
 let prevSeedFloat = currentSeedFloat;
 let transition = 0;
@@ -1193,12 +1744,10 @@ let dpr = Math.min((window.devicePixelRatio || 1) * 0.5, 1); // start at half re
 const targetDpr = Math.min(window.devicePixelRatio || 1, 2);
 let dprRampTimer = 0;
 let isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-let audioStarted = false;
-let audioCtx = null;
-let masterGain = null;
+let audioStarted = true; // already started by lofigen
+let audioCtx = lofiSystem.ctx; // shared AudioContext from lofigen
+let masterGain = null; // extra bus for spatial/hum (created in startAudio)
 let altAudioFade = 1.0; // altitude-based audio fade (1=full, 0=silent)
-let droneGainNodes = []; // store drone gain nodes for altitude modulation
-let rainGainNode = null; // store rain gain node for altitude modulation
 let spaceHumGain = null; // space engine hum gain node
 
 // Adaptive quality
@@ -1293,9 +1842,9 @@ speedSlider.addEventListener('input', () => {
 });
 
 volumeSlider.addEventListener('input', () => {
-    if (masterGain) {
-        masterGain.gain.setTargetAtTime(volumeSlider.value / 100 * 0.3, audioCtx.currentTime, 0.1);
-    }
+    const vol = volumeSlider.value / 100;
+    if (lofiSystem) lofiSystem.setVolume(vol * 0.55);
+    if (masterGain) masterGain.gain.setTargetAtTime(vol * 0.3, audioCtx.currentTime, 0.1);
 });
 
 fsBtn.addEventListener('click', () => {
@@ -1330,7 +1879,8 @@ canvas.addEventListener('click', () => {
     if (!pointerLocked) {
         canvas.requestPointerLock();
     }
-    if (!audioStarted) startAudio();
+    // Init spatial audio on first canvas click (lofigen already playing)
+    if (!masterGain) startAudio();
 });
 
 document.addEventListener('pointerlockchange', () => {
@@ -1338,18 +1888,13 @@ document.addEventListener('pointerlockchange', () => {
     document.getElementById('crosshair').classList.toggle('active', pointerLocked);
 });
 
-// Mute when tab is hidden (minimized) — but keep playing on alt-tab (blur)
+// Mute when tab is hidden (minimized) — suspend entire AudioContext
 document.addEventListener('visibilitychange', () => {
-    if (!audioCtx || !masterGain) return;
+    if (!audioCtx) return;
     if (document.hidden) {
-        masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
-        setTimeout(() => { if (document.hidden && audioCtx.state === 'running') audioCtx.suspend(); }, 500);
+        if (audioCtx.state === 'running') audioCtx.suspend();
     } else {
-        if (audioCtx.state === 'suspended' && audioStarted) {
-            audioCtx.resume().then(() => {
-                masterGain.gain.setTargetAtTime(volumeSlider.value / 100 * 0.3, audioCtx.currentTime, 0.5);
-            });
-        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 });
 
@@ -1360,7 +1905,7 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: true });
 
 document.addEventListener('touchstart', () => {
-    if (!audioStarted) startAudio();
+    if (!masterGain) startAudio();
 }, { passive: true });
 
 // Show controls hint after 2s
@@ -1370,174 +1915,34 @@ setTimeout(() => {
 }, 2000);
 
 // ============================================
-// AUDIO SYSTEM
+// AUDIO SYSTEM — Extra layer (spatial + space hum)
+// Lofigen handles main music. This adds spatial emitters and altitude effects.
 // ============================================
 function startAudio() {
-    if (audioStarted) return;
-    audioStarted = true;
-
+    // audioCtx already created by lofigen — just set up extra buses
     document.getElementById('audio-icon-on').style.display = 'block';
     document.getElementById('audio-icon-off').style.display = 'none';
 
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    // Master gain — fade in over 3s
+    // Extra master for spatial emitters + space hum (separate from lofigen)
     masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
     masterGain.gain.linearRampToValueAtTime(volumeSlider.value / 100 * 0.3, audioCtx.currentTime + 3);
     masterGain.connect(audioCtx.destination);
 
-    // Reverb (procedural impulse, same pattern as lofigen)
-    const reverbLength = audioCtx.sampleRate * 4;
-    const impulse = audioCtx.createBuffer(2, reverbLength, audioCtx.sampleRate);
-    const rr = mulberry32(currentSeed + '_reverb');
-    for (let ch = 0; ch < 2; ch++) {
-        const data = impulse.getChannelData(ch);
-        for (let i = 0; i < reverbLength; i++) {
-            const t = i / reverbLength;
-            let val = rr() * 2 - 1;
-            if (t < 0.05) val *= 0.7;
-            val *= Math.exp(-3.0 * t);
-            if (t > 0.2) val *= 0.8;
-            data[i] = val;
-        }
-    }
-    const reverb = audioCtx.createConvolver();
-    reverb.buffer = impulse;
-
-    const reverbGain = audioCtx.createGain();
-    reverbGain.gain.value = 0.4;
-    reverb.connect(reverbGain);
-    reverbGain.connect(masterGain);
-
-    const dryBus = audioCtx.createGain();
-    dryBus.gain.value = 0.6;
-    dryBus.connect(masterGain);
-
-    const reverbSend = audioCtx.createGain();
-    reverbSend.gain.value = 0.5;
-    reverbSend.connect(reverb);
-
-    // --- Drone pad: 2 detuned oscillators ---
-    function createDrone(freq, type) {
-        const osc = audioCtx.createOscillator();
-        osc.type = type;
-        osc.frequency.value = freq;
-
-        const lpf = audioCtx.createBiquadFilter();
-        lpf.type = 'lowpass';
-        lpf.frequency.value = 300;
-        lpf.Q.value = 1;
-
-        // Slow LPF sweep
-        const now = audioCtx.currentTime;
-        lpf.frequency.setValueAtTime(200, now);
-        function sweepLPF() {
-            const t = audioCtx.currentTime;
-            lpf.frequency.linearRampToValueAtTime(400 + Math.sin(t * 0.05) * 200, t + 8);
-            setTimeout(sweepLPF, 8000);
-        }
-        sweepLPF();
-
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.06; // quiet drones, spatial emitters are the star
-
-        osc.connect(lpf);
-        lpf.connect(gain);
-        gain.connect(dryBus);
-        gain.connect(reverbSend);
-        osc.start();
-        droneGainNodes.push(gain);
-        return osc;
-    }
-
-    // Two drones at ~55Hz (A1) detuned — quieter to let spatial audio breathe
-    createDrone(55, 'sine');
-    createDrone(55.3, 'triangle');
-    createDrone(27.5, 'sine');
-
-    // --- Rain texture: filtered noise ---
-    const rainLen = audioCtx.sampleRate * 4;
-    const rainBuf = audioCtx.createBuffer(1, rainLen, audioCtx.sampleRate);
-    const rainData = rainBuf.getChannelData(0);
-    const rainRng = mulberry32(currentSeed + '_rain');
-    for (let i = 0; i < rainLen; i++) rainData[i] = rainRng() * 2 - 1;
-
-    const rainSrc = audioCtx.createBufferSource();
-    rainSrc.buffer = rainBuf;
-    rainSrc.loop = true;
-
-    const rainBP = audioCtx.createBiquadFilter();
-    rainBP.type = 'bandpass';
-    rainBP.frequency.value = 3000;
-    rainBP.Q.value = 0.5;
-
-    const rainHP = audioCtx.createBiquadFilter();
-    rainHP.type = 'highpass';
-    rainHP.frequency.value = 800;
-
-    const rainGain = audioCtx.createGain();
-    rainGain.gain.value = 0.02;
-    rainGainNode = rainGain;
-
-    rainSrc.connect(rainBP);
-    rainBP.connect(rainHP);
-    rainHP.connect(rainGain);
-    rainGain.connect(dryBus);
-    rainSrc.start();
-
     // --- Space engine hum: low rumble that fades in at altitude ---
     const humOsc1 = audioCtx.createOscillator(); humOsc1.type = 'sine'; humOsc1.frequency.value = 35;
-    const humOsc2 = audioCtx.createOscillator(); humOsc2.type = 'sine'; humOsc2.frequency.value = 35.5; // slight detune
-    const humOsc3 = audioCtx.createOscillator(); humOsc3.type = 'triangle'; humOsc3.frequency.value = 17.5; // sub
+    const humOsc2 = audioCtx.createOscillator(); humOsc2.type = 'sine'; humOsc2.frequency.value = 35.5;
+    const humOsc3 = audioCtx.createOscillator(); humOsc3.type = 'triangle'; humOsc3.frequency.value = 17.5;
     const humLpf = audioCtx.createBiquadFilter(); humLpf.type = 'lowpass'; humLpf.frequency.value = 120; humLpf.Q.value = 2;
-    // Slow LFO on the LPF for subtle movement
     const humLfo = audioCtx.createOscillator(); humLfo.type = 'sine'; humLfo.frequency.value = 0.07;
     const humLfoG = audioCtx.createGain(); humLfoG.gain.value = 30;
     humLfo.connect(humLfoG); humLfoG.connect(humLpf.frequency);
-    spaceHumGain = audioCtx.createGain(); spaceHumGain.gain.value = 0; // starts silent, altitude controls it
+    spaceHumGain = audioCtx.createGain(); spaceHumGain.gain.value = 0;
     humOsc1.connect(humLpf); humOsc2.connect(humLpf); humOsc3.connect(humLpf);
-    humLpf.connect(spaceHumGain); spaceHumGain.connect(dryBus);
+    humLpf.connect(spaceHumGain); spaceHumGain.connect(masterGain);
     humOsc1.start(); humOsc2.start(); humOsc3.start(); humLfo.start();
 
-    // --- Sparse pentatonic tones ---
-    const pentatonic = [0, 2, 4, 7, 9]; // relative to root
-    const rootMidi = 60; // C4
-    const toneRng = mulberry32(currentSeed + '_tones');
-
-    function scheduleTone() {
-        const delay = 5 + toneRng() * 10; // 5-15s between tones
-        setTimeout(() => {
-            if (!audioCtx || audioCtx.state === 'closed') return;
-
-            const degree = pentatonic[Math.floor(toneRng() * pentatonic.length)];
-            const octave = Math.floor(toneRng() * 2); // 0 or 1 octave up
-            const midi = rootMidi + degree + octave * 12;
-            const freq = 440 * Math.pow(2, (midi - 69) / 12);
-
-            const osc = audioCtx.createOscillator();
-            osc.type = 'sine';
-            osc.frequency.value = freq;
-
-            const env = audioCtx.createGain();
-            const now = audioCtx.currentTime;
-            const dur = 3 + toneRng() * 5;
-            env.gain.setValueAtTime(0, now);
-            env.gain.linearRampToValueAtTime(0.03 + toneRng() * 0.02, now + dur * 0.3);
-            env.gain.linearRampToValueAtTime(0, now + dur);
-
-            osc.connect(env);
-            env.connect(dryBus);
-            env.connect(reverbSend);
-            osc.start(now);
-            osc.stop(now + dur + 0.1);
-
-            scheduleTone();
-        }, delay * 1000);
-    }
-    scheduleTone();
-
-    // Init spatial emitters after audio context is ready
+    // Init spatial emitters
     initSpatialAudio();
 }
 
@@ -1920,23 +2325,17 @@ function updateSpatialAudio(dt, elapsed) {
 }
 
 function toggleAudio() {
-    if (!audioStarted) {
-        startAudio();
-        return;
-    }
     if (!audioCtx) return;
 
     const onIcon = document.getElementById('audio-icon-on');
     const offIcon = document.getElementById('audio-icon-off');
 
     if (audioCtx.state === 'running') {
-        masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
-        setTimeout(() => audioCtx.suspend(), 500);
+        audioCtx.suspend();
         onIcon.style.display = 'none';
         offIcon.style.display = 'block';
     } else {
         audioCtx.resume();
-        masterGain.gain.setTargetAtTime(volumeSlider.value / 100 * 0.3, audioCtx.currentTime, 0.3);
         onIcon.style.display = 'block';
         offIcon.style.display = 'none';
     }
@@ -2364,29 +2763,22 @@ function frame(now) {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     // ---- Altitude-based audio mix ----
-    if (audioCtx && masterGain && audioCtx.state === 'running') {
+    if (audioCtx && audioCtx.state === 'running') {
         const alt = Math.max(camY, 0);
         const now2 = audioCtx.currentTime;
 
-        // Spatial emitters: full at ground, fade by y=120 (larger radius now)
+        // Spatial emitters: full at ground, fade by y=120
         const spatialFade = Math.max(0, 1 - alt / 120);
         if (spatialBus) spatialBus.gain.setTargetAtTime(spatialFade * spatialFade, now2, 0.3);
 
-        // Drones: full at ground, muffle in clouds, thin atmospheric hum persists into space
-        // Ground: 0.06, clouds: 0.035, upper atmo: 0.015, space: 0.008 (never silent)
-        const droneVol = alt < 15 ? 0.06
-                       : alt < 40 ? 0.06 - (alt - 15) * 0.001
-                       : alt < 100 ? 0.035 - (alt - 40) * 0.0003
-                       : 0.008; // faint hum even in space
-        for (const dg of droneGainNodes) {
-            dg.gain.setTargetAtTime(Math.max(droneVol, 0.005), now2, 0.5);
+        // Lofigen main track: reduce volume in space, keep present in atmosphere
+        if (lofiSystem) {
+            const lofiVol = alt < 20 ? 0.55
+                          : alt < 60 ? 0.55 - (alt - 20) * 0.005
+                          : alt < 120 ? 0.35 - (alt - 60) * 0.003
+                          : 0.08; // faint even in deep space
+            lofiSystem.setVolume(Math.max(lofiVol, 0.08) * (volumeSlider.value / 100));
         }
-
-        // Rain: louder in clouds (wind), fades in upper atmo, gone in space
-        const rainVol = alt < 10 ? 0.02
-                      : alt < 40 ? 0.02 + (alt - 10) * 0.0006 // peaks ~0.038 in clouds
-                      : Math.max(0, 0.038 - (alt - 40) * 0.0006); // fades by ~100
-        if (rainGainNode) rainGainNode.gain.setTargetAtTime(rainVol, now2, 0.5);
 
         // Space engine hum — low rumble that fades in above y=60
         if (spaceHumGain) {
@@ -2394,7 +2786,7 @@ function frame(now) {
             spaceHumGain.gain.setTargetAtTime(humVol, now2, 0.8);
         }
 
-        altAudioFade = Math.max(0.05, 1 - Math.max(0, alt - 15) / 120); // never fully silent
+        altAudioFade = Math.max(0.05, 1 - Math.max(0, alt - 15) / 120);
     }
 
     // ---- Spatial audio update ----
