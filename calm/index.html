@@ -27,15 +27,16 @@ canvas{display:block;width:100%;height:100%;position:fixed;top:0;left:0}
 #overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
 
 #title{
-  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
-  font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.3em;
-  color:rgba(180,170,160,0.25);text-transform:uppercase;
+  position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);
+  font-family:'Courier New',monospace;font-size:0.9rem;letter-spacing:0.4em;
+  color:rgba(220,215,200,0.3);text-transform:uppercase;
   transition:opacity 1.5s ease;pointer-events:none;user-select:none;
+  text-shadow:0 0 12px rgba(0,0,0,0.5);
 }
 
 #audio-hint{
   position:absolute;bottom:50%;left:50%;transform:translate(-50%,50%);
-  font-family:'Courier New',monospace;font-size:0.65rem;letter-spacing:0.2em;
+  font-family:'Courier New',monospace;font-size:0.85rem;letter-spacing:0.2em;
   color:rgba(180,170,160,0.0);text-transform:uppercase;
   transition:opacity 3s ease;pointer-events:none;user-select:none;
 }
@@ -43,60 +44,209 @@ canvas{display:block;width:100%;height:100%;position:fixed;top:0;left:0}
 #audio-hint.fade{color:rgba(180,170,160,0.0)}
 
 #controls{
-  position:absolute;bottom:1rem;right:1rem;
-  display:flex;flex-direction:column;gap:0.4rem;align-items:flex-end;
+  position:absolute;bottom:1.5rem;right:1.5rem;
+  display:flex;flex-direction:column;gap:0.6rem;align-items:flex-end;
   opacity:0;transition:opacity 0.8s ease;pointer-events:auto;
 }
 #overlay:hover #controls,#controls:focus-within{opacity:1}
 
 #controls label{
-  font-family:'Courier New',monospace;font-size:0.55rem;
-  color:rgba(180,170,160,0.4);letter-spacing:0.1em;
-  display:flex;align-items:center;gap:0.4rem;
+  font-family:'Courier New',monospace;font-size:0.85rem;
+  color:rgba(230,225,215,0.85);letter-spacing:0.1em;
+  display:flex;align-items:center;gap:0.6rem;
+  text-shadow:0 1px 4px rgba(0,0,0,0.8);
 }
 #controls input[type=range]{
-  width:80px;height:2px;-webkit-appearance:none;appearance:none;
-  background:rgba(180,170,160,0.15);border-radius:1px;outline:none;
+  width:120px;height:4px;-webkit-appearance:none;appearance:none;
+  background:rgba(180,170,160,0.2);border-radius:2px;outline:none;
   cursor:pointer;
 }
 #controls input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:8px;height:8px;border-radius:50%;
-  background:rgba(180,170,160,0.4);cursor:pointer;
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:rgba(220,215,200,0.6);cursor:pointer;
 }
 #controls input[type=text]{
-  width:80px;height:18px;background:rgba(0,0,0,0.3);
-  border:1px solid rgba(180,170,160,0.15);border-radius:3px;
-  color:rgba(180,170,160,0.5);font-family:'Courier New',monospace;
-  font-size:0.55rem;padding:0 4px;outline:none;
+  width:110px;height:26px;background:rgba(0,0,0,0.5);
+  border:1px solid rgba(255,255,255,0.15);border-radius:4px;
+  color:rgba(230,225,215,0.85);font-family:'Courier New',monospace;
+  font-size:0.85rem;padding:0 8px;outline:none;
 }
 #controls button{
-  background:rgba(0,0,0,0.3);border:1px solid rgba(180,170,160,0.15);
-  border-radius:3px;color:rgba(180,170,160,0.4);
-  font-family:'Courier New',monospace;font-size:0.55rem;
-  padding:2px 8px;cursor:pointer;
+  background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);
+  border-radius:4px;color:rgba(230,225,215,0.85);
+  font-family:'Courier New',monospace;font-size:0.85rem;
+  padding:4px 14px;cursor:pointer;
 }
+#controls button:hover{background:rgba(0,0,0,0.65);border-color:rgba(255,255,255,0.25)}
 
 #audio-btn{
-  position:absolute;bottom:1rem;left:1rem;
-  background:none;border:1px solid rgba(180,170,160,0.15);
-  border-radius:50%;width:32px;height:32px;
+  position:absolute;bottom:1.5rem;left:1.5rem;
+  background:rgba(0,0,0,0.3);border:1px solid rgba(180,170,160,0.2);
+  border-radius:50%;width:44px;height:44px;
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;opacity:0;transition:opacity 0.8s ease;
   pointer-events:auto;
 }
 #overlay:hover #audio-btn{opacity:1}
-#audio-btn svg{width:14px;height:14px;fill:rgba(180,170,160,0.35)}
+#audio-btn svg{width:20px;height:20px;fill:rgba(220,215,200,0.5)}
+
+/* HUD */
+#hud{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;font-family:'Courier New',monospace;
+  font-size:0.85rem;color:rgba(230,225,215,0.9);
+  letter-spacing:0.06em;line-height:1.8;
+  text-shadow:0 1px 4px rgba(0,0,0,0.8),0 0 12px rgba(0,0,0,0.5);
+}
+.hud-panel{
+  background:rgba(0,0,0,0.45);backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.08);border-radius:8px;
+  padding:0.6rem 0.9rem;
+}
+#hud-tl{position:absolute;top:1rem;left:1.2rem}
+#hud-tr{position:absolute;top:1rem;right:1.2rem;text-align:right}
+#hud-bl{position:absolute;bottom:4rem;left:1.2rem}
+
+/* Breathing bar */
+#breath-bar{
+  width:160px;height:5px;background:rgba(180,170,160,0.1);
+  border-radius:3px;margin-top:6px;overflow:hidden;
+}
+#breath-fill{
+  height:100%;width:50%;background:rgba(200,190,180,0.35);
+  border-radius:3px;transition:width 0.1s linear;
+}
+
+/* Controls help */
+#controls-help{
+  position:absolute;bottom:50%;left:50%;transform:translate(-50%,50%);
+  text-align:center;font-family:'Courier New',monospace;
+  font-size:0.95rem;color:rgba(220,215,200,0.0);
+  letter-spacing:0.12em;line-height:2.2;
+  transition:color 2s ease,background 2s ease,border-color 2s ease;
+  pointer-events:none;padding:1.2rem 2rem;border-radius:10px;
+  background:rgba(0,0,0,0);border:1px solid rgba(255,255,255,0);
+  text-shadow:0 1px 4px rgba(0,0,0,0.8);
+}
+#controls-help.visible{
+  color:rgba(230,225,215,0.9);
+  background:rgba(0,0,0,0.5);
+  border-color:rgba(255,255,255,0.1);
+}
+#controls-help.fade{
+  color:rgba(220,215,200,0.0);
+  background:rgba(0,0,0,0);
+  border-color:rgba(255,255,255,0);
+}
+
+/* Crosshair */
+#crosshair{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:16px;height:16px;opacity:0;transition:opacity 0.3s;
+}
+#crosshair.active{opacity:1}
+#crosshair::before,#crosshair::after{
+  content:'';position:absolute;background:rgba(220,215,200,0.3);
+}
+#crosshair::before{width:1px;height:100%;left:50%;transform:translateX(-50%)}
+#crosshair::after{width:100%;height:1px;top:50%;transform:translateY(-50%)}
+
+/* Ambient clock */
+#ambient-clock{
+  position:absolute;top:50%;right:2.5rem;transform:translateY(-50%);
+  font-family:'Courier New',monospace;font-size:2.8rem;
+  color:rgba(180,170,160,0.0);letter-spacing:0.2em;
+  transition:color 8s ease;pointer-events:none;user-select:none;
+  text-shadow:0 0 30px rgba(180,170,160,0.15);font-weight:100;
+}
+#ambient-clock.visible{color:rgba(180,170,160,0.15)}
+
+/* Quote */
+#quote{
+  position:absolute;bottom:6rem;left:50%;transform:translateX(-50%);
+  font-family:'Courier New',monospace;font-size:0.95rem;
+  color:rgba(180,170,160,0.0);letter-spacing:0.12em;
+  text-align:center;max-width:600px;line-height:1.9;
+  transition:color 4s ease;pointer-events:none;user-select:none;
+  text-shadow:0 2px 6px rgba(0,0,0,0.6);font-style:italic;
+}
+#quote.visible{color:rgba(220,215,200,0.4)}
+
+/* Pomodoro */
+#pomodoro{
+  position:absolute;bottom:4rem;right:1.5rem;text-align:right;
+  pointer-events:auto;
+}
+#pomo-display{
+  font-family:'Courier New',monospace;font-size:1.6rem;
+  color:rgba(230,225,215,0.8);letter-spacing:0.12em;
+  text-shadow:0 1px 4px rgba(0,0,0,0.8);
+}
+#pomo-label{
+  font-family:'Courier New',monospace;font-size:0.75rem;
+  color:rgba(200,195,185,0.5);letter-spacing:0.18em;
+  text-transform:uppercase;margin-bottom:3px;
+}
+#pomo-bar{
+  width:140px;height:4px;background:rgba(180,170,160,0.1);
+  border-radius:2px;margin-top:6px;overflow:hidden;
+}
+#pomo-fill{
+  height:100%;width:0%;border-radius:2px;
+  transition:width 1s linear,background 0.5s;
+}
+#pomo-btn{
+  background:rgba(0,0,0,0.4);border:1px solid rgba(180,170,160,0.2);
+  border-radius:4px;color:rgba(230,225,215,0.6);
+  font-family:'Courier New',monospace;font-size:0.8rem;
+  padding:4px 14px;cursor:pointer;margin-top:6px;
+  letter-spacing:0.12em;
+}
+#pomo-btn:hover{border-color:rgba(180,170,160,0.4);color:rgba(230,225,215,0.8)}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="overlay">
+  <div id="hud">
+    <div id="hud-tl" class="hud-panel">
+      <div id="hud-fps">-- fps</div>
+      <div id="hud-res">----</div>
+      <div id="hud-seed">seed: --</div>
+      <div id="hud-dpr">dpr: --</div>
+    </div>
+    <div id="hud-tr" class="hud-panel">
+      <div id="hud-pos">pos: 0, 0, 0</div>
+      <div id="hud-yaw">yaw: 0 pitch: 0</div>
+      <div id="hud-time">time: 0.0s</div>
+      <div id="hud-mode">mode: drift</div>
+      <div id="hud-speed">speed: 1.0x</div>
+    </div>
+    <div id="hud-bl" class="hud-panel">
+      <div>breath</div>
+      <div id="breath-bar"><div id="breath-fill"></div></div>
+    </div>
+  </div>
+  <div id="crosshair"></div>
   <div id="title">calm</div>
-  <div id="audio-hint">click anywhere for sound</div>
+  <div id="controls-help">
+    wasd — move &nbsp; space/shift — up/down<br>
+    mouse — look &nbsp; scroll — speed<br>
+    click — lock cursor &nbsp; esc — unlock
+  </div>
   <button id="audio-btn" title="Toggle audio">
     <svg id="audio-icon-on" viewBox="0 0 24 24" style="display:none"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
     <svg id="audio-icon-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
   </button>
+  <div id="ambient-clock"></div>
+  <div id="quote"></div>
+  <div id="pomodoro" class="hud-panel">
+    <div id="pomo-label">focus</div>
+    <div id="pomo-display">25:00</div>
+    <div id="pomo-bar"><div id="pomo-fill"></div></div>
+    <button id="pomo-btn">start</button>
+  </div>
   <div id="controls">
     <label>seed <input type="text" id="seed-input" placeholder="random"></label>
     <label>speed <input type="range" id="speed" min="0" max="100" value="30"></label>
@@ -117,7 +267,10 @@ precision highp float;
 uniform vec2 u_res;
 uniform float u_time;
 uniform float u_speed;
-uniform vec2 u_mouse;
+uniform vec3 u_camPos;
+uniform vec3 u_camFwd;
+uniform vec3 u_camRight;
+uniform vec3 u_camUp;
 uniform float u_breath;
 uniform float u_seed;
 uniform float u_transition;
@@ -165,14 +318,21 @@ float fbm(vec3 p, float oct){
     return v;
 }
 
-// --- IQ Cosine palette ---
+// --- IQ Cosine palette (boosted saturation) ---
 vec3 pal(float t, float sd){
     float s=sd*6.283;
-    vec3 a=vec3(0.5,0.5,0.5);
-    vec3 b=vec3(0.25,0.2,0.25);
-    vec3 c=vec3(0.8+sin(s)*0.2, 1.0, 0.9+cos(s)*0.1);
-    vec3 d=vec3(0.1+sin(s*2.0)*0.1, 0.25, 0.35+cos(s*1.3)*0.15);
+    vec3 a=vec3(0.55,0.5,0.55);
+    vec3 b=vec3(0.45,0.4,0.45);
+    vec3 c=vec3(0.8+sin(s)*0.3, 1.0, 0.9+cos(s)*0.2);
+    vec3 d=vec3(0.1+sin(s*2.0)*0.15, 0.25, 0.35+cos(s*1.3)*0.2);
     return a+b*cos(6.2832*(c*t+d));
+}
+// Shifted palette for variety
+vec3 pal2(float t, float sd){
+    return pal(t+0.33,sd+0.17);
+}
+vec3 pal3(float t, float sd){
+    return pal(t+0.67,sd+0.41);
 }
 
 // --- SDF ---
@@ -180,6 +340,14 @@ float sdSphere(vec3 p,float r){return length(p)-r;}
 float sdRBox(vec3 p,vec3 b,float r){
     vec3 q=abs(p)-b;
     return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-r;
+}
+float sdCylinder(vec3 p,float r,float h){
+    vec2 d=abs(vec2(length(p.xz),p.y))-vec2(r,h);
+    return min(max(d.x,d.y),0.0)+length(max(d,0.0));
+}
+float sdTorus(vec3 p,float R,float r){
+    vec2 q=vec2(length(p.xz)-R,p.y);
+    return length(q)-r;
 }
 float smin(float a,float b,float k){
     float h=clamp(0.5+0.5*(b-a)/k,0.0,1.0);
@@ -196,31 +364,41 @@ float terrainH(vec2 xz, float sd, float oct){
     return h;
 }
 
-// --- Scene distance ---
-float map(vec3 p, float sd, float oct){
+// --- Scene distance with material ID ---
+// Returns vec2(distance, materialID)
+// mat 0=ground, 1=sphere, 2=cube, 3=structure, 4=crystal, 5=cairn
+vec2 mapMat(vec3 p, float sd, float oct){
     float t=u_time*u_speed;
     float breath=u_breath;
+    float mat=0.0;
 
     // Ground
     float h=terrainH(p.xz, sd, oct);
     float ground=p.y-h;
+    float d=ground;
 
-    // Breathing spheres — few, spread out, above terrain
+    // Breathing spheres
     float spheres=1e5;
-    for(float i=0.0;i<3.0;i++){
-        float fi=i+1.0;
-        float sx=sin(sd*37.0+fi*2.4)*15.0+sin(t*0.04+fi)*3.0;
-        float sz=cos(sd*23.0+fi*1.9)*15.0+cos(t*0.03+fi*1.3)*3.0;
-        float sy=terrainH(vec2(sx,sz),sd,2.0)+1.5+breath*0.6;
-        float r=1.2+sin(fi*1.5+sd*50.0)*0.3+breath*0.3;
-        spheres=smin(spheres,sdSphere(p-vec3(sx,sy,sz),r),1.5);
+    float cellSp=40.0;
+    vec3 spCell=floor(p/cellSp);
+    vec3 spLocal=p-spCell*cellSp-cellSp*0.5;
+    float spHash=hash31(spCell+sd*31.0);
+    if(spHash<0.4){
+        float sx=(spHash*2.0-1.0)*10.0+sin(t*0.04+spHash*6.0)*3.0;
+        float sz=(fract(spHash*7.7)*2.0-1.0)*10.0+cos(t*0.03+spHash*4.0)*3.0;
+        float r=1.0+spHash*0.8+breath*0.3;
+        float sy=terrainH(spCell.xz*cellSp+vec2(sx,sz),sd,2.0)+r+1.0+breath*0.6;
+        vec3 sCenter=vec3(sx,sy-spCell.y*cellSp-cellSp*0.5,sz);
+        spheres=sdSphere(spLocal-sCenter,r);
     }
+    if(spheres<d){ mat=1.0; }
+    d=smin(d,spheres,3.0);
 
-    // Voxel cubes — grid on the ground
+    // Voxel cubes
     float cubes=1e5;
     float cs=5.0;
     vec3 cid=floor(p/cs);
-    vec3 cp=mod(p,cs)-cs*0.5;
+    vec3 cp2=mod(p,cs)-cs*0.5;
     float ch=hash31(cid+sd*47.0);
     if(ch<0.2 && cid.y<1.0){
         float fade=sin(t*0.06+ch*6.28)*0.5+0.5;
@@ -230,22 +408,129 @@ float map(vec3 p, float sd, float oct){
         sz+=breath*0.05;
         float rot=ch*6.28+t*0.02;
         float cr=cos(rot),sr=sin(rot);
-        vec2 rp=mat2(cr,sr,-sr,cr)*cp.xz;
-        vec3 rcp=vec3(rp.x,cp.y-sz-terrainH(cid.xz*cs,sd,2.0),rp.y);
+        vec2 rp=mat2(cr,sr,-sr,cr)*cp2.xz;
+        vec3 rcp=vec3(rp.x,cp2.y-sz-terrainH(cid.xz*cs,sd,2.0),rp.y);
         cubes=sdRBox(rcp,vec3(sz),0.1);
     }
-
-    float d=smin(ground,spheres,2.0);
+    if(cubes<d){ mat=2.0; }
     d=smin(d,cubes,0.8);
-    return d;
+
+    // Crystal clusters — medium grid, tall sharp shapes
+    float crystals=1e5;
+    float crCell=30.0;
+    vec3 crId=floor(p/crCell);
+    vec3 crLocal=p-crId*crCell-crCell*0.5;
+    float crh=hash31(crId+sd*59.0);
+    if(crh<0.15){
+        float cx=(crh*2.0-1.0)*8.0;
+        float cz=(fract(crh*11.0)*2.0-1.0)*8.0;
+        float gH=hash21(crId.xz+sd*3.0)*3.0;
+        vec3 cBase=vec3(cx,gH-crId.y*crCell-crCell*0.5,cz);
+        // 3 crystals in a cluster
+        for(float ci=0.0;ci<3.0;ci+=1.0){
+            float ca=ci*2.09+crh*6.28;
+            float coff=1.0+fract(crh*17.0+ci*3.3)*1.5;
+            vec3 cpos=cBase+vec3(cos(ca)*coff,0.0,sin(ca)*coff);
+            float cH=2.5+fract(crh*7.0+ci*2.1)*4.0+breath*0.3;
+            float cR=0.3+fract(crh*3.0+ci)*0.4;
+            // Tapered cylinder (crystal shape)
+            vec3 lp=crLocal-cpos;
+            lp.y-=cH;
+            float taper=1.0-clamp(lp.y/(cH*2.0)+0.5,0.0,1.0)*0.7;
+            float crDist=sdCylinder(lp,cR*taper,cH)-0.05;
+            // Point on top
+            crDist=smin(crDist,sdSphere(crLocal-cpos-vec3(0.0,cH*2.0+0.3,0.0),cR*0.5),0.3);
+            crystals=min(crystals,crDist);
+        }
+    }
+    if(crystals<d){ mat=4.0; }
+    d=smin(d,crystals,0.5);
+
+    // Cairns — stacked rounded stones
+    float cairns=1e5;
+    float cairnCell=55.0;
+    vec3 cairnId=floor(p/cairnCell);
+    vec3 cairnLocal=p-cairnId*cairnCell-cairnCell*0.5;
+    float cairnH=hash31(cairnId+sd*83.0);
+    if(cairnH<0.12){
+        float bx=(cairnH*2.0-1.0)*15.0;
+        float bz=(fract(cairnH*9.0)*2.0-1.0)*15.0;
+        float gH2=hash21(cairnId.xz+sd*5.0)*3.0;
+        vec3 cBase2=vec3(bx,gH2-cairnId.y*cairnCell-cairnCell*0.5,bz);
+        float stackY=0.0;
+        // 3-5 stacked stones
+        float numStones=3.0+floor(fract(cairnH*23.0)*3.0);
+        for(float si=0.0;si<5.0;si+=1.0){
+            if(si>=numStones) break;
+            float sr2=1.2-si*0.2+breath*0.05;
+            float wobble=sin(t*0.015+si*1.5+cairnH*5.0)*0.15;
+            vec3 stonePos=cBase2+vec3(wobble,stackY+sr2,wobble*0.5);
+            cairns=smin(cairns,sdSphere(cairnLocal-stonePos,sr2),0.4);
+            stackY+=sr2*1.6;
+        }
+    }
+    if(cairns<d){ mat=5.0; }
+    d=smin(d,cairns,0.8);
+
+    // Large structures — monoliths, arches, rings
+    float structs=1e5;
+    float bigCell=120.0;
+    vec3 bCell=floor(p/bigCell);
+    vec3 bLocal=p-bCell*bigCell-bigCell*0.5;
+    float bh=hash31(bCell+sd*73.0);
+    float bh2=fract(bh*13.37);
+    if(bh<0.25){
+        float bx=(bh*2.0-1.0)*30.0;
+        float bz=(bh2*2.0-1.0)*30.0;
+        float groundH2=hash21(bCell.xz+sd*7.0)*3.0;
+        vec3 base=vec3(bx,groundH2-bCell.y*bigCell-bigCell*0.5,bz);
+        float kind=fract(bh*99.0);
+        if(kind<0.35){
+            float pillarH=6.0+bh2*8.0+breath*0.5;
+            float pillarR=1.2+bh*1.5;
+            vec3 pp=bLocal-base-vec3(0.0,pillarH,0.0);
+            structs=sdCylinder(pp,pillarR,pillarH)-0.3;
+            structs=smin(structs,sdSphere(bLocal-base-vec3(0.0,pillarH*2.0+0.5,0.0),pillarR*1.3+breath*0.3),1.5);
+        } else if(kind<0.65){
+            float archH=5.0+bh2*6.0;
+            float archW=3.0+bh*3.0;
+            float archR=0.8+bh2*0.5;
+            vec3 lp=bLocal-base;
+            float left=sdCylinder(lp-vec3(-archW,archH,0.0),archR,archH)-0.2;
+            float right=sdCylinder(lp-vec3(archW,archH,0.0),archR,archH)-0.2;
+            vec3 tp2=lp-vec3(0.0,archH*2.0,0.0);
+            float archTop=sdTorus(tp2,archW,archR*1.2);
+            archTop=max(archTop,-tp2.y);
+            structs=min(left,right);
+            structs=smin(structs,archTop,1.0);
+        } else {
+            float ringH=4.0+bh2*5.0+sin(t*0.02+bh*8.0)*1.5;
+            float ringR=3.0+bh*4.0;
+            float ringr=0.4+bh2*0.4+breath*0.15;
+            vec3 rp2=bLocal-base-vec3(0.0,ringH,0.0);
+            float tiltA=0.3+sin(t*0.008+bh2*5.0)*0.2;
+            float tc=cos(tiltA),ts=sin(tiltA);
+            vec3 rp3=vec3(rp2.x,rp2.y*tc-rp2.z*ts,rp2.y*ts+rp2.z*tc);
+            structs=sdTorus(rp3,ringR,ringr);
+        }
+    }
+    if(structs<d){ mat=3.0; }
+    d=smin(d,structs,1.5);
+
+    return vec2(d, mat);
+}
+
+// Distance-only version for normals/AO (cheaper)
+float mapDist(vec3 p, float sd, float oct){
+    return mapMat(p,sd,oct).x;
 }
 
 vec3 calcN(vec3 p, float sd, float oct){
-    vec2 e=vec2(0.015,0.0);
+    vec2 e=vec2(0.025,0.0);
     return normalize(vec3(
-        map(p+e.xyy,sd,oct)-map(p-e.xyy,sd,oct),
-        map(p+e.yxy,sd,oct)-map(p-e.yxy,sd,oct),
-        map(p+e.yyx,sd,oct)-map(p-e.yyx,sd,oct)
+        mapDist(p+e.xyy,sd,oct)-mapDist(p-e.xyy,sd,oct),
+        mapDist(p+e.yxy,sd,oct)-mapDist(p-e.yxy,sd,oct),
+        mapDist(p+e.yyx,sd,oct)-mapDist(p-e.yyx,sd,oct)
     ));
 }
 
@@ -253,74 +538,270 @@ float ao(vec3 p, vec3 n, float sd, float oct){
     float o=0.0,s=1.0;
     for(float i=0.0;i<4.0;i+=1.0){
         float h=0.03+0.15*i;
-        float d=map(p+n*h,sd,oct);
-        o+=(h-d)*s;
+        float dd=mapDist(p+n*h,sd,oct);
+        o+=(h-dd)*s;
         s*=0.65;
     }
     return clamp(1.0-2.0*o,0.0,1.0);
 }
 
+// --- Sky color with atmosphere layers ---
+vec3 skyColor(vec3 rd, float sd, float time){
+    float camH=u_camPos.y;
+
+    // Atmosphere transition: ground(0-30) -> high sky(30-80) -> thin atmo(80-150) -> space(150+)
+    float atmoFade=smoothstep(30.0,100.0,camH); // 0=ground, 1=high altitude
+    float spaceFade=smoothstep(80.0,200.0,camH); // 0=atmosphere, 1=space
+
+    // Normal sky (seen from ground)
+    vec3 skyHi=pal(0.65,sd)*0.6+vec3(0.04,0.05,0.15);
+    vec3 skyLo=pal2(0.2,sd)*0.7+vec3(0.12,0.07,0.04);
+    vec3 sky=mix(skyLo,skyHi,clamp(rd.y*0.5+0.5,0.0,1.0));
+    sky+=pal3(0.3,sd)*0.35*exp(-6.0*rd.y*rd.y);
+
+    // High altitude: sky gets darker, deeper blue/violet
+    vec3 deepSky=pal(0.7,sd)*0.2+vec3(0.01,0.02,0.08);
+    sky=mix(sky,deepSky,atmoFade*0.7);
+
+    // Space: nearly black with faint nebula color
+    vec3 spaceCol=vec3(0.005,0.005,0.015);
+    // Nebula wisps in space
+    float nebula=vnoise(vec3(rd.xy*3.0+sd*5.0,rd.z*3.0))*0.5+
+                 vnoise(vec3(rd.xz*6.0+sd*11.0,rd.y*6.0))*0.3;
+    nebula=smoothstep(0.3,0.7,nebula);
+    vec3 nebulaCol=pal2(nebula*0.6+0.2,sd)*0.06;
+    spaceCol+=nebulaCol*spaceFade;
+
+    sky=mix(sky,spaceCol,spaceFade);
+
+    // Atmosphere rim — looking down from space, see a bright colored edge
+    if(camH>50.0){
+        // If looking toward horizon/down, see the atmosphere glow
+        float horizonGlow=exp(-8.0*rd.y*rd.y)*smoothstep(50.0,120.0,camH);
+        vec3 atmoRim=pal2(0.3,sd)*0.8+vec3(0.1,0.15,0.3);
+        // Thin blue-white band
+        atmoRim=mix(atmoRim,vec3(0.4,0.55,0.9),0.4);
+        sky+=atmoRim*horizonGlow*0.6;
+
+        // Looking down: see planet surface glow through atmosphere
+        float downGlow=max(-rd.y,0.0)*smoothstep(80.0,200.0,camH);
+        vec3 planetGlow=pal(0.2,sd)*0.3+vec3(0.05,0.08,0.04);
+        sky=mix(sky,planetGlow,downGlow*0.4);
+    }
+
+    // Sun disc with color halo
+    vec3 sunDir=normalize(vec3(sin(time*0.02)*0.4,0.3,cos(time*0.02)*0.4));
+    float sun=pow(max(dot(rd,sunDir),0.0),80.0);
+    float sunGlow=pow(max(dot(rd,sunDir),0.0),8.0);
+    // Sun gets brighter and sharper in space
+    float sunBright=mix(2.5,5.0,spaceFade);
+    sky+=pal(0.15,sd)*sun*sunBright;
+    sky+=pal2(0.1,sd)*sunGlow*mix(0.15,0.05,spaceFade);
+
+    // Stars — more visible at altitude and in space
+    float star=hash31(floor(rd*300.0));
+    float starThresh=mix(0.998,0.99,spaceFade); // more stars in space
+    float starVis=step(starThresh,star);
+    // Stars visible everywhere in space, only upper sky on ground
+    float starMask=mix(smoothstep(0.0,0.4,rd.y),1.0,spaceFade);
+    float starBright=mix(0.5,1.2,spaceFade);
+    // Twinkle
+    float twinkle=sin(time*0.5+star*100.0)*0.3+0.7;
+    sky+=starVis*starMask*starBright*twinkle;
+
+    // Second star layer (dimmer, denser in space)
+    if(spaceFade>0.1){
+        float star2=hash31(floor(rd*800.0)+vec3(77.0));
+        float starVis2=step(0.993,star2)*spaceFade;
+        float twinkle2=sin(time*0.3+star2*50.0)*0.2+0.8;
+        sky+=starVis2*0.3*twinkle2*vec3(0.8,0.85,1.0);
+    }
+
+    return sky;
+}
+
+// --- Cloud layer at y=cloudH ---
+vec3 renderClouds(vec3 ro, vec3 rd, float sd, vec3 sky, float time){
+    float cloudH=15.0;
+    // Clouds render from below AND above (looking down from space)
+    if(abs(rd.y)<0.001) return sky;
+    float tCloud=(cloudH-ro.y)/rd.y;
+    if(tCloud<0.0||tCloud>300.0) return sky;
+    // Fade clouds when very far above them
+    float cloudAlpha=1.0-smoothstep(60.0,200.0,ro.y);
+
+    vec3 cp=ro+rd*tCloud;
+    // Animated cloud noise
+    vec2 uv2=cp.xz*0.008+time*0.005;
+    float n1=vnoise(vec3(uv2*3.0,time*0.01+sd*10.0));
+    float n2=vnoise(vec3(uv2*6.0+5.0,time*0.015+sd*5.0));
+    float n3=vnoise(vec3(uv2*12.0+10.0,time*0.008));
+    float density=n1*0.5+n2*0.3+n3*0.2;
+    density=smoothstep(0.35,0.65,density);
+
+    // Fade at edges of view
+    float fade=exp(-0.003*tCloud);
+    density*=fade;
+
+    vec3 cloudCol=pal(0.3,sd)*0.8+vec3(0.2,0.18,0.16);
+    // Slight lighting on clouds
+    float clight=n1*0.3+0.7;
+    cloudCol*=clight;
+
+    return mix(sky,cloudCol,density*0.6*cloudAlpha);
+}
+
+// --- Water plane at y=waterH ---
+vec3 renderWater(vec3 ro, vec3 rd, float sd, float oct, float time, vec3 behindCol){
+    float waterH=-0.5;
+    // Only if ray hits water plane
+    if(rd.y>-0.001) return behindCol;
+    float tWater=(waterH-ro.y)/rd.y;
+    if(tWater<0.0||tWater>100.0) return behindCol;
+
+    vec3 wp=ro+rd*tWater;
+
+    // Animated water normal from noise
+    vec2 wuv=wp.xz;
+    float t2=time;
+    float wx=vnoise(vec3(wuv*0.3+t2*0.03,t2*0.02+sd))*2.0-1.0;
+    float wz=vnoise(vec3(wuv*0.3+100.0+t2*0.025,t2*0.018+sd))*2.0-1.0;
+    vec3 wn=normalize(vec3(wx*0.08,1.0,wz*0.08));
+
+    // Reflect ray
+    vec3 rrd=reflect(rd,wn);
+    rrd.y=max(rrd.y,0.01);
+    vec3 reflCol=skyColor(rrd,sd,time);
+    // Add cloud reflection
+    reflCol=renderClouds(wp,rrd,sd,reflCol,time);
+
+    // Fresnel
+    float fres=pow(1.0-max(dot(wn,-rd),0.0),4.0);
+    fres=0.3+0.7*fres;
+
+    // Water tint — more colorful
+    vec3 waterTint=pal3(0.5,sd)*0.25+vec3(0.03,0.06,0.1);
+
+    vec3 col=mix(waterTint,reflCol,fres);
+
+    // Distance fog on water — blend to sky at horizon
+    float wfog=1.0-exp(-0.00015*tWater*tWater);
+    col=mix(col,behindCol,wfog);
+
+    return col;
+}
+
 vec3 render(vec3 ro, vec3 rd, float sd, float oct, float maxSteps){
+    float time=u_time*u_speed;
+
+    // Sky + clouds
+    vec3 sky=skyColor(rd,sd,time);
+    sky=renderClouds(ro,rd,sd,sky,time);
+
+    // Time-varying fog — shifts hue over time for variety
+    float fogCycle=sin(time*0.008)*0.5+0.5; // slow 0-1 cycle
+    vec3 fogWarm=pal(0.15+fogCycle*0.2,sd)*0.9+vec3(0.1,0.05,0.02);
+    vec3 fogCool=pal2(0.6+fogCycle*0.15,sd)*0.6+vec3(0.02,0.04,0.1);
+    vec3 fogCol=mix(fogWarm,fogCool,clamp(rd.y*0.5+0.5,0.0,1.0));
+    // Blend in a third color at the horizon band
+    vec3 fogMid=pal3(0.3+fogCycle*0.3,sd)*0.5+vec3(0.06,0.04,0.06);
+    fogCol=mix(fogCol,fogMid,exp(-8.0*rd.y*rd.y));
+    vec3 horizonCol=mix(fogCol,sky,0.45);
+
     // Raymarch
+    float maxDist=120.0;
     float t=0.0;
+    float matID=0.0;
     for(float i=0.0;i<100.0;i++){
         if(i>=maxSteps) break;
         vec3 p=ro+rd*t;
-        float d=map(p,sd,oct);
-        if(d<0.005*t) break; // relative threshold
-        t+=d;
-        if(t>80.0) break;
+        vec2 dm=mapMat(p,sd,oct);
+        if(dm.x<0.01*t){ matID=dm.y; break; }
+        t+=dm.x*0.9;
+        if(t>maxDist) break;
     }
 
-    float time=u_time*u_speed;
-
-    // Sky
-    vec3 skyHi=pal(0.65,sd)*0.5+vec3(0.03,0.04,0.1);
-    vec3 skyLo=pal(0.2,sd)*0.7+vec3(0.1,0.06,0.03);
-    vec3 sky=mix(skyLo,skyHi,clamp(rd.y*0.5+0.5,0.0,1.0));
-    sky+=pal(0.3,sd)*0.3*exp(-6.0*rd.y*rd.y); // horizon glow
-    // Stars
-    float star=hash31(floor(rd*300.0));
-    sky+=step(0.998,star)*step(0.05,rd.y)*0.5;
-
-    if(t>80.0) return sky;
+    if(t>maxDist){
+        vec3 miss=renderWater(ro,rd,sd,oct,time,sky);
+        return miss;
+    }
 
     vec3 p=ro+rd*t;
     vec3 n=calcN(p,sd,oct);
 
-    // Light
-    vec3 ld=normalize(vec3(sin(time*0.025)*0.5,0.7,cos(time*0.025)*0.5));
+    // Two-tone lighting: main light + colored fill
+    float sunAngle=time*0.025;
+    vec3 ld=normalize(vec3(sin(sunAngle)*0.5,0.7,cos(sunAngle)*0.5));
+    vec3 ld2=normalize(vec3(-cos(sunAngle)*0.3,0.2,sin(sunAngle)*0.3)); // fill from opposite side
     float diff=dot(n,ld)*0.5+0.5;
     diff*=diff;
-
+    float diff2=dot(n,ld2)*0.5+0.5;
     float occ=ao(p,n,sd,oct);
     float fres=pow(1.0-max(dot(n,-rd),0.0),3.0);
 
-    // Material
-    vec3 mat=pal(vnoise(p*0.15+sd*10.0)*0.6+0.2,sd);
+    // Light colors shift over time
+    vec3 sunCol=pal(0.15+fogCycle*0.15,sd)*1.3+vec3(0.2,0.15,0.1);
+    vec3 fillCol=pal3(0.5+fogCycle*0.2,sd)*0.4+vec3(0.05,0.08,0.12);
 
-    // Light it up
+    // Material color based on ID — more variation with position and time
+    float nv=vnoise(p*0.15+sd*10.0);
+    float nv2=vnoise(p*0.07+vec3(time*0.01)); // slow position-based color shift
+    vec3 matCol;
+    if(matID<0.5){
+        // Ground — earthy with color pools
+        matCol=pal(nv*0.5+0.15+nv2*0.15,sd)*1.2+vec3(0.05,0.03,0.0);
+        // Color patches on ground
+        matCol=mix(matCol,pal2(nv*0.4+0.3,sd)*1.0,smoothstep(0.4,0.6,nv2)*0.4);
+    } else if(matID<1.5){
+        // Breathing spheres — warm saturated, each slightly different
+        float sphereHue=hash31(floor(p/40.0)+sd*31.0);
+        matCol=pal2(nv*0.3+sphereHue*0.4+0.1,sd)*1.5+vec3(0.15,0.05,0.02);
+    } else if(matID<2.5){
+        // Cubes — cool tones, each cube unique
+        float cubeHue=hash31(floor(p/5.0)+sd*47.0);
+        matCol=pal3(cubeHue*0.6+nv*0.2+0.3,sd)*1.4+vec3(0.02,0.08,0.1);
+    } else if(matID<3.5){
+        // Large structures — warm stone with colored veins
+        matCol=pal(nv*0.2+0.4,sd)*1.0+vec3(0.12,0.1,0.1);
+        vec3 vein=pal2(nv*0.8+0.5,sd)*0.6;
+        matCol=mix(matCol,vein,smoothstep(0.45,0.55,vnoise(p*0.4))*0.35);
+    } else if(matID<4.5){
+        // Crystals — vibrant gem-like, each cluster different
+        float crystHue=hash31(floor(p/30.0)+sd*59.0);
+        matCol=pal2(crystHue*0.5+nv*0.4+0.2,sd)*2.0+vec3(0.1,0.05,0.15);
+    } else {
+        // Cairns — warm stone, subtle variation
+        float cairnHue=hash31(floor(p/55.0)+sd*83.0);
+        matCol=pal3(cairnHue*0.3+nv*0.3+0.15,sd)*1.3+vec3(0.1,0.07,0.03);
+    }
+
+    // Compose with two-tone lighting
     vec3 col=vec3(0.0);
-    col+=mat*diff*occ*2.0;       // main light
-    col+=mat*0.2;                 // ambient
-    col+=pal(0.6,sd)*fres*0.5;   // rim
+    col+=matCol*diff*occ*sunCol*1.5;
+    col+=matCol*diff2*fillCol*0.5;
+    col+=matCol*0.2;
 
-    // Fog
-    vec3 fogCol=mix(
-        pal(0.15,sd)*0.8+vec3(0.08,0.04,0.02),
-        pal(0.65,sd)*0.5+vec3(0.02,0.03,0.06),
-        clamp(p.y*0.08,0.0,1.0)
-    );
-    float fog=1.0-exp(-0.0005*t*t);
-    col=mix(col,fogCol,fog);
+    // Fresnel rim — tinted by opposite light for color contrast
+    vec3 rimCol=mix(pal2(0.6,sd),pal3(0.4,sd),fogCycle);
+    col+=rimCol*fres*0.7;
 
-    // Cloud wisps
-    float cl=fbm(vec3(p.xz*0.02+time*0.008,time*0.003+sd*10.0),min(oct,3.0));
-    cl=smoothstep(0.4,0.7,cl)*0.25;
-    col=mix(col,fogCol*1.5,cl*exp(-0.002*t));
+    // Specular on crystals
+    if(matID>3.5 && matID<4.5){
+        float spec=pow(max(dot(reflect(-ld,n),-rd),0.0),32.0);
+        col+=pal2(0.5+fogCycle*0.2,sd)*spec*1.8;
+    }
 
-    // Fade to sky
-    col=mix(col,sky,smoothstep(50.0,80.0,t));
+    // Specular glint on spheres too
+    if(matID>0.5 && matID<1.5){
+        float spec=pow(max(dot(reflect(-ld,n),-rd),0.0),16.0);
+        col+=sunCol*spec*0.4;
+    }
+
+    // Distance fog — color shifts with depth
+    float fog=1.0-exp(-0.00015*t*t);
+    vec3 depthFog=mix(fogCol,horizonCol,smoothstep(20.0,80.0,t));
+    col=mix(col,depthFog,fog);
+    col=mix(col,sky,smoothstep(60.0,maxDist,t));
 
     return col;
 }
@@ -330,16 +811,10 @@ void main(){
     float maxSteps=u_mobile>0.5?40.0:80.0;
 
     vec2 uv=(gl_FragCoord.xy-u_res*0.5)/u_res.y;
-    float time=u_time*u_speed;
 
-    // Camera: low and intimate, drifting through the landscape
-    float camY=3.5+u_mouse.y*1.0;
-    vec3 ro=vec3(sin(time*0.01)*6.0, camY, time*0.5+cos(time*0.008)*4.0);
-    vec3 ta=ro+vec3(sin(time*0.015+u_mouse.x*0.3)*5.0, -1.2, 12.0);
-    vec3 fwd=normalize(ta-ro);
-    vec3 right=normalize(cross(vec3(0,1,0),fwd));
-    vec3 up=cross(fwd,right);
-    vec3 rd=normalize(fwd+uv.x*right+uv.y*up);
+    // Camera from JS
+    vec3 ro=u_camPos;
+    vec3 rd=normalize(u_camFwd+uv.x*u_camRight+uv.y*u_camUp);
 
     vec3 col=render(ro,rd,u_seed,oct,maxSteps);
 
@@ -449,14 +924,17 @@ gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 const uRes = gl.getUniformLocation(prog, 'u_res');
 const uTime = gl.getUniformLocation(prog, 'u_time');
 const uSpeed = gl.getUniformLocation(prog, 'u_speed');
-const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+const uCamPos = gl.getUniformLocation(prog, 'u_camPos');
+const uCamFwd = gl.getUniformLocation(prog, 'u_camFwd');
+const uCamRight = gl.getUniformLocation(prog, 'u_camRight');
+const uCamUp = gl.getUniformLocation(prog, 'u_camUp');
 const uBreath = gl.getUniformLocation(prog, 'u_breath');
 const uSeed = gl.getUniformLocation(prog, 'u_seed');
 const uTransition = gl.getUniformLocation(prog, 'u_transition');
 const uPrevSeed = gl.getUniformLocation(prog, 'u_prevSeed');
 const uMobile = gl.getUniformLocation(prog, 'u_mobile');
 
-const uniforms = {uRes,uTime,uSpeed,uMouse,uBreath,uSeed,uTransition,uPrevSeed,uMobile};
+const uniforms = {uRes,uTime,uSpeed,uCamPos,uCamFwd,uCamRight,uCamUp,uBreath,uSeed,uTransition,uPrevSeed,uMobile};
 const uniformNames = Object.keys(uniforms);
 const allUniformsOk = uniformNames.every(n => uniforms[n] !== null);
 dbg(allUniformsOk, `All ${uniformNames.length} uniforms located` + (allUniformsOk ? '' : ' — MISSING: ' + uniformNames.filter(n=>uniforms[n]===null).join(', ')));
@@ -468,10 +946,10 @@ let currentSeed = 'calm';
 let currentSeedFloat = seedToFloat(currentSeed);
 let prevSeedFloat = currentSeedFloat;
 let transition = 0;
-let mouseX = 0, mouseY = 0;
-let smoothMouseX = 0, smoothMouseY = 0;
 let speedMul = 0.3;
-let dpr = Math.min(window.devicePixelRatio || 1, 2);
+let dpr = Math.min((window.devicePixelRatio || 1) * 0.5, 1); // start at half res
+const targetDpr = Math.min(window.devicePixelRatio || 1, 2);
+let dprRampTimer = 0;
 let isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
 let audioStarted = false;
 let audioCtx = null;
@@ -480,7 +958,36 @@ let masterGain = null;
 // Adaptive quality
 let frameCount = 0;
 let fpsAccum = 0;
-let lastFpsCheck = 0;
+let currentFps = 60;
+
+// Camera state
+let camX = 0, camY = 3.5, camZ = 0;
+let camYaw = 0, camPitch = -0.15; // radians
+let velX = 0, velY = 0, velZ = 0;
+const moveSpeed = 8.0;
+const mouseSens = 0.002;
+const camDamping = 0.85;
+let pointerLocked = false;
+let flyMode = false; // true = WASD active, false = auto-drift
+
+// Keyboard
+const keys = {};
+document.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight'].includes(e.code)) {
+        flyMode = true;
+        e.preventDefault();
+    }
+});
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// Scroll wheel: adjust fly speed
+let flySpeedMul = 1.0;
+document.addEventListener('wheel', e => {
+    flySpeedMul *= e.deltaY < 0 ? 1.15 : 0.87;
+    flySpeedMul = Math.max(0.1, Math.min(20.0, flySpeedMul));
+    e.preventDefault();
+}, { passive: false });
 
 // ============================================
 // SEED FROM URL HASH
@@ -554,33 +1061,43 @@ audioBtn.addEventListener('click', (e) => {
 });
 
 // ============================================
-// MOUSE / TOUCH
+// MOUSE / POINTER LOCK
 // ============================================
 document.addEventListener('mousemove', (e) => {
-    mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-    mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+    if (pointerLocked) {
+        camYaw += e.movementX * mouseSens;
+        camPitch -= e.movementY * mouseSens;
+        camPitch = Math.max(-1.4, Math.min(1.4, camPitch));
+    }
+});
+
+canvas.addEventListener('click', () => {
+    if (!pointerLocked) {
+        canvas.requestPointerLock();
+    }
+    if (!audioStarted) startAudio();
+});
+
+document.addEventListener('pointerlockchange', () => {
+    pointerLocked = document.pointerLockElement === canvas;
+    document.getElementById('crosshair').classList.toggle('active', pointerLocked);
 });
 
 document.addEventListener('touchmove', (e) => {
     const t = e.touches[0];
-    mouseX = (t.clientX / window.innerWidth) * 2 - 1;
-    mouseY = (t.clientY / window.innerHeight) * 2 - 1;
+    camYaw = -((t.clientX / window.innerWidth) * 2 - 1) * 0.5;
+    camPitch = -((t.clientY / window.innerHeight) * 2 - 1) * 0.3 - 0.15;
 }, { passive: true });
 
-// Click/tap to start audio
-document.addEventListener('click', () => {
-    if (!audioStarted) startAudio();
-});
 document.addEventListener('touchstart', () => {
     if (!audioStarted) startAudio();
 }, { passive: true });
 
-// Show audio hint after 3s
+// Show controls hint after 2s
 setTimeout(() => {
-    const hint = document.getElementById('audio-hint');
-    hint.classList.add('visible');
-    setTimeout(() => hint.classList.add('fade'), 8000);
-}, 3000);
+    const hint = document.getElementById('controls-help');
+    if (hint) { hint.classList.add('visible'); setTimeout(() => hint.classList.add('fade'), 6000); }
+}, 2000);
 
 // ============================================
 // AUDIO SYSTEM
@@ -588,9 +1105,6 @@ setTimeout(() => {
 function startAudio() {
     if (audioStarted) return;
     audioStarted = true;
-
-    const hint = document.getElementById('audio-hint');
-    hint.classList.add('fade');
 
     document.getElementById('audio-icon-on').style.display = 'block';
     document.getElementById('audio-icon-off').style.display = 'none';
@@ -781,11 +1295,193 @@ dbg(true, `Seed: "${currentSeed}" -> float: ${currentSeedFloat}`);
 dbg(!isMobile, `Device: ${isMobile ? 'mobile' : 'desktop'}`);
 
 // ============================================
+// HUD ELEMENTS
+// ============================================
+const hudFps = document.getElementById('hud-fps');
+const hudRes = document.getElementById('hud-res');
+const hudSeed = document.getElementById('hud-seed');
+const hudDpr = document.getElementById('hud-dpr');
+const hudPos = document.getElementById('hud-pos');
+const hudYaw = document.getElementById('hud-yaw');
+const hudTime = document.getElementById('hud-time');
+const hudMode = document.getElementById('hud-mode');
+const hudSpeed = document.getElementById('hud-speed');
+const breathFill = document.getElementById('breath-fill');
+
+// ============================================
+// AMBIENT CLOCK
+// ============================================
+const clockEl = document.getElementById('ambient-clock');
+function updateClock() {
+    const d = new Date();
+    const h = d.getHours() % 12 || 12;
+    const m = String(d.getMinutes()).padStart(2, '0');
+    clockEl.textContent = `${h}:${m}`;
+}
+updateClock();
+setInterval(updateClock, 10000);
+// Fade in after 5s
+setTimeout(() => clockEl.classList.add('visible'), 5000);
+
+// ============================================
+// QUOTES
+// ============================================
+const quotes = [
+    "breathe in. breathe out.",
+    "you are exactly where you need to be.",
+    "the present moment is all there is.",
+    "let the thoughts drift by like clouds.",
+    "nothing to fix. nothing to solve. just be.",
+    "the mind is like water — calm it and everything becomes clear.",
+    "rest is not idleness.",
+    "you don't have to figure it all out today.",
+    "between stimulus and response there is a space.",
+    "be still and know.",
+    "progress is not always visible.",
+    "the quieter you become, the more you can hear.",
+    "this too shall pass.",
+    "you are not your thoughts.",
+    "slow down. you're doing fine.",
+    "one breath at a time.",
+];
+const quoteEl = document.getElementById('quote');
+let quoteIdx = Math.floor(Math.random() * quotes.length);
+function showQuote() {
+    quoteEl.classList.remove('visible');
+    setTimeout(() => {
+        quoteEl.textContent = quotes[quoteIdx % quotes.length];
+        quoteIdx++;
+        quoteEl.classList.add('visible');
+        // Fade out after 12s
+        setTimeout(() => quoteEl.classList.remove('visible'), 12000);
+    }, 4000);
+}
+// First quote after 10s, then every 45-90s
+setTimeout(showQuote, 10000);
+setInterval(showQuote, 45000 + Math.random() * 45000);
+
+// ============================================
+// POMODORO TIMER
+// ============================================
+const pomoDisplay = document.getElementById('pomo-display');
+const pomoLabel = document.getElementById('pomo-label');
+const pomoFill = document.getElementById('pomo-fill');
+const pomoBtn = document.getElementById('pomo-btn');
+
+let pomoState = 'idle'; // idle, focus, break
+let pomoRemaining = 25 * 60; // seconds
+let pomoTotal = 25 * 60;
+let pomoInterval = null;
+let pomoSessions = 0;
+
+const FOCUS_MINUTES = 25;
+const SHORT_BREAK = 5;
+const LONG_BREAK = 15;
+
+function formatPomo(secs) {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function pomoPing() {
+    // Gentle audio cue if audio is active
+    if (audioCtx && audioCtx.state === 'running') {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 528; // solfeggio
+        const env = audioCtx.createGain();
+        const now = audioCtx.currentTime;
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(0.08, now + 0.3);
+        env.gain.linearRampToValueAtTime(0, now + 2.5);
+        osc.connect(env);
+        env.connect(masterGain);
+        osc.start(now);
+        osc.stop(now + 3);
+        // Second tone
+        setTimeout(() => {
+            const osc2 = audioCtx.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.value = 639;
+            const env2 = audioCtx.createGain();
+            const n2 = audioCtx.currentTime;
+            env2.gain.setValueAtTime(0, n2);
+            env2.gain.linearRampToValueAtTime(0.06, n2 + 0.3);
+            env2.gain.linearRampToValueAtTime(0, n2 + 2);
+            osc2.connect(env2);
+            env2.connect(masterGain);
+            osc2.start(n2);
+            osc2.stop(n2 + 2.5);
+        }, 800);
+    }
+}
+
+function startPomo() {
+    if (pomoState === 'idle' || pomoState === 'done') {
+        pomoState = 'focus';
+        pomoTotal = FOCUS_MINUTES * 60;
+        pomoRemaining = pomoTotal;
+        pomoLabel.textContent = 'focus';
+        pomoFill.style.background = 'rgba(180,170,160,0.3)';
+        pomoBtn.textContent = 'stop';
+    } else if (pomoState === 'focus' || pomoState === 'break') {
+        // Stop
+        clearInterval(pomoInterval);
+        pomoInterval = null;
+        pomoState = 'idle';
+        pomoRemaining = FOCUS_MINUTES * 60;
+        pomoTotal = pomoRemaining;
+        pomoLabel.textContent = 'focus';
+        pomoBtn.textContent = 'start';
+        pomoDisplay.textContent = formatPomo(pomoRemaining);
+        pomoFill.style.width = '0%';
+        return;
+    }
+
+    clearInterval(pomoInterval);
+    pomoInterval = setInterval(() => {
+        pomoRemaining--;
+        if (pomoRemaining <= 0) {
+            clearInterval(pomoInterval);
+            pomoPing();
+
+            if (pomoState === 'focus') {
+                pomoSessions++;
+                // Switch to break
+                pomoState = 'break';
+                const breakLen = (pomoSessions % 4 === 0) ? LONG_BREAK : SHORT_BREAK;
+                pomoTotal = breakLen * 60;
+                pomoRemaining = pomoTotal;
+                pomoLabel.textContent = (pomoSessions % 4 === 0) ? 'long break' : 'break';
+                pomoFill.style.background = 'rgba(120,180,140,0.3)';
+                pomoBtn.textContent = 'skip';
+                // Auto-start break
+                pomoInterval = setInterval(arguments.callee, 1000);
+            } else {
+                // Break done
+                pomoState = 'done';
+                pomoLabel.textContent = 'done';
+                pomoBtn.textContent = 'start';
+                pomoPing();
+            }
+        }
+        pomoDisplay.textContent = formatPomo(pomoRemaining);
+        const pct = ((pomoTotal - pomoRemaining) / pomoTotal) * 100;
+        pomoFill.style.width = `${pct}%`;
+    }, 1000);
+}
+
+pomoBtn.addEventListener('click', startPomo);
+pomoDisplay.textContent = formatPomo(pomoRemaining);
+
+// ============================================
 // RENDER LOOP
 // ============================================
 const startTime = performance.now();
 let lastFrame = startTime;
 let debugFrames = 0;
+let hudTimer = 0;
 
 function frame(now) {
     requestAnimationFrame(frame);
@@ -794,22 +1490,28 @@ function frame(now) {
     if (debugFrames === 5) {
         const err = gl.getError();
         dbg(err === gl.NO_ERROR, `WebGL error check: ${err === gl.NO_ERROR ? 'none' : 'ERROR ' + err}`);
-        // Read a pixel to check output
         const px = new Uint8Array(4);
         gl.readPixels(Math.floor(canvas.width/2), Math.floor(canvas.height/2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
         const bright = px[0] + px[1] + px[2];
         dbg(bright > 0, `Center pixel: rgb(${px[0]},${px[1]},${px[2]}) — ${bright > 0 ? 'visible' : 'BLACK'}`);
     }
 
-    const dt = (now - lastFrame) / 1000;
+    const dt = Math.min((now - lastFrame) / 1000, 0.1); // cap dt
     lastFrame = now;
+
+    // Ramp DPR up over first 3 seconds for smooth startup
+    dprRampTimer += dt;
+    if (dprRampTimer < 3.0 && dpr < targetDpr) {
+        dpr = Math.min(targetDpr, dpr + dt * (targetDpr / 3.0));
+        resize();
+    }
 
     // Adaptive FPS check
     frameCount++;
     fpsAccum += dt;
-    if (fpsAccum > 2) {
-        const fps = frameCount / fpsAccum;
-        if (fps < 28 && dpr > 0.5) {
+    if (fpsAccum > 1) {
+        currentFps = Math.round(frameCount / fpsAccum);
+        if (currentFps < 28 && dpr > 0.5) {
             dpr = Math.max(0.5, dpr - 0.25);
             resize();
         }
@@ -817,26 +1519,89 @@ function frame(now) {
         fpsAccum = 0;
     }
 
-    // Smooth mouse (heavily damped)
-    smoothMouseX += (mouseX - smoothMouseX) * 0.02;
-    smoothMouseY += (mouseY - smoothMouseY) * 0.02;
+    const elapsed = (now - startTime) / 1000;
+    const time = elapsed * speedMul;
 
-    // Breathing cycle: 12s period
-    const breathTime = (now - startTime) / 1000;
-    const breath = Math.sin(breathTime * Math.PI * 2 / 12);
+    // ---- Camera ----
+    // Forward/right vectors from yaw (horizontal plane, matches shader cam)
+    const fwdX = Math.sin(camYaw);
+    const fwdZ = Math.cos(camYaw);
+    const rightX = Math.cos(camYaw);
+    const rightZ = -Math.sin(camYaw);
 
-    // Seed transition crossfade (2.5s)
+    if (flyMode) {
+        // WASD input
+        let inputX = 0, inputY = 0, inputZ = 0;
+        if (keys['KeyW']) { inputX += fwdX; inputZ += fwdZ; }
+        if (keys['KeyS']) { inputX -= fwdX; inputZ -= fwdZ; }
+        if (keys['KeyD']) { inputX += rightX; inputZ += rightZ; }
+        if (keys['KeyA']) { inputX -= rightX; inputZ -= rightZ; }
+        if (keys['Space']) inputY += 1;
+        if (keys['ShiftLeft'] || keys['ShiftRight']) inputY -= 1;
+
+        const len = Math.sqrt(inputX*inputX + inputY*inputY + inputZ*inputZ);
+        if (len > 0) {
+            const spd = moveSpeed * flySpeedMul;
+            velX += (inputX/len) * spd * dt;
+            velY += (inputY/len) * spd * dt;
+            velZ += (inputZ/len) * spd * dt;
+        }
+
+        velX *= camDamping;
+        velY *= camDamping;
+        velZ *= camDamping;
+
+        camX += velX * dt * 10;
+        camY += velY * dt * 10;
+        camZ += velZ * dt * 10;
+
+        // Floor clamp — allow slightly underground but not fully
+        if (camY < -2.0) {
+            camY = -2.0;
+            if (velY < 0) velY = 0;
+        }
+    } else {
+        // Auto-drift mode
+        camX = Math.sin(time * 0.01) * 6.0;
+        camY = 3.5;
+        camZ = time * 0.5 + Math.cos(time * 0.008) * 4.0;
+        // Slow auto-look
+        camYaw += dt * 0.015;
+    }
+
+    // Build camera basis vectors (with pitch)
+    const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
+    const cy = Math.cos(camYaw), sy = Math.sin(camYaw);
+    // Forward (into screen)
+    const cfX = sy * cp;
+    const cfY = sp;
+    const cfZ = cy * cp;
+    // Right
+    const crX = cy;
+    const crY = 0;
+    const crZ = -sy;
+    // Up = forward x right
+    const cuX = cfY*crZ - cfZ*crY;
+    const cuY = cfZ*crX - cfX*crZ;
+    const cuZ = cfX*crY - cfY*crX;
+
+    // Breathing cycle: 12s period — faster when moving faster
+    const breathRate = 1.0 + (flySpeedMul - 1.0) * 0.5; // scale pulse speed with fly speed
+    const breath = Math.sin(elapsed * Math.PI * 2 / 12 * breathRate);
+
+    // Seed transition crossfade
     if (transition > 0) {
         transition = Math.max(0, transition - dt / 2.5);
     }
 
-    // Uniforms
-    const elapsed = (now - startTime) / 1000;
-
+    // ---- Uniforms ----
     gl.uniform2f(uRes, canvas.width, canvas.height);
     gl.uniform1f(uTime, elapsed);
-    gl.uniform1f(uSpeed, speedMul);
-    gl.uniform2f(uMouse, smoothMouseX, smoothMouseY);
+    gl.uniform1f(uSpeed, speedMul * breathRate);
+    gl.uniform3f(uCamPos, camX, camY, camZ);
+    gl.uniform3f(uCamFwd, cfX, cfY, cfZ);
+    gl.uniform3f(uCamRight, crX, crY, crZ);
+    gl.uniform3f(uCamUp, cuX, cuY, cuZ);
     gl.uniform1f(uBreath, breath);
     gl.uniform1f(uSeed, currentSeedFloat);
     gl.uniform1f(uTransition, transition);
@@ -844,6 +1609,23 @@ function frame(now) {
     gl.uniform1f(uMobile, isMobile ? 1.0 : 0.0);
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // ---- HUD update (throttled) ----
+    hudTimer += dt;
+    if (hudTimer > 0.2) {
+        hudTimer = 0;
+        hudFps.textContent = `${currentFps} fps`;
+        hudRes.textContent = `${canvas.width}x${canvas.height}`;
+        hudSeed.textContent = `seed: ${currentSeed}`;
+        hudDpr.textContent = `dpr: ${dpr.toFixed(2)}`;
+        hudPos.textContent = `pos: ${camX.toFixed(1)}, ${camY.toFixed(1)}, ${camZ.toFixed(1)}`;
+        hudYaw.textContent = `yaw: ${(camYaw*180/Math.PI).toFixed(0)} pitch: ${(camPitch*180/Math.PI).toFixed(0)}`;
+        hudTime.textContent = `time: ${elapsed.toFixed(1)}s`;
+        const zone = camY < 0 ? 'underground' : camY < 15 ? 'surface' : camY < 50 ? 'clouds' : camY < 120 ? 'upper atmosphere' : 'space';
+        hudMode.textContent = `mode: ${flyMode ? 'fly' : 'drift'}${pointerLocked ? ' [locked]' : ''} | ${zone}`;
+        hudSpeed.textContent = `speed: ${flySpeedMul.toFixed(1)}x`;
+        breathFill.style.width = `${(breath * 0.5 + 0.5) * 100}%`;
+    }
 }
 
 requestAnimationFrame(frame);
