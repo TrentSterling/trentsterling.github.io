@@ -204,6 +204,22 @@ canvas{display:block;width:100%;height:100%;position:fixed;top:0;left:0}
   letter-spacing:0.12em;
 }
 #pomo-btn:hover{border-color:rgba(180,170,160,0.4);color:rgba(230,225,215,0.8)}
+
+/* Altitude graph */
+#alt-graph{
+  position:absolute;bottom:4rem;left:50%;transform:translateX(-50%);
+  pointer-events:none;
+}
+#alt-graph canvas{
+  width:200px;height:50px;
+  border:1px solid rgba(255,255,255,0.08);border-radius:4px;
+  background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);
+}
+#alt-label{
+  font-family:'Courier New',monospace;font-size:0.65rem;
+  color:rgba(200,195,185,0.5);text-align:center;letter-spacing:0.1em;
+  margin-top:2px;
+}
 </style>
 </head>
 <body>
@@ -247,6 +263,10 @@ canvas{display:block;width:100%;height:100%;position:fixed;top:0;left:0}
     <div id="pomo-bar"><div id="pomo-fill"></div></div>
     <button id="pomo-btn">start</button>
   </div>
+  <div id="alt-graph">
+    <canvas id="alt-canvas" width="200" height="50"></canvas>
+    <div id="alt-label">altitude</div>
+  </div>
   <div id="controls">
     <label>seed <input type="text" id="seed-input" placeholder="random"></label>
     <label>speed <input type="range" id="speed" min="0" max="100" value="30"></label>
@@ -276,6 +296,7 @@ uniform float u_seed;
 uniform float u_transition;
 uniform float u_prevSeed;
 uniform float u_mobile;
+uniform float u_velocity; // camera speed magnitude for speed lines
 
 // --- Hash functions ---
 float hash21(vec2 p){
@@ -545,110 +566,177 @@ float ao(vec3 p, vec3 n, float sd, float oct){
     return clamp(1.0-2.0*o,0.0,1.0);
 }
 
-// --- Sky color with atmosphere layers ---
+// --- Sky color with distinct atmosphere layers ---
 vec3 skyColor(vec3 rd, float sd, float time){
     float camH=u_camPos.y;
 
-    // Atmosphere transition: ground(0-30) -> high sky(30-80) -> thin atmo(80-150) -> space(150+)
-    float atmoFade=smoothstep(30.0,100.0,camH); // 0=ground, 1=high altitude
-    float spaceFade=smoothstep(80.0,200.0,camH); // 0=atmosphere, 1=space
+    // Layer weights — smooth transitions between 6 altitude bands
+    float wGround   = 1.0-smoothstep(0.0,20.0,camH);     // 0-20: ground haze
+    float wLowCloud = smoothstep(8.0,18.0,camH)*(1.0-smoothstep(18.0,35.0,camH)); // 8-35: cloud layer
+    float wHighSky  = smoothstep(20.0,45.0,camH)*(1.0-smoothstep(45.0,70.0,camH)); // 20-70: clear blue
+    float wStrato   = smoothstep(50.0,75.0,camH)*(1.0-smoothstep(75.0,105.0,camH)); // 50-105: stratosphere violet
+    float wMeso     = smoothstep(85.0,110.0,camH)*(1.0-smoothstep(110.0,135.0,camH)); // 85-135: mesosphere dark
+    float wSpace    = smoothstep(115.0,145.0,camH); // 115+: space
 
-    // Normal sky (seen from ground)
-    vec3 skyHi=pal(0.65,sd)*0.6+vec3(0.04,0.05,0.15);
-    vec3 skyLo=pal2(0.2,sd)*0.7+vec3(0.12,0.07,0.04);
-    vec3 sky=mix(skyLo,skyHi,clamp(rd.y*0.5+0.5,0.0,1.0));
-    sky+=pal3(0.3,sd)*0.35*exp(-6.0*rd.y*rd.y);
-
-    // High altitude: sky gets darker, deeper blue/violet
-    vec3 deepSky=pal(0.7,sd)*0.2+vec3(0.01,0.02,0.08);
-    sky=mix(sky,deepSky,atmoFade*0.7);
-
-    // Space: nearly black with faint nebula color
-    vec3 spaceCol=vec3(0.005,0.005,0.015);
-    // Nebula wisps in space
-    float nebula=vnoise(vec3(rd.xy*3.0+sd*5.0,rd.z*3.0))*0.5+
-                 vnoise(vec3(rd.xz*6.0+sd*11.0,rd.y*6.0))*0.3;
-    nebula=smoothstep(0.3,0.7,nebula);
-    vec3 nebulaCol=pal2(nebula*0.6+0.2,sd)*0.06;
-    spaceCol+=nebulaCol*spaceFade;
-
-    sky=mix(sky,spaceCol,spaceFade);
-
-    // Atmosphere rim — looking down from space, see a bright colored edge
-    if(camH>50.0){
-        // If looking toward horizon/down, see the atmosphere glow
-        float horizonGlow=exp(-8.0*rd.y*rd.y)*smoothstep(50.0,120.0,camH);
-        vec3 atmoRim=pal2(0.3,sd)*0.8+vec3(0.1,0.15,0.3);
-        // Thin blue-white band
-        atmoRim=mix(atmoRim,vec3(0.4,0.55,0.9),0.4);
-        sky+=atmoRim*horizonGlow*0.6;
-
-        // Looking down: see planet surface glow through atmosphere
-        float downGlow=max(-rd.y,0.0)*smoothstep(80.0,200.0,camH);
-        vec3 planetGlow=pal(0.2,sd)*0.3+vec3(0.05,0.08,0.04);
-        sky=mix(sky,planetGlow,downGlow*0.4);
+    // Each layer has its own sky gradient
+    // Ground: warm haze, amber horizon
+    vec3 skyGround;
+    {
+        vec3 hi=pal(0.65,sd)*0.55+vec3(0.04,0.05,0.12);
+        vec3 lo=pal2(0.2,sd)*0.65+vec3(0.14,0.08,0.04);
+        skyGround=mix(lo,hi,clamp(rd.y*0.5+0.5,0.0,1.0));
+        skyGround+=pal3(0.3,sd)*0.3*exp(-6.0*rd.y*rd.y); // warm horizon band
     }
 
-    // Sun disc with color halo
+    // Cloud layer: brighter, whiter, hazier
+    vec3 skyCloud;
+    {
+        vec3 hi=vec3(0.45,0.5,0.6)+pal(0.5,sd)*0.2;
+        vec3 lo=vec3(0.55,0.52,0.5)+pal2(0.3,sd)*0.15;
+        skyCloud=mix(lo,hi,clamp(rd.y*0.6+0.4,0.0,1.0));
+        // Volumetric haze feel — whiter, less saturated
+        float haze=exp(-3.0*abs(rd.y));
+        skyCloud=mix(skyCloud,vec3(0.6,0.58,0.55),haze*0.5);
+    }
+
+    // High sky: clear deep blue, sharper contrast
+    vec3 skyHigh;
+    {
+        vec3 hi=pal(0.7,sd)*0.5+vec3(0.02,0.04,0.2);
+        vec3 lo=pal2(0.45,sd)*0.4+vec3(0.08,0.06,0.08);
+        skyHigh=mix(lo,hi,clamp(rd.y*0.5+0.5,0.0,1.0));
+    }
+
+    // Stratosphere: violet/purple tones, thin air
+    vec3 skyStrato;
+    {
+        vec3 hi=vec3(0.08,0.04,0.2)+pal(0.8,sd)*0.15;
+        vec3 lo=vec3(0.15,0.08,0.18)+pal3(0.6,sd)*0.12;
+        skyStrato=mix(lo,hi,clamp(rd.y*0.5+0.5,0.0,1.0));
+        // Faint glow at horizon — last traces of atmosphere
+        skyStrato+=vec3(0.12,0.08,0.2)*exp(-4.0*rd.y*rd.y);
+    }
+
+    // Mesosphere: near-black with hints of deep blue
+    vec3 skyMeso;
+    {
+        skyMeso=vec3(0.015,0.012,0.04)+pal(0.75,sd)*0.03;
+        // Aurora-like shimmer at horizon
+        float aur=exp(-6.0*rd.y*rd.y)*vnoise(vec3(rd.xz*8.0,time*0.02+sd));
+        vec3 aurCol=pal2(aur+time*0.005,sd)*0.08;
+        skyMeso+=aurCol*smoothstep(0.2,0.5,aur);
+    }
+
+    // Space: black with nebula
+    vec3 skySpace;
+    {
+        skySpace=vec3(0.004,0.003,0.012);
+        float nebula=vnoise(vec3(rd.xy*3.0+sd*5.0,rd.z*3.0))*0.5+
+                     vnoise(vec3(rd.xz*6.0+sd*11.0,rd.y*6.0))*0.3;
+        nebula=smoothstep(0.3,0.7,nebula);
+        vec3 nebulaCol=pal2(nebula*0.6+0.2,sd)*0.08;
+        skySpace+=nebulaCol*wSpace;
+    }
+
+    // Blend all layers by weight
+    vec3 sky=skyGround*wGround
+            +skyCloud*wLowCloud
+            +skyHigh*wHighSky
+            +skyStrato*wStrato
+            +skyMeso*wMeso
+            +skySpace*wSpace;
+    // Normalize when between bands (weights don't always sum to 1)
+    float wSum=wGround+wLowCloud+wHighSky+wStrato+wMeso+wSpace;
+    if(wSum>0.01) sky/=wSum;
+
+    // Atmosphere rim — looking sideways/down from high altitude
+    if(camH>40.0){
+        float rimStrength=smoothstep(40.0,100.0,camH);
+        float horizonGlow=exp(-6.0*rd.y*rd.y)*rimStrength;
+        // Multi-color rim: blue-white core + orange fringe
+        vec3 rimCore=vec3(0.35,0.5,0.85)+pal2(0.3,sd)*0.3;
+        vec3 rimFringe=vec3(0.25,0.15,0.05)+pal(0.15,sd)*0.2;
+        float rimBand=exp(-20.0*(rd.y-0.05)*(rd.y-0.05));
+        sky+=rimCore*horizonGlow*0.5;
+        sky+=rimFringe*rimBand*rimStrength*0.3;
+
+        // Planet glow when looking down from high up
+        float downGlow=max(-rd.y,0.0)*smoothstep(70.0,140.0,camH);
+        vec3 planetGlow=pal(0.2,sd)*0.25+vec3(0.04,0.06,0.03);
+        sky=mix(sky,planetGlow,downGlow*0.5);
+    }
+
+    // Sun disc + halo
     vec3 sunDir=normalize(vec3(sin(time*0.02)*0.4,0.3,cos(time*0.02)*0.4));
     float sun=pow(max(dot(rd,sunDir),0.0),80.0);
     float sunGlow=pow(max(dot(rd,sunDir),0.0),8.0);
-    // Sun gets brighter and sharper in space
-    float sunBright=mix(2.5,5.0,spaceFade);
+    float sunBright=mix(2.5,6.0,wSpace);
     sky+=pal(0.15,sd)*sun*sunBright;
-    sky+=pal2(0.1,sd)*sunGlow*mix(0.15,0.05,spaceFade);
+    sky+=pal2(0.1,sd)*sunGlow*mix(0.15,0.03,wSpace);
 
-    // Stars — more visible at altitude and in space
+    // Stars — progressively visible from stratosphere up
+    float starVis0=wStrato+wMeso+wSpace; // stars start in stratosphere
     float star=hash31(floor(rd*300.0));
-    float starThresh=mix(0.998,0.99,spaceFade); // more stars in space
-    float starVis=step(starThresh,star);
-    // Stars visible everywhere in space, only upper sky on ground
-    float starMask=mix(smoothstep(0.0,0.4,rd.y),1.0,spaceFade);
-    float starBright=mix(0.5,1.2,spaceFade);
-    // Twinkle
+    float starThresh=mix(0.999,0.99,starVis0);
+    float starOn=step(starThresh,star);
+    float starMask=mix(smoothstep(0.0,0.3,rd.y),1.0,smoothstep(0.3,1.0,starVis0));
+    float starBright=mix(0.3,1.5,starVis0);
     float twinkle=sin(time*0.5+star*100.0)*0.3+0.7;
-    sky+=starVis*starMask*starBright*twinkle;
+    sky+=starOn*starMask*starBright*twinkle;
 
-    // Second star layer (dimmer, denser in space)
-    if(spaceFade>0.1){
+    // Dense star field in deep space + mesosphere
+    if(starVis0>0.15){
         float star2=hash31(floor(rd*800.0)+vec3(77.0));
-        float starVis2=step(0.993,star2)*spaceFade;
+        float starVis2=step(0.993,star2)*starVis0;
         float twinkle2=sin(time*0.3+star2*50.0)*0.2+0.8;
-        sky+=starVis2*0.3*twinkle2*vec3(0.8,0.85,1.0);
+        sky+=starVis2*0.35*twinkle2*vec3(0.8,0.85,1.0);
+        // Third layer: very faint tiny stars
+        float star3=hash31(floor(rd*1500.0)+vec3(133.0));
+        float starVis3=step(0.996,star3)*wSpace;
+        sky+=starVis3*0.15*vec3(0.9,0.9,1.0);
     }
 
     return sky;
 }
 
-// --- Cloud layer at y=cloudH ---
-vec3 renderClouds(vec3 ro, vec3 rd, float sd, vec3 sky, float time){
-    float cloudH=15.0;
-    // Clouds render from below AND above (looking down from space)
+// --- Single cloud plane renderer ---
+vec3 renderCloudPlane(vec3 ro, vec3 rd, float sd, vec3 sky, float time, float cloudH, float scale, float opacity, vec3 tint, float fadeAbove){
     if(abs(rd.y)<0.001) return sky;
     float tCloud=(cloudH-ro.y)/rd.y;
-    if(tCloud<0.0||tCloud>300.0) return sky;
-    // Fade clouds when very far above them
-    float cloudAlpha=1.0-smoothstep(60.0,200.0,ro.y);
+    if(tCloud<0.0||tCloud>400.0) return sky;
+    float cloudAlpha=1.0-smoothstep(fadeAbove,fadeAbove+80.0,ro.y);
+    if(cloudAlpha<0.01) return sky;
 
     vec3 cp=ro+rd*tCloud;
-    // Animated cloud noise
-    vec2 uv2=cp.xz*0.008+time*0.005;
+    vec2 uv2=cp.xz*scale+time*0.005;
     float n1=vnoise(vec3(uv2*3.0,time*0.01+sd*10.0));
     float n2=vnoise(vec3(uv2*6.0+5.0,time*0.015+sd*5.0));
     float n3=vnoise(vec3(uv2*12.0+10.0,time*0.008));
     float density=n1*0.5+n2*0.3+n3*0.2;
-    density=smoothstep(0.35,0.65,density);
-
-    // Fade at edges of view
-    float fade=exp(-0.003*tCloud);
-    density*=fade;
-
-    vec3 cloudCol=pal(0.3,sd)*0.8+vec3(0.2,0.18,0.16);
-    // Slight lighting on clouds
+    density=smoothstep(0.32,0.68,density);
+    density*=exp(-0.003*tCloud); // fade at distance
     float clight=n1*0.3+0.7;
-    cloudCol*=clight;
+    vec3 cloudCol=tint*clight;
 
-    return mix(sky,cloudCol,density*0.6*cloudAlpha);
+    return mix(sky,cloudCol,density*opacity*cloudAlpha);
+}
+
+// --- Multi-layer clouds ---
+vec3 renderClouds(vec3 ro, vec3 rd, float sd, vec3 sky, float time){
+    vec3 col=sky;
+    // Layer 1: Low cumulus clouds at y=15 (warm, thick)
+    vec3 tint1=pal(0.3,sd)*0.75+vec3(0.22,0.19,0.16);
+    col=renderCloudPlane(ro,rd,sd,col,time, 15.0, 0.008, 0.65, tint1, 60.0);
+
+    // Layer 2: Mid-altitude wisps at y=35 (cooler, thinner)
+    vec3 tint2=pal2(0.5,sd)*0.5+vec3(0.3,0.3,0.35);
+    col=renderCloudPlane(ro,rd,sd,col,time*1.3, 35.0, 0.005, 0.4, tint2, 90.0);
+
+    // Layer 3: High cirrus at y=60 (icy, very thin, wide)
+    vec3 tint3=vec3(0.35,0.38,0.5)+pal3(0.65,sd)*0.15;
+    col=renderCloudPlane(ro,rd,sd,col,time*0.7, 60.0, 0.003, 0.25, tint3, 120.0);
+
+    return col;
 }
 
 // --- Water plane at y=waterH ---
@@ -831,6 +919,62 @@ void main(){
     float vig=vuv.x*vuv.y*(1.0-vuv.x)*(1.0-vuv.y);
     col*=mix(0.7,1.0,clamp(pow(vig*16.0,0.35),0.0,1.0));
 
+    // World-space speed streaks — 3D particles that fly past camera
+    float spdNorm=clamp(u_velocity/30.0, 0.0, 1.0);
+    if(spdNorm>0.03){
+        vec2 uv2=(gl_FragCoord.xy-u_res*0.5)/u_res.y;
+        vec3 ro2=u_camPos;
+        vec3 rd2=normalize(u_camFwd+uv2.x*u_camRight+uv2.y*u_camUp);
+
+        // Two layers of world-space streaks at different scales
+        for(float layer=0.0;layer<2.0;layer+=1.0){
+            float cellSize=3.0+layer*5.0; // 3 and 8 unit cells
+            float invCell=1.0/cellSize;
+
+            // March a short distance along the ray to find nearby streak cells
+            for(float step2=0.0;step2<4.0;step2+=1.0){
+                float rayT=2.0+step2*4.0+layer*3.0; // sample at 2,6,10,14... and 5,9,13,17...
+                vec3 wp=ro2+rd2*rayT;
+
+                // Snap to cell grid
+                vec3 cellId=floor(wp*invCell);
+                vec3 cellCenter=(cellId+0.5)*cellSize;
+
+                // Random offset within cell + existence check
+                float ch=hash31(cellId+layer*77.0+u_seed*3.0);
+                if(ch>0.88){ // ~12% of cells have a streak
+                    // Particle position in cell
+                    vec3 ppos=cellCenter+vec3(
+                        (hash31(cellId*1.3+vec3(1.0))-0.5)*cellSize*0.7,
+                        (hash31(cellId*2.7+vec3(2.0))-0.5)*cellSize*0.7,
+                        (hash31(cellId*3.1+vec3(3.0))-0.5)*cellSize*0.7
+                    );
+
+                    // Streak direction: motion-aligned (camera forward)
+                    float streakLen=0.3+spdNorm*1.5+layer*0.5;
+                    // Closest point on streak line to ray
+                    vec3 toP=ppos-ro2;
+                    float along=dot(toP,rd2);
+                    if(along>1.0){ // in front of camera
+                        vec3 closest=ro2+rd2*along;
+                        float dist2=length(closest-ppos);
+                        // Thinner at distance, thicker close
+                        float thickness=0.03+layer*0.02;
+                        float bright=smoothstep(thickness,thickness*0.3,dist2/along);
+                        // Streak elongation along camera forward
+                        float streakPhase=fract(dot(ppos,u_camFwd)*0.5+u_time*spdNorm*2.0);
+                        bright*=smoothstep(0.0,0.3,streakPhase)*smoothstep(1.0,0.5,streakPhase);
+                        // Fade with distance
+                        bright*=exp(-along*0.08);
+                        // Color: white-blue, slightly tinted
+                        vec3 streakCol=mix(vec3(0.85,0.9,1.0),vec3(1.0,0.95,0.8),ch);
+                        col+=streakCol*bright*spdNorm*0.5;
+                    }
+                }
+            }
+        }
+    }
+
     // Grain
     col+=hash31(vec3(gl_FragCoord.xy,fract(u_time*71.0)))*0.025-0.0125;
 
@@ -933,6 +1077,7 @@ const uSeed = gl.getUniformLocation(prog, 'u_seed');
 const uTransition = gl.getUniformLocation(prog, 'u_transition');
 const uPrevSeed = gl.getUniformLocation(prog, 'u_prevSeed');
 const uMobile = gl.getUniformLocation(prog, 'u_mobile');
+const uVelocity = gl.getUniformLocation(prog, 'u_velocity');
 
 const uniforms = {uRes,uTime,uSpeed,uCamPos,uCamFwd,uCamRight,uCamUp,uBreath,uSeed,uTransition,uPrevSeed,uMobile};
 const uniformNames = Object.keys(uniforms);
@@ -954,6 +1099,9 @@ let isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 
 let audioStarted = false;
 let audioCtx = null;
 let masterGain = null;
+let altAudioFade = 1.0; // altitude-based audio fade (1=full, 0=silent)
+let droneGainNodes = []; // store drone gain nodes for altitude modulation
+let rainGainNode = null; // store rain gain node for altitude modulation
 
 // Adaptive quality
 let frameCount = 0;
@@ -969,6 +1117,10 @@ const mouseSens = 0.002;
 const camDamping = 0.85;
 let pointerLocked = false;
 let flyMode = false; // true = WASD active, false = auto-drift
+let idleTimer = 0;
+const IDLE_TIMEOUT = 3.0; // seconds of no input before auto-drift resumes
+let driftTime = 0; // accumulated drift time for altitude journey
+let driftPhase = Math.random() * Math.PI * 2; // randomize starting phase
 
 // Keyboard
 const keys = {};
@@ -976,13 +1128,14 @@ document.addEventListener('keydown', e => {
     keys[e.code] = true;
     if (['KeyW','KeyA','KeyS','KeyD','Space','ShiftLeft','ShiftRight'].includes(e.code)) {
         flyMode = true;
+        idleTimer = 0;
         e.preventDefault();
     }
 });
 document.addEventListener('keyup', e => { keys[e.code] = false; });
 
 // Scroll wheel: adjust fly speed
-let flySpeedMul = 1.0;
+let flySpeedMul = 5.0; // default to fast — feels better
 document.addEventListener('wheel', e => {
     flySpeedMul *= e.deltaY < 0 ? 1.15 : 0.87;
     flySpeedMul = Math.max(0.1, Math.min(20.0, flySpeedMul));
@@ -1068,6 +1221,10 @@ document.addEventListener('mousemove', (e) => {
         camYaw += e.movementX * mouseSens;
         camPitch -= e.movementY * mouseSens;
         camPitch = Math.max(-1.4, Math.min(1.4, camPitch));
+        if (Math.abs(e.movementX) + Math.abs(e.movementY) > 2) {
+            idleTimer = 0;
+            flyMode = true;
+        }
     }
 });
 
@@ -1081,6 +1238,21 @@ canvas.addEventListener('click', () => {
 document.addEventListener('pointerlockchange', () => {
     pointerLocked = document.pointerLockElement === canvas;
     document.getElementById('crosshair').classList.toggle('active', pointerLocked);
+});
+
+// Mute when tab is hidden (minimized) — but keep playing on alt-tab (blur)
+document.addEventListener('visibilitychange', () => {
+    if (!audioCtx || !masterGain) return;
+    if (document.hidden) {
+        masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
+        setTimeout(() => { if (document.hidden && audioCtx.state === 'running') audioCtx.suspend(); }, 500);
+    } else {
+        if (audioCtx.state === 'suspended' && audioStarted) {
+            audioCtx.resume().then(() => {
+                masterGain.gain.setTargetAtTime(volumeSlider.value / 100 * 0.3, audioCtx.currentTime, 0.5);
+            });
+        }
+    }
 });
 
 document.addEventListener('touchmove', (e) => {
@@ -1170,20 +1342,20 @@ function startAudio() {
         sweepLPF();
 
         const gain = audioCtx.createGain();
-        gain.gain.value = 0.15;
+        gain.gain.value = 0.06; // quiet drones, spatial emitters are the star
 
         osc.connect(lpf);
         lpf.connect(gain);
         gain.connect(dryBus);
         gain.connect(reverbSend);
         osc.start();
+        droneGainNodes.push(gain);
         return osc;
     }
 
-    // Two drones at ~55Hz (A1) detuned
+    // Two drones at ~55Hz (A1) detuned — quieter to let spatial audio breathe
     createDrone(55, 'sine');
     createDrone(55.3, 'triangle');
-    // Sub octave for warmth
     createDrone(27.5, 'sine');
 
     // --- Rain texture: filtered noise ---
@@ -1207,7 +1379,8 @@ function startAudio() {
     rainHP.frequency.value = 800;
 
     const rainGain = audioCtx.createGain();
-    rainGain.gain.value = 0.04;
+    rainGain.gain.value = 0.02;
+    rainGainNode = rainGain;
 
     rainSrc.connect(rainBP);
     rainBP.connect(rainHP);
@@ -1259,364 +1432,299 @@ function startAudio() {
 // ============================================
 // SPATIAL AUDIO EMITTER SYSTEM
 // ============================================
-// Replicate shader hash logic in JS to find nearby objects
-function jsHash31(x, y, z) {
-    x = ((x % 1) + 1) % 1 || 0; y = ((y % 1) + 1) % 1 || 0; z = ((z % 1) + 1) % 1 || 0;
-    let px = (x * 443.897) % 1; if (px < 0) px += 1;
-    let py = (y * 397.297) % 1; if (py < 0) py += 1;
-    let pz = (z * 491.187) % 1; if (pz < 0) pz += 1;
-    const dot = px * py + py * pz + pz * px + 19.19;
-    px = (px + dot) % 1; py = (py + dot) % 1; pz = (pz + dot) % 1;
-    return ((px + py) * pz) % 1;
-}
-// Simpler: seed-based deterministic hash for cell IDs
-function cellHash(cx, cy, cz, sd, salt) {
-    let v = Math.sin(cx * 127.1 + cy * 311.7 + cz * 74.7 + sd * salt) * 43758.5453;
+// Deterministic hash for cell IDs (must be stable for same inputs)
+function cellHash(cx, cz, sd, salt) {
+    let v = Math.sin(cx * 127.1 + cz * 311.7 + sd * salt) * 43758.5453;
     return v - Math.floor(v);
 }
 
-const EMITTER_POOL_SIZE = 16;
-const SCAN_RADIUS = 3; // cells in each direction to scan
+// Pentatonic scale notes for musical emitters (A minor pentatonic across octaves)
+const PENTA = [55, 65.41, 73.42, 82.41, 98, 110, 130.81, 146.83, 164.81, 196,
+               220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99];
+
+const EMITTER_POOL_SIZE = 12;
 let emitterPool = [];
 let spatialBus = null;
-let spatialReverb = null;
-
-// Object type sound configs
-// type 0=ground(skip), 1=sphere, 2=cube, 3=structure, 4=crystal, 5=cairn
-const soundConfigs = {
-    1: { // Breathing spheres — deep resonant hum
-        freq: 82.4, // E2
-        type: 'sine',
-        detune: 3,
-        volume: 0.12,
-        lpf: 600,
-        reverbMix: 0.6,
-        modRate: 0.08, // slow wobble
-        modDepth: 8,
-    },
-    2: { // Cubes — crystalline chime
-        freq: 523.25, // C5
-        type: 'triangle',
-        detune: 0,
-        volume: 0.04,
-        lpf: 4000,
-        reverbMix: 0.8,
-        modRate: 0.5,
-        modDepth: 15,
-    },
-    3: { // Structures — deep drone
-        freq: 41.2, // E1
-        type: 'sawtooth',
-        detune: 5,
-        volume: 0.08,
-        lpf: 250,
-        reverbMix: 0.7,
-        modRate: 0.03,
-        modDepth: 4,
-    },
-    4: { // Crystals — shimmery harmonics
-        freq: 1046.5, // C6
-        type: 'sine',
-        detune: 7,
-        volume: 0.03,
-        lpf: 8000,
-        reverbMix: 0.9,
-        modRate: 2.0,
-        modDepth: 20,
-    },
-    5: { // Cairns — earthy rumble
-        freq: 55, // A1
-        type: 'triangle',
-        detune: 2,
-        volume: 0.07,
-        lpf: 400,
-        reverbMix: 0.5,
-        modRate: 0.12,
-        modDepth: 5,
-    },
-};
+let spatialReverbSend = null;
+let spatialDebugTimer = 0;
+let spatialDebugCount = 0;
 
 function initSpatialAudio() {
     if (!audioCtx || !masterGain) return;
 
-    // Spatial bus with its own gain
+    // Spatial bus — loud enough to hear clearly
     spatialBus = audioCtx.createGain();
-    spatialBus.gain.value = 0.5;
+    spatialBus.gain.value = 1.0;
     spatialBus.connect(masterGain);
 
-    // Set listener model
-    if (audioCtx.listener.positionX) {
-        audioCtx.listener.positionX.value = camX;
-        audioCtx.listener.positionY.value = camY;
-        audioCtx.listener.positionZ.value = camZ;
-    }
+    // Spatial reverb send (reuse main reverb if available, otherwise make one)
+    spatialReverbSend = audioCtx.createGain();
+    spatialReverbSend.gain.value = 0.3;
+    spatialReverbSend.connect(masterGain); // fallback direct
 
-    // Create emitter pool
+    // Create emitter pool — each emitter has rich sound design
     for (let i = 0; i < EMITTER_POOL_SIZE; i++) {
-        const panner = audioCtx.createPanner();
-        panner.panningModel = 'HRTF';
-        panner.distanceModel = 'inverse';
-        panner.refDistance = 3;
-        panner.maxDistance = 80;
-        panner.rolloffFactor = 1.5;
-        panner.coneInnerAngle = 360;
-        panner.coneOuterAngle = 360;
+        // StereoPanner for simple L/R positioning (reliable, no HRTF issues)
+        const pan = audioCtx.createStereoPanner();
+        pan.pan.value = 0;
 
+        // Main gain (distance-based)
         const gain = audioCtx.createGain();
         gain.gain.value = 0;
 
+        // LPF for distance occlusion
         const lpf = audioCtx.createBiquadFilter();
         lpf.type = 'lowpass';
-        lpf.frequency.value = 2000;
-        lpf.Q.value = 0.7;
+        lpf.frequency.value = 4000;
+        lpf.Q.value = 0.5;
 
-        const osc = audioCtx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = 100;
-
-        // Modulator for subtle pitch wobble
-        const lfo = audioCtx.createOscillator();
-        lfo.type = 'sine';
-        lfo.frequency.value = 0.1;
-        const lfoGain = audioCtx.createGain();
-        lfoGain.gain.value = 5;
-        lfo.connect(lfoGain);
-        lfoGain.connect(osc.frequency);
-        lfo.start();
-
-        // Second oscillator for detuned richness
+        // 3 oscillators for rich harmonics (fundamental + 5th + octave)
+        const osc1 = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
-        osc2.type = 'sine';
-        osc2.frequency.value = 100;
-        lfoGain.connect(osc2.frequency);
+        const osc3 = audioCtx.createOscillator();
+        osc1.type = 'sine'; osc1.frequency.value = 0.001;
+        osc2.type = 'sine'; osc2.frequency.value = 0.001;
+        osc3.type = 'sine'; osc3.frequency.value = 0.001;
 
-        const oscGain = audioCtx.createGain();
-        oscGain.gain.value = 0.7;
-        const osc2Gain = audioCtx.createGain();
-        osc2Gain.gain.value = 0.3;
+        const g1 = audioCtx.createGain(); g1.gain.value = 0.5;
+        const g2 = audioCtx.createGain(); g2.gain.value = 0.25;
+        const g3 = audioCtx.createGain(); g3.gain.value = 0.15;
 
-        osc.connect(oscGain);
-        osc2.connect(osc2Gain);
-        oscGain.connect(lpf);
-        osc2Gain.connect(lpf);
+        // LFO for gentle vibrato
+        const lfo = audioCtx.createOscillator();
+        lfo.type = 'sine'; lfo.frequency.value = 0.1;
+        const lfoG = audioCtx.createGain();
+        lfoG.gain.value = 0;
+        lfo.connect(lfoG);
+        lfoG.connect(osc1.frequency);
+        lfoG.connect(osc2.frequency);
+        lfoG.connect(osc3.frequency);
+
+        osc1.connect(g1); osc2.connect(g2); osc3.connect(g3);
+        g1.connect(lpf); g2.connect(lpf); g3.connect(lpf);
         lpf.connect(gain);
-        gain.connect(panner);
-        panner.connect(spatialBus);
+        gain.connect(pan);
+        pan.connect(spatialBus);
+        pan.connect(spatialReverbSend);
 
-        osc.start();
-        osc2.start();
+        lfo.start(); osc1.start(); osc2.start(); osc3.start();
 
         emitterPool.push({
-            panner, gain, lpf, osc, osc2, lfo, lfoGain,
-            assignedKey: null,
-            targetGain: 0,
-            currentGain: 0,
-            worldX: 0, worldY: 0, worldZ: 0,
+            pan, gain, lpf, osc1, osc2, osc3, g1, g2, g3, lfo, lfoG,
+            key: null, type: 0, targetGain: 0, curGain: 0,
         });
     }
-    dbg(true, `Spatial audio: ${EMITTER_POOL_SIZE} emitters initialized`);
+    dbg(true, `Spatial audio: ${EMITTER_POOL_SIZE} emitters ready`);
 }
 
-// Find all nearby objects given camera position
+// Find nearby sound-emitting objects
 function findNearbyObjects(cx, cy, cz, sd) {
-    const objects = [];
-    const sdFloat = sd;
+    const objs = [];
 
-    // --- Spheres (cellSp=40) ---
-    const spCell = 40;
-    const spCX = Math.floor(cx / spCell);
-    const spCZ = Math.floor(cz / spCell);
-    for (let dx = -1; dx <= 1; dx++) {
-        for (let dz = -1; dz <= 1; dz++) {
-            const gcx = spCX + dx, gcz = spCZ + dz, gcy = 0;
-            const h = cellHash(gcx, gcy, gcz, sdFloat, 31);
-            if (h < 0.4) {
-                const sx = gcx * spCell + spCell * 0.5 + (h * 2 - 1) * 10;
-                const sz = gcz * spCell + spCell * 0.5 + (((h * 7.7) % 1) * 2 - 1) * 10;
-                const sy = 3.0; // approximate terrain + sphere height
-                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
-                if (dist < 60) objects.push({ type: 1, x: sx, y: sy, z: sz, dist, key: `s${gcx}_${gcz}`, hash: h });
-            }
+    // Spheres (cell=40, ~40% density)
+    const sp = 40;
+    const sx0 = Math.floor(cx / sp), sz0 = Math.floor(cz / sp);
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
+        const gx = sx0+dx, gz = sz0+dz;
+        const h = cellHash(gx, gz, sd, 31);
+        if (h < 0.4) {
+            const ox = gx*sp + sp*0.5 + (h*2-1)*10;
+            const oz = gz*sp + sp*0.5 + ((h*7.7%1)*2-1)*10;
+            const d = Math.hypot(cx-ox, cy-3, cz-oz);
+            if (d < 80) objs.push({type:1, x:ox, y:3, z:oz, d, key:`s${gx}_${gz}`, h});
         }
     }
 
-    // --- Cubes (cs=5, very common, only track nearby ones) ---
-    const cubeCell = 5;
-    const ccX = Math.floor(cx / cubeCell);
-    const ccZ = Math.floor(cz / cubeCell);
-    for (let dx = -2; dx <= 2; dx++) {
-        for (let dz = -2; dz <= 2; dz++) {
-            const gcx = ccX + dx, gcz = ccZ + dz, gcy = 0;
-            const h = cellHash(gcx, gcy, gcz, sdFloat, 47);
-            if (h < 0.2) {
-                const sx = gcx * cubeCell + cubeCell * 0.5;
-                const sz = gcz * cubeCell + cubeCell * 0.5;
-                const sy = 1.5;
-                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
-                if (dist < 25) objects.push({ type: 2, x: sx, y: sy, z: sz, dist, key: `c${gcx}_${gcz}`, hash: h });
-            }
+    // Crystals (cell=30, ~15% density)
+    const cr = 30;
+    const cx0 = Math.floor(cx / cr), cz0 = Math.floor(cz / cr);
+    for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
+        const gx = cx0+dx, gz = cz0+dz;
+        const h = cellHash(gx, gz, sd, 59);
+        if (h < 0.15) {
+            const ox = gx*cr + cr*0.5 + (h*2-1)*8;
+            const oz = gz*cr + cr*0.5 + ((h*11%1)*2-1)*8;
+            const d = Math.hypot(cx-ox, cy-4, cz-oz);
+            if (d < 60) objs.push({type:4, x:ox, y:4, z:oz, d, key:`x${gx}_${gz}`, h});
         }
     }
 
-    // --- Crystals (crCell=30) ---
-    const crCell = 30;
-    const crCX = Math.floor(cx / crCell);
-    const crCZ = Math.floor(cz / crCell);
-    for (let dx = -1; dx <= 1; dx++) {
-        for (let dz = -1; dz <= 1; dz++) {
-            const gcx = crCX + dx, gcz = crCZ + dz, gcy = 0;
-            const h = cellHash(gcx, gcy, gcz, sdFloat, 59);
-            if (h < 0.15) {
-                const sx = gcx * crCell + crCell * 0.5 + (h * 2 - 1) * 8;
-                const sz = gcz * crCell + crCell * 0.5 + (((h * 11) % 1) * 2 - 1) * 8;
-                const sy = 4.0;
-                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
-                if (dist < 50) objects.push({ type: 4, x: sx, y: sy, z: sz, dist, key: `x${gcx}_${gcz}`, hash: h });
-            }
+    // Cairns (cell=55, ~12% density)
+    const ca = 55;
+    const ca0 = Math.floor(cx / ca), caz = Math.floor(cz / ca);
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+        const gx = ca0+dx, gz = caz+dz;
+        const h = cellHash(gx, gz, sd, 83);
+        if (h < 0.12) {
+            const ox = gx*ca + ca*0.5 + (h*2-1)*15;
+            const oz = gz*ca + ca*0.5 + ((h*9%1)*2-1)*15;
+            const d = Math.hypot(cx-ox, cy-3, cz-oz);
+            if (d < 70) objs.push({type:5, x:ox, y:3, z:oz, d, key:`n${gx}_${gz}`, h});
         }
     }
 
-    // --- Cairns (cairnCell=55) ---
-    const cairnCell = 55;
-    const caCX = Math.floor(cx / cairnCell);
-    const caCZ = Math.floor(cz / cairnCell);
-    for (let dx = -1; dx <= 1; dx++) {
-        for (let dz = -1; dz <= 1; dz++) {
-            const gcx = caCX + dx, gcz = caCZ + dz, gcy = 0;
-            const h = cellHash(gcx, gcy, gcz, sdFloat, 83);
-            if (h < 0.12) {
-                const sx = gcx * cairnCell + cairnCell * 0.5 + (h * 2 - 1) * 15;
-                const sz = gcz * cairnCell + cairnCell * 0.5 + (((h * 9) % 1) * 2 - 1) * 15;
-                const sy = 3.0;
-                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
-                if (dist < 60) objects.push({ type: 5, x: sx, y: sy, z: sz, dist, key: `n${gcx}_${gcz}`, hash: h });
-            }
+    // Structures (cell=120, ~25% density)
+    const bg = 120;
+    const bg0 = Math.floor(cx / bg), bgz = Math.floor(cz / bg);
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+        const gx = bg0+dx, gz = bgz+dz;
+        const h = cellHash(gx, gz, sd, 73);
+        if (h < 0.25) {
+            const ox = gx*bg + bg*0.5 + (h*2-1)*30;
+            const oz = gz*bg + bg*0.5 + ((h*13.37%1)*2-1)*30;
+            const d = Math.hypot(cx-ox, cy-6, cz-oz);
+            if (d < 100) objs.push({type:3, x:ox, y:6, z:oz, d, key:`b${gx}_${gz}`, h});
         }
     }
 
-    // --- Large structures (bigCell=120) ---
-    const bigCell = 120;
-    const bCX = Math.floor(cx / bigCell);
-    const bCZ = Math.floor(cz / bigCell);
-    for (let dx = -1; dx <= 1; dx++) {
-        for (let dz = -1; dz <= 1; dz++) {
-            const gcx = bCX + dx, gcz = bCZ + dz, gcy = 0;
-            const h = cellHash(gcx, gcy, gcz, sdFloat, 73);
-            if (h < 0.25) {
-                const h2 = (h * 13.37) % 1;
-                const sx = gcx * bigCell + bigCell * 0.5 + (h * 2 - 1) * 30;
-                const sz = gcz * bigCell + bigCell * 0.5 + (h2 * 2 - 1) * 30;
-                const sy = 6.0;
-                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
-                if (dist < 80) objects.push({ type: 3, x: sx, y: sy, z: sz, dist, key: `b${gcx}_${gcz}`, hash: h });
-            }
-        }
-    }
-
-    // Sort by distance, closest first
-    objects.sort((a, b) => a.dist - b.dist);
-    return objects;
+    objs.sort((a,b) => a.d - b.d);
+    return objs;
 }
 
-// Update emitter assignments and parameters each frame
+// Configure emitter sound based on object type
+function configureEmitter(em, obj) {
+    const now = audioCtx.currentTime;
+    const t = 0.8; // transition time
+
+    // Pick pentatonic note based on object hash
+    const noteIdx = Math.floor(obj.h * PENTA.length);
+    const baseFreq = PENTA[noteIdx];
+
+    if (obj.type === 1) {
+        // Spheres: warm pad — fundamental + major 3rd + octave, sine, slow vibrato
+        em.osc1.type = 'sine';
+        em.osc2.type = 'sine';
+        em.osc3.type = 'triangle';
+        em.osc1.frequency.setTargetAtTime(baseFreq, now, t);
+        em.osc2.frequency.setTargetAtTime(baseFreq * 1.26, now, t); // ~major 3rd
+        em.osc3.frequency.setTargetAtTime(baseFreq * 2.0, now, t); // octave
+        em.g1.gain.setTargetAtTime(0.5, now, t);
+        em.g2.gain.setTargetAtTime(0.2, now, t);
+        em.g3.gain.setTargetAtTime(0.1, now, t);
+        em.lfo.frequency.setTargetAtTime(0.15 + obj.h * 0.1, now, t);
+        em.lfoG.gain.setTargetAtTime(baseFreq * 0.008, now, t);
+        em.lpf.frequency.setTargetAtTime(800, now, t);
+    } else if (obj.type === 3) {
+        // Structures: deep organ drone — low note + 5th + sub
+        const low = Math.max(baseFreq * 0.25, 30);
+        em.osc1.type = 'sine';
+        em.osc2.type = 'triangle';
+        em.osc3.type = 'sine';
+        em.osc1.frequency.setTargetAtTime(low, now, t);
+        em.osc2.frequency.setTargetAtTime(low * 1.5, now, t); // 5th
+        em.osc3.frequency.setTargetAtTime(low * 0.5, now, t); // sub octave
+        em.g1.gain.setTargetAtTime(0.4, now, t);
+        em.g2.gain.setTargetAtTime(0.2, now, t);
+        em.g3.gain.setTargetAtTime(0.3, now, t);
+        em.lfo.frequency.setTargetAtTime(0.04 + obj.h * 0.03, now, t);
+        em.lfoG.gain.setTargetAtTime(low * 0.01, now, t);
+        em.lpf.frequency.setTargetAtTime(400, now, t);
+    } else if (obj.type === 4) {
+        // Crystals: bell/chime — high note + inharmonic partials
+        const hi = Math.min(baseFreq * 2, 2000);
+        em.osc1.type = 'sine';
+        em.osc2.type = 'sine';
+        em.osc3.type = 'sine';
+        em.osc1.frequency.setTargetAtTime(hi, now, t);
+        em.osc2.frequency.setTargetAtTime(hi * 2.76, now, t); // inharmonic (bell-like)
+        em.osc3.frequency.setTargetAtTime(hi * 5.4, now, t); // higher partial
+        em.g1.gain.setTargetAtTime(0.35, now, t);
+        em.g2.gain.setTargetAtTime(0.15, now, t);
+        em.g3.gain.setTargetAtTime(0.05, now, t);
+        em.lfo.frequency.setTargetAtTime(1.5 + obj.h * 2, now, t);
+        em.lfoG.gain.setTargetAtTime(hi * 0.003, now, t);
+        em.lpf.frequency.setTargetAtTime(6000, now, t);
+    } else if (obj.type === 5) {
+        // Cairns: earthy hum — low triangle + sub sine
+        const lo = Math.max(baseFreq * 0.5, 40);
+        em.osc1.type = 'triangle';
+        em.osc2.type = 'sine';
+        em.osc3.type = 'sine';
+        em.osc1.frequency.setTargetAtTime(lo, now, t);
+        em.osc2.frequency.setTargetAtTime(lo * 2.0, now, t);
+        em.osc3.frequency.setTargetAtTime(lo * 0.5, now, t);
+        em.g1.gain.setTargetAtTime(0.4, now, t);
+        em.g2.gain.setTargetAtTime(0.15, now, t);
+        em.g3.gain.setTargetAtTime(0.25, now, t);
+        em.lfo.frequency.setTargetAtTime(0.08 + obj.h * 0.06, now, t);
+        em.lfoG.gain.setTargetAtTime(lo * 0.012, now, t);
+        em.lpf.frequency.setTargetAtTime(500, now, t);
+    }
+}
+
 function updateSpatialAudio(dt, elapsed) {
     if (!audioCtx || audioCtx.state !== 'running' || emitterPool.length === 0) return;
 
-    // Update listener position and orientation
-    if (audioCtx.listener.positionX) {
-        const sm = 0.15; // smoothing
-        audioCtx.listener.positionX.setTargetAtTime(camX, audioCtx.currentTime, sm);
-        audioCtx.listener.positionY.setTargetAtTime(camY, audioCtx.currentTime, sm);
-        audioCtx.listener.positionZ.setTargetAtTime(camZ, audioCtx.currentTime, sm);
-
-        // Forward direction
-        const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
-        const cy2 = Math.cos(camYaw), sy2 = Math.sin(camYaw);
-        audioCtx.listener.forwardX.setTargetAtTime(sy2 * cp, audioCtx.currentTime, sm);
-        audioCtx.listener.forwardY.setTargetAtTime(sp, audioCtx.currentTime, sm);
-        audioCtx.listener.forwardZ.setTargetAtTime(cy2 * cp, audioCtx.currentTime, sm);
-        audioCtx.listener.upX.setTargetAtTime(0, audioCtx.currentTime, sm);
-        audioCtx.listener.upY.setTargetAtTime(1, audioCtx.currentTime, sm);
-        audioCtx.listener.upZ.setTargetAtTime(0, audioCtx.currentTime, sm);
-    }
-
-    // Find nearby objects
     const nearby = findNearbyObjects(camX, camY, camZ, currentSeedFloat);
-
-    // Assign closest objects to emitter pool
-    const assigned = new Set();
     const now = audioCtx.currentTime;
 
-    // First pass: keep existing assignments if still nearby
-    for (const em of emitterPool) {
-        if (em.assignedKey) {
-            const obj = nearby.find(o => o.key === em.assignedKey);
-            if (obj && obj.dist < 80) {
-                assigned.add(obj.key);
-            } else {
-                em.assignedKey = null;
-                em.targetGain = 0;
-            }
+    // Debug: log every 3 seconds
+    spatialDebugTimer += dt;
+    if (spatialDebugTimer > 3) {
+        spatialDebugTimer = 0;
+        const active = emitterPool.filter(e => e.curGain > 0.001).length;
+        if (spatialDebugCount < 5) {
+            dbg(nearby.length > 0, `Spatial: ${nearby.length} objects found, ${active} emitters active, closest: ${nearby[0] ? nearby[0].d.toFixed(1) + 'm type=' + nearby[0].type : 'none'}`);
+            spatialDebugCount++;
         }
     }
 
-    // Second pass: assign new objects to free emitters
-    for (const obj of nearby) {
-        if (assigned.has(obj.key)) continue;
-        if (assigned.size >= EMITTER_POOL_SIZE) break;
+    // Camera forward vector (for stereo panning)
+    const fwdX = Math.sin(camYaw);
+    const fwdZ = Math.cos(camYaw);
+    const rightX = Math.cos(camYaw);
+    const rightZ = -Math.sin(camYaw);
 
-        const freeEm = emitterPool.find(e => !e.assignedKey);
-        if (!freeEm) break;
-
-        const cfg = soundConfigs[obj.type];
-        if (!cfg) continue;
-
-        // Assign and configure
-        freeEm.assignedKey = obj.key;
-        assigned.add(obj.key);
-
-        // Unique frequency variation per object
-        const freqMul = 1.0 + (obj.hash - 0.5) * 0.3; // +/-15% pitch variation
-        const freq = cfg.freq * freqMul;
-
-        freeEm.osc.type = cfg.type;
-        freeEm.osc.frequency.setTargetAtTime(freq, now, 0.5);
-        freeEm.osc2.type = cfg.type === 'sawtooth' ? 'triangle' : cfg.type;
-        freeEm.osc2.frequency.setTargetAtTime(freq + cfg.detune, now, 0.5);
-        freeEm.lfo.frequency.setTargetAtTime(cfg.modRate, now, 0.3);
-        freeEm.lfoGain.gain.setTargetAtTime(cfg.modDepth, now, 0.3);
-        freeEm.lpf.frequency.setTargetAtTime(cfg.lpf, now, 0.3);
-
-        freeEm.worldX = obj.x;
-        freeEm.worldY = obj.y;
-        freeEm.worldZ = obj.z;
+    // Build set of keys we want active
+    const wantKeys = new Map(); // key -> obj
+    for (let i = 0; i < Math.min(nearby.length, EMITTER_POOL_SIZE); i++) {
+        wantKeys.set(nearby[i].key, nearby[i]);
     }
 
-    // Update all emitters
+    // Release emitters not in want list
     for (const em of emitterPool) {
-        if (em.assignedKey) {
-            const obj = nearby.find(o => o.key === em.assignedKey);
-            if (obj) {
-                const cfg = soundConfigs[obj.type];
-                // Distance-based gain with smooth rolloff
-                const maxRange = 60;
-                const distNorm = Math.min(obj.dist / maxRange, 1);
-                em.targetGain = cfg.volume * (1 - distNorm * distNorm);
+        if (em.key && !wantKeys.has(em.key)) {
+            em.key = null;
+            em.targetGain = 0;
+        }
+    }
 
-                // LPF drops with distance (occlusion feel)
-                const lpfTarget = cfg.lpf * (1 - distNorm * 0.7);
-                em.lpf.frequency.setTargetAtTime(Math.max(lpfTarget, 200), now, 0.2);
-
-                // Update panner position
-                em.panner.positionX.setTargetAtTime(obj.x, now, 0.1);
-                em.panner.positionY.setTargetAtTime(obj.y, now, 0.1);
-                em.panner.positionZ.setTargetAtTime(obj.z, now, 0.1);
-            }
+    // Assign wanted objects to emitters
+    for (const [key, obj] of wantKeys) {
+        // Already assigned?
+        let em = emitterPool.find(e => e.key === key);
+        if (em) {
+            // Update existing
+        } else {
+            // Find free emitter
+            em = emitterPool.find(e => !e.key);
+            if (!em) continue; // pool full
+            em.key = key;
+            em.type = obj.type;
+            configureEmitter(em, obj);
         }
 
-        // Smooth gain interpolation (exponential)
-        em.currentGain += (em.targetGain - em.currentGain) * (1 - Math.exp(-4 * dt));
-        em.gain.gain.setTargetAtTime(Math.max(em.currentGain, 0), now, 0.05);
+        // Distance attenuation — louder close, silent far
+        const maxDist = 60;
+        const norm = Math.min(obj.d / maxDist, 1);
+        const vol = (1 - norm) * (1 - norm); // quadratic falloff, 1.0 at origin
+        em.targetGain = vol * 0.35; // max volume per emitter
+
+        // LPF drops with distance
+        const baseLpf = em.type === 4 ? 6000 : em.type === 3 ? 400 : 1200;
+        em.lpf.frequency.setTargetAtTime(Math.max(baseLpf * (1 - norm * 0.8), 150), now, 0.3);
+
+        // Stereo pan based on direction relative to camera
+        const dx = obj.x - camX, dz = obj.z - camZ;
+        const dot = dx * rightX + dz * rightZ; // project onto camera right
+        const panVal = Math.max(-1, Math.min(1, dot / Math.max(obj.d, 1)));
+        em.pan.pan.setTargetAtTime(panVal, now, 0.1);
+    }
+
+    // Smooth all gains
+    for (const em of emitterPool) {
+        em.curGain += (em.targetGain - em.curGain) * (1 - Math.exp(-5 * dt));
+        em.gain.gain.setTargetAtTime(Math.max(em.curGain, 0.0001), now, 0.05);
     }
 }
 
@@ -1674,6 +1782,14 @@ const hudTime = document.getElementById('hud-time');
 const hudMode = document.getElementById('hud-mode');
 const hudSpeed = document.getElementById('hud-speed');
 const breathFill = document.getElementById('breath-fill');
+
+// Altitude graph
+const altCanvas = document.getElementById('alt-canvas');
+const altCtx = altCanvas.getContext('2d');
+const ALT_HISTORY_LEN = 200;
+const altHistory = new Float32Array(ALT_HISTORY_LEN); // ring buffer
+let altHistIdx = 0;
+const ALT_MAX = 150; // max altitude for graph scale
 
 // ============================================
 // AMBIENT CLOCK
@@ -1896,6 +2012,21 @@ function frame(now) {
     const rightX = Math.cos(camYaw);
     const rightZ = -Math.sin(camYaw);
 
+    // Check for any active input
+    const anyInput = keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD'] ||
+                     keys['Space'] || keys['ShiftLeft'] || keys['ShiftRight'];
+
+    if (flyMode && anyInput) {
+        idleTimer = 0;
+    } else if (flyMode) {
+        idleTimer += dt;
+        if (idleTimer >= IDLE_TIMEOUT) {
+            flyMode = false;
+            // Don't snap — drift will continue from current position
+            // Keep driftTime rolling so the journey continues seamlessly
+        }
+    }
+
     if (flyMode) {
         // WASD input
         let inputX = 0, inputY = 0, inputZ = 0;
@@ -1921,19 +2052,51 @@ function frame(now) {
         camX += velX * dt * 10;
         camY += velY * dt * 10;
         camZ += velZ * dt * 10;
-
-        // Floor clamp — allow slightly underground but not fully
-        if (camY < -2.0) {
-            camY = -2.0;
-            if (velY < 0) velY = 0;
-        }
     } else {
-        // Auto-drift mode
-        camX = Math.sin(time * 0.01) * 6.0;
-        camY = 3.5;
-        camZ = time * 0.5 + Math.cos(time * 0.008) * 4.0;
-        // Slow auto-look
-        camYaw += dt * 0.015;
+        // Auto-drift with altitude journey — ground to space and back
+        driftTime += dt;
+        const driftSpeed = 2.0 * flySpeedMul;
+        camX += Math.sin(camYaw) * driftSpeed * dt;
+        camZ += Math.cos(camYaw) * driftSpeed * dt;
+
+        // Altitude: mostly low terrain-skimming waves (y=2-15),
+        // rare quick space trips that punch through and come right back
+        const t1 = driftTime / 20.0 + driftPhase;       // ~20s gentle bob
+        const t2 = driftTime / 7.0 + driftPhase * 1.7;  // ~7s faster ripple
+        const t3 = driftTime / 120.0 + driftPhase * 0.3; // ~120s rare space trigger
+
+        // Low wave: gentle terrain-skimming between y=2 and y=12
+        const lowWave = (Math.sin(t1 * Math.PI * 2) * 0.5
+                       + Math.sin(t2 * Math.PI * 2) * 0.25) * 0.5 + 0.5; // 0 to 1
+        const lowY = 2.0 + lowWave * 10.0; // y = 2 to 12
+
+        // Space spike: sharp gaussian-ish pulse, only triggers briefly
+        const spaceRaw = Math.sin(t3 * Math.PI * 2);
+        // Only spike when spaceRaw > 0.85 — that's ~10% of the cycle
+        const spaceGate = Math.max(0, (spaceRaw - 0.85) / 0.15); // 0 to 1, sharp
+        const spacePulse = spaceGate * spaceGate; // sharper
+        const spaceY = spacePulse * 130.0; // up to 130 in space
+
+        const targetY = lowY + spaceY;
+
+        // Smooth approach — faster when far from target for snappy space trips
+        const altErr = Math.abs(targetY - camY);
+        const lerpRate = altErr > 20 ? 1.5 : 0.8;
+        camY += (targetY - camY) * lerpRate * dt;
+
+        // Yaw drift
+        camYaw += dt * 0.02;
+
+        // Pitch follows altitude smoothly — look up when climbing, down when descending
+        const altDelta = targetY - camY;
+        const pitchTarget = Math.max(-0.6, Math.min(0.3, altDelta * 0.02));
+        camPitch += (pitchTarget - camPitch) * 0.8 * dt;
+    }
+
+    // Floor clamp — allow slightly underground but not fully
+    if (camY < -2.0) {
+        camY = -2.0;
+        if (velY < 0) velY = 0;
     }
 
     // Build camera basis vectors (with pitch)
@@ -1974,8 +2137,37 @@ function frame(now) {
     gl.uniform1f(uTransition, transition);
     gl.uniform1f(uPrevSeed, prevSeedFloat);
     gl.uniform1f(uMobile, isMobile ? 1.0 : 0.0);
+    // Velocity magnitude for speed lines
+    const camVelocity = Math.sqrt(velX*velX + velY*velY + velZ*velZ) * 10;
+    // In drift mode, use drift speed
+    const effectiveVel = flyMode ? camVelocity : 2.0 * flySpeedMul + Math.abs(camY - 3.5) * 0.1;
+    gl.uniform1f(uVelocity, effectiveVel);
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // ---- Altitude-based audio mix ----
+    // Ground (0-10): full volume. Clouds (10-40): muffle + wind. Upper atmo (40-100): fading. Space (100+): silence.
+    if (audioCtx && masterGain && audioCtx.state === 'running') {
+        const alt = Math.max(camY, 0);
+        const now2 = audioCtx.currentTime;
+
+        // Spatial emitters fade: full at ground, gone by y=80
+        const spatialFade = Math.max(0, 1 - alt / 80);
+        if (spatialBus) spatialBus.gain.setTargetAtTime(spatialFade * spatialFade, now2, 0.3);
+
+        // Drones: muffle in clouds (LPF feel via volume dip), fade out by space
+        // In clouds (15-40): reduce to 60%. Above 40: fade to 0 by y=120
+        const droneFade = alt < 15 ? 1.0 : alt < 40 ? 0.6 : Math.max(0, 1 - (alt - 15) / 105);
+        for (const dg of droneGainNodes) {
+            dg.gain.setTargetAtTime(0.06 * droneFade, now2, 0.5);
+        }
+
+        // Rain: gets louder in clouds (wind!), fades in upper atmosphere
+        const rainFade = alt < 10 ? 1.0 : alt < 40 ? 1.8 : Math.max(0, 1 - (alt - 40) / 60);
+        if (rainGainNode) rainGainNode.gain.setTargetAtTime(0.02 * rainFade, now2, 0.5);
+
+        altAudioFade = Math.max(0, 1 - Math.max(0, alt - 15) / 120);
+    }
 
     // ---- Spatial audio update ----
     updateSpatialAudio(dt, elapsed);
@@ -1994,9 +2186,49 @@ function frame(now) {
         const zone = camY < 0 ? 'underground' : camY < 15 ? 'surface' : camY < 50 ? 'clouds' : camY < 120 ? 'upper atmosphere' : 'space';
         hudMode.textContent = `mode: ${flyMode ? 'fly' : 'drift'}${pointerLocked ? ' [locked]' : ''} | ${zone}`;
         hudSpeed.textContent = `speed: ${flySpeedMul.toFixed(1)}x`;
-        const activeEmitters = emitterPool.filter(e => e.assignedKey && e.currentGain > 0.001).length;
+        const activeEmitters = emitterPool.filter(e => e.key && e.curGain > 0.001).length;
         hudDpr.textContent = `dpr: ${dpr.toFixed(2)} | emitters: ${activeEmitters}/${EMITTER_POOL_SIZE}`;
         breathFill.style.width = `${(breath * 0.5 + 0.5) * 100}%`;
+
+        // Altitude graph
+        altHistory[altHistIdx % ALT_HISTORY_LEN] = Math.max(0, camY);
+        altHistIdx++;
+        const aw = altCanvas.width, ah = altCanvas.height;
+        altCtx.clearRect(0, 0, aw, ah);
+
+        // Zone bands (ground, clouds, upper atmo, space)
+        const zones = [
+            { y: 0, h: 15, color: 'rgba(100,180,100,0.08)' },
+            { y: 15, h: 35, color: 'rgba(180,180,200,0.08)' },
+            { y: 50, h: 70, color: 'rgba(100,120,200,0.06)' },
+            { y: 120, h: 30, color: 'rgba(40,20,80,0.06)' },
+        ];
+        for (const z of zones) {
+            const top = ah - (z.y + z.h) / ALT_MAX * ah;
+            const height = z.h / ALT_MAX * ah;
+            altCtx.fillStyle = z.color;
+            altCtx.fillRect(0, Math.max(0, top), aw, height);
+        }
+
+        // Draw altitude line
+        altCtx.strokeStyle = 'rgba(220,215,200,0.6)';
+        altCtx.lineWidth = 1.5;
+        altCtx.beginPath();
+        for (let i = 0; i < ALT_HISTORY_LEN; i++) {
+            const idx = (altHistIdx + i) % ALT_HISTORY_LEN;
+            const x = (i / ALT_HISTORY_LEN) * aw;
+            const y = ah - (altHistory[idx] / ALT_MAX) * ah;
+            if (i === 0) altCtx.moveTo(x, y); else altCtx.lineTo(x, y);
+        }
+        altCtx.stroke();
+
+        // Current position dot
+        const curX = aw - 1;
+        const curAltY = ah - (Math.max(0, camY) / ALT_MAX) * ah;
+        altCtx.fillStyle = 'rgba(255,220,150,0.9)';
+        altCtx.beginPath();
+        altCtx.arc(curX, curAltY, 3, 0, Math.PI * 2);
+        altCtx.fill();
     }
 }
 
