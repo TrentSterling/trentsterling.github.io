@@ -1251,6 +1251,373 @@ function startAudio() {
         }, delay * 1000);
     }
     scheduleTone();
+
+    // Init spatial emitters after audio context is ready
+    initSpatialAudio();
+}
+
+// ============================================
+// SPATIAL AUDIO EMITTER SYSTEM
+// ============================================
+// Replicate shader hash logic in JS to find nearby objects
+function jsHash31(x, y, z) {
+    x = ((x % 1) + 1) % 1 || 0; y = ((y % 1) + 1) % 1 || 0; z = ((z % 1) + 1) % 1 || 0;
+    let px = (x * 443.897) % 1; if (px < 0) px += 1;
+    let py = (y * 397.297) % 1; if (py < 0) py += 1;
+    let pz = (z * 491.187) % 1; if (pz < 0) pz += 1;
+    const dot = px * py + py * pz + pz * px + 19.19;
+    px = (px + dot) % 1; py = (py + dot) % 1; pz = (pz + dot) % 1;
+    return ((px + py) * pz) % 1;
+}
+// Simpler: seed-based deterministic hash for cell IDs
+function cellHash(cx, cy, cz, sd, salt) {
+    let v = Math.sin(cx * 127.1 + cy * 311.7 + cz * 74.7 + sd * salt) * 43758.5453;
+    return v - Math.floor(v);
+}
+
+const EMITTER_POOL_SIZE = 16;
+const SCAN_RADIUS = 3; // cells in each direction to scan
+let emitterPool = [];
+let spatialBus = null;
+let spatialReverb = null;
+
+// Object type sound configs
+// type 0=ground(skip), 1=sphere, 2=cube, 3=structure, 4=crystal, 5=cairn
+const soundConfigs = {
+    1: { // Breathing spheres — deep resonant hum
+        freq: 82.4, // E2
+        type: 'sine',
+        detune: 3,
+        volume: 0.12,
+        lpf: 600,
+        reverbMix: 0.6,
+        modRate: 0.08, // slow wobble
+        modDepth: 8,
+    },
+    2: { // Cubes — crystalline chime
+        freq: 523.25, // C5
+        type: 'triangle',
+        detune: 0,
+        volume: 0.04,
+        lpf: 4000,
+        reverbMix: 0.8,
+        modRate: 0.5,
+        modDepth: 15,
+    },
+    3: { // Structures — deep drone
+        freq: 41.2, // E1
+        type: 'sawtooth',
+        detune: 5,
+        volume: 0.08,
+        lpf: 250,
+        reverbMix: 0.7,
+        modRate: 0.03,
+        modDepth: 4,
+    },
+    4: { // Crystals — shimmery harmonics
+        freq: 1046.5, // C6
+        type: 'sine',
+        detune: 7,
+        volume: 0.03,
+        lpf: 8000,
+        reverbMix: 0.9,
+        modRate: 2.0,
+        modDepth: 20,
+    },
+    5: { // Cairns — earthy rumble
+        freq: 55, // A1
+        type: 'triangle',
+        detune: 2,
+        volume: 0.07,
+        lpf: 400,
+        reverbMix: 0.5,
+        modRate: 0.12,
+        modDepth: 5,
+    },
+};
+
+function initSpatialAudio() {
+    if (!audioCtx || !masterGain) return;
+
+    // Spatial bus with its own gain
+    spatialBus = audioCtx.createGain();
+    spatialBus.gain.value = 0.5;
+    spatialBus.connect(masterGain);
+
+    // Set listener model
+    if (audioCtx.listener.positionX) {
+        audioCtx.listener.positionX.value = camX;
+        audioCtx.listener.positionY.value = camY;
+        audioCtx.listener.positionZ.value = camZ;
+    }
+
+    // Create emitter pool
+    for (let i = 0; i < EMITTER_POOL_SIZE; i++) {
+        const panner = audioCtx.createPanner();
+        panner.panningModel = 'HRTF';
+        panner.distanceModel = 'inverse';
+        panner.refDistance = 3;
+        panner.maxDistance = 80;
+        panner.rolloffFactor = 1.5;
+        panner.coneInnerAngle = 360;
+        panner.coneOuterAngle = 360;
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0;
+
+        const lpf = audioCtx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.value = 2000;
+        lpf.Q.value = 0.7;
+
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 100;
+
+        // Modulator for subtle pitch wobble
+        const lfo = audioCtx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 0.1;
+        const lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = 5;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start();
+
+        // Second oscillator for detuned richness
+        const osc2 = audioCtx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.value = 100;
+        lfoGain.connect(osc2.frequency);
+
+        const oscGain = audioCtx.createGain();
+        oscGain.gain.value = 0.7;
+        const osc2Gain = audioCtx.createGain();
+        osc2Gain.gain.value = 0.3;
+
+        osc.connect(oscGain);
+        osc2.connect(osc2Gain);
+        oscGain.connect(lpf);
+        osc2Gain.connect(lpf);
+        lpf.connect(gain);
+        gain.connect(panner);
+        panner.connect(spatialBus);
+
+        osc.start();
+        osc2.start();
+
+        emitterPool.push({
+            panner, gain, lpf, osc, osc2, lfo, lfoGain,
+            assignedKey: null,
+            targetGain: 0,
+            currentGain: 0,
+            worldX: 0, worldY: 0, worldZ: 0,
+        });
+    }
+    dbg(true, `Spatial audio: ${EMITTER_POOL_SIZE} emitters initialized`);
+}
+
+// Find all nearby objects given camera position
+function findNearbyObjects(cx, cy, cz, sd) {
+    const objects = [];
+    const sdFloat = sd;
+
+    // --- Spheres (cellSp=40) ---
+    const spCell = 40;
+    const spCX = Math.floor(cx / spCell);
+    const spCZ = Math.floor(cz / spCell);
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+            const gcx = spCX + dx, gcz = spCZ + dz, gcy = 0;
+            const h = cellHash(gcx, gcy, gcz, sdFloat, 31);
+            if (h < 0.4) {
+                const sx = gcx * spCell + spCell * 0.5 + (h * 2 - 1) * 10;
+                const sz = gcz * spCell + spCell * 0.5 + (((h * 7.7) % 1) * 2 - 1) * 10;
+                const sy = 3.0; // approximate terrain + sphere height
+                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
+                if (dist < 60) objects.push({ type: 1, x: sx, y: sy, z: sz, dist, key: `s${gcx}_${gcz}`, hash: h });
+            }
+        }
+    }
+
+    // --- Cubes (cs=5, very common, only track nearby ones) ---
+    const cubeCell = 5;
+    const ccX = Math.floor(cx / cubeCell);
+    const ccZ = Math.floor(cz / cubeCell);
+    for (let dx = -2; dx <= 2; dx++) {
+        for (let dz = -2; dz <= 2; dz++) {
+            const gcx = ccX + dx, gcz = ccZ + dz, gcy = 0;
+            const h = cellHash(gcx, gcy, gcz, sdFloat, 47);
+            if (h < 0.2) {
+                const sx = gcx * cubeCell + cubeCell * 0.5;
+                const sz = gcz * cubeCell + cubeCell * 0.5;
+                const sy = 1.5;
+                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
+                if (dist < 25) objects.push({ type: 2, x: sx, y: sy, z: sz, dist, key: `c${gcx}_${gcz}`, hash: h });
+            }
+        }
+    }
+
+    // --- Crystals (crCell=30) ---
+    const crCell = 30;
+    const crCX = Math.floor(cx / crCell);
+    const crCZ = Math.floor(cz / crCell);
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+            const gcx = crCX + dx, gcz = crCZ + dz, gcy = 0;
+            const h = cellHash(gcx, gcy, gcz, sdFloat, 59);
+            if (h < 0.15) {
+                const sx = gcx * crCell + crCell * 0.5 + (h * 2 - 1) * 8;
+                const sz = gcz * crCell + crCell * 0.5 + (((h * 11) % 1) * 2 - 1) * 8;
+                const sy = 4.0;
+                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
+                if (dist < 50) objects.push({ type: 4, x: sx, y: sy, z: sz, dist, key: `x${gcx}_${gcz}`, hash: h });
+            }
+        }
+    }
+
+    // --- Cairns (cairnCell=55) ---
+    const cairnCell = 55;
+    const caCX = Math.floor(cx / cairnCell);
+    const caCZ = Math.floor(cz / cairnCell);
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+            const gcx = caCX + dx, gcz = caCZ + dz, gcy = 0;
+            const h = cellHash(gcx, gcy, gcz, sdFloat, 83);
+            if (h < 0.12) {
+                const sx = gcx * cairnCell + cairnCell * 0.5 + (h * 2 - 1) * 15;
+                const sz = gcz * cairnCell + cairnCell * 0.5 + (((h * 9) % 1) * 2 - 1) * 15;
+                const sy = 3.0;
+                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
+                if (dist < 60) objects.push({ type: 5, x: sx, y: sy, z: sz, dist, key: `n${gcx}_${gcz}`, hash: h });
+            }
+        }
+    }
+
+    // --- Large structures (bigCell=120) ---
+    const bigCell = 120;
+    const bCX = Math.floor(cx / bigCell);
+    const bCZ = Math.floor(cz / bigCell);
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+            const gcx = bCX + dx, gcz = bCZ + dz, gcy = 0;
+            const h = cellHash(gcx, gcy, gcz, sdFloat, 73);
+            if (h < 0.25) {
+                const h2 = (h * 13.37) % 1;
+                const sx = gcx * bigCell + bigCell * 0.5 + (h * 2 - 1) * 30;
+                const sz = gcz * bigCell + bigCell * 0.5 + (h2 * 2 - 1) * 30;
+                const sy = 6.0;
+                const dist = Math.sqrt((cx-sx)**2 + (cy-sy)**2 + (cz-sz)**2);
+                if (dist < 80) objects.push({ type: 3, x: sx, y: sy, z: sz, dist, key: `b${gcx}_${gcz}`, hash: h });
+            }
+        }
+    }
+
+    // Sort by distance, closest first
+    objects.sort((a, b) => a.dist - b.dist);
+    return objects;
+}
+
+// Update emitter assignments and parameters each frame
+function updateSpatialAudio(dt, elapsed) {
+    if (!audioCtx || audioCtx.state !== 'running' || emitterPool.length === 0) return;
+
+    // Update listener position and orientation
+    if (audioCtx.listener.positionX) {
+        const sm = 0.15; // smoothing
+        audioCtx.listener.positionX.setTargetAtTime(camX, audioCtx.currentTime, sm);
+        audioCtx.listener.positionY.setTargetAtTime(camY, audioCtx.currentTime, sm);
+        audioCtx.listener.positionZ.setTargetAtTime(camZ, audioCtx.currentTime, sm);
+
+        // Forward direction
+        const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
+        const cy2 = Math.cos(camYaw), sy2 = Math.sin(camYaw);
+        audioCtx.listener.forwardX.setTargetAtTime(sy2 * cp, audioCtx.currentTime, sm);
+        audioCtx.listener.forwardY.setTargetAtTime(sp, audioCtx.currentTime, sm);
+        audioCtx.listener.forwardZ.setTargetAtTime(cy2 * cp, audioCtx.currentTime, sm);
+        audioCtx.listener.upX.setTargetAtTime(0, audioCtx.currentTime, sm);
+        audioCtx.listener.upY.setTargetAtTime(1, audioCtx.currentTime, sm);
+        audioCtx.listener.upZ.setTargetAtTime(0, audioCtx.currentTime, sm);
+    }
+
+    // Find nearby objects
+    const nearby = findNearbyObjects(camX, camY, camZ, currentSeedFloat);
+
+    // Assign closest objects to emitter pool
+    const assigned = new Set();
+    const now = audioCtx.currentTime;
+
+    // First pass: keep existing assignments if still nearby
+    for (const em of emitterPool) {
+        if (em.assignedKey) {
+            const obj = nearby.find(o => o.key === em.assignedKey);
+            if (obj && obj.dist < 80) {
+                assigned.add(obj.key);
+            } else {
+                em.assignedKey = null;
+                em.targetGain = 0;
+            }
+        }
+    }
+
+    // Second pass: assign new objects to free emitters
+    for (const obj of nearby) {
+        if (assigned.has(obj.key)) continue;
+        if (assigned.size >= EMITTER_POOL_SIZE) break;
+
+        const freeEm = emitterPool.find(e => !e.assignedKey);
+        if (!freeEm) break;
+
+        const cfg = soundConfigs[obj.type];
+        if (!cfg) continue;
+
+        // Assign and configure
+        freeEm.assignedKey = obj.key;
+        assigned.add(obj.key);
+
+        // Unique frequency variation per object
+        const freqMul = 1.0 + (obj.hash - 0.5) * 0.3; // +/-15% pitch variation
+        const freq = cfg.freq * freqMul;
+
+        freeEm.osc.type = cfg.type;
+        freeEm.osc.frequency.setTargetAtTime(freq, now, 0.5);
+        freeEm.osc2.type = cfg.type === 'sawtooth' ? 'triangle' : cfg.type;
+        freeEm.osc2.frequency.setTargetAtTime(freq + cfg.detune, now, 0.5);
+        freeEm.lfo.frequency.setTargetAtTime(cfg.modRate, now, 0.3);
+        freeEm.lfoGain.gain.setTargetAtTime(cfg.modDepth, now, 0.3);
+        freeEm.lpf.frequency.setTargetAtTime(cfg.lpf, now, 0.3);
+
+        freeEm.worldX = obj.x;
+        freeEm.worldY = obj.y;
+        freeEm.worldZ = obj.z;
+    }
+
+    // Update all emitters
+    for (const em of emitterPool) {
+        if (em.assignedKey) {
+            const obj = nearby.find(o => o.key === em.assignedKey);
+            if (obj) {
+                const cfg = soundConfigs[obj.type];
+                // Distance-based gain with smooth rolloff
+                const maxRange = 60;
+                const distNorm = Math.min(obj.dist / maxRange, 1);
+                em.targetGain = cfg.volume * (1 - distNorm * distNorm);
+
+                // LPF drops with distance (occlusion feel)
+                const lpfTarget = cfg.lpf * (1 - distNorm * 0.7);
+                em.lpf.frequency.setTargetAtTime(Math.max(lpfTarget, 200), now, 0.2);
+
+                // Update panner position
+                em.panner.positionX.setTargetAtTime(obj.x, now, 0.1);
+                em.panner.positionY.setTargetAtTime(obj.y, now, 0.1);
+                em.panner.positionZ.setTargetAtTime(obj.z, now, 0.1);
+            }
+        }
+
+        // Smooth gain interpolation (exponential)
+        em.currentGain += (em.targetGain - em.currentGain) * (1 - Math.exp(-4 * dt));
+        em.gain.gain.setTargetAtTime(Math.max(em.currentGain, 0), now, 0.05);
+    }
 }
 
 function toggleAudio() {
@@ -1610,6 +1977,9 @@ function frame(now) {
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
+    // ---- Spatial audio update ----
+    updateSpatialAudio(dt, elapsed);
+
     // ---- HUD update (throttled) ----
     hudTimer += dt;
     if (hudTimer > 0.2) {
@@ -1624,6 +1994,8 @@ function frame(now) {
         const zone = camY < 0 ? 'underground' : camY < 15 ? 'surface' : camY < 50 ? 'clouds' : camY < 120 ? 'upper atmosphere' : 'space';
         hudMode.textContent = `mode: ${flyMode ? 'fly' : 'drift'}${pointerLocked ? ' [locked]' : ''} | ${zone}`;
         hudSpeed.textContent = `speed: ${flySpeedMul.toFixed(1)}x`;
+        const activeEmitters = emitterPool.filter(e => e.assignedKey && e.currentGain > 0.001).length;
+        hudDpr.textContent = `dpr: ${dpr.toFixed(2)} | emitters: ${activeEmitters}/${EMITTER_POOL_SIZE}`;
         breathFill.style.width = `${(breath * 0.5 + 0.5) * 100}%`;
     }
 }
