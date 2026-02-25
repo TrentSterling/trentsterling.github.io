@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-27SVZGYHZ3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-27SVZGYHZ3');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>calm — tront.xyz</title>
+<meta name="description" content="A quiet place to breathe. Meditative raymarched shader landscape.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tront.xyz/calm/">
+<meta property="og:title" content="calm — tront.xyz">
+<meta property="og:description" content="A quiet place to breathe.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.png" type="image/png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a0f}
+canvas{display:block;width:100%;height:100%;position:fixed;top:0;left:0}
+
+#overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+
+#title{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.3em;
+  color:rgba(180,170,160,0.25);text-transform:uppercase;
+  transition:opacity 1.5s ease;pointer-events:none;user-select:none;
+}
+
+#audio-hint{
+  position:absolute;bottom:50%;left:50%;transform:translate(-50%,50%);
+  font-family:'Courier New',monospace;font-size:0.65rem;letter-spacing:0.2em;
+  color:rgba(180,170,160,0.0);text-transform:uppercase;
+  transition:opacity 3s ease;pointer-events:none;user-select:none;
+}
+#audio-hint.visible{color:rgba(180,170,160,0.2)}
+#audio-hint.fade{color:rgba(180,170,160,0.0)}
+
+#controls{
+  position:absolute;bottom:1rem;right:1rem;
+  display:flex;flex-direction:column;gap:0.4rem;align-items:flex-end;
+  opacity:0;transition:opacity 0.8s ease;pointer-events:auto;
+}
+#overlay:hover #controls,#controls:focus-within{opacity:1}
+
+#controls label{
+  font-family:'Courier New',monospace;font-size:0.55rem;
+  color:rgba(180,170,160,0.4);letter-spacing:0.1em;
+  display:flex;align-items:center;gap:0.4rem;
+}
+#controls input[type=range]{
+  width:80px;height:2px;-webkit-appearance:none;appearance:none;
+  background:rgba(180,170,160,0.15);border-radius:1px;outline:none;
+  cursor:pointer;
+}
+#controls input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:8px;height:8px;border-radius:50%;
+  background:rgba(180,170,160,0.4);cursor:pointer;
+}
+#controls input[type=text]{
+  width:80px;height:18px;background:rgba(0,0,0,0.3);
+  border:1px solid rgba(180,170,160,0.15);border-radius:3px;
+  color:rgba(180,170,160,0.5);font-family:'Courier New',monospace;
+  font-size:0.55rem;padding:0 4px;outline:none;
+}
+#controls button{
+  background:rgba(0,0,0,0.3);border:1px solid rgba(180,170,160,0.15);
+  border-radius:3px;color:rgba(180,170,160,0.4);
+  font-family:'Courier New',monospace;font-size:0.55rem;
+  padding:2px 8px;cursor:pointer;
+}
+
+#audio-btn{
+  position:absolute;bottom:1rem;left:1rem;
+  background:none;border:1px solid rgba(180,170,160,0.15);
+  border-radius:50%;width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;opacity:0;transition:opacity 0.8s ease;
+  pointer-events:auto;
+}
+#overlay:hover #audio-btn{opacity:1}
+#audio-btn svg{width:14px;height:14px;fill:rgba(180,170,160,0.35)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="overlay">
+  <div id="title">calm</div>
+  <div id="audio-hint">click anywhere for sound</div>
+  <button id="audio-btn" title="Toggle audio">
+    <svg id="audio-icon-on" viewBox="0 0 24 24" style="display:none"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+    <svg id="audio-icon-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+  </button>
+  <div id="controls">
+    <label>seed <input type="text" id="seed-input" placeholder="random"></label>
+    <label>speed <input type="range" id="speed" min="0" max="100" value="30"></label>
+    <label>volume <input type="range" id="volume" min="0" max="100" value="50"></label>
+    <button id="fs-btn">fullscreen</button>
+  </div>
+</div>
+
+<!-- ======== VERTEX SHADER ======== -->
+<script id="vs" type="x-shader/x-vertex">
+attribute vec2 a_pos;
+void main(){gl_Position=vec4(a_pos,0.0,1.0);}
+</script>
+
+<!-- ======== FRAGMENT SHADER ======== -->
+<script id="fs" type="x-shader/x-fragment">
+precision highp float;
+uniform vec2 u_res;
+uniform float u_time;
+uniform float u_speed;
+uniform vec2 u_mouse;
+uniform float u_breath;
+uniform float u_seed;
+uniform float u_transition;
+uniform float u_prevSeed;
+uniform float u_mobile;
+
+// --- Hash functions ---
+float hash21(vec2 p){
+    p=fract(p*vec2(443.897,397.297));
+    p+=dot(p,p+19.19);
+    return fract(p.x*p.y);
+}
+float hash31(vec3 p){
+    p=fract(p*vec3(443.897,397.297,491.187));
+    p+=dot(p,p.yzx+19.19);
+    return fract((p.x+p.y)*p.z);
+}
+
+// --- Value noise ---
+float vnoise(vec3 p){
+    vec3 i=floor(p);
+    vec3 f=fract(p);
+    f=f*f*(3.0-2.0*f);
+    float a=hash31(i);
+    float b=hash31(i+vec3(1,0,0));
+    float c=hash31(i+vec3(0,1,0));
+    float d=hash31(i+vec3(1,1,0));
+    float e=hash31(i+vec3(0,0,1));
+    float g=hash31(i+vec3(1,0,1));
+    float h=hash31(i+vec3(0,1,1));
+    float k=hash31(i+vec3(1,1,1));
+    return mix(mix(mix(a,b,f.x),mix(c,d,f.x),f.y),
+               mix(mix(e,g,f.x),mix(h,k,f.x),f.y),f.z);
+}
+
+// --- FBM ---
+float fbm(vec3 p, float oct){
+    float v=0.0, a=0.5;
+    for(float i=0.0;i<6.0;i+=1.0){
+        if(i>=oct) break;
+        v+=a*vnoise(p);
+        p=p*2.03+vec3(1.7,1.2,2.8);
+        a*=0.5;
+    }
+    return v;
+}
+
+// --- IQ Cosine palette ---
+vec3 pal(float t, float sd){
+    float s=sd*6.283;
+    vec3 a=vec3(0.5,0.5,0.5);
+    vec3 b=vec3(0.25,0.2,0.25);
+    vec3 c=vec3(0.8+sin(s)*0.2, 1.0, 0.9+cos(s)*0.1);
+    vec3 d=vec3(0.1+sin(s*2.0)*0.1, 0.25, 0.35+cos(s*1.3)*0.15);
+    return a+b*cos(6.2832*(c*t+d));
+}
+
+// --- SDF ---
+float sdSphere(vec3 p,float r){return length(p)-r;}
+float sdRBox(vec3 p,vec3 b,float r){
+    vec3 q=abs(p)-b;
+    return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-r;
+}
+float smin(float a,float b,float k){
+    float h=clamp(0.5+0.5*(b-a)/k,0.0,1.0);
+    return mix(b,a,h)-k*h*(1.0-h);
+}
+
+// --- Terrain height at xz ---
+float terrainH(vec2 xz, float sd, float oct){
+    float t=u_time*u_speed;
+    vec3 tp=vec3(xz*0.12,0.0)+vec3(sd*13.7,sd*7.3,0.0);
+    tp.xy+=t*0.02;
+    float h=fbm(tp, oct)*3.0;
+    h+=sin(xz.x*0.06+t*0.08)*cos(xz.y*0.05+t*0.06)*1.0;
+    return h;
+}
+
+// --- Scene distance ---
+float map(vec3 p, float sd, float oct){
+    float t=u_time*u_speed;
+    float breath=u_breath;
+
+    // Ground
+    float h=terrainH(p.xz, sd, oct);
+    float ground=p.y-h;
+
+    // Breathing spheres — few, spread out, above terrain
+    float spheres=1e5;
+    for(float i=0.0;i<3.0;i++){
+        float fi=i+1.0;
+        float sx=sin(sd*37.0+fi*2.4)*15.0+sin(t*0.04+fi)*3.0;
+        float sz=cos(sd*23.0+fi*1.9)*15.0+cos(t*0.03+fi*1.3)*3.0;
+        float sy=terrainH(vec2(sx,sz),sd,2.0)+1.5+breath*0.6;
+        float r=1.2+sin(fi*1.5+sd*50.0)*0.3+breath*0.3;
+        spheres=smin(spheres,sdSphere(p-vec3(sx,sy,sz),r),1.5);
+    }
+
+    // Voxel cubes — grid on the ground
+    float cubes=1e5;
+    float cs=5.0;
+    vec3 cid=floor(p/cs);
+    vec3 cp=mod(p,cs)-cs*0.5;
+    float ch=hash31(cid+sd*47.0);
+    if(ch<0.2 && cid.y<1.0){
+        float fade=sin(t*0.06+ch*6.28)*0.5+0.5;
+        fade=smoothstep(0.1,0.9,fade);
+        float sz=0.3+ch*0.4;
+        sz*=fade;
+        sz+=breath*0.05;
+        float rot=ch*6.28+t*0.02;
+        float cr=cos(rot),sr=sin(rot);
+        vec2 rp=mat2(cr,sr,-sr,cr)*cp.xz;
+        vec3 rcp=vec3(rp.x,cp.y-sz-terrainH(cid.xz*cs,sd,2.0),rp.y);
+        cubes=sdRBox(rcp,vec3(sz),0.1);
+    }
+
+    float d=smin(ground,spheres,2.0);
+    d=smin(d,cubes,0.8);
+    return d;
+}
+
+vec3 calcN(vec3 p, float sd, float oct){
+    vec2 e=vec2(0.015,0.0);
+    return normalize(vec3(
+        map(p+e.xyy,sd,oct)-map(p-e.xyy,sd,oct),
+        map(p+e.yxy,sd,oct)-map(p-e.yxy,sd,oct),
+        map(p+e.yyx,sd,oct)-map(p-e.yyx,sd,oct)
+    ));
+}
+
+float ao(vec3 p, vec3 n, float sd, float oct){
+    float o=0.0,s=1.0;
+    for(float i=0.0;i<4.0;i+=1.0){
+        float h=0.03+0.15*i;
+        float d=map(p+n*h,sd,oct);
+        o+=(h-d)*s;
+        s*=0.65;
+    }
+    return clamp(1.0-2.0*o,0.0,1.0);
+}
+
+vec3 render(vec3 ro, vec3 rd, float sd, float oct, float maxSteps){
+    // Raymarch
+    float t=0.0;
+    for(float i=0.0;i<100.0;i++){
+        if(i>=maxSteps) break;
+        vec3 p=ro+rd*t;
+        float d=map(p,sd,oct);
+        if(d<0.005*t) break; // relative threshold
+        t+=d;
+        if(t>80.0) break;
+    }
+
+    float time=u_time*u_speed;
+
+    // Sky
+    vec3 skyHi=pal(0.65,sd)*0.5+vec3(0.03,0.04,0.1);
+    vec3 skyLo=pal(0.2,sd)*0.7+vec3(0.1,0.06,0.03);
+    vec3 sky=mix(skyLo,skyHi,clamp(rd.y*0.5+0.5,0.0,1.0));
+    sky+=pal(0.3,sd)*0.3*exp(-6.0*rd.y*rd.y); // horizon glow
+    // Stars
+    float star=hash31(floor(rd*300.0));
+    sky+=step(0.998,star)*step(0.05,rd.y)*0.5;
+
+    if(t>80.0) return sky;
+
+    vec3 p=ro+rd*t;
+    vec3 n=calcN(p,sd,oct);
+
+    // Light
+    vec3 ld=normalize(vec3(sin(time*0.025)*0.5,0.7,cos(time*0.025)*0.5));
+    float diff=dot(n,ld)*0.5+0.5;
+    diff*=diff;
+
+    float occ=ao(p,n,sd,oct);
+    float fres=pow(1.0-max(dot(n,-rd),0.0),3.0);
+
+    // Material
+    vec3 mat=pal(vnoise(p*0.15+sd*10.0)*0.6+0.2,sd);
+
+    // Light it up
+    vec3 col=vec3(0.0);
+    col+=mat*diff*occ*2.0;       // main light
+    col+=mat*0.2;                 // ambient
+    col+=pal(0.6,sd)*fres*0.5;   // rim
+
+    // Fog
+    vec3 fogCol=mix(
+        pal(0.15,sd)*0.8+vec3(0.08,0.04,0.02),
+        pal(0.65,sd)*0.5+vec3(0.02,0.03,0.06),
+        clamp(p.y*0.08,0.0,1.0)
+    );
+    float fog=1.0-exp(-0.0005*t*t);
+    col=mix(col,fogCol,fog);
+
+    // Cloud wisps
+    float cl=fbm(vec3(p.xz*0.02+time*0.008,time*0.003+sd*10.0),min(oct,3.0));
+    cl=smoothstep(0.4,0.7,cl)*0.25;
+    col=mix(col,fogCol*1.5,cl*exp(-0.002*t));
+
+    // Fade to sky
+    col=mix(col,sky,smoothstep(50.0,80.0,t));
+
+    return col;
+}
+
+void main(){
+    float oct=u_mobile>0.5?3.0:5.0;
+    float maxSteps=u_mobile>0.5?40.0:80.0;
+
+    vec2 uv=(gl_FragCoord.xy-u_res*0.5)/u_res.y;
+    float time=u_time*u_speed;
+
+    // Camera: low and intimate, drifting through the landscape
+    float camY=3.5+u_mouse.y*1.0;
+    vec3 ro=vec3(sin(time*0.01)*6.0, camY, time*0.5+cos(time*0.008)*4.0);
+    vec3 ta=ro+vec3(sin(time*0.015+u_mouse.x*0.3)*5.0, -1.2, 12.0);
+    vec3 fwd=normalize(ta-ro);
+    vec3 right=normalize(cross(vec3(0,1,0),fwd));
+    vec3 up=cross(fwd,right);
+    vec3 rd=normalize(fwd+uv.x*right+uv.y*up);
+
+    vec3 col=render(ro,rd,u_seed,oct,maxSteps);
+
+    if(u_transition>0.01){
+        vec3 col2=render(ro,rd,u_prevSeed,oct,maxSteps);
+        col=mix(col,col2,u_transition);
+    }
+
+    // Tonemap (gentle)
+    col=col/(0.7+col);
+
+    // Vignette (soft)
+    vec2 vuv=gl_FragCoord.xy/u_res;
+    float vig=vuv.x*vuv.y*(1.0-vuv.x)*(1.0-vuv.y);
+    col*=mix(0.7,1.0,clamp(pow(vig*16.0,0.35),0.0,1.0));
+
+    // Grain
+    col+=hash31(vec3(gl_FragCoord.xy,fract(u_time*71.0)))*0.025-0.0125;
+
+    // Gamma
+    col=pow(clamp(col,0.0,1.0),vec3(1.0/2.2));
+
+    gl_FragColor=vec4(col,1.0);
+}
+</script>
+
+<script>
+// ============================================
+// MULBERRY32 SEEDED PRNG (same as lofigen)
+// ============================================
+function mulberry32(seed) {
+    if (typeof seed === 'string') {
+        let h = 0;
+        for (let i = 0; i < seed.length; i++) {
+            h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+        }
+        seed = h >>> 0;
+    }
+    seed = seed >>> 0;
+    return function() {
+        seed |= 0;
+        seed = (seed + 0x6D2B79F5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function seedToFloat(s) {
+    if (typeof s === 'number') return s;
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+        h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    }
+    return (h >>> 0) / 4294967296;
+}
+
+// ============================================
+// DEBUG LOGGING
+// ============================================
+const dbg = (ok, msg) => console.log(`%c[${ok?'OK':'FAIL'}] ${msg}`, `color:${ok?'#4f4':'#f44'};font-weight:bold`);
+
+// ============================================
+// WEBGL SETUP
+// ============================================
+const canvas = document.getElementById('c');
+dbg(!!canvas, 'Canvas element found');
+
+const gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+dbg(!!gl, 'WebGL context created');
+
+function compileShader(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    const ok = gl.getShaderParameter(s, gl.COMPILE_STATUS);
+    const label = type === gl.VERTEX_SHADER ? 'Vertex' : 'Fragment';
+    dbg(ok, `${label} shader compiled`);
+    if (!ok) {
+        console.error(gl.getShaderInfoLog(s));
+        return null;
+    }
+    return s;
+}
+
+const vs = compileShader(gl.VERTEX_SHADER, document.getElementById('vs').textContent);
+const fs = compileShader(gl.FRAGMENT_SHADER, document.getElementById('fs').textContent);
+const prog = gl.createProgram();
+gl.attachShader(prog, vs);
+gl.attachShader(prog, fs);
+gl.linkProgram(prog);
+const linked = gl.getProgramParameter(prog, gl.LINK_STATUS);
+dbg(linked, 'Program linked');
+if (!linked) console.error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+// Fullscreen triangle
+const aPos = gl.getAttribLocation(prog, 'a_pos');
+dbg(aPos >= 0, `a_pos attrib location = ${aPos}`);
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+// Uniforms
+const uRes = gl.getUniformLocation(prog, 'u_res');
+const uTime = gl.getUniformLocation(prog, 'u_time');
+const uSpeed = gl.getUniformLocation(prog, 'u_speed');
+const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+const uBreath = gl.getUniformLocation(prog, 'u_breath');
+const uSeed = gl.getUniformLocation(prog, 'u_seed');
+const uTransition = gl.getUniformLocation(prog, 'u_transition');
+const uPrevSeed = gl.getUniformLocation(prog, 'u_prevSeed');
+const uMobile = gl.getUniformLocation(prog, 'u_mobile');
+
+const uniforms = {uRes,uTime,uSpeed,uMouse,uBreath,uSeed,uTransition,uPrevSeed,uMobile};
+const uniformNames = Object.keys(uniforms);
+const allUniformsOk = uniformNames.every(n => uniforms[n] !== null);
+dbg(allUniformsOk, `All ${uniformNames.length} uniforms located` + (allUniformsOk ? '' : ' — MISSING: ' + uniformNames.filter(n=>uniforms[n]===null).join(', ')));
+
+// ============================================
+// STATE
+// ============================================
+let currentSeed = 'calm';
+let currentSeedFloat = seedToFloat(currentSeed);
+let prevSeedFloat = currentSeedFloat;
+let transition = 0;
+let mouseX = 0, mouseY = 0;
+let smoothMouseX = 0, smoothMouseY = 0;
+let speedMul = 0.3;
+let dpr = Math.min(window.devicePixelRatio || 1, 2);
+let isMobile = /Mobi|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+let audioStarted = false;
+let audioCtx = null;
+let masterGain = null;
+
+// Adaptive quality
+let frameCount = 0;
+let fpsAccum = 0;
+let lastFpsCheck = 0;
+
+// ============================================
+// SEED FROM URL HASH
+// ============================================
+function loadSeedFromHash() {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+        currentSeed = decodeURIComponent(hash);
+        currentSeedFloat = seedToFloat(currentSeed);
+        prevSeedFloat = currentSeedFloat;
+        document.getElementById('seed-input').value = currentSeed;
+    } else {
+        // Random seed on first load
+        currentSeed = String(Math.floor(Math.random() * 99999));
+        currentSeedFloat = seedToFloat(currentSeed);
+        prevSeedFloat = currentSeedFloat;
+    }
+}
+loadSeedFromHash();
+
+window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.slice(1);
+    if (hash) changeSeed(decodeURIComponent(hash));
+});
+
+function changeSeed(newSeed) {
+    if (newSeed === currentSeed) return;
+    prevSeedFloat = currentSeedFloat;
+    currentSeed = newSeed;
+    currentSeedFloat = seedToFloat(currentSeed);
+    transition = 1.0;
+    window.history.replaceState(null, '', '#' + encodeURIComponent(currentSeed));
+}
+
+// ============================================
+// CONTROLS
+// ============================================
+const seedInput = document.getElementById('seed-input');
+const speedSlider = document.getElementById('speed');
+const volumeSlider = document.getElementById('volume');
+const fsBtn = document.getElementById('fs-btn');
+const audioBtn = document.getElementById('audio-btn');
+
+seedInput.value = currentSeed;
+seedInput.addEventListener('change', () => {
+    const v = seedInput.value.trim();
+    if (v) changeSeed(v);
+});
+
+speedSlider.addEventListener('input', () => {
+    speedMul = speedSlider.value / 100;
+});
+
+volumeSlider.addEventListener('input', () => {
+    if (masterGain) {
+        masterGain.gain.setTargetAtTime(volumeSlider.value / 100 * 0.3, audioCtx.currentTime, 0.1);
+    }
+});
+
+fsBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen();
+    }
+});
+
+audioBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleAudio();
+});
+
+// ============================================
+// MOUSE / TOUCH
+// ============================================
+document.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+    mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+});
+
+document.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    mouseX = (t.clientX / window.innerWidth) * 2 - 1;
+    mouseY = (t.clientY / window.innerHeight) * 2 - 1;
+}, { passive: true });
+
+// Click/tap to start audio
+document.addEventListener('click', () => {
+    if (!audioStarted) startAudio();
+});
+document.addEventListener('touchstart', () => {
+    if (!audioStarted) startAudio();
+}, { passive: true });
+
+// Show audio hint after 3s
+setTimeout(() => {
+    const hint = document.getElementById('audio-hint');
+    hint.classList.add('visible');
+    setTimeout(() => hint.classList.add('fade'), 8000);
+}, 3000);
+
+// ============================================
+// AUDIO SYSTEM
+// ============================================
+function startAudio() {
+    if (audioStarted) return;
+    audioStarted = true;
+
+    const hint = document.getElementById('audio-hint');
+    hint.classList.add('fade');
+
+    document.getElementById('audio-icon-on').style.display = 'block';
+    document.getElementById('audio-icon-off').style.display = 'none';
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Master gain — fade in over 3s
+    masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(volumeSlider.value / 100 * 0.3, audioCtx.currentTime + 3);
+    masterGain.connect(audioCtx.destination);
+
+    // Reverb (procedural impulse, same pattern as lofigen)
+    const reverbLength = audioCtx.sampleRate * 4;
+    const impulse = audioCtx.createBuffer(2, reverbLength, audioCtx.sampleRate);
+    const rr = mulberry32(currentSeed + '_reverb');
+    for (let ch = 0; ch < 2; ch++) {
+        const data = impulse.getChannelData(ch);
+        for (let i = 0; i < reverbLength; i++) {
+            const t = i / reverbLength;
+            let val = rr() * 2 - 1;
+            if (t < 0.05) val *= 0.7;
+            val *= Math.exp(-3.0 * t);
+            if (t > 0.2) val *= 0.8;
+            data[i] = val;
+        }
+    }
+    const reverb = audioCtx.createConvolver();
+    reverb.buffer = impulse;
+
+    const reverbGain = audioCtx.createGain();
+    reverbGain.gain.value = 0.4;
+    reverb.connect(reverbGain);
+    reverbGain.connect(masterGain);
+
+    const dryBus = audioCtx.createGain();
+    dryBus.gain.value = 0.6;
+    dryBus.connect(masterGain);
+
+    const reverbSend = audioCtx.createGain();
+    reverbSend.gain.value = 0.5;
+    reverbSend.connect(reverb);
+
+    // --- Drone pad: 2 detuned oscillators ---
+    function createDrone(freq, type) {
+        const osc = audioCtx.createOscillator();
+        osc.type = type;
+        osc.frequency.value = freq;
+
+        const lpf = audioCtx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.value = 300;
+        lpf.Q.value = 1;
+
+        // Slow LPF sweep
+        const now = audioCtx.currentTime;
+        lpf.frequency.setValueAtTime(200, now);
+        function sweepLPF() {
+            const t = audioCtx.currentTime;
+            lpf.frequency.linearRampToValueAtTime(400 + Math.sin(t * 0.05) * 200, t + 8);
+            setTimeout(sweepLPF, 8000);
+        }
+        sweepLPF();
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.15;
+
+        osc.connect(lpf);
+        lpf.connect(gain);
+        gain.connect(dryBus);
+        gain.connect(reverbSend);
+        osc.start();
+        return osc;
+    }
+
+    // Two drones at ~55Hz (A1) detuned
+    createDrone(55, 'sine');
+    createDrone(55.3, 'triangle');
+    // Sub octave for warmth
+    createDrone(27.5, 'sine');
+
+    // --- Rain texture: filtered noise ---
+    const rainLen = audioCtx.sampleRate * 4;
+    const rainBuf = audioCtx.createBuffer(1, rainLen, audioCtx.sampleRate);
+    const rainData = rainBuf.getChannelData(0);
+    const rainRng = mulberry32(currentSeed + '_rain');
+    for (let i = 0; i < rainLen; i++) rainData[i] = rainRng() * 2 - 1;
+
+    const rainSrc = audioCtx.createBufferSource();
+    rainSrc.buffer = rainBuf;
+    rainSrc.loop = true;
+
+    const rainBP = audioCtx.createBiquadFilter();
+    rainBP.type = 'bandpass';
+    rainBP.frequency.value = 3000;
+    rainBP.Q.value = 0.5;
+
+    const rainHP = audioCtx.createBiquadFilter();
+    rainHP.type = 'highpass';
+    rainHP.frequency.value = 800;
+
+    const rainGain = audioCtx.createGain();
+    rainGain.gain.value = 0.04;
+
+    rainSrc.connect(rainBP);
+    rainBP.connect(rainHP);
+    rainHP.connect(rainGain);
+    rainGain.connect(dryBus);
+    rainSrc.start();
+
+    // --- Sparse pentatonic tones ---
+    const pentatonic = [0, 2, 4, 7, 9]; // relative to root
+    const rootMidi = 60; // C4
+    const toneRng = mulberry32(currentSeed + '_tones');
+
+    function scheduleTone() {
+        const delay = 5 + toneRng() * 10; // 5-15s between tones
+        setTimeout(() => {
+            if (!audioCtx || audioCtx.state === 'closed') return;
+
+            const degree = pentatonic[Math.floor(toneRng() * pentatonic.length)];
+            const octave = Math.floor(toneRng() * 2); // 0 or 1 octave up
+            const midi = rootMidi + degree + octave * 12;
+            const freq = 440 * Math.pow(2, (midi - 69) / 12);
+
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+
+            const env = audioCtx.createGain();
+            const now = audioCtx.currentTime;
+            const dur = 3 + toneRng() * 5;
+            env.gain.setValueAtTime(0, now);
+            env.gain.linearRampToValueAtTime(0.03 + toneRng() * 0.02, now + dur * 0.3);
+            env.gain.linearRampToValueAtTime(0, now + dur);
+
+            osc.connect(env);
+            env.connect(dryBus);
+            env.connect(reverbSend);
+            osc.start(now);
+            osc.stop(now + dur + 0.1);
+
+            scheduleTone();
+        }, delay * 1000);
+    }
+    scheduleTone();
+}
+
+function toggleAudio() {
+    if (!audioStarted) {
+        startAudio();
+        return;
+    }
+    if (!audioCtx) return;
+
+    const onIcon = document.getElementById('audio-icon-on');
+    const offIcon = document.getElementById('audio-icon-off');
+
+    if (audioCtx.state === 'running') {
+        masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
+        setTimeout(() => audioCtx.suspend(), 500);
+        onIcon.style.display = 'none';
+        offIcon.style.display = 'block';
+    } else {
+        audioCtx.resume();
+        masterGain.gain.setTargetAtTime(volumeSlider.value / 100 * 0.3, audioCtx.currentTime, 0.3);
+        onIcon.style.display = 'block';
+        offIcon.style.display = 'none';
+    }
+}
+
+// ============================================
+// RESIZE + ADAPTIVE QUALITY
+// ============================================
+function resize() {
+    const w = Math.floor(window.innerWidth * dpr);
+    const h = Math.floor(window.innerHeight * dpr);
+    canvas.width = w;
+    canvas.height = h;
+    gl.viewport(0, 0, w, h);
+    dbg(w > 0 && h > 0, `Canvas resized: ${w}x${h} (dpr=${dpr})`);
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+dbg(true, `Seed: "${currentSeed}" -> float: ${currentSeedFloat}`);
+dbg(!isMobile, `Device: ${isMobile ? 'mobile' : 'desktop'}`);
+
+// ============================================
+// RENDER LOOP
+// ============================================
+const startTime = performance.now();
+let lastFrame = startTime;
+let debugFrames = 0;
+
+function frame(now) {
+    requestAnimationFrame(frame);
+    debugFrames++;
+    if (debugFrames === 1) dbg(true, 'First frame rendering');
+    if (debugFrames === 5) {
+        const err = gl.getError();
+        dbg(err === gl.NO_ERROR, `WebGL error check: ${err === gl.NO_ERROR ? 'none' : 'ERROR ' + err}`);
+        // Read a pixel to check output
+        const px = new Uint8Array(4);
+        gl.readPixels(Math.floor(canvas.width/2), Math.floor(canvas.height/2), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        const bright = px[0] + px[1] + px[2];
+        dbg(bright > 0, `Center pixel: rgb(${px[0]},${px[1]},${px[2]}) — ${bright > 0 ? 'visible' : 'BLACK'}`);
+    }
+
+    const dt = (now - lastFrame) / 1000;
+    lastFrame = now;
+
+    // Adaptive FPS check
+    frameCount++;
+    fpsAccum += dt;
+    if (fpsAccum > 2) {
+        const fps = frameCount / fpsAccum;
+        if (fps < 28 && dpr > 0.5) {
+            dpr = Math.max(0.5, dpr - 0.25);
+            resize();
+        }
+        frameCount = 0;
+        fpsAccum = 0;
+    }
+
+    // Smooth mouse (heavily damped)
+    smoothMouseX += (mouseX - smoothMouseX) * 0.02;
+    smoothMouseY += (mouseY - smoothMouseY) * 0.02;
+
+    // Breathing cycle: 12s period
+    const breathTime = (now - startTime) / 1000;
+    const breath = Math.sin(breathTime * Math.PI * 2 / 12);
+
+    // Seed transition crossfade (2.5s)
+    if (transition > 0) {
+        transition = Math.max(0, transition - dt / 2.5);
+    }
+
+    // Uniforms
+    const elapsed = (now - startTime) / 1000;
+
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uTime, elapsed);
+    gl.uniform1f(uSpeed, speedMul);
+    gl.uniform2f(uMouse, smoothMouseX, smoothMouseY);
+    gl.uniform1f(uBreath, breath);
+    gl.uniform1f(uSeed, currentSeedFloat);
+    gl.uniform1f(uTransition, transition);
+    gl.uniform1f(uPrevSeed, prevSeedFloat);
+    gl.uniform1f(uMobile, isMobile ? 1.0 : 0.0);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
