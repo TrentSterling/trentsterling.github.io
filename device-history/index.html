@@ -334,10 +334,11 @@
     <section class="hero">
         <h1>Device History</h1>
         <p class="tagline">WTF just disconnected? Real-time USB device monitor for Windows with a neon-themed GUI, event logging, and CLI mode.</p>
-        <span class="version-tag">v0.3.0 &mdash; open source</span>
+        <span class="version-tag">v0.3.0 &mdash; released &amp; open source</span>
         <div class="buttons">
+            <a href="https://github.com/TrentSterling/device-history/releases/download/v0.3.0/device-history.exe" class="btn btn-primary" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.4);color:#d4b0ff;">&#11015; Download .exe</a>
             <a href="https://github.com/TrentSterling/device-history" class="btn btn-primary">GitHub</a>
-            <a href="#install" class="btn btn-primary">Install</a>
+            <a href="/blog/posts/device-history/" class="btn btn-primary">Blog Post</a>
         </div>
     </section>
 
@@ -422,17 +423,22 @@
 
     <!-- INSTALL -->
     <section class="section" id="install">
-        <h2>Install</h2>
-        <div class="install-options">
+        <h2>Download &amp; Install</h2>
+        <div class="install-options" style="grid-template-columns:1fr 1fr 1fr;">
+            <div class="install-card" style="border-color:rgba(168,85,247,0.3);">
+                <h3 style="color:var(--accent);">Download .exe</h3>
+                <a href="https://github.com/TrentSterling/device-history/releases/download/v0.3.0/device-history.exe" class="btn btn-primary" style="display:block;text-align:center;background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);color:#d4b0ff;margin-bottom:4px;">&#11015; device-history.exe</a>
+                <p>~5 MB standalone binary. No installer needed, just run it. Windows only.</p>
+            </div>
             <div class="install-card">
                 <h3>cargo install</h3>
                 <code>cargo install --git https://github.com/TrentSterling/device-history</code>
-                <p>Requires Rust toolchain. Builds from source and installs the binary to your cargo bin directory.</p>
+                <p>Requires Rust toolchain. Builds from source and installs to your cargo bin directory.</p>
             </div>
             <div class="install-card">
                 <h3>Build from source</h3>
-                <code>git clone https://github.com/TrentSterling/device-history<br>cd device-history<br>cargo build --release</code>
-                <p>Binary lands at target/release/device-history.exe (~5 MB).</p>
+                <code>git clone ...device-history<br>cd device-history<br>cargo build --release</code>
+                <p>Binary at target/release/device-history.exe.</p>
             </div>
         </div>
     </section>
