@@ -334,9 +334,9 @@
     <section class="hero">
         <h1>Device History</h1>
         <p class="tagline">WTF just disconnected? Real-time USB device monitor for Windows with a neon-themed GUI, event logging, and CLI mode.</p>
-        <span class="version-tag">v0.3.1 &mdash; released &amp; open source</span>
+        <span class="version-tag">v0.4.0 &mdash; system tray &amp; device nicknames</span>
         <div class="buttons">
-            <a href="https://github.com/TrentSterling/device-history/releases/download/v0.3.1/device-history.exe" class="btn btn-primary" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.4);color:#d4b0ff;font-size:1.05rem;">&#11015; Download Portable .exe (7MB)</a>
+            <a href="https://github.com/TrentSterling/device-history/releases/download/v0.4.0/device-history.exe" class="btn btn-primary" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.4);color:#d4b0ff;font-size:1.05rem;">&#11015; Download Portable .exe (7MB)</a>
             <a href="https://github.com/TrentSterling/device-history" class="btn btn-primary">GitHub</a>
             <a href="/blog/posts/device-history/" class="btn btn-primary">Blog Post</a>
         </div>
@@ -345,7 +345,7 @@
 
     <!-- SCREENSHOT -->
     <div class="screenshot-frame" onclick="openLightbox(this.querySelector('img'))">
-        <img src="screenshot.png" alt="Device History v0.3.1 - Neon dark mode USB monitor">
+        <img src="screenshot.png" alt="Device History v0.4.0 - Neon dark mode USB monitor">
     </div>
 
     <!-- STATS -->
@@ -353,7 +353,7 @@
         <div class="stat"><span class="num">500ms</span><span class="lbl">Poll Rate</span></div>
         <div class="stat"><span class="num">3</span><span class="lbl">Themes</span></div>
         <div class="stat"><span class="num">~7MB</span><span class="lbl">Binary Size</span></div>
-        <div class="stat"><span class="num">v0.3.1</span><span class="lbl">Version</span></div>
+        <div class="stat"><span class="num">v0.4.0</span><span class="lbl">Version</span></div>
     </div>
 
     <!-- FEATURES -->
@@ -384,6 +384,22 @@
             <div class="feature-card">
                 <h3>CLI Mode</h3>
                 <p>Run with --cli for colored terminal output. Same monitoring, no GUI. Pipe it, script it, watch it in a terminal.</p>
+            </div>
+            <div class="feature-card">
+                <h3>System Tray</h3>
+                <p>Closing the window hides to the system tray instead of quitting. Right-click to show, hide, or exit. Double-click to restore. Always watching, never in the way.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Device Nicknames</h3>
+                <p>Rename any device to something you'll actually recognize. "USB Composite Device" becomes "Quest Link Cable" or "Wacom Tablet". Persisted across sessions.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Known Devices</h3>
+                <p>Remembers every device it's ever seen with first-seen and last-seen timestamps. Build a history of your USB ecosystem over time.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Search &amp; Sort</h3>
+                <p>Filter devices and events by name, ID, or class. Sort by any column. Find what you're looking for in a list of 50+ USB devices.</p>
             </div>
             <div class="feature-card">
                 <h3>Update Checker</h3>
@@ -419,8 +435,10 @@
         <div class="tech-chips">
             <span class="chip">Rust</span>
             <span class="chip">eframe / egui</span>
+            <span class="chip">tray-icon</span>
             <span class="chip">WMI</span>
             <span class="chip">chrono</span>
+            <span class="chip">serde / json</span>
             <span class="chip">image</span>
             <span class="chip">winresource</span>
         </div>
@@ -432,7 +450,7 @@
         <div class="install-options" style="grid-template-columns:1fr 1fr 1fr;">
             <div class="install-card" style="border-color:rgba(168,85,247,0.3);">
                 <h3 style="color:var(--accent);">Download .exe</h3>
-                <a href="https://github.com/TrentSterling/device-history/releases/download/v0.3.1/device-history.exe" class="btn btn-primary" style="display:block;text-align:center;background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);color:#d4b0ff;margin-bottom:4px;">&#11015; device-history.exe</a>
+                <a href="https://github.com/TrentSterling/device-history/releases/download/v0.4.0/device-history.exe" class="btn btn-primary" style="display:block;text-align:center;background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);color:#d4b0ff;margin-bottom:4px;">&#11015; device-history.exe</a>
                 <p>~7 MB standalone binary. No installer needed, just run it. Windows only.</p>
             </div>
             <div class="install-card">
