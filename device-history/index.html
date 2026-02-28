@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-27SVZGYHZ3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-27SVZGYHZ3');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device History - WTF Just Disconnected?</title>
+    <meta name="description" content="Real-time USB device monitor for Windows. Neon-themed GUI with live connect/disconnect detection, event logging, and CLI mode. Built in Rust.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Device History - WTF Just Disconnected?">
+    <meta property="og:description" content="Real-time USB device monitor for Windows. Neon-themed GUI with live connect/disconnect detection, event logging, and CLI mode. Built in Rust.">
+    <meta property="og:url" content="https://tront.xyz/device-history/">
+    <meta property="og:site_name" content="Device History">
+    <meta property="og:image" content="https://tront.xyz/device-history/screenshot.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Device History - WTF Just Disconnected?">
+    <meta name="twitter:description" content="Real-time USB device monitor for Windows. Neon-themed GUI with live connect/disconnect detection, event logging, and CLI mode. Built in Rust.">
+    <meta name="twitter:image" content="https://tront.xyz/device-history/screenshot.png">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Device History","description":"Real-time USB device monitor for Windows with neon-themed GUI. Detects connect/disconnect events via WMI polling and logs everything.","url":"https://tront.xyz/device-history/","applicationCategory":"UtilitiesApplication","operatingSystem":"Windows","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+    <link rel="stylesheet" href="/assets/css/tront-themes.css">
+    <style>
+        :root {
+            --bg: #080808;
+            --bg2: #0e0e0e;
+            --bg3: #181818;
+            --border: #222;
+            --text: #e0e0e0;
+            --text-dim: #777;
+            --accent: #a855f7;
+            --accent2: #ff8b3d;
+            --accent3: #2ee6d7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        @keyframes background-aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        #magic-navbar-container { position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 9999; display: flex; flex-direction: row-reverse; justify-content: center; align-items: center; gap: 1rem; background-color: rgba(18, 18, 22, 0.6); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 0 1rem; perspective: 1000px; overflow: hidden; }
+        #magic-navbar-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: -1; background-image: linear-gradient(110deg, rgba(168, 85, 247, 0.1), rgba(255, 139, 61, 0.15), rgba(168, 85, 247, 0.1)); background-size: 400% 400%; animation: background-aurora 12s ease infinite; opacity: 0; transition: opacity 0.7s ease-out; }
+        #magic-navbar-container:hover::before { opacity: 1; }
+        #magic-navbar-container .nav-link { position: relative; display: flex; align-items: center; height: 40px; padding: 0 1.25rem; color: #c0c0c0; text-decoration: none; font-size: 0.95rem; font-weight: 600; font-family: 'Inter', -apple-system, sans-serif; border-radius: 10px; background-color: rgba(40, 40, 45, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); will-change: transform, box-shadow; transform-style: preserve-3d; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); overflow: hidden; }
+        #magic-navbar-container .nav-link::before { content: ''; position: absolute; top: 0; left: 0; width: 200%; height: 100%; background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.2) 50%, transparent 60%); transform: translateX(-100%); transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+        #magic-navbar-container .nav-link:hover { color: #ffffff; background-color: rgba(50, 50, 55, 0.9); border-color: rgba(255, 255, 255, 0.2); transform: perspective(1000px) rotateX(10deg) translateY(-4px); box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.25), 0 0 20px -5px rgba(168, 85, 247, 0.8), 0 0 20px -5px rgba(255, 139, 61, 0.8); }
+        #magic-navbar-container .nav-link:hover::before { transform: translateX(100%); }
+        #magic-navbar-container .logo-image { height: 30px; width: 30px; border-radius: 50%; margin-right: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.2); transition: transform .8s cubic-bezier(.16,1,.3,1); }
+        #magic-navbar-container .nav-link.home-link { padding-left: 0.5rem; }
+        #magic-navbar-container .nav-link:hover ~ .home-link .logo-image, #magic-navbar-container .home-link:hover .logo-image { animation: spin-once 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-top: 60px;
+        }
+
+        a { color: #c4a0ff; text-decoration: none; }
+        a:hover { color: #d9bfff; }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 72px 0 32px;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        .hero .tagline {
+            font-size: 1.15rem;
+            color: var(--text-dim);
+            margin-bottom: 24px;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+        .hero .version-tag {
+            display: inline-block;
+            font-size: 0.8rem;
+            color: var(--accent);
+            background: rgba(168,85,247,0.08);
+            padding: 0.15rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            margin-bottom: 20px;
+        }
+        .hero .buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary {
+            background: var(--bg3);
+            color: #ccc;
+            border: 1px solid #2a2a2a;
+        }
+        .btn-primary:hover { background: #1c1c1c; border-color: #444; color: #fff; }
+
+        .screenshot-frame {
+            max-width: 720px;
+            margin: 0 auto 32px;
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .screenshot-frame:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(168,85,247,0.15);
+        }
+        .screenshot-frame img {
+            width: 100%;
+            display: block;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            padding: 24px 0;
+            border-top: 1px solid #161616;
+            border-bottom: 1px solid #161616;
+        }
+        .stat .num {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            display: block;
+            text-align: center;
+        }
+        .stat .lbl {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-align: center;
+            display: block;
+        }
+
+        .section {
+            padding: 48px 0;
+            border-top: 1px solid #161616;
+        }
+        .section h2 {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 28px;
+        }
+        .section .sub {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 15px;
+            max-width: 560px;
+            margin: -16px auto 32px;
+            line-height: 1.6;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .feature-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .feature-card h3 { font-size: 16px; margin-bottom: 6px; }
+        .feature-card p { color: var(--text-dim); font-size: 14px; line-height: 1.5; }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            counter-reset: s;
+        }
+        @media(max-width:768px) { .steps-grid { grid-template-columns: 1fr; } }
+        .step-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            padding-top: 48px;
+            position: relative;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .step-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .step-card::before {
+            counter-increment: s;
+            content: counter(s);
+            position: absolute;
+            top: 14px; left: 16px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            background: rgba(168,85,247,0.1);
+            width: 28px; height: 28px;
+            line-height: 28px;
+            text-align: center;
+            border-radius: 8px;
+        }
+        .step-card h3 { font-size: 15px; margin-bottom: 4px; }
+        .step-card p { color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+
+        .tech-chips {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .chip {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 15px;
+            color: var(--text);
+            font-weight: 500;
+            transition: border-color 0.2s, transform 0.15s;
+        }
+        .chip:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .install-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        @media(max-width:640px) { .install-options { grid-template-columns: 1fr; } }
+        .install-card {
+            background: var(--bg2);
+            border: 1px solid #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .install-card h3 { margin-bottom: 12px; font-size: 17px; }
+        .install-card p { color: var(--text-dim); font-size: 13px; margin-top: 10px; line-height: 1.6; }
+        .install-card code {
+            display: block;
+            background: var(--bg);
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--accent3);
+            border: 1px solid #1a1a1a;
+            word-break: break-all;
+        }
+
+        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; cursor: pointer; }
+        .lightbox.active { display: flex; }
+        .lightbox img { max-width: 95%; max-height: 95%; border-radius: 8px; cursor: default; }
+        .lightbox-close { position: absolute; top: 20px; right: 30px; font-size: 36px; color: #fff; cursor: pointer; }
+
+        footer {
+            padding: 32px 0;
+            border-top: 1px solid #161616;
+            text-align: center;
+            color: #333;
+            font-size: 13px;
+        }
+        footer a { color: #444; }
+        footer a:hover { color: #888; }
+    </style>
+</head>
+<body>
+
+<nav id="magic-navbar-container">
+    <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">&#127769;</span><span class="theme-label"> Dark</span></button>
+    <a href="/discord/" class="nav-link">Discord</a>
+    <a href="/blog/" class="nav-link">Blog</a>
+    <a href="/games/" class="nav-link">Games</a>
+    <a href="/" class="nav-link home-link">
+        <img src="/blog/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+        <span>Home</span>
+    </a>
+</nav>
+
+<div class="container">
+
+    <!-- HERO -->
+    <section class="hero">
+        <h1>Device History</h1>
+        <p class="tagline">WTF just disconnected? Real-time USB device monitor for Windows with a neon-themed GUI, event logging, and CLI mode.</p>
+        <span class="version-tag">v0.3.0 &mdash; open source</span>
+        <div class="buttons">
+            <a href="https://github.com/TrentSterling/device-history" class="btn btn-primary">GitHub</a>
+            <a href="#install" class="btn btn-primary">Install</a>
+        </div>
+    </section>
+
+    <!-- SCREENSHOT -->
+    <div class="screenshot-frame" onclick="openLightbox(this.querySelector('img'))">
+        <img src="screenshot.png" alt="Device History v0.3.0 - Neon dark mode USB monitor">
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-bar">
+        <div class="stat"><span class="num">500ms</span><span class="lbl">Poll Rate</span></div>
+        <div class="stat"><span class="num">3</span><span class="lbl">Themes</span></div>
+        <div class="stat"><span class="num">~5MB</span><span class="lbl">Binary Size</span></div>
+        <div class="stat"><span class="num">v0.3.0</span><span class="lbl">Version</span></div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="section" id="features">
+        <h2>Features</h2>
+        <p class="sub">Everything you need to track what's happening on your USB bus.</p>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>Live Monitoring</h3>
+                <p>Background thread polls WMI every 500ms. Instant detection when devices connect or disconnect.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Event Cards</h3>
+                <p>Color-coded cards with left accent bars. Green for connect, red for disconnect. Timestamp, device name, VID:PID, class, manufacturer.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Neon Theme System</h3>
+                <p>Three built-in themes: Neon (deep dark with neon accents), Light (clean white), and Mids (balanced gray). Switch instantly.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Device List</h3>
+                <p>Full list of currently connected USB devices with class badges, VID:PID identifiers, and manufacturer info.</p>
+            </div>
+            <div class="feature-card">
+                <h3>File Logging</h3>
+                <p>Every connect/disconnect event is logged to device-history.log with millisecond timestamps. Survives restarts.</p>
+            </div>
+            <div class="feature-card">
+                <h3>CLI Mode</h3>
+                <p>Run with --cli for colored terminal output. Same monitoring, no GUI. Pipe it, script it, watch it in a terminal.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="section">
+        <h2>How It Works</h2>
+        <p class="sub">Simple WMI-based polling with diff detection.</p>
+        <div class="steps-grid">
+            <div class="step-card">
+                <h3>Query WMI</h3>
+                <p>Queries Win32_PnPEntity for all USB devices via the wmi crate. Gets name, device ID, description, manufacturer, and PnP class.</p>
+            </div>
+            <div class="step-card">
+                <h3>Snapshot &amp; Diff</h3>
+                <p>Takes a device snapshot every 500ms on a background thread. Diffs against the previous snapshot to find new and removed devices.</p>
+            </div>
+            <div class="step-card">
+                <h3>Log &amp; Display</h3>
+                <p>New events are pushed to the shared state, logged to file, and rendered as neon-styled cards in the GUI.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- TECH STACK -->
+    <section class="section">
+        <h2>Tech Stack</h2>
+        <p class="sub">Rust for speed and safety. Single binary, no runtime dependencies.</p>
+        <div class="tech-chips">
+            <span class="chip">Rust</span>
+            <span class="chip">eframe / egui</span>
+            <span class="chip">WMI</span>
+            <span class="chip">chrono</span>
+            <span class="chip">image</span>
+            <span class="chip">winresource</span>
+        </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section class="section" id="install">
+        <h2>Install</h2>
+        <div class="install-options">
+            <div class="install-card">
+                <h3>cargo install</h3>
+                <code>cargo install --git https://github.com/TrentSterling/device-history</code>
+                <p>Requires Rust toolchain. Builds from source and installs the binary to your cargo bin directory.</p>
+            </div>
+            <div class="install-card">
+                <h3>Build from source</h3>
+                <code>git clone https://github.com/TrentSterling/device-history<br>cd device-history<br>cargo build --release</code>
+                <p>Binary lands at target/release/device-history.exe (~5 MB).</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>Made by <a href="https://tront.xyz">tront</a></p>
+    </footer>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close">&times;</span>
+    <img id="lightbox-img" src="" alt="" onclick="event.stopPropagation()">
+</div>
+
+<script>
+function openLightbox(img) {
+    document.getElementById('lightbox-img').src = img.src;
+    document.getElementById('lightbox-img').alt = img.alt;
+    document.getElementById('lightbox').classList.add('active');
+}
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLightbox();
+});
+</script>
+<script src="/assets/js/tront-theme.js"></script>
+</body>
+</html>
