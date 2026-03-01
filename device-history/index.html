@@ -12,16 +12,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Device History - WTF Just Disconnected?</title>
-    <meta name="description" content="Real-time USB device monitor for Windows. Neon-themed GUI with live connect/disconnect detection, event logging, and CLI mode. Built in Rust.">
+    <meta name="description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 5 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Device History - WTF Just Disconnected?">
-    <meta property="og:description" content="Real-time USB device monitor for Windows. Neon-themed GUI with live connect/disconnect detection, event logging, and CLI mode. Built in Rust.">
+    <meta property="og:description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 5 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
     <meta property="og:url" content="https://tront.xyz/device-history/">
     <meta property="og:site_name" content="Device History">
     <meta property="og:image" content="https://tront.xyz/device-history/screenshot.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Device History - WTF Just Disconnected?">
-    <meta name="twitter:description" content="Real-time USB device monitor for Windows. Neon-themed GUI with live connect/disconnect detection, event logging, and CLI mode. Built in Rust.">
+    <meta name="twitter:description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 5 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
     <meta name="twitter:image" content="https://tront.xyz/device-history/screenshot.png">
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Device History","description":"Real-time USB device monitor for Windows with neon-themed GUI. Detects connect/disconnect events via WMI polling and logs everything.","url":"https://tront.xyz/device-history/","applicationCategory":"UtilitiesApplication","operatingSystem":"Windows","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
     <link rel="icon" href="/favicon.png" type="image/png">
@@ -334,26 +334,27 @@
     <section class="hero">
         <h1>Device History</h1>
         <p class="tagline">WTF just disconnected? Real-time USB device monitor for Windows with a neon-themed GUI, event logging, and CLI mode.</p>
-        <span class="version-tag">v0.4.0 &mdash; system tray &amp; device nicknames</span>
+        <span class="version-tag">v0.8.0 &mdash; Tauri v2 + Svelte 5 rewrite</span>
         <div class="buttons">
-            <a href="https://github.com/TrentSterling/device-history/releases/download/v0.4.0/device-history.exe" class="btn btn-primary" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.4);color:#d4b0ff;font-size:1.05rem;">&#11015; Download Portable .exe (7MB)</a>
+            <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.0/Device-History-0.8.0-setup.exe" class="btn btn-primary" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.4);color:#d4b0ff;font-size:1.05rem;">&#11015; Download Installer (2.4MB)</a>
+            <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.0/device-history.exe" class="btn btn-primary">&#11015; Portable .exe</a>
             <a href="https://github.com/TrentSterling/device-history" class="btn btn-primary">GitHub</a>
             <a href="/blog/posts/device-history/" class="btn btn-primary">Blog Post</a>
         </div>
-        <p style="margin-top:12px;color:var(--text-dim);font-size:0.85rem;">No installer. No setup. No dependencies. Just run it.</p>
+        <p style="margin-top:12px;color:var(--text-dim);font-size:0.85rem;">Complete Tauri v2 + Svelte 5 rewrite. Glassmorphism UI, 5 themes, full emoji support.</p>
     </section>
 
     <!-- SCREENSHOT -->
     <div class="screenshot-frame" onclick="openLightbox(this.querySelector('img'))">
-        <img src="screenshot.png" alt="Device History v0.4.0 - Neon dark mode USB monitor">
+        <img src="screenshot.png" alt="Device History v0.8.0 - Glassmorphism USB monitor with 5 themes">
     </div>
 
     <!-- STATS -->
     <div class="stats-bar">
         <div class="stat"><span class="num">500ms</span><span class="lbl">Poll Rate</span></div>
-        <div class="stat"><span class="num">3</span><span class="lbl">Themes</span></div>
-        <div class="stat"><span class="num">~7MB</span><span class="lbl">Binary Size</span></div>
-        <div class="stat"><span class="num">v0.4.0</span><span class="lbl">Version</span></div>
+        <div class="stat"><span class="num">5</span><span class="lbl">Themes</span></div>
+        <div class="stat"><span class="num">2.4MB</span><span class="lbl">Installer</span></div>
+        <div class="stat"><span class="num">v0.8.0</span><span class="lbl">Version</span></div>
     </div>
 
     <!-- FEATURES -->
@@ -370,12 +371,16 @@
                 <p>Color-coded cards with left accent bars. Green for connect, red for disconnect. Timestamp, device name, VID:PID, class, manufacturer.</p>
             </div>
             <div class="feature-card">
-                <h3>Neon Theme System</h3>
-                <p>Three built-in themes: Neon (deep dark with neon accents), Light (clean white), and Mids (balanced gray). Switch instantly.</p>
+                <h3>5 Premium Themes</h3>
+                <p>Neon, Catppuccin Mocha, Dracula, Nord, and Solarized Dark. Smooth 300ms transition between them. Glassmorphism panels with backdrop blur.</p>
             </div>
             <div class="feature-card">
-                <h3>Device List</h3>
-                <p>Full list of currently connected USB devices with class badges, VID:PID identifiers, and manufacturer info.</p>
+                <h3>Known Devices Database</h3>
+                <p>Remembers every device ever connected. Search, sort by 5 modes, set nicknames, view first/last seen timestamps and connection count.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Storage Detail Panel</h3>
+                <p>Click any storage device to see animated capacity bars (green→yellow→red), volume info, model, serial, firmware, interface type.</p>
             </div>
             <div class="feature-card">
                 <h3>File Logging</h3>
@@ -434,13 +439,11 @@
         <p class="sub">Rust for speed and safety. Single binary, no runtime dependencies.</p>
         <div class="tech-chips">
             <span class="chip">Rust</span>
-            <span class="chip">eframe / egui</span>
-            <span class="chip">tray-icon</span>
+            <span class="chip">Tauri v2</span>
+            <span class="chip">Svelte 5</span>
             <span class="chip">WMI</span>
-            <span class="chip">chrono</span>
-            <span class="chip">serde / json</span>
-            <span class="chip">image</span>
-            <span class="chip">winresource</span>
+            <span class="chip">CSS Glassmorphism</span>
+            <span class="chip">parking_lot</span>
         </div>
     </section>
 
@@ -450,8 +453,8 @@
         <div class="install-options" style="grid-template-columns:1fr 1fr 1fr;">
             <div class="install-card" style="border-color:rgba(168,85,247,0.3);">
                 <h3 style="color:var(--accent);">Download .exe</h3>
-                <a href="https://github.com/TrentSterling/device-history/releases/download/v0.4.0/device-history.exe" class="btn btn-primary" style="display:block;text-align:center;background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);color:#d4b0ff;margin-bottom:4px;">&#11015; device-history.exe</a>
-                <p>~7 MB standalone binary. No installer needed, just run it. Windows only.</p>
+                <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.0/Device-History-0.8.0-setup.exe" class="btn btn-primary" style="display:block;text-align:center;background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);color:#d4b0ff;margin-bottom:4px;">&#11015; Installer (2.4 MB)</a>
+                <p>2.4 MB NSIS installer. Also available: <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.0/device-history.exe">Portable .exe (6.2 MB)</a> or <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.0/Device-History-0.8.0.msi">MSI (3.3 MB)</a></p>
             </div>
             <div class="install-card">
                 <h3>cargo install</h3>
