@@ -12,16 +12,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Device History - WTF Just Disconnected?</title>
-    <meta name="description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 3 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
+    <meta name="description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 4 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Device History - WTF Just Disconnected?">
-    <meta property="og:description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 3 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
+    <meta property="og:description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 4 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
     <meta property="og:url" content="https://tront.xyz/device-history/">
     <meta property="og:site_name" content="Device History">
     <meta property="og:image" content="https://tront.xyz/device-history/screenshot.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Device History - WTF Just Disconnected?">
-    <meta name="twitter:description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 3 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
+    <meta name="twitter:description" content="Real-time USB device monitor for Windows. Premium glassmorphism UI with 4 themes, animated capacity bars, device database, and CLI mode. Built with Rust + Tauri v2 + Svelte 5.">
     <meta name="twitter:image" content="https://tront.xyz/device-history/screenshot.png">
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Device History","description":"Real-time USB device monitor for Windows with neon-themed GUI. Detects connect/disconnect events via WMI polling and logs everything.","url":"https://tront.xyz/device-history/","applicationCategory":"UtilitiesApplication","operatingSystem":"Windows","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
     <link rel="icon" href="/favicon.png" type="image/png">
@@ -334,18 +334,18 @@
     <section class="hero">
         <h1>Device History</h1>
         <p class="tagline">WTF just disconnected? Real-time USB device monitor for Windows with a neon-themed GUI, event logging, and CLI mode.</p>
-        <span class="version-tag">v0.8.2 - Tauri v2 + Svelte 5 rewrite</span>
+        <span class="version-tag">v0.8.3 - Tauri v2 + Svelte 5 rewrite</span>
         <div class="buttons">
-            <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.2/device-history.exe" class="btn btn-primary" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.4);color:#d4b0ff;font-size:1.05rem;">&#11015; Download Portable .exe</a>
+            <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.3/device-history.exe" class="btn btn-primary" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.4);color:#d4b0ff;font-size:1.05rem;">&#11015; Download Portable .exe</a>
             <a href="https://github.com/TrentSterling/device-history" class="btn btn-primary">GitHub</a>
             <a href="/blog/posts/device-history/" class="btn btn-primary">Blog Post</a>
         </div>
-        <p style="margin-top:12px;color:var(--text-dim);font-size:0.85rem;">Complete Tauri v2 + Svelte 5 rewrite. Glassmorphism UI, 3 themes, full emoji support.</p>
+        <p style="margin-top:12px;color:var(--text-dim);font-size:0.85rem;">Complete Tauri v2 + Svelte 5 rewrite. Glassmorphism UI, 4 themes, full emoji support.</p>
     </section>
 
     <!-- SCREENSHOTS -->
     <div class="screenshot-frame" onclick="openLightbox(this.querySelector('img'))">
-        <img src="screenshot.png" alt="Device History v0.8.2 - Monitor tab with live device tracking">
+        <img src="screenshot.png" alt="Device History v0.8.3 - Monitor tab with live device tracking">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:0 auto 32px;">
         <div class="screenshot-frame" style="margin:0;" onclick="openLightbox(this.querySelector('img'))">
@@ -359,9 +359,9 @@
     <!-- STATS -->
     <div class="stats-bar">
         <div class="stat"><span class="num">500ms</span><span class="lbl">Poll Rate</span></div>
-        <div class="stat"><span class="num">3</span><span class="lbl">Themes</span></div>
+        <div class="stat"><span class="num">4</span><span class="lbl">Themes</span></div>
         <div class="stat"><span class="num">~7MB</span><span class="lbl">Binary Size</span></div>
-        <div class="stat"><span class="num">v0.8.2</span><span class="lbl">Version</span></div>
+        <div class="stat"><span class="num">v0.8.3</span><span class="lbl">Version</span></div>
     </div>
 
     <!-- FEATURES -->
@@ -378,8 +378,8 @@
                 <p>Color-coded cards with left accent bars. Green for connect, red for disconnect. Timestamp, device name, VID:PID, class, manufacturer.</p>
             </div>
             <div class="feature-card">
-                <h3>3 Premium Themes</h3>
-                <p>Neon, Dracula, and Catppuccin Mocha. Smooth 300ms transitions. Glassmorphism panels with backdrop blur.</p>
+                <h3>4 Premium Themes</h3>
+                <p>Neon, Dracula, Catppuccin Mocha, and Pastel (light). Smooth transitions with Material Design easing. Glassmorphism panels with backdrop blur.</p>
             </div>
             <div class="feature-card">
                 <h3>Known Devices Database</h3>
@@ -481,7 +481,7 @@
         <div class="install-options" style="grid-template-columns:1fr 1fr;">
             <div class="install-card" style="border-color:rgba(168,85,247,0.3);">
                 <h3 style="color:var(--accent);">Download .exe</h3>
-                <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.2/device-history.exe" class="btn btn-primary" style="display:block;text-align:center;background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);color:#d4b0ff;margin-bottom:4px;">&#11015; Portable .exe (~7 MB)</a>
+                <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.3/device-history.exe" class="btn btn-primary" style="display:block;text-align:center;background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);color:#d4b0ff;margin-bottom:4px;">&#11015; Portable .exe (~7 MB)</a>
                 <p>Standalone binary. No installer needed, just run it. Windows only.</p>
             </div>
             <div class="install-card">
