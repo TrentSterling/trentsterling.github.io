@@ -7,6 +7,7 @@ import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, ownsFactory, getFactories, employeeCost } from './factories.js';
 import { getRank, getLifetime, getRankProgress, getSellBonus } from './corp.js';
 import { getToolName, nextUpgrade } from './equipment.js';
+import { healValue } from './foods.js';
 
 // Handlers registered once by main.js (avoids threading through every showShop call)
 let _onUpgrade = null;
@@ -155,7 +156,16 @@ export function updateBag(inventory, onEat) {
     bagEl.innerHTML = '<div class="bag-title">🎒 Bag <span class="bag-hint">click to eat</span></div>' + held
         .map(([id, v]) => `<div class="bag-chip" data-id="${id}"><span>${v.name}</span><span class="n">×${inventory.count(id)}</span></div>`)
         .join('');
-    if (onEat) bagEl.querySelectorAll('.bag-chip').forEach(c => c.addEventListener('click', () => onEat(c.dataset.id)));
+    bagEl.querySelectorAll('.bag-chip').forEach(c => {
+        const id = c.dataset.id;
+        if (onEat) c.addEventListener('click', () => onEat(id));
+        // Hover: show what it's worth + how much it heals, so you can choose to eat or sell
+        const heal = healValue(id);
+        const sell = ITEMS[id] ? ITEMS[id].sellPrice : 0;
+        const tip = `Sells 🪙${sell} · ${heal > 0 ? '💚 +' + heal + ' health' : 'not food'}`;
+        c.addEventListener('mouseenter', (e) => showTooltip(tip, e.clientX, e.clientY - 50));
+        c.addEventListener('mouseleave', hideTooltip);
+    });
 }
 
 // --- Health bar ---

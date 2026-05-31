@@ -44,6 +44,7 @@ import { createSpatialHash } from '../js/spatialhash.js';
 import { TOOL_TIERS, getToolLevel, getToolRadius, nextUpgrade, upgradeTool, tilesInRadius, serializeEquipment, loadEquipment } from '../js/equipment.js';
 import { nextMorning } from '../js/home.js';
 import { terrainHeight, AMP } from '../js/terrain.js';
+import { healValue } from '../js/foods.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -854,6 +855,19 @@ check('livestock get hungry over time, and feeding tops them back up', () => {
     assert(fed && fed.species === 'chicken', 'feedNearest did not reach the chicken');
     assert(getFedLevel('chicken') === 1, 'feeding did not restore hunger to full');
     return `hungry ${before.toFixed(2)} → fed 1.00`;
+});
+
+// ---------- FOOD / HEAL VALUES (bag tooltips) ----------
+
+check('heal value: potions heal most, herbs/flowers beat plain crops, wood is not food', () => {
+    assert(healValue('wood') === 0, 'wood is not food');
+    assert(healValue('grand_elixir') === 45, 'crafted potion should heal 45');
+    assert(healValue('mint') === 16, 'mint (herb) should heal 16');
+    assert(healValue('rose') === 12, 'rose (flower) should heal 12');
+    assert(healValue('carrot') === 6, 'plain crop should heal 6');
+    assert(healValue('grand_elixir') > healValue('mint') && healValue('mint') > healValue('rose') && healValue('rose') > healValue('carrot'),
+        'heal ordering should be potion > herb > flower > crop');
+    return 'potion 45 > herb 16 > flower 12 > crop 6; wood 0';
 });
 
 // ---------- TERRAIN HEIGHTMAP (#39) ----------
