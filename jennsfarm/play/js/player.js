@@ -11,6 +11,7 @@ let targetX = 24, targetZ = 24;
 let currentX = 24, currentZ = 24;
 let moving = false;
 let stuckTimer = 0;
+let path = null, pathIdx = 0; // optional A* waypoint queue (route around obstacles)
 let bodyMesh, ponytail; // for gender appearance
 let gender = 'girl';
 const SPEED = 5; // tiles per second
@@ -122,11 +123,37 @@ export function setHeldTool(toolId) {
     if (tool) heldGroup.add(tool);
 }
 
+// Walk straight to a tile (soft collision handles the rest). Clears any path.
 export function moveTo(x, z) {
     targetX = x;
     targetZ = z;
+    path = null;
     moving = true;
     stuckTimer = 0;
+}
+
+// Follow an A* route (array of {x,z} waypoints) so Jenn rounds obstacles.
+export function moveAlong(waypoints) {
+    if (!waypoints || !waypoints.length) return;
+    path = waypoints;
+    pathIdx = 0;
+    targetX = waypoints[0].x;
+    targetZ = waypoints[0].z;
+    moving = true;
+    stuckTimer = 0;
+}
+
+// Advance to the next waypoint; returns false when the route is finished.
+function advanceWaypoint() {
+    if (path && pathIdx < path.length - 1) {
+        pathIdx++;
+        targetX = path[pathIdx].x;
+        targetZ = path[pathIdx].z;
+        stuckTimer = 0;
+        return true;
+    }
+    path = null;
+    return false;
 }
 
 export function updatePlayer(dt) {
@@ -139,7 +166,7 @@ export function updatePlayer(dt) {
     if (dist < 0.05) {
         currentX = targetX;
         currentZ = targetZ;
-        moving = false;
+        if (!advanceWaypoint()) moving = false;   // reached final waypoint
     } else {
         const step = Math.min(SPEED * dt, dist);
         const mx = (dx / dist) * step;
@@ -147,6 +174,7 @@ export function updatePlayer(dt) {
 
         // Soft collision: glide through clear ground, slide along walls (avoidance),
         // but if you stay genuinely pinned and keep pushing, phase through after a beat.
+        // (A* already routes around static solids; this just handles dynamic nudges.)
         if (!blocked(currentX + mx, currentZ + mz)) {
             currentX += mx; currentZ += mz; stuckTimer = 0;
         } else if (Math.abs(mx) > 0.001 && !blocked(currentX + mx, currentZ)) {
@@ -158,7 +186,10 @@ export function updatePlayer(dt) {
             if (stuckTimer > PUSH_THROUGH) { currentX += mx; currentZ += mz; } // push through
         }
 
-        if (Math.hypot(targetX - currentX, targetZ - currentZ) < 0.05) { moving = false; stuckTimer = 0; }
+        if (Math.hypot(targetX - currentX, targetZ - currentZ) < 0.05) {
+            currentX = targetX; currentZ = targetZ;
+            if (!advanceWaypoint()) { moving = false; stuckTimer = 0; }
+        }
 
         // Face movement direction
         if (dist > 0.1) playerGroup.rotation.y = Math.atan2(dx, dz);
@@ -187,6 +218,7 @@ export function setPlayerPos(x, z) {
     currentZ = z;
     targetX = x;
     targetZ = z;
+    path = null;
     moving = false;
     if (playerGroup) {
         playerGroup.position.set(x, 0.07, z);
