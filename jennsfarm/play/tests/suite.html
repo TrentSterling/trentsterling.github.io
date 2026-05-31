@@ -64,7 +64,7 @@ import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
 import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
 import { harvestQuality } from '../js/quality.js';
-import { hideAllOverlays, anyOverlayOpen } from '../js/overlays.js';
+import { hideAllOverlays, anyOverlayOpen, initOverlayChrome } from '../js/overlays.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -191,6 +191,21 @@ check('overlays: ESC/backdrop close every menu generically (#56)', () => {
     assert(!anyOverlayOpen(), 'no overlay should remain open');
     a.remove(); b.remove();
     return 'open detected, all closed';
+});
+
+check('overlays: every panel gets one corner ✕ that closes it (#56)', () => {
+    const ov = document.createElement('div'); ov.className = 'overlay';
+    const panel = document.createElement('div'); panel.className = 'overlay-panel';
+    ov.appendChild(panel); document.body.appendChild(ov);
+    initOverlayChrome(ov);
+    const x = panel.querySelector(':scope > .overlay-x');
+    assert(x, 'no corner ✕ was added');
+    initOverlayChrome(ov); // idempotent — must not duplicate
+    assert(panel.querySelectorAll('.overlay-x').length === 1, 'duplicate ✕ added on re-init');
+    x.click();
+    assert(ov.classList.contains('hidden'), 'corner ✕ did not close the overlay');
+    ov.remove();
+    return 'corner ✕ added once, closes panel';
 });
 
 // ---------- TREE CHOPPING (render path) ----------

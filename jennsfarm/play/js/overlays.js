@@ -14,6 +14,25 @@ export function anyOverlayOpen(root = document) {
     return !!root.querySelector('.overlay:not(.hidden)');
 }
 
+// Give every panel a consistent corner ✕ in the top-right (in addition to the
+// bottom "Close"), so closing a menu is always one obvious click. Idempotent —
+// safe to call again after new panels are added. (#56)
+export function initOverlayChrome(root = document) {
+    root.querySelectorAll('.overlay-panel').forEach(panel => {
+        if (panel.querySelector(':scope > .overlay-x')) return; // already has one
+        const x = document.createElement('button');
+        x.className = 'overlay-x';
+        x.type = 'button';
+        x.setAttribute('aria-label', 'Close');
+        x.textContent = '✕';
+        x.addEventListener('click', () => {
+            const ov = panel.closest('.overlay');
+            if (ov) ov.classList.add('hidden');
+        });
+        panel.prepend(x);
+    });
+}
+
 // Click the dark backdrop (outside the panel) to dismiss that overlay. A single
 // delegated listener covers every overlay, including ones created later. Call once.
 export function initOverlayDismiss(root = document) {
