@@ -10,6 +10,7 @@ import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showS
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
+import { updateChunks } from './chunks.js';
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
 import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
@@ -276,6 +277,9 @@ function onCollectProduce(itemId, qty) {
     triggerAutoSave();
 }
 
+// Stream the first ring of terrain so Jenn doesn't start staring into the void
+updateChunks(getPlayerWorldPos().x, getPlayerWorldPos().z);
+
 refreshUI();
 
 // --- Input ---
@@ -322,8 +326,9 @@ container.addEventListener('click', (e) => {
     const tx = hit.x;
     const tz = hit.z;
 
-    // Clamp to world bounds
-    if (tx < 0 || tx >= WORLD_SIZE || tz < 0 || tz >= WORLD_SIZE) return;
+    // Infinite world: you can click anywhere out in the wild (no hard edge),
+    // just guard against a degenerate horizon hit.
+    if (!Number.isFinite(tx) || !Number.isFinite(tz)) return;
 
     const tile = getTile(tx, tz);
 
@@ -1091,6 +1096,7 @@ function gameLoop(now) {
     if (Object.keys(made).length) refreshUI();
 
     const ppos = getPlayerWorldPos();
+    updateChunks(ppos.x, ppos.z); // stream infinite terrain around Jenn
     updateAnimals(dt, ppos, onCollectProduce);
     updateGrandpa(dt, {
         coins, day, name: playerName,

@@ -490,13 +490,13 @@ export function setTileType(x, z, type) {
     createOverlay(x, z, type);
 }
 
-/** Solid tiles block movement: water, buildings, the cottage, and world edges.
- *  Wild ground (no farm tile) is walkable so you can roam to chop trees. */
+/** Solid tiles block movement: water, buildings, the cottage. Everything else —
+ *  including the endless wild beyond the original box — is walkable, so Jenn can
+ *  roam out into the streamed terrain chunks (chunks.js) forever. */
 export function isSolidTile(x, z) {
     const ix = Math.round(x), iz = Math.round(z);
-    if (ix < 0 || ix >= WORLD_SIZE || iz < 0 || iz >= WORLD_SIZE) return true;
     const t = farmTiles.get(tileKey(ix, iz));
-    if (!t) return false;
+    if (!t) return false; // wild / ungenerated ground is open
     return t.type === TILE.WATER || t.type === TILE.SHOP || t.type === TILE.MARKET
         || t.type === TILE.BARN || t.type === TILE.HOUSE;
 }
