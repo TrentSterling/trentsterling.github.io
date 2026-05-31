@@ -9,12 +9,30 @@ import { getRank, getLifetime, getRankProgress, getSellBonus } from './corp.js';
 import { getToolName, nextUpgrade } from './equipment.js';
 import { healValue } from './foods.js';
 import { getHiveCount, HIVE_COST } from './bees.js';
+import { hasFountain, FOUNTAIN_COST } from './fountain.js';
+import { hasPet, PET_COST } from './pets.js';
 
 // Handlers registered once by main.js (avoids threading through every showShop call)
-let _onUpgrade = null, _onBuyHive = null;
-export function setShopHandlers({ onUpgrade, onBuyHive } = {}) {
+let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null;
+export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet } = {}) {
     if (onUpgrade) _onUpgrade = onUpgrade;
     if (onBuyHive) _onBuyHive = onBuyHive;
+    if (onBuyFountain) _onBuyFountain = onBuyFountain;
+    if (onBuyPet) _onBuyPet = onBuyPet;
+}
+
+// Small helper for the emoji-based "buildables" rows in the shop
+function shopBuildRow(emoji, label, note, cost, can, owned, onBuy) {
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    if (owned) {
+        div.innerHTML = `<div class="item-info"><span class="item-name">${emoji} ${label}</span><span class="item-qty">${note}</span></div><span class="item-price">✓</span>`;
+    } else {
+        if (!can) div.classList.add('cant-afford');
+        div.innerHTML = `<div class="item-info"><span class="item-name">${emoji} ${label}</span><span class="item-qty">${note}</span></div><span class="item-price">🪙 ${cost}</span>`;
+        if (can && onBuy) div.addEventListener('click', () => onBuy());
+    }
+    return div;
 }
 
 // DOM refs
@@ -354,21 +372,10 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
         }
     }
 
-    // Beehive — buildable; makes honey over time (#44)
-    if (_onBuyHive) {
-        const div = document.createElement('div');
-        div.className = 'shop-item';
-        const can = coins >= HIVE_COST;
-        if (!can) div.classList.add('cant-afford');
-        div.innerHTML = `
-            <div class="item-info">
-                <span class="item-name">🐝 Beehive</span>
-                <span class="item-qty">makes honey · ${getHiveCount()} built</span>
-            </div>
-            <span class="item-price">🪙 ${HIVE_COST}</span>`;
-        if (can) div.addEventListener('click', () => _onBuyHive());
-        shopItems.appendChild(div);
-    }
+    // Buildables: beehive (#44), wishing fountain (#47), pet (#48)
+    if (_onBuyHive) shopItems.appendChild(shopBuildRow('🐝', 'Beehive', `makes honey · ${getHiveCount()} built`, HIVE_COST, coins >= HIVE_COST, getHiveCount() >= 6, _onBuyHive));
+    if (_onBuyFountain) shopItems.appendChild(shopBuildRow('⛲', 'Wishing Fountain', 'toss a coin for luck', FOUNTAIN_COST, coins >= FOUNTAIN_COST, hasFountain(), _onBuyFountain));
+    if (_onBuyPet) shopItems.appendChild(shopBuildRow('🐕', 'Puppy', 'follows you + fetches drops', PET_COST, coins >= PET_COST, hasPet(), _onBuyPet));
 
     shopOverlay.classList.remove('hidden');
 }

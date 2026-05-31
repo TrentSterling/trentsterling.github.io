@@ -233,7 +233,7 @@ export function playerReaction(species, ax, az, px, pz) {
     return null; // honey badger don't care; distant / other animals carry on
 }
 
-export function updateAnimals(dt, playerPos, onCollect) {
+export function updateAnimals(dt, playerPos, onCollect, petPos) {
     const now = performance.now();
 
     // Rebuild the spatial index for this frame's nearest-queries (cheap, O(n))
@@ -326,7 +326,9 @@ export function updateAnimals(dt, playerPos, onCollect) {
         dp.t += dt;
         dp.grp.position.y = dp.baseY + Math.sin(dp.t * 3) * 0.05;
         dp.grp.rotation.y += dt * 1.5;
-        if (playerPos && Math.hypot(dp.x - playerPos.x, dp.z - playerPos.z) < 1.2) {
+        const nearPlayer = playerPos && Math.hypot(dp.x - playerPos.x, dp.z - playerPos.z) < 1.2;
+        const nearPet = petPos && Math.hypot(dp.x - petPos.x, dp.z - petPos.z) < 1.0; // the pet fetches drops too
+        if (nearPlayer || nearPet) {
             scene.remove(dp.grp);
             dp.grp.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
             drops.splice(i, 1);
