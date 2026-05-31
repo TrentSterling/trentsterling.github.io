@@ -5,6 +5,7 @@ import { createToolIcon } from './textures.js';
 import { ANIMALS } from './animals.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, ownsFactory, getFactories, employeeCost } from './factories.js';
+import { getRank, getLifetime, getRankProgress, getSellBonus } from './corp.js';
 
 // DOM refs
 const hudCoins = document.getElementById('hud-coins');
@@ -383,6 +384,21 @@ export function hideCraft() {
 
 export function showFactory(coins, inventory, onBuild, onHire) {
     factoryItems.innerHTML = '';
+
+    // Corporate-rank banner: your company value + the climb to Shampoo Corp (corp.js)
+    const rank = getRank();
+    const prog = Math.round(getRankProgress() * 100);
+    const nextLine = rank.next
+        ? `Next: ${rank.next.emoji} ${rank.next.name} at 🪙${rank.next.need.toLocaleString()}`
+        : 'Top rank reached! 🎉';
+    const banner = document.createElement('div');
+    banner.className = 'corp-banner';
+    banner.innerHTML = `
+        <div class="corp-top"><span class="corp-rank">${rank.emoji} ${rank.name}</span><span class="corp-bonus">+${Math.round(getSellBonus() * 100)}% sales</span></div>
+        <div class="corp-sub">Company value 🪙${getLifetime().toLocaleString()} · ${nextLine}</div>
+        <div class="corp-track"><div class="corp-fill" style="width:${prog}%"></div></div>`;
+    factoryItems.appendChild(banner);
+
     for (const type in FACTORY_TYPES) {
         const def = FACTORY_TYPES[type];
         const owns = ownsFactory(type);

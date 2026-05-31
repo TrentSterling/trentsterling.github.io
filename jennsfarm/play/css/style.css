@@ -335,4 +335,18 @@ body {
 }
 .craft-mix:disabled { background: #5a4632; color: #9b876b; cursor: not-allowed; }
 
+/* ---- Corporate-rank banner (factory panel) ---- */
+.corp-banner {
+    background: linear-gradient(180deg, rgba(214,176,116,0.16), rgba(214,176,116,0.06));
+    border: 1px solid var(--edge); border-radius: 12px; padding: 10px 12px; margin: 0 0 10px;
+}
+.corp-top { display: flex; align-items: center; justify-content: space-between; }
+.corp-rank { font: 800 16px var(--font); color: var(--gold); }
+.corp-bonus { font: 800 12px var(--font); color: #9be88a; background: rgba(110,208,110,0.14);
+    padding: 2px 8px; border-radius: 999px; }
+.corp-sub { font-size: 11px; color: var(--muted); margin: 4px 0 7px; }
+.corp-track { height: 7px; background: rgba(0,0,0,0.28); border-radius: 999px; overflow: hidden; }
+.corp-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #ff9f1c); border-radius: 999px;
+    transition: width 0.4s ease; }
+
 /* Tile hover highlight is done in Three.js, not CSS */
