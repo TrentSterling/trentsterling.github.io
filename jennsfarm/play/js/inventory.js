@@ -40,6 +40,7 @@ export const ITEMS = {
     egg:       { name: 'Egg',       type: 'crop', sellPrice: 16, icon: 'egg' },
     cow_milk:  { name: 'Cow Milk',  type: 'crop', sellPrice: 34, icon: 'cow_milk' },
     goat_milk: { name: 'Goat Milk', type: 'crop', sellPrice: 52, icon: 'goat_milk' },
+    honey:     { name: 'Honey',     type: 'crop', sellPrice: 75, icon: 'honey' }, // from beehives (#44)
 
     // --- Crafted goods (made in the Workshop, sold at market) ---
     cheese:       { name: 'Goat Cheese',  type: 'crop', crafted: true, sellPrice: 130, icon: 'cheese' },

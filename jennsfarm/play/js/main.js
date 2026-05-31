@@ -13,6 +13,7 @@ import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, serializeM
 import { healValue } from './foods.js';
 import { updateWeather } from './weather.js';
 import { updateFireflies } from './fireflies.js';
+import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -124,6 +125,7 @@ if (saved) {
     if (saved.crates) loadCrates(saved.crates);
     if (saved.equipment) loadEquipment(saved.equipment);
     if (saved.mail) loadMail(saved.mail);
+    if (saved.hives) loadHives(saved.hives);
     notify('Game loaded!');
 }
 
@@ -164,6 +166,8 @@ if (saved && saved.lastSaved) {
         let facCount = 0;
         for (const k in facProd) facCount += facProd[k];
         const crateCount = creditOfflineCrates(away); // delivery trucks left crates by the road
+        const honeyOff = creditOfflineHoney(away); // beehives kept making honey
+        if (honeyOff) inventory.add('honey', honeyOff);
         const sales = offlineBuyerSales(inventory, away); // roadside buyers came by
         if (sales.count) {
             const bonused = Math.round(sales.coins * (1 + getSellBonus()));
@@ -177,6 +181,7 @@ if (saved && saved.lastSaved) {
         if (fruit) bits.push(`+${fruit} fruit`);
         if (facCount) bits.push(`+${facCount} from factories`);
         if (crateCount) bits.push(`📦 ${crateCount} crate${crateCount > 1 ? 's' : ''} waiting`);
+        if (honeyOff) bits.push(`+${honeyOff} honey`);
         if (sales.count) bits.push(`🪙${sales.coins} from ${sales.count} roadside sales`);
         const mins = Math.round(away / 60);
         setTimeout(() => notify(`🌙 While you were away (${mins}m): ${bits.length ? bits.join(', ') : 'the farm rested'}.`), 900);
@@ -695,7 +700,18 @@ function buyToolUpgrade(tool) {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
-setShopHandlers({ onUpgrade: buyToolUpgrade });
+// Beehive: buy → auto-place near the farm; bees make honey over time (#44)
+function buyBeehive() {
+    if (coins < HIVE_COST) { playDeny(); notify("Can't afford a beehive!"); return; }
+    if (!buyHivePlacement()) { playDeny(); notify('No room for more hives!'); return; }
+    coins -= HIVE_COST;
+    playExpand();
+    notify('Beehive placed! 🐝 Bees will make honey nearby.');
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
+setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive });
 
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
@@ -1198,6 +1214,7 @@ function triggerAutoSave() {
             crates: serializeCrates(),
             equipment: serializeEquipment(),
             mail: serializeMail(),
+            hives: serializeHives(),
             lastSaved: Date.now(),
         });
     }, 1000);
@@ -1267,6 +1284,10 @@ function gameLoop(now) {
     // Factories quietly convert raw goods (grapes, milk) into products over time
     const made = updateFactories(dt, inventory);
     if (Object.keys(made).length) refreshUI();
+
+    // Beehives slowly make honey
+    const honey = updateBees(dt, gameTime);
+    if (honey) { inventory.add('honey', honey); refreshUI(); }
 
     // Delivery truck periodically drops a crate by the road — click it to open
     const deliveredCrate = updateCrates(dt);
