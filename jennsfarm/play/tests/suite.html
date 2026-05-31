@@ -36,7 +36,7 @@ import { advanceCropsOffline } from '../js/offline.js';
 import { initBuyers, updateBuyers } from '../js/buyers.js';
 import { createPlayer, setHeldTool, setPlayerGender } from '../js/player.js';
 import { getSeason } from '../js/seasons.js';
-import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnimalCount, getSpeciesCount, playerReaction } from '../js/animals.js';
+import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnimalCount, getSpeciesCount, playerReaction, updateAnimals, fedRate, feedNearest, getFedLevel, getLivestock } from '../js/animals.js';
 import { CHUNK, worldToChunk, desiredChunks, updateChunks, getLoadedChunkCount, resetChunks } from '../js/chunks.js';
 import { findPath } from '../js/pathfind.js';
 import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates, getCrateCount, serializeCrates, loadCrates } from '../js/crates.js';
@@ -829,6 +829,30 @@ check('mowing clears every weed within the radius in one sweep', () => {
     assert(getWeedCount() === 0, 'weeds remained after a full sweep');
     clearAllWeeds();
     return `mowed all ${mowed} in one sweep`;
+});
+
+// ---------- ANIMAL FEEDING (#23) ----------
+
+check('hunger scales production but never stops it (fedRate)', () => {
+    assert(fedRate(1) === 1, 'well-fed should be full rate');
+    assert(fedRate(0) === 0.5, 'starving should be half rate, never zero');
+    assert(fedRate(0.5) > fedRate(0) && fedRate(0.5) < fedRate(1), 'rate must be monotonic in fed');
+    assert(fedRate(undefined) === 1, 'undefined fed defaults to full');
+    return 'fed 1→1x, 0→0.5x, monotonic';
+});
+
+check('livestock get hungry over time, and feeding tops them back up', () => {
+    ensureWorld();
+    initAnimals(false);
+    buyAnimalEntity('chicken');
+    for (let i = 0; i < 300; i++) updateAnimals(0.5, { x: -999, z: -999 }, () => {}); // 150s, player far
+    const before = getFedLevel('chicken');
+    assert(before !== null && before < 1, `chicken should be hungry, got ${before}`);
+    const chick = getLivestock().find(a => a.species === 'chicken');
+    const fed = feedNearest(chick.x, chick.z);
+    assert(fed && fed.species === 'chicken', 'feedNearest did not reach the chicken');
+    assert(getFedLevel('chicken') === 1, 'feeding did not restore hunger to full');
+    return `hungry ${before.toFixed(2)} → fed 1.00`;
 });
 
 // ---------- HOME (sleep) ----------

@@ -10,6 +10,14 @@ import { createSpatialHash } from './spatialhash.js';
 const FARM_CX = 24, FARM_CZ = 24;
 const PERCEPTION = 18;                  // how far an animal notices others (tiles)
 const animalHash = createSpatialHash(6); // rebuilt each frame for fast nearest-queries
+const FEED_DECAY = 1 / 600;             // hunger drains to empty over ~600s of play
+
+// Production speed multiplier from how fed an animal is: well fed → full speed,
+// starving → half speed (never zero, so the game stays cosy). #23
+export function fedRate(fed) {
+    const f = (typeof fed === 'number') ? Math.max(0, Math.min(1, fed)) : 1;
+    return 0.5 + 0.5 * f;
+}
 
 // --- Definitions ---
 export const ANIMALS = {
@@ -132,6 +140,7 @@ function spawn(species, x, z) {
         species, kind: def.kind || (species === 'grandpa' ? 'npc' : 'wildlife'),
         grp, x, z, tx: x, tz: z, idle: Math.random() * 3,
         prodT: def.every || 0, speed: def.speed || 1.2, flee: false, hop: 0,
+        fed: 1, // 1 = well fed (full production), drains over time (#23)
         home: { x, z }, range: species === 'grandpa' ? 4 : (def.kind === 'livestock' ? 6 : 11),
     });
 }
@@ -298,12 +307,15 @@ export function updateAnimals(dt, playerPos, onCollect) {
             a.grp.position.y += Math.sin(Math.max(0, a.hop) / 0.45 * Math.PI) * 0.28;
         }
 
-        // --- Produce ---
-        if (a.prodT > 0 && ANIMALS[a.species] && ANIMALS[a.species].produce) {
-            a.prodT -= dt;
-            if (a.prodT <= 0) {
-                a.prodT = ANIMALS[a.species].every;
-                makeDrop(ANIMALS[a.species].produce, a.x, a.z);
+        // --- Hunger + produce ---
+        if (a.kind === 'livestock') {
+            a.fed = Math.max(0, a.fed - FEED_DECAY * dt); // gets hungry over time
+            if (a.prodT > 0 && ANIMALS[a.species] && ANIMALS[a.species].produce) {
+                a.prodT -= dt * fedRate(a.fed); // hungry animals produce slower (never stop)
+                if (a.prodT <= 0) {
+                    a.prodT = ANIMALS[a.species].every;
+                    makeDrop(ANIMALS[a.species].produce, a.x, a.z);
+                }
             }
         }
     }
@@ -328,12 +340,15 @@ export function updateAnimals(dt, playerPos, onCollect) {
 export function serializeAnimals() {
     return animals
         .filter(a => a.kind === 'livestock')
-        .map(a => ({ s: a.species, x: a.x, z: a.z }));
+        .map(a => ({ s: a.species, x: a.x, z: a.z, fed: a.fed }));
 }
 
 export function loadAnimals(data) {
     if (!data) return;
-    for (const d of data) spawn(d.s, d.x, d.z);
+    for (const d of data) {
+        spawn(d.s, d.x, d.z);
+        if (typeof d.fed === 'number') animals[animals.length - 1].fed = d.fed;
+    }
 }
 
 /** Nearest uncollected produce drop (egg/milk) to a point, for AFK collecting. */
@@ -348,6 +363,30 @@ export function petNearest(x, z) {
     if (!best) return null;
     best.hop = 0.45;
     return { species: best.species, x: best.x, z: best.z };
+}
+
+// Feed the nearest livestock to (x,z): tops its hunger back to full. Returns the
+// animal {species,x,z} or null if none is close enough. #23
+export function feedNearest(x, z) {
+    let best = null, bd = 1.6 * 1.6;
+    for (const a of animals) {
+        if (a.kind !== 'livestock') continue;
+        const d = (a.x - x) ** 2 + (a.z - z) ** 2;
+        if (d < bd) { bd = d; best = a; }
+    }
+    if (!best) return null;
+    best.fed = 1;
+    best.hop = 0.45;
+    return { species: best.species, x: best.x, z: best.z };
+}
+
+export function getFedLevel(species) {
+    const a = animals.find(o => o.species === species);
+    return a ? a.fed : null;
+}
+
+export function getLivestock() {
+    return animals.filter(a => a.kind === 'livestock').map(a => ({ species: a.species, x: a.x, z: a.z, fed: a.fed }));
 }
 
 export function getNearestDrop(x, z) {
