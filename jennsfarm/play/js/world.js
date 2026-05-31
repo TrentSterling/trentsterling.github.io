@@ -390,10 +390,12 @@ function updateFarmBorder() {
         addPost(x, minZ);
         addPost(x, maxZ);
     }
-    // Left edge (minX) and right edge (maxX)
+    // Left edge full; the right (east) edge — facing the shops/road — has a gate
+    const gateHalf = 1.5;
+    const inGate = (zz) => Math.abs(zz - FARM_CZ) <= gateHalf;
     for (let z = minZ; z <= maxZ + 0.01; z += SPACING) {
         addPost(minX, z);
-        addPost(maxX, z);
+        if (!inGate(z)) addPost(maxX, z);
     }
 
     // Horizontal rails along top and bottom edges
@@ -404,14 +406,29 @@ function updateFarmBorder() {
     // Horizontal rails along left and right edges (rotated 90 degrees)
     for (let z = minZ; z < maxZ - 0.01; z += 1) {
         addRail(minX, z + 0.5, Math.PI / 2);  // left edge
-        addRail(maxX, z + 0.5, Math.PI / 2);  // right edge
+        if (!inGate(z + 0.5)) addRail(maxX, z + 0.5, Math.PI / 2); // right edge (gap at gate)
     }
+
+    // Gate: two tall posts + a lintel across the east opening
+    addGatePost(maxX, FARM_CZ - gateHalf);
+    addGatePost(maxX, FARM_CZ + gateHalf);
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, gateHalf * 2 + 0.25, 1, 1, 2), railMat);
+    lintel.position.set(maxX, 0.92, FARM_CZ);
+    scene.add(lintel);
+    borderMeshes.push(lintel);
 
     function addPost(px, pz) {
         const post = new THREE.Mesh(postGeo, postMat);
         post.position.set(px, 0.3, pz);
         scene.add(post);
         borderMeshes.push(post);
+    }
+
+    function addGatePost(px, pz) {
+        const gp = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.95, 6), postMat);
+        gp.position.set(px, 0.47, pz);
+        scene.add(gp);
+        borderMeshes.push(gp);
     }
 
     function addRail(px, pz, rotY) {
