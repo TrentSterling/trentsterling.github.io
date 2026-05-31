@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
 import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile } from './world.js';
 import { createPlayer, moveTo, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender } from './player.js';
-import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile } from './farm.js';
+import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
+import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
 import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, isOverlayOpen, updateBag, updateHealth } from './ui.js';
@@ -32,6 +33,7 @@ let gameTime = 0;
 let playerName = 'Jenn'; // the farmer is Jenn (nameable later - task #2)
 let playerGender = 'girl';
 let health = 100;
+let season = getSeason(1);
 const MAX_HEALTH = 100;
 const HEALTH_DRAIN = 0.35;  // per second while actively playing (not AFK)
 let healthUiTimer = 0;
@@ -146,6 +148,8 @@ if (saved && saved.lastSaved) {
 
 if (saved && saved.playerName) playerName = saved.playerName;
 if (saved && saved.gender) { playerGender = saved.gender; setPlayerGender(saved.gender); }
+season = getSeason(day);
+setSeasonGrowth(season.growth);
 initGrandpa();
 
 // Starting weeds: fresh games get an overgrown farm to clear; saves restore theirs
@@ -904,7 +908,7 @@ function getTimeString(progress) {
 
 function refreshUI() {
     const progress = getDayProgress();
-    updateHUD(coins, day, getTimeString(progress));
+    updateHUD(coins, day, getTimeString(progress), season);
     updateHotbar(selectedSlot, inventory, selectSlot);
     updateBag(inventory, eatItem);
     updateHealth(health, MAX_HEALTH);
@@ -1021,8 +1025,15 @@ function gameLoop(now) {
     if (newDay > day) {
         day = newDay;
         dailyTick();          // market demand drifts, prices recover
+        const ns = getSeason(day);
+        if (ns.index !== season.index) {
+            season = ns;
+            setSeasonGrowth(ns.growth);
+            notify(`${ns.emoji} ${ns.name} has arrived!`);
+        } else {
+            notify(`Day ${day} begins!`);
+        }
         playNewDay();
-        notify(`Day ${day} begins!`);
         refreshUI();
         triggerAutoSave();
     }

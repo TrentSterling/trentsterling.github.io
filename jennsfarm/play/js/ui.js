@@ -117,9 +117,9 @@ export function updateHotbar(selectedIndex, inventory, onSelect) {
 
 // --- HUD ---
 
-export function updateHUD(coins, day, timeStr) {
+export function updateHUD(coins, day, timeStr, season) {
     hudCoins.textContent = `🪙 ${coins}`;
-    hudDay.textContent = `Day ${day}`;
+    hudDay.textContent = season ? `${season.emoji} Day ${day}` : `Day ${day}`;
     if (timeStr && hudTime) hudTime.textContent = timeStr;
 }
 
