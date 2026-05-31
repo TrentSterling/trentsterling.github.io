@@ -231,6 +231,13 @@ export function notify(text) {
 
 // --- Shop ---
 
+function shopHeader(text) {
+    const h = document.createElement('div');
+    h.className = 'shop-header';
+    h.textContent = text;
+    return h;
+}
+
 export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnUpgradeCost, onBuyAnimal) {
     shopItems.innerHTML = '';
 
@@ -270,10 +277,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
         shopItems.appendChild(div);
     }
 
-    // Separator
-    const sep = document.createElement('div');
-    sep.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;';
-    shopItems.appendChild(sep);
+    shopItems.appendChild(shopHeader('🌱 Seeds'));
 
     // Seeds
     const seeds = Object.entries(ITEMS).filter(([, v]) => v.type === 'seed');
@@ -299,9 +303,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
     // Tools / placeables section
     const tools = Object.entries(ITEMS).filter(([, v]) => v.type === 'tool');
     if (tools.length) {
-        const sepT = document.createElement('div');
-        sepT.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;';
-        shopItems.appendChild(sepT);
+        shopItems.appendChild(shopHeader('🔧 Tools'));
         for (const [id, item] of tools) {
             const div = document.createElement('div');
             div.className = 'shop-item';
@@ -321,9 +323,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
 
     // Animals section
     if (onBuyAnimal && ANIMALS) {
-        const sep2 = document.createElement('div');
-        sep2.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;';
-        shopItems.appendChild(sep2);
+        shopItems.appendChild(shopHeader('🐾 Animals'));
 
         const emoji = { chicken: '🐔', rooster: '🐓', goat: '🐐', cow: '🐄' };
         for (const id in ANIMALS) {
@@ -350,9 +350,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
 
     // Equipment upgrades — widen a tool's work area (single tile → 3x3 → 5x5) (#33)
     if (_onUpgrade) {
-        const sepE = document.createElement('div');
-        sepE.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;';
-        shopItems.appendChild(sepE);
+        shopItems.appendChild(shopHeader('⬆️ Tool Upgrades'));
         for (const tool of ['water', 'hoe']) {
             const up = nextUpgrade(tool);
             const div = document.createElement('div');
@@ -378,7 +376,8 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
         }
     }
 
-    // Buildables: beehive (#44), wishing fountain (#47), pet (#48)
+    // Buildables: beehive (#44), wishing fountain (#47), pet (#48)…
+    if (_onBuyHive || _onBuyFountain || _onBuyPet || _onBuyFoodBowl || _onBuyGreenhouse || _onBuyFlytrap) shopItems.appendChild(shopHeader('🏗️ Buildings & Pets'));
     if (_onBuyHive) shopItems.appendChild(shopBuildRow('🐝', 'Beehive', `makes honey · ${getHiveCount()} built`, HIVE_COST, coins >= HIVE_COST, getHiveCount() >= 6, _onBuyHive));
     if (_onBuyFountain) shopItems.appendChild(shopBuildRow('⛲', 'Wishing Fountain', 'toss a coin for luck', FOUNTAIN_COST, coins >= FOUNTAIN_COST, hasFountain(), _onBuyFountain));
     if (_onBuyPet) shopItems.appendChild(shopBuildRow('🐕', 'Puppy', 'follows you + fetches drops', PET_COST, coins >= PET_COST, hasPet(), _onBuyPet));

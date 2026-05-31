@@ -352,4 +352,11 @@ body {
 /* ---- Home (cottage) ---- */
 #home-photo { font-size: 46px; text-align: center; margin: 2px 0 0; }
 
+/* ---- Shop section headers (#56) ---- */
+.shop-header {
+    font: 800 11px var(--font); color: var(--gold); letter-spacing: 0.6px; text-transform: uppercase;
+    margin: 12px 0 4px; padding-top: 8px; border-top: 1px solid rgba(214,176,116,0.18); opacity: 0.9;
+}
+.shop-header:first-child { border-top: none; padding-top: 0; margin-top: 2px; }
+
 /* Tile hover highlight is done in Three.js, not CSS */
