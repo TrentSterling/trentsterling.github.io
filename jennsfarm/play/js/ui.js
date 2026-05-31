@@ -12,15 +12,17 @@ import { getHiveCount, HIVE_COST } from './bees.js';
 import { hasFountain, FOUNTAIN_COST } from './fountain.js';
 import { hasPet, PET_COST } from './pets.js';
 import { hasFoodBowl, FOOD_BOWL_COST } from './visitors.js';
+import { hasGreenhouse, GREENHOUSE_COST } from './greenhouse.js';
 
 // Handlers registered once by main.js (avoids threading through every showShop call)
-let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null, _onBuyFoodBowl = null;
-export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet, onBuyFoodBowl } = {}) {
+let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null, _onBuyFoodBowl = null, _onBuyGreenhouse = null;
+export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet, onBuyFoodBowl, onBuyGreenhouse } = {}) {
     if (onUpgrade) _onUpgrade = onUpgrade;
     if (onBuyHive) _onBuyHive = onBuyHive;
     if (onBuyFountain) _onBuyFountain = onBuyFountain;
     if (onBuyPet) _onBuyPet = onBuyPet;
     if (onBuyFoodBowl) _onBuyFoodBowl = onBuyFoodBowl;
+    if (onBuyGreenhouse) _onBuyGreenhouse = onBuyGreenhouse;
 }
 
 // Small helper for the emoji-based "buildables" rows in the shop
@@ -379,6 +381,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
     if (_onBuyFountain) shopItems.appendChild(shopBuildRow('⛲', 'Wishing Fountain', 'toss a coin for luck', FOUNTAIN_COST, coins >= FOUNTAIN_COST, hasFountain(), _onBuyFountain));
     if (_onBuyPet) shopItems.appendChild(shopBuildRow('🐕', 'Puppy', 'follows you + fetches drops', PET_COST, coins >= PET_COST, hasPet(), _onBuyPet));
     if (_onBuyFoodBowl) shopItems.appendChild(shopBuildRow('🥣', 'Food Bowl', 'draws more visitor cats', FOOD_BOWL_COST, coins >= FOOD_BOWL_COST, hasFoodBowl(), _onBuyFoodBowl));
+    if (_onBuyGreenhouse) shopItems.appendChild(shopBuildRow('🌿', 'Greenhouse', 'crops grow full-speed year-round', GREENHOUSE_COST, coins >= GREENHOUSE_COST, hasGreenhouse(), _onBuyGreenhouse));
 
     shopOverlay.classList.remove('hidden');
 }

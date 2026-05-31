@@ -56,6 +56,7 @@ import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbg
 import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
 import { updateCloudShadows } from '../js/cloudshadows.js';
 import { updateVisitors, getVisitorCount, clearVisitors, placeFoodBowl, hasFoodBowl, serializeVisitors, loadVisitors } from '../js/visitors.js';
+import { hasGreenhouse, buildGreenhouse, effectiveGrowth, serializeGreenhouse, loadGreenhouse } from '../js/greenhouse.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -935,6 +936,23 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- GREENHOUSE (#51) ----------
+
+check('greenhouse lifts crop growth to full-speed year-round + persists', () => {
+    ensureWorld();
+    loadGreenhouse(null);
+    assert(!hasGreenhouse(), 'should start with no greenhouse');
+    assert(effectiveGrowth(0.55) === 0.55, 'without a greenhouse, winter stays slow');
+    buildGreenhouse();
+    assert(hasGreenhouse(), 'greenhouse not built');
+    assert(effectiveGrowth(0.55) === 1.0, 'greenhouse should lift winter growth to full');
+    assert(effectiveGrowth(1.25) === 1.25, 'greenhouse should not slow a fast season');
+    assert(serializeGreenhouse().built === true, 'greenhouse not serialized');
+    loadGreenhouse(null);
+    assert(!hasGreenhouse(), 'load(null) should clear the greenhouse');
+    return 'winter 0.55 → 1.0 with greenhouse; round-trips';
 });
 
 // ---------- COOKING / MEALS (#50) ----------
