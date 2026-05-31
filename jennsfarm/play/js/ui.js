@@ -6,6 +6,7 @@ import { ANIMALS } from './animals.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, ownsFactory, getFactories, employeeCost } from './factories.js';
 import { getRank, getLifetime, getRankProgress, getSellBonus } from './corp.js';
+import { sellableValue } from './market.js';
 import { getToolName, nextUpgrade } from './equipment.js';
 import { healValue } from './foods.js';
 import { getHiveCount, HIVE_COST } from './bees.js';
@@ -396,15 +397,33 @@ export function hideShop() {
 
 export function showMarket(inventory, onSell, getPrice, getTrend, onSellAll) {
     marketItems.innerHTML = '';
-    const crops = Object.entries(ITEMS).filter(([, v]) => v.type === 'crop');
 
-    let hasAnything = false;
-    for (const [id, item] of crops) {
+    // Build the sellable rows the player actually holds, valued at current price,
+    // and sort most-valuable-stack first so the good stuff is on top.
+    const rows = [];
+    for (const [id, item] of Object.entries(ITEMS)) {
+        if (item.type !== 'crop') continue;
         const qty = inventory.count(id);
         if (qty <= 0) continue;
-        hasAnything = true;
-
         const price = getPrice ? getPrice(id) : item.sellPrice;
+        rows.push({ id, item, qty, price, stack: price * qty });
+    }
+    rows.sort((a, b) => b.stack - a.stack);
+
+    if (rows.length === 0) {
+        marketItems.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">Nothing to sell!</p>';
+        marketOverlay.classList.remove('hidden');
+        return;
+    }
+
+    // Bag-value header — total worth of everything sellable, at a glance.
+    const bag = sellableValue(inventory);
+    const header = document.createElement('div');
+    header.className = 'market-total';
+    header.innerHTML = `Bag value <span>🪙 ${bag.total.toLocaleString()}</span> · ${bag.count} item${bag.count === 1 ? '' : 's'}`;
+    marketItems.appendChild(header);
+
+    for (const { id, item, qty, price, stack } of rows) {
         const trend = getTrend ? getTrend(id) : 0;
         const arrow = trend > 0 ? '<span class="trend up">▲ hot</span>'
                     : trend < 0 ? '<span class="trend down">▼ glut</span>' : '';
@@ -416,18 +435,17 @@ export function showMarket(inventory, onSell, getPrice, getTrend, onSellAll) {
                 <span class="item-name">${item.name}</span>
                 <span class="item-qty">x${qty}</span>
             </div>
-            <span class="item-price">🪙 ${price} each ${arrow}</span>
+            <span class="item-price">🪙 ${price} ea ${arrow}<small>🪙 ${stack.toLocaleString()}</small></span>
         `;
+        div.title = `Sell all ${qty} for 🪙 ${stack.toLocaleString()}`;
         div.addEventListener('click', () => onSell(id));
         marketItems.appendChild(div);
     }
 
-    if (!hasAnything) {
-        marketItems.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">Nothing to sell!</p>';
-    } else if (onSellAll) {
+    if (onSellAll) {
         const btn = document.createElement('button');
         btn.className = 'action-btn';
-        btn.textContent = 'Sell All Crops';
+        btn.textContent = `Sell All · 🪙 ${bag.total.toLocaleString()}`;
         btn.addEventListener('click', () => onSellAll());
         marketItems.appendChild(btn);
     }

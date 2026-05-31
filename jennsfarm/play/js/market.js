@@ -33,6 +33,17 @@ export function getPrice(id) {
     return Math.max(1, Math.round(base * modifier(id)));
 }
 
+// Total sell value of everything sellable in the bag at current market prices
+// (matches the per-row prices the market shows — no corp bonus applied here).
+export function sellableValue(inventory) {
+    let total = 0, count = 0;
+    for (const id of sellableIds()) {
+        const qty = inventory.count(id);
+        if (qty > 0) { total += getPrice(id) * qty; count += qty; }
+    }
+    return { total, count };
+}
+
 // Returns -1 (cheap/glut), 0 (normal), 1 (hot demand) for UI arrows
 export function getTrend(id) {
     const m = modifier(id);
