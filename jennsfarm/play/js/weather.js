@@ -7,6 +7,7 @@
 
 import * as THREE from 'three';
 import { scene } from './renderer.js';
+import { registerSystem } from './registry.js';
 
 const SPREAD = 28; // particle box width around the player
 const TOP = 10;    // spawn / recycle height
@@ -84,3 +85,9 @@ export function updateWeather(dt, seasonName, playerPos) {
     }
     mesh.instanceMatrix.needsUpdate = true;
 }
+
+// Self-register with the orchestrator (#9): weather ticks off the shared ctx.
+registerSystem({
+    id: 'weather',
+    update(dt, ctx) { updateWeather(dt, ctx.season ? ctx.season.name : '', ctx.playerPos); },
+});
