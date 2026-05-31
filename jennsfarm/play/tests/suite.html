@@ -39,6 +39,7 @@ import { getSeason } from '../js/seasons.js';
 import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnimalCount, getSpeciesCount } from '../js/animals.js';
 import { CHUNK, worldToChunk, desiredChunks, updateChunks, getLoadedChunkCount, resetChunks } from '../js/chunks.js';
 import { findPath } from '../js/pathfind.js';
+import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates, getCrateCount, serializeCrates, loadCrates } from '../js/crates.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -638,6 +639,70 @@ check('A* returns empty for start==goal and detours around the solid cottage', (
     for (const w of p) assert(!isSolidTile(w.x, w.z), `detour crossed a solid at ${w.x},${w.z}`);
     assert(p.some(w => w.x !== 24), 'path went straight through the cottage instead of around');
     return `detoured around the cottage in ${p.length} steps`;
+});
+
+// ---------- CRATES (truck delivery + click-to-open) ----------
+
+check('a delivered crate opens for its contents, then is gone', () => {
+    ensureWorld();
+    initCrates();
+    const c = spawnCrate('supply', { items: { wood: 3 }, coins: 50 });
+    assert(c, 'spawn returned null');
+    assert(getCrateCount() === 1, 'crate not tracked');
+    assert(openCrateAt(0, 0, 1.0) === null, 'opened a crate from across the map');
+    const res = openCrateAt(c.x, c.z, 1.6);
+    assert(res && res.contents.coins === 50 && res.contents.items.wood === 3, 'wrong contents');
+    assert(getCrateCount() === 0, 'crate not removed after opening');
+    initCrates();
+    return 'spawn → open → contents → gone';
+});
+
+check('crate delivery respects the max-waiting cap', () => {
+    ensureWorld();
+    initCrates();
+    for (let i = 0; i < 20; i++) deliverCrate();
+    const n = getCrateCount();
+    assert(n > 0 && n <= 4, `crate cap broken (got ${n})`);
+    initCrates();
+    return `capped at ${n} waiting crates`;
+});
+
+check('rolled crate contents are always real items', () => {
+    ensureWorld();
+    initCrates();
+    for (let i = 0; i < 24; i++) {
+        const c = deliverCrate();
+        if (!c) { initCrates(); continue; } // pad full → clear and keep sampling
+        for (const id in c.contents.items) assert(ITEMS[id], `crate gave unknown item "${id}"`);
+        assert(c.contents.coins >= 0, 'negative coins');
+    }
+    initCrates();
+    return 'all crate contents valid';
+});
+
+check('crates survive a save/load round-trip', () => {
+    ensureWorld();
+    initCrates();
+    spawnCrate('gift', { items: { rose_seed: 1 }, coins: 100 });
+    const s = serializeCrates();
+    initCrates();
+    assert(getCrateCount() === 0, 'wipe failed');
+    loadCrates(s);
+    assert(getCrateCount() === 1, 'crate not restored');
+    const res = openCrateAt(s[0].x, s[0].z, 1.6);
+    assert(res && res.contents.items.rose_seed === 1, 'restored contents wrong');
+    initCrates();
+    return 'crate round-tripped';
+});
+
+check('offline delivery leaves a few crates waiting (capped)', () => {
+    ensureWorld();
+    initCrates();
+    const n = creditOfflineCrates(100000);
+    assert(n > 0 && n <= 4, `offline crate count out of range (${n})`);
+    assert(getCrateCount() === n, 'offline crates not actually placed');
+    initCrates();
+    return `${n} crates waiting after long absence`;
 });
 
 // ---------- RENDER ----------

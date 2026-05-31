@@ -12,6 +12,7 @@ import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
 import { updateChunks } from './chunks.js';
+import { CRATE_KINDS, updateCrates, crateAt, openCrateAt, creditOfflineCrates, serializeCrates, loadCrates } from './crates.js';
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
 import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
@@ -114,6 +115,7 @@ if (saved) {
     if (saved.sprinklers) loadSprinklers(saved.sprinklers);
     if (saved.factories) loadFactories(saved.factories);
     if (saved.corp) loadCorp(saved.corp);
+    if (saved.crates) loadCrates(saved.crates);
     notify('Game loaded!');
 }
 
@@ -153,6 +155,7 @@ if (saved && saved.lastSaved) {
         const facProd = creditOfflineFactories(away, inventory); // factories ran on stored goods
         let facCount = 0;
         for (const k in facProd) facCount += facProd[k];
+        const crateCount = creditOfflineCrates(away); // delivery trucks left crates by the road
         const sales = offlineBuyerSales(inventory, away); // roadside buyers came by
         if (sales.count) {
             const bonused = Math.round(sales.coins * (1 + getSellBonus()));
@@ -165,6 +168,7 @@ if (saved && saved.lastSaved) {
         if (pcount) bits.push(`+${pcount} produce`);
         if (fruit) bits.push(`+${fruit} fruit`);
         if (facCount) bits.push(`+${facCount} from factories`);
+        if (crateCount) bits.push(`📦 ${crateCount} crate${crateCount > 1 ? 's' : ''} waiting`);
         if (sales.count) bits.push(`🪙${sales.coins} from ${sales.count} roadside sales`);
         const mins = Math.round(away / 60);
         setTimeout(() => notify(`🌙 While you were away (${mins}m): ${bits.length ? bits.join(', ') : 'the farm rested'}.`), 900);
@@ -346,6 +350,16 @@ container.addEventListener('click', (e) => {
     // If no tile data (wild area), still allow walking there
     if (tile && tile.type === TILE.WATER) return;
 
+    // Delivered crate here? Click to open it (walk over first if out of reach).
+    const crate = crateAt(tx, tz, 0.8);
+    if (crate) {
+        const pp = getPlayerPos();
+        const cd = Math.abs(pp.x - crate.x) + Math.abs(pp.z - crate.z);
+        if (cd <= 1.4) openCrateAndCollect(crate);
+        else { pendingAction = { x: crate.x, z: crate.z, tool: { id: 'crate' } }; routeTo(crate.x, crate.z); }
+        return;
+    }
+
     const tool = getSelectedTool();
     const pos = getPlayerPos();
     const dist = Math.abs(pos.x - tx) + Math.abs(pos.z - tz);
@@ -524,6 +538,9 @@ if (resetBtn) resetBtn.addEventListener('click', () => {
 // --- Actions ---
 
 function performAction(tx, tz, tool) {
+    // Arrived at a crate we walked to — pop it open
+    if (tool.id === 'crate') { openCrateAndCollect(crateAt(tx, tz, 1.2)); return; }
+
     // Axe is special: trees live in the wild, off the farm-tile grid
     if (tool.id === 'axe') {
         const chopped = doChop(tx, tz);
@@ -689,6 +706,28 @@ function tryPet(tx, tz) {
     hearts(a.x, 0.6, a.z);
     playStore();
     notify(`You pet the ${a.species}! 💛`);
+}
+
+// Click a delivered crate and it bursts open, scattering its contents into your
+// bag (Trent's "click a box and it explodes open"). Gifts are a coin haul.
+function openCrateAndCollect(crate) {
+    if (!crate) return;
+    const res = openCrateAt(crate.x, crate.z, 1.6);
+    if (!res) return;
+    woodBurst(crate.x, crate.z);
+    sparkle(crate.x, 0.8, crate.z, [0xffd24a, 0xfff0c0, 0xffffff]);
+    addShake(0.14);
+    pop(getPlayerGroup(), 0.22);
+    playExpand();
+    const parts = [];
+    if (res.contents.coins) { coins += res.contents.coins; parts.push(`🪙${res.contents.coins}`); }
+    for (const id in res.contents.items) {
+        inventory.add(id, res.contents.items[id]);
+        parts.push(`${res.contents.items[id]} ${ITEMS[id] ? ITEMS[id].name : id}`);
+    }
+    notify(`📦 ${CRATE_KINDS[res.kind].name} opened! Got ${parts.join(', ')}.`);
+    refreshUI();
+    triggerAutoSave();
 }
 
 function clearWeed(tx, tz) {
@@ -1037,6 +1076,7 @@ function triggerAutoSave() {
             quests: serializeQuests(),
             factories: serializeFactories(),
             corp: serializeCorp(),
+            crates: serializeCrates(),
             lastSaved: Date.now(),
         });
     }, 1000);
@@ -1105,6 +1145,14 @@ function gameLoop(now) {
     // Factories quietly convert raw goods (grapes, milk) into products over time
     const made = updateFactories(dt, inventory);
     if (Object.keys(made).length) refreshUI();
+
+    // Delivery truck periodically drops a crate by the road — click it to open
+    const deliveredCrate = updateCrates(dt);
+    if (deliveredCrate) {
+        notify(`📦 A truck dropped off a ${CRATE_KINDS[deliveredCrate.kind].name} by the road!`);
+        sparkle(deliveredCrate.x, 0.8, deliveredCrate.z, [0xffe0a0, 0xffffff]);
+        playStore();
+    }
 
     const ppos = getPlayerWorldPos();
     updateChunks(ppos.x, ppos.z); // stream infinite terrain around Jenn
