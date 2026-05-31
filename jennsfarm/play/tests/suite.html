@@ -42,7 +42,7 @@ import { findPath } from '../js/pathfind.js';
 import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates, getCrateCount, serializeCrates, loadCrates } from '../js/crates.js';
 import { createSpatialHash } from '../js/spatialhash.js';
 import { TOOL_TIERS, getToolLevel, getToolRadius, nextUpgrade, upgradeTool, tilesInRadius, serializeEquipment, loadEquipment } from '../js/equipment.js';
-import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
+import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
 import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
@@ -798,6 +798,36 @@ check('equipment levels survive a save/load round-trip and clamp', () => {
     assert(getToolLevel('water') === TOOL_TIERS.water.length - 1, 'level not clamped to max');
     loadEquipment(null);
     return 'levels round-trip + clamp';
+});
+
+// ---------- LIVING OVERGROWTH (weeds regrow + mow) ----------
+
+check('weeds regrow over time on farm grass, capped', () => {
+    ensureWorld();
+    clearAllWeeds();
+    assert(getWeedCount() === 0, 'clearAllWeeds did not empty the field');
+    for (let i = 0; i < 60; i++) growWeeds(31, 1); // each tick is past the 30s sprout timer
+    const c = getWeedCount();
+    assert(c > 0, 'no weeds regrew');
+    assert(c <= 16, `weed regrowth blew past the cap (${c})`);
+    for (const w of serializeWeeds()) {
+        const t = getTile(w.x, w.z);
+        assert(t && t.type === TILE.GRASS, `weed sprouted off grass at ${w.x},${w.z}`);
+    }
+    return `regrew to ${c} (cap 16), all on grass`;
+});
+
+check('mowing clears every weed within the radius in one sweep', () => {
+    ensureWorld();
+    clearAllWeeds();
+    spawnInitialWeeds(10); // scattered within the starting farm (±4 of centre)
+    const before = getWeedCount();
+    assert(before > 0, 'no weeds to mow');
+    const mowed = clearWeedsInRadius(24, 24, 6); // covers the whole starting farm
+    assert(mowed === before, `mowed ${mowed} but ${before} existed`);
+    assert(getWeedCount() === 0, 'weeds remained after a full sweep');
+    clearAllWeeds();
+    return `mowed all ${mowed} in one sweep`;
 });
 
 // ---------- RENDER ----------
