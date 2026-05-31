@@ -539,7 +539,7 @@ function craftItem(recipeId) {
     if (!can) { playDeny(); notify('Missing ingredients!'); return; }
     for (const k in r.inputs) inventory.remove(k, r.inputs[k]);
     inventory.add(r.out, 1);
-    bumpStat('cooked');
+    recordStat('cooked');
     playBuy();
     notify(`Crafted ${ITEMS[r.out].name}!`);
     refreshUI();
@@ -858,13 +858,24 @@ function buyFlytrap() {
 }
 setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl, onBuyGreenhouse: buyGreenhouse, onBuyFlytrap: buyFlytrap });
 
+// Bump a lifetime stat; if it crosses a milestone, celebrate it (#18).
+function recordStat(key, n = 1) {
+    const m = bumpStat(key, n);
+    if (m) {
+        const wp = getPlayerWorldPos();
+        sparkle(wp.x, 1.1, wp.z, [0xffd700, 0xffe066, 0xffffff]);
+        addShake(0.06);
+        notify(`🏅 Milestone — ${m.label}: ${m.milestone.toLocaleString()}!`);
+    }
+}
+
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
     if (result) {
         const q = harvestQuality(result.watered, Math.random(), luckMult()); // ⭐ watered = premium; luck boosts ⭐⭐ and rare 🌟 golden
         const qty = result.qty + q.bonus;
         inventory.add(result.itemId, qty);
-        bumpStat('harvested'); if (q.golden) bumpStat('golden');
+        recordStat('harvested'); if (q.golden) recordStat('golden');
         playHarvest();
         pop(getPlayerGroup(), q.golden ? 0.4 : 0.28);
         const tail = result.regrew ? ' (regrowing!)' : '';
@@ -890,7 +901,7 @@ function doChop(tx, tz) {
     if (!result) return false;    // no tree within reach
     playChop();
     if (result.felled) {
-        bumpStat('chopped');
+        recordStat('chopped');
         const parts = [];
         for (const id in result.drops) {
             inventory.add(id, result.drops[id]);
@@ -943,7 +954,7 @@ function hookFish() {
     const isRecord = tryFishRecord(fish, weight);
     fishing = null;
     inventory.add(fish, 1);
-    bumpStat('fish');
+    recordStat('fish');
     playHarvest();
     const p = getPlayerWorldPos();
     sparkle(p.x, 0.6, p.z, isRecord ? [0xffe066, 0xfff0c0, 0xffffff] : [0x9be8ff, 0xffffff]);
@@ -975,7 +986,7 @@ function tryPet(tx, tz) {
     }
     const a = petNearest(tx, tz);
     if (!a) return;
-    bumpStat('petted');
+    recordStat('petted');
     hearts(a.x, 0.6, a.z);
     playStore();
     notify(`You pet the ${a.species}! 💛`);

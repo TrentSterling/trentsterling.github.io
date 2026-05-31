@@ -415,8 +415,14 @@ check('stats: the farm ledger bumps, totals, and round-trips (#18)', () => {
     assert(getStat('harvested') === 0, 'cleared');
     loadStats(s);
     assert(getStat('harvested') === 5 && getStat('fish') === 1, 'should restore from the save');
+    // crossing a threshold returns a milestone descriptor to celebrate
     clearStats();
-    return 'harvested=5, fish=1, round-trips';
+    assert(bumpStat('fish', 9) === null, '9 fish should not hit a milestone yet');
+    const hit = bumpStat('fish', 1); // crosses 10
+    assert(hit && hit.key === 'fish' && hit.milestone === 10, 'the 10th fish should hit the 10-milestone');
+    assert(bumpStat('fish', 1) === null, 'past a milestone should not re-fire it');
+    clearStats();
+    return 'totals + round-trip; 10th fish = milestone';
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {

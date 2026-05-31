@@ -11,9 +11,32 @@ const STATS = [
     { key: 'petted',    label: '💛 Animals petted' },
 ];
 
+const _label = {};
+for (const s of STATS) _label[s.key] = s.label;
+
+// Milestone thresholds per stat — crossing one pops a 🏅 celebration (no reward,
+// just recognition; numbers going up is the point).
+const MILESTONES = {
+    harvested: [50, 250, 1000, 5000],
+    golden:    [1, 10, 50, 200],
+    fish:      [10, 50, 200],
+    chopped:   [25, 100, 500],
+    cooked:    [10, 50, 200],
+    petted:    [25, 100, 500],
+};
+
 let counts = {};
 
-export function bumpStat(key, n = 1) { counts[key] = (counts[key] || 0) + n; }
+// Add to a stat. Returns a milestone descriptor {key,label,milestone} if this bump
+// crossed a threshold, else null — the caller celebrates it.
+export function bumpStat(key, n = 1) {
+    const before = counts[key] || 0;
+    const after = before + n;
+    counts[key] = after;
+    const ms = MILESTONES[key];
+    const hit = ms && ms.find(m => before < m && after >= m);
+    return hit ? { key, label: _label[key] || key, milestone: hit } : null;
+}
 export function getStat(key) { return counts[key] || 0; }
 
 // For display: [{key, label, value}] in declared order.
