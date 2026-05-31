@@ -8,6 +8,46 @@ export const ITEMS = {
     tomato:       { name: 'Tomato',        type: 'crop', sellPrice: 25, icon: 'tomato' },
     potato:       { name: 'Potato',        type: 'crop', sellPrice: 10, icon: 'potato' },
     wheat:        { name: 'Wheat',         type: 'crop', sellPrice: 20, icon: 'wheat' },
+
+    // --- New seeds ---
+    strawberry_seed:        { name: 'Strawberry Seeds', type: 'seed', cropId: 'strawberry',        buyPrice: 7,   icon: 'strawberry_seed' },
+    mint_seed:              { name: 'Mint Seeds',       type: 'seed', cropId: 'mint',              buyPrice: 14,  icon: 'mint_seed' },
+    lavender_seed:          { name: 'Lavender Seeds',   type: 'seed', cropId: 'lavender',          buyPrice: 26,  icon: 'lavender_seed' },
+    tulip_seed:             { name: 'Tulip Bulbs',      type: 'seed', cropId: 'tulip',             buyPrice: 18,  icon: 'tulip_seed' },
+    sunflower_seed:         { name: 'Sunflower Seeds',  type: 'seed', cropId: 'sunflower',         buyPrice: 30,  icon: 'sunflower_seed' },
+    rose_seed:              { name: 'Rose Seeds',       type: 'seed', cropId: 'rose',              buyPrice: 50,  icon: 'rose_seed' },
+    square_watermelon_seed: { name: 'Square Melon Seeds', type: 'seed', cropId: 'square_watermelon', buyPrice: 130, icon: 'square_watermelon_seed' },
+
+    // --- New crops (harvested) ---
+    strawberry:        { name: 'Strawberry',        type: 'crop', sellPrice: 18,  icon: 'strawberry' },
+    mint:              { name: 'Mint',              type: 'crop', sellPrice: 22,  icon: 'mint' },
+    lavender:          { name: 'Lavender',          type: 'crop', sellPrice: 48,  icon: 'lavender' },
+    tulip:             { name: 'Tulip',             type: 'crop', sellPrice: 38,  icon: 'tulip' },
+    sunflower:         { name: 'Sunflower',         type: 'crop', sellPrice: 70,  icon: 'sunflower' },
+    rose:              { name: 'Rose',              type: 'crop', sellPrice: 95,  icon: 'rose' },
+    square_watermelon: { name: 'Square Watermelon', type: 'crop', sellPrice: 300, icon: 'square_watermelon' },
+
+    // --- Materials (gathered, sellable; reuses the 'crop' sellable bucket) ---
+    wood: { name: 'Wood', type: 'crop', sellPrice: 14, icon: 'wood' },
+    apple: { name: 'Apple', type: 'crop', sellPrice: 1, icon: 'apple' }, // fruit-tree drop, ~$1 each
+
+    // --- Tools / placeables (bought at shop, not sold) ---
+    sprinkler: { name: 'Sprinkler', type: 'tool', buyPrice: 250, icon: 'sprinkler' },
+
+    // --- Animal produce (sellable) ---
+    egg:       { name: 'Egg',       type: 'crop', sellPrice: 16, icon: 'egg' },
+    cow_milk:  { name: 'Cow Milk',  type: 'crop', sellPrice: 34, icon: 'cow_milk' },
+    goat_milk: { name: 'Goat Milk', type: 'crop', sellPrice: 52, icon: 'goat_milk' },
+
+    // --- Crafted goods (made in the Workshop, sold at market) ---
+    cheese:       { name: 'Goat Cheese',  type: 'crop', crafted: true, sellPrice: 130, icon: 'cheese' },
+    sunny_jam:    { name: 'Sunny Jam',    type: 'crop', crafted: true, sellPrice: 150, icon: 'sunny_jam' },
+    calm_potion:  { name: 'Calm Potion',  type: 'crop', crafted: true, sellPrice: 210, icon: 'calm_potion' },
+    country_cake: { name: 'Country Cake', type: 'crop', crafted: true, sellPrice: 240, icon: 'country_cake' },
+    perfume:      { name: 'Perfume',      type: 'crop', crafted: true, sellPrice: 300, icon: 'perfume' },
+    love_potion:  { name: 'Love Potion',  type: 'crop', crafted: true, sellPrice: 280, icon: 'love_potion' },
+    melon_juice:  { name: 'Melon Juice',  type: 'crop', crafted: true, sellPrice: 360, icon: 'melon_juice' },
+    grand_elixir: { name: 'Grand Elixir', type: 'crop', crafted: true, sellPrice: 440, icon: 'grand_elixir' },
 };
 
 export function createInventory() {

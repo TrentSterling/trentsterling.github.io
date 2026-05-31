@@ -1,12 +1,23 @@
 import * as THREE from 'three';
-import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime } from './renderer.js';
-import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel } from './world.js';
-import { createPlayer, moveTo, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos } from './player.js';
-import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes } from './farm.js';
+import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
+import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile } from './world.js';
+import { createPlayer, moveTo, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup } from './player.js';
+import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile } from './farm.js';
+import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
-import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, isOverlayOpen } from './ui.js';
+import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, isOverlayOpen, updateBag, updateHealth } from './ui.js';
+import { RECIPES } from './craft.js';
 import { saveGame, loadGame, deleteSave } from './save.js';
-import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, updateAmbient } from './audio.js';
+import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
+import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket } from './market.js';
+import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals, loadAnimals, getLivestockCount, creditOfflineProduce, getNearestDrop } from './animals.js';
+import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } from './juice.js';
+import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
+import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
+import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount } from './weeds.js';
+import { advanceCropsOffline } from './offline.js';
+import { initBuyers, updateBuyers } from './buyers.js';
+import { initQuests, questEvent, serializeQuests, loadQuests, setQuestName, completeSilently, getQuestIndex } from './quests.js';
 
 // --- Game State ---
 
@@ -18,10 +29,39 @@ const BARN_UPGRADE_COSTS = [150, 300, 600, 1200];
 let coins = 100;
 let day = 1;
 let gameTime = 0;
+let playerName = 'Jenn'; // the farmer is Jenn (nameable later - task #2)
+let health = 100;
+const MAX_HEALTH = 100;
+const HEALTH_DRAIN = 0.35;  // per second while actively playing (not AFK)
+let healthUiTimer = 0;
 let selectedSlot = 0;
 let pendingAction = null;
 let stepTimer = 0;
 const DAY_LENGTH = 300; // seconds per day
+
+// Idle autoplay (task #12): after the player is idle this long, an AI does
+// MAINTENANCE only (harvest/water/plant) - and only once onboarding is done.
+let lastInputAt = performance.now();
+let autoActive = false;
+let autoCheckTimer = 0;
+let namePromptOpen = false;
+const AFK_MS = 7000; // idle this long (post-onboarding) -> AI takes over
+const autoSkip = new Set(); // auto-farm tiles we couldn't reach this AFK session
+function markInput() { lastInputAt = performance.now(); autoSkip.clear(); }
+
+// Nearest walkable tile next to a (possibly solid) target, so click-to-move on a
+// building/cottage walks Jenn to an adjacent reachable spot instead of into it.
+function walkableNeighbor(tx, tz) {
+    const p = getPlayerPos();
+    let best = null, bd = Infinity;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        const nx = tx + dx, nz = tz + dz;
+        if (isSolidTile(nx, nz)) continue;
+        const d = Math.abs(nx - p.x) + Math.abs(nz - p.z);
+        if (d < bd) { bd = d; best = { x: nx, z: nz }; }
+    }
+    return best;
+}
 
 // --- Init ---
 
@@ -30,6 +70,8 @@ initRenderer(container);
 createWorld();
 initHighlight();
 createPlayer();
+initMarket();
+initBuyers();
 
 // Starting inventory
 inventory.add('carrot_seed', 8);
@@ -42,14 +84,163 @@ if (saved) {
     coins = saved.coins ?? 100;
     day = saved.day ?? 1;
     gameTime = saved.gameTime ?? 0;
+    health = saved.health ?? 100;
     inventory.load(saved.inventory ?? {});
     if (saved.barnStorage) barnStorage.load(saved.barnStorage);
     if (saved.barnLevel) { barnLevel = saved.barnLevel; barnCapacity = 50 * barnLevel; }
     setPlayerPos(saved.playerX ?? 24, saved.playerZ ?? 24);
     if (saved.farmLevel) setFarmLevel(saved.farmLevel);
+    if (saved.market) loadMarket(saved.market);
     loadWorld(saved.tiles, saved.farmLevel);
     rebuildCropMeshes();
+    if (saved.trees) loadTrees(saved.trees);
+    if (saved.sprinklers) loadSprinklers(saved.sprinklers);
     notify('Game loaded!');
+}
+
+// Dev/debug params: ?noon jumps to midday, ?money=N grants coins
+const _params = new URLSearchParams(location.search);
+if (_params.has('noon')) gameTime = DAY_LENGTH * 0.27;
+if (_params.has('money')) coins += parseInt(_params.get('money')) || 0;
+
+// Debug/free camera for automated screenshots:
+//   ?camx=24&camz=24&camh=34&camd=2&campitch=-1.3
+const _num = (k) => _params.has(k) ? parseFloat(_params.get(k)) : undefined;
+if (['camx', 'camz', 'camh', 'camd', 'campitch'].some(k => _params.has(k))) {
+    setDebugCamera({
+        x: _num('camx'), z: _num('camz'),
+        height: _num('camh'), distance: _num('camd'), pitch: _num('campitch'),
+    });
+}
+if (_params.has('nofog')) scene.fog = null; // clean wide/top-down inspection shots
+
+// Animals: wildlife + grandpa always; livestock restored from save, else a starter chicken
+initAnimals(!saved);
+if (saved && saved.animals) loadAnimals(saved.animals);
+
+// Idle reward: advance the farm for the real time spent away (crops grow under
+// sprinklers, livestock produce). Capped so a long absence can't run wild.
+if (saved && saved.lastSaved) {
+    const away = Math.min((Date.now() - saved.lastSaved) / 1000, 4 * 3600); // cap 4h
+    if (away > 60) {
+        gameTime += away;
+        const cp = advanceCropsOffline(away);
+        rebuildCropMeshes();
+        const prod = creditOfflineProduce(away);
+        let pcount = 0;
+        for (const k in prod) { inventory.add(k, prod[k]); pcount += prod[k]; }
+        const fruit = creditOfflineFruit(away);
+        if (fruit) { inventory.add('apple', fruit); }
+        const bits = [];
+        if (cp.ripened) bits.push(`${cp.ripened} crops ripened`);
+        if (pcount) bits.push(`+${pcount} produce`);
+        if (fruit) bits.push(`+${fruit} fruit`);
+        const mins = Math.round(away / 60);
+        setTimeout(() => notify(`🌙 While you were away (${mins}m): ${bits.length ? bits.join(', ') : 'the farm rested'}.`), 900);
+    }
+}
+
+if (saved && saved.playerName) playerName = saved.playerName;
+initGrandpa();
+
+// Starting weeds: fresh games get an overgrown farm to clear; saves restore theirs
+if (!saved) {
+    spawnInitialWeeds();
+    if (!_params.has('noon')) gameTime = DAY_LENGTH * 0.2; // open in bright morning, not 6am dark
+}
+else if (saved.weeds) loadWeeds(saved.weeds);
+
+// Grandpa's intro chore chain
+function grantReward(r) {
+    if (!r) return;
+    if (r.coins) coins += r.coins;
+    if (r.seeds) for (const k in r.seeds) inventory.add(k, r.seeds[k]);
+    if (r.items) for (const k in r.items) inventory.add(k, r.items[k]);
+    if (r.coins) notify(`Grandpa paid you 🪙${r.coins}!`);
+    refreshUI();
+    triggerAutoSave();
+}
+initQuests({
+    name: playerName,
+    reward: grantReward,
+    complete: () => {
+        coins += 100;
+        const p = getPlayerWorldPos();
+        hearts(p.x, 1.0, p.z);
+        coinBurst(p.x, p.z);
+        addShake(0.12);
+        notify('🌻 Grandpa: the farm is all yours now! (+🪙100)');
+        refreshUI();
+        triggerAutoSave();
+    },
+});
+if (saved && saved.quests) loadQuests(saved.quests);
+// Un-stick old saves: if loading onto the very first chore with no weeds to
+// clear (e.g. a save from before the weeds feature), skip the onboarding.
+if (saved && getQuestIndex() === 0 && getWeedCount() === 0 && !serializeQuests().done) {
+    completeSilently();
+}
+
+// First-time players name their farmer (defaults to Jenn). ?noname skips it (dev shots).
+if (!saved && !_params.has('noname')) {
+    showNamePrompt((name) => {
+        playerName = name;
+        setQuestName(name);
+        triggerAutoSave();
+        // Easter egg: this farm (and this whole game) is really for Jenn ❤
+        if (/^jenn$/i.test(name)) {
+            setTimeout(() => {
+                grandpaSayText('This farm was always meant for you, Jenn. ❤');
+                const p = getPlayerWorldPos();
+                hearts(p.x, 1.0, p.z);
+            }, 2600);
+        }
+    });
+}
+
+function showNamePrompt(onDone) {
+    const ov = document.createElement('div');
+    ov.id = 'name-modal'; // styled via style.css (unified design system)
+    ov.innerHTML = `
+      <div class="name-card">
+        <div style="font-size:34px;margin-bottom:4px">🌻</div>
+        <h2>Welcome to the farm!</h2>
+        <p>Grandpa's handing it over. What's your name?</p>
+        <input id="jf-name" maxlength="14" value="Jenn" autocomplete="off">
+        <button id="jf-go">Start farming 🌱</button>
+      </div>`;
+    document.body.appendChild(ov);
+    namePromptOpen = true;
+    const input = ov.querySelector('#jf-name');
+    input.focus(); input.select();
+    const go = () => {
+        const v = (input.value || '').trim().slice(0, 14) || 'Jenn';
+        if (ov.parentNode) document.body.removeChild(ov);
+        namePromptOpen = false;
+        markInput();
+        onDone(v);
+    };
+    ov.querySelector('#jf-go').addEventListener('click', go);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+}
+
+// Collect produce that animals drop when the player walks over it
+// Fruit picked up from fruit trees — quiet + frequent, so no toast spam
+function onCollectFruit(itemId, qty) {
+    inventory.add(itemId, qty);
+    const p = getPlayerWorldPos();
+    sparkle(p.x, 0.4, p.z, [0xe23b3b, 0xffd0d0]);
+    refreshUI();
+    triggerAutoSave();
+}
+
+function onCollectProduce(itemId, qty) {
+    inventory.add(itemId, qty);
+    playStore();
+    { const pp = getPlayerWorldPos(); sparkle(pp.x, 0.5, pp.z); }
+    notify(`Collected ${qty} ${ITEMS[itemId].name}!`);
+    refreshUI();
+    triggerAutoSave();
 }
 
 refreshUI();
@@ -70,7 +261,25 @@ function selectSlot(index) {
 }
 
 // Click handler
+// --- Drag-to-pan camera (decoupled from player; re-centers when she moves) ---
+let dragDown = false, dragMoved = false, dragLastX = 0, dragLastY = 0, dragStartX = 0, dragStartY = 0;
+const PAN_SCALE = 0.03; // screen px -> world units
+container.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    markInput();
+    dragDown = true; dragMoved = false;
+    dragStartX = dragLastX = e.clientX;
+    dragStartY = dragLastY = e.clientY;
+});
+window.addEventListener('mouseup', () => {
+    dragDown = false;
+    container.style.cursor = '';
+    setTimeout(() => { dragMoved = false; }, 0); // clear after the click event fires
+});
+
 container.addEventListener('click', (e) => {
+    markInput();
+    if (dragMoved) { dragMoved = false; container.style.cursor = ''; return; } // was a pan, not a click
     if (isOverlayOpen()) return;
 
     const hit = raycastGround(e);
@@ -91,11 +300,17 @@ container.addEventListener('click', (e) => {
     const pos = getPlayerPos();
     const dist = Math.abs(pos.x - tx) + Math.abs(pos.z - tz);
 
-    if (dist <= 1 && tile) {
+    // The axe works on trees in the wild, where there's no farm tile data
+    const actionable = tile || tool.id === 'axe';
+
+    if (dist <= 1 && actionable) {
         performAction(tx, tz, tool);
     } else {
-        pendingAction = tile ? { x: tx, z: tz, tool } : null;
-        moveTo(tx, tz);
+        pendingAction = actionable ? { x: tx, z: tz, tool } : null;
+        // If the target tile is solid (building/cottage), walk to a reachable
+        // neighbour so the action still fires on arrival (dist<=1).
+        const approach = isSolidTile(tx, tz) ? walkableNeighbor(tx, tz) : null;
+        moveTo(approach ? approach.x : tx, approach ? approach.z : tz);
     }
 });
 
@@ -117,13 +332,46 @@ container.addEventListener('contextmenu', (e) => {
     }
 });
 
-// Hover highlight
+// Tool-aware hover highlight: colour tells you what a click will do.
+const HL = { ok: 0xffffff, plant: 0x7cff7c, water: 0x66bbff, harvest: 0xffd24a,
+             till: 0xc8a86e, chop: 0xff8a4a, weed: 0xffe066, bad: 0xff5555 };
+
+function highlightColor(toolId, tile, x, z) {
+    if (hasWeedAt(x, z) && (toolId === 'hand' || toolId === 'hoe')) return HL.weed;
+    if (toolId === 'axe') return hasTreeNear(x, z) ? HL.chop : HL.ok;
+    if (!tile) return HL.ok;
+    if (toolId === 'water') return (tile.type === TILE.PLANTED || tile.type === TILE.SOIL) ? HL.water : HL.ok;
+    if (toolId === 'hand') return (tile.type === TILE.PLANTED && tile.cropStage >= 3) ? HL.harvest : HL.ok;
+    if (toolId === 'hoe') return (tile.type === TILE.GRASS && isInFarm(x, z)) ? HL.till : HL.ok;
+    if (toolId === 'sprinkler') return (isInFarm(x, z) && (tile.type === TILE.SOIL || tile.type === TILE.GRASS)) ? HL.water : HL.bad;
+    if (toolId.endsWith('_seed')) return (tile.type === TILE.SOIL && !tile.crop) ? HL.plant : HL.ok;
+    return HL.ok;
+}
+
 container.addEventListener('mousemove', (e) => {
+    markInput();
+
+    // Drag-to-pan: hold left button and drag to move the camera off the player
+    if (dragDown && (e.buttons & 1)) {
+        if (!dragMoved && Math.abs(e.clientX - dragStartX) + Math.abs(e.clientY - dragStartY) > 6) {
+            dragMoved = true;
+            container.style.cursor = 'grabbing';
+        }
+        if (dragMoved) {
+            const dx = e.clientX - dragLastX, dy = e.clientY - dragLastY;
+            dragLastX = e.clientX; dragLastY = e.clientY;
+            panCamera(-dx * PAN_SCALE, -dy * PAN_SCALE); // map-style: world follows the cursor
+            hideHighlight();
+            return;
+        }
+    }
+
     if (isOverlayOpen()) { hideHighlight(); return; }
 
     const hit = raycastGround(e);
     if (hit && hit.x >= 0 && hit.x < WORLD_SIZE && hit.z >= 0 && hit.z < WORLD_SIZE) {
-        showHighlight(hit.x, hit.z);
+        const tile = getTile(hit.x, hit.z);
+        showHighlight(hit.x, hit.z, highlightColor(getSelectedTool().id, tile, hit.x, hit.z));
     } else {
         hideHighlight();
     }
@@ -131,6 +379,7 @@ container.addEventListener('mousemove', (e) => {
 
 // Keyboard
 document.addEventListener('keydown', (e) => {
+    markInput();
     const num = parseInt(e.key);
     if (num >= 1 && num <= hotbarSlots.length) {
         selectSlot(num - 1);
@@ -140,12 +389,58 @@ document.addEventListener('keydown', (e) => {
         hideShop();
         hideMarket();
         hideBarn();
+        hideCraft();
+    }
+    if (e.key === 'c' || e.key === 'C') {
+        toggleCraft();
+    }
+});
+
+function toggleCraft() {
+    const el = document.getElementById('craft-overlay');
+    if (el && !el.classList.contains('hidden')) { hideCraft(); return; }
+    showCraft(inventory, craftItem);
+}
+
+function craftItem(recipeId) {
+    const r = RECIPES[recipeId];
+    if (!r) return;
+    const can = Object.keys(r.inputs).every(k => inventory.count(k) >= r.inputs[k]);
+    if (!can) { playDeny(); notify('Missing ingredients!'); return; }
+    for (const k in r.inputs) inventory.remove(k, r.inputs[k]);
+    inventory.add(r.out, 1);
+    playBuy();
+    notify(`Crafted ${ITEMS[r.out].name}!`);
+    refreshUI();
+    showCraft(inventory, craftItem);
+    triggerAutoSave();
+}
+
+const craftBtn = document.getElementById('craft-btn');
+if (craftBtn) craftBtn.addEventListener('click', toggleCraft);
+
+const resetBtn = document.getElementById('reset-btn');
+if (resetBtn) resetBtn.addEventListener('click', () => {
+    if (confirm('Start a New Game? This erases your current save.')) {
+        deleteSave();
+        location.reload();
     }
 });
 
 // --- Actions ---
 
 function performAction(tx, tz, tool) {
+    // Axe is special: trees live in the wild, off the farm-tile grid
+    if (tool.id === 'axe') {
+        const chopped = doChop(tx, tz);
+        // If there was no tree, don't swallow a building click (shop/market/barn)
+        if (!chopped) {
+            const t = getTile(tx, tz);
+            if (t) handleBuildingInteraction(t);
+        }
+        return;
+    }
+
     const tile = getTile(tx, tz);
     if (!tile) return;
 
@@ -155,9 +450,12 @@ function performAction(tx, tz, tool) {
             break;
 
         case 'hoe':
+            if (hasWeedAt(tx, tz)) { clearWeed(tx, tz); break; } // pull weeds before tilling
             if (tile.type === TILE.GRASS && isInFarm(tx, tz)) {
                 setTileType(tx, tz, TILE.SOIL);
                 playTill();
+                puff(tx, tz);
+                questEvent('till');
                 notify('Tilled soil!');
                 triggerAutoSave();
             } else if (tile.type === TILE.GRASS && !isInFarm(tx, tz)) {
@@ -169,17 +467,25 @@ function performAction(tx, tz, tool) {
 
         case 'water':
             if (tile.type === TILE.PLANTED || tile.type === TILE.SOIL) {
-                tile.watered = true;
+                waterTile(tile);
                 playWater();
+                sparkle(tx, 0.4, tz, [0x66bbff, 0xaad8ff, 0xffffff]); // water splash
+                questEvent('water');
                 notify('Watered!');
             }
             handleBuildingInteraction(tile);
             break;
 
         case 'hand':
+            if (hasWeedAt(tx, tz)) { clearWeed(tx, tz); break; }
             if (tile.type === TILE.PLANTED && tile.cropStage >= 3) {
                 doHarvest(tx, tz);
             }
+            handleBuildingInteraction(tile);
+            break;
+
+        case 'sprinkler':
+            placeSprinkler(tx, tz, tile);
             handleBuildingInteraction(tile);
             break;
 
@@ -190,6 +496,9 @@ function performAction(tx, tz, tool) {
                     if (plantCrop(tx, tz, cropId)) {
                         inventory.remove(tool.id);
                         playPlant();
+                        puff(tx, tz);
+                        pop(getPlayerGroup(), 0.2);
+                        questEvent('plant');
                         notify(`Planted ${CROPS[cropId].name}!`);
                         refreshUI();
                         triggerAutoSave();
@@ -204,9 +513,9 @@ function performAction(tx, tz, tool) {
 function handleBuildingInteraction(tile) {
     if (tile.type === TILE.SHOP) {
         const barnCost = getNextBarnUpgradeCost();
-        showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, barnCost);
+        showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, barnCost, buyAnimal);
     } else if (tile.type === TILE.MARKET) {
-        showMarket(inventory, sellItem);
+        showMarket(inventory, sellItem, getPrice, getTrend, sellAllCrops);
     } else if (tile.type === TILE.BARN) {
         openBarn();
     }
@@ -235,7 +544,7 @@ function buyBarnUpgrade() {
     notify(`Barn upgraded! Capacity: ${barnCapacity}`);
     refreshUI();
     const nextCost = getNextBarnUpgradeCost();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, nextCost);
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, nextCost, buyAnimal);
     triggerAutoSave();
 }
 
@@ -244,11 +553,156 @@ function doHarvest(tx, tz) {
     if (result) {
         inventory.add(result.itemId, result.qty);
         playHarvest();
-        notify(`Harvested ${result.qty} ${ITEMS[result.itemId].name}!`);
-        setTileType(tx, tz, TILE.SOIL);
+        sparkle(tx, 0.6, tz);
+        pop(getPlayerGroup(), 0.28);
+        addShake(0.04);
+        const tail = result.regrew ? ' (regrowing!)' : '';
+        questEvent('harvest');
+        notify(`Harvested ${result.qty} ${ITEMS[result.itemId].name}!${tail}`);
+        // harvestCrop owns the tile state now (soil for one-shot, replanted for regrow)
         refreshUI();
         triggerAutoSave();
     }
+}
+
+function doChop(tx, tz) {
+    const result = chopTree(tx, tz);
+    if (!result) return false;    // no tree within reach
+    playChop();
+    if (result.felled) {
+        const parts = [];
+        for (const id in result.drops) {
+            inventory.add(id, result.drops[id]);
+            parts.push(`${result.drops[id]} ${ITEMS[id] ? ITEMS[id].name : id}`);
+        }
+        playTimber();
+        woodBurst(result.worldX, result.worldZ);
+        addShake(0.14);
+        pop(getPlayerGroup(), 0.3);
+        questEvent('chop');
+        notify(`Timber! Got ${parts.join(', ')}.`);
+        refreshUI();
+        triggerAutoSave();
+    } else {
+        chip(result.worldX, result.worldZ); // wood chips fly on each hit
+        addShake(0.04);
+    }
+    return true;
+}
+
+function clearWeed(tx, tz) {
+    if (!clearWeedAt(tx, tz)) return;
+    playStore();
+    puff(tx, tz);
+    pop(getPlayerGroup(), 0.18);
+    questEvent('weed');
+    notify('Pulled the weeds!');
+    triggerAutoSave();
+}
+
+// --- Idle autoplay (maintenance only) ---
+
+// AFK maintenance: collect loose drops, water dry crops, and wander.
+// Harvesting of plants is deliberately LEFT TO THE PLAYER.
+function findMaintenanceTask() {
+    const p = getPlayerPos();
+
+    // 1. Walk to the nearest drop (egg/milk/apple) — proximity auto-collects it
+    const a = getNearestDrop(p.x, p.z);
+    const f = getNearestFruitDrop(p.x, p.z);
+    let drop = a;
+    if (f && (!a || ((f.x - p.x) ** 2 + (f.z - p.z) ** 2) < ((a.x - p.x) ** 2 + (a.z - p.z) ** 2))) drop = f;
+    if (drop) return { x: Math.round(drop.x), z: Math.round(drop.z), tool: { id: 'move' } };
+
+    // 2. Water a dry crop (maintenance)
+    let water = null;
+    forEachFarmTile((x, z, t) => {
+        if (water || autoSkip.has(x + ',' + z)) return;
+        if (t.type === TILE.PLANTED && t.cropStage < 3 && !t.watered) water = { x, z, tool: { id: 'water' } };
+    });
+    if (water) return water;
+
+    // 3. Wander to a nearby walkable tile so Jenn ambles around
+    for (let i = 0; i < 10; i++) {
+        const wx = p.x + Math.floor(Math.random() * 7) - 3;
+        const wz = p.z + Math.floor(Math.random() * 7) - 3;
+        if ((wx !== p.x || wz !== p.z) && !isSolidTile(wx, wz)) return { x: wx, z: wz, tool: { id: 'move' } };
+    }
+    return null;
+}
+
+let autoBadgeEl = null;
+function setAutoBadge(on) {
+    if (!autoBadgeEl) {
+        autoBadgeEl = document.createElement('div');
+        autoBadgeEl.id = 'auto-badge'; // styled via style.css (unified design system)
+        autoBadgeEl.textContent = '🤖 Auto-farming…';
+        document.body.appendChild(autoBadgeEl);
+    }
+    autoBadgeEl.style.opacity = on ? '1' : '0';
+}
+
+function placeSprinkler(tx, tz, tile) {
+    if (!inventory.has('sprinkler')) {
+        playDeny();
+        notify('No sprinklers! Buy one at the shop.');
+        return;
+    }
+    if (!isInFarm(tx, tz) || (tile.type !== TILE.SOIL && tile.type !== TILE.GRASS)) {
+        playDeny();
+        notify("Can't place a sprinkler there.");
+        return;
+    }
+    inventory.remove('sprinkler');
+    addSprinkler(tx, tz);
+    playExpand();
+    puff(tx, tz);
+    notify('Sprinkler placed! It waters nearby tiles.');
+    refreshUI();
+    triggerAutoSave();
+}
+
+// --- Health & eating ---
+// Health gently drains while you work; eat crops/herbs/potions to top it up.
+function healValue(id) {
+    if (id === 'wood') return 0;                  // not food
+    if (ITEMS[id] && ITEMS[id].crafted) return 45; // potions / crafted goods
+    const c = CROPS[id];
+    if (c && c.kind === 'herb') return 16;        // mint
+    if (c && c.kind === 'flower') return 12;      // lavender, rose, tulip, sunflower
+    return 6;                                      // crops, fruit, produce
+}
+
+function eatItem(id) {
+    if (inventory.count(id) <= 0) return;
+    const heal = healValue(id);
+    if (heal <= 0) { notify("Can't eat that!"); return; }
+    inventory.remove(id, 1);
+    health = Math.min(MAX_HEALTH, health + heal);
+    const p = getPlayerWorldPos();
+    hearts(p.x, 1.0, p.z);
+    playStore();
+    notify(`Ate ${ITEMS[id].name} — +${heal} health 💚`);
+    refreshUI();
+    triggerAutoSave();
+}
+
+// A drive-by buyer stops at the roadside stall and buys one good you're holding
+function buyerPurchase(wx, wz) {
+    for (const id in ITEMS) {
+        if (ITEMS[id].type !== 'crop' || inventory.count(id) <= 0) continue;
+        inventory.remove(id, 1);
+        const price = getPrice(id);
+        coins += price;
+        recordSale(id, 1); // selling still nudges the market price down
+        playSell();
+        coinBurst(wx, wz);
+        notify(`A passerby bought ${ITEMS[id].name} for 🪙${price}!`);
+        refreshUI();
+        triggerAutoSave();
+        return;
+    }
+    // nothing on hand to sell — the buyer just drives on
 }
 
 function buyItem(itemId) {
@@ -263,7 +717,7 @@ function buyItem(itemId) {
     playBuy();
     notify(`Bought ${item.name}!`);
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost());
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 
@@ -284,7 +738,23 @@ function buyExpansion() {
     const level = getFarmLevel();
     notify(`Farm expanded to level ${level}!`);
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost());
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
+
+function buyAnimal(species) {
+    const def = ANIMALS[species];
+    if (!def || coins < def.cost) {
+        playDeny();
+        notify("Can't afford that!");
+        return;
+    }
+    coins -= def.cost;
+    buyAnimalEntity(species);
+    playBuy();
+    notify(`Bought a ${def.name}!`);
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 
@@ -293,13 +763,38 @@ function sellItem(itemId) {
     if (!item || !inventory.has(itemId)) return;
     const qty = inventory.count(itemId);
     inventory.remove(itemId, qty);
-    const earned = qty * item.sellPrice;
+    const earned = qty * getPrice(itemId);
     coins += earned;
+    recordSale(itemId, qty);   // flooding the market lowers future price
     playSell();
+    { const pp = getPlayerWorldPos(); coinBurst(pp.x, pp.z); addShake(0.05); }
     notify(`Sold ${qty} ${item.name} for 🪙${earned}!`);
     refreshUI();
-    showMarket(inventory, sellItem);
+    showMarket(inventory, sellItem, getPrice, getTrend, sellAllCrops);
     triggerAutoSave();
+}
+
+function sellAllCrops() {
+    let total = 0, count = 0;
+    for (const id in ITEMS) {
+        if (ITEMS[id].type !== 'crop') continue;
+        const qty = inventory.count(id);
+        if (qty <= 0) continue;
+        inventory.remove(id, qty);
+        const earned = qty * getPrice(id);
+        coins += earned; total += earned; count += qty;
+        recordSale(id, qty); // flooding still tanks future prices
+    }
+    if (count > 0) {
+        playSell();
+        const pp = getPlayerWorldPos(); coinBurst(pp.x, pp.z); addShake(0.07);
+        notify(`Sold ${count} items for 🪙${total}!`);
+        refreshUI();
+        showMarket(inventory, sellItem, getPrice, getTrend, sellAllCrops);
+        triggerAutoSave();
+    } else {
+        notify('Nothing to sell!');
+    }
 }
 
 // --- Barn ---
@@ -386,6 +881,8 @@ function refreshUI() {
     const progress = getDayProgress();
     updateHUD(coins, day, getTimeString(progress));
     updateHotbar(selectedSlot, inventory, selectSlot);
+    updateBag(inventory, eatItem);
+    updateHealth(health, MAX_HEALTH);
 }
 
 // --- Save ---
@@ -396,17 +893,26 @@ function triggerAutoSave() {
     saveTimer = setTimeout(() => {
         const pos = getPlayerPos();
         saveGame({
-            version: 3,
+            version: 4,
             coins,
             day,
             gameTime,
+            playerName,
+            health,
             farmLevel: getFarmLevel(),
             barnLevel,
             playerX: pos.x,
             playerZ: pos.z,
             inventory: inventory.serialize(),
             barnStorage: barnStorage.serialize(),
+            market: serializeMarket(),
+            animals: serializeAnimals(),
             tiles: serializeWorld(),
+            trees: serializeTrees(),
+            sprinklers: serializeSprinklers(),
+            weeds: serializeWeeds(),
+            quests: serializeQuests(),
+            lastSaved: Date.now(),
         });
     }, 1000);
 }
@@ -440,14 +946,45 @@ function gameLoop(now) {
         const dist = Math.abs(pos.x - pendingAction.x) + Math.abs(pos.z - pendingAction.z);
         if (dist <= 1) {
             performAction(pendingAction.x, pendingAction.z, pendingAction.tool);
+        } else if (pendingAction.auto) {
+            // auto-farm couldn't reach this tile — skip it for the rest of this AFK session
+            autoSkip.add(pendingAction.x + ',' + pendingAction.z);
+            if (autoSkip.size > 40) autoSkip.clear();
         }
         pendingAction = null;
     }
 
+    // Idle autoplay: once onboarding is done, an idle player's farm tends itself
+    autoCheckTimer -= dt;
+    const idle = (performance.now() - lastInputAt) > AFK_MS;
+    const onboardingDone = serializeQuests().done;
+    const wantAuto = idle && onboardingDone && !namePromptOpen && !isOverlayOpen();
+    if (wantAuto && !isMoving() && !pendingAction && autoCheckTimer <= 0) {
+        autoCheckTimer = 1.0; // scan at most once a second
+        const task = findMaintenanceTask();
+        if (task) { task.auto = true; pendingAction = task; moveTo(task.x, task.z); }
+    }
+    if (wantAuto !== autoActive) { autoActive = wantAuto; setAutoBadge(autoActive); }
+
+    // Health gently drains during active play; pauses while AFK so idle stays safe
+    if (!autoActive && health > 0) health = Math.max(0, health - HEALTH_DRAIN * dt);
+    healthUiTimer -= dt;
+    if (healthUiTimer <= 0) { healthUiTimer = 0.25; updateHealth(health, MAX_HEALTH); }
+
     updateCrops(dt);
+    updateTrees(dt, getPlayerWorldPos(), onCollectFruit);
+    updateSprinklers(dt);
+    updateBuyers(dt, buyerPurchase);
+    updateJuice(dt);
 
     const ppos = getPlayerWorldPos();
-    updateCamera(new THREE.Vector3(ppos.x, 0, ppos.z), dt);
+    updateAnimals(dt, ppos, onCollectProduce);
+    updateGrandpa(dt, {
+        coins, day, name: playerName,
+        wood: inventory.count('wood'),
+        crops: Object.entries(ITEMS).reduce((s, [id, v]) => v.type === 'crop' ? s + inventory.count(id) : s, 0),
+    });
+    updateCamera(new THREE.Vector3(ppos.x, 0, ppos.z), dt, isMoving());
 
     // Day/night cycle
     const dayProgress = getDayProgress();
@@ -457,6 +994,7 @@ function gameLoop(now) {
     const newDay = Math.floor(gameTime / DAY_LENGTH) + 1;
     if (newDay > day) {
         day = newDay;
+        dailyTick();          // market demand drifts, prices recover
         playNewDay();
         notify(`Day ${day} begins!`);
         refreshUI();

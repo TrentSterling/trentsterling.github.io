@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // Shared curvature uniforms - all patched materials reference these
 export const curveUniforms = {
-    curvature: { value: 0.014 },
+    curvature: { value: 0.022 }, // stronger "rolling world" horizon (was 0.014)
     curveOrigin: { value: new THREE.Vector3() }
 };
 
@@ -62,7 +62,7 @@ const CAMERA_HEIGHT = 7;
 const CAMERA_DISTANCE = 7.5;    // 7 / tan(0.70) ≈ 7.5 → player at screen center
 
 // Lights (module-level for day/night control)
-let sunLight, ambientLight, hemiLight;
+let sunLight, ambientLight, hemiLight, moonLight;
 
 export function initRenderer(container) {
     scene = new THREE.Scene();
@@ -92,6 +92,13 @@ export function initRenderer(container) {
 
     hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x556633, 0.4);
     scene.add(hemiLight);
+
+    // Moonlight - a cool directional fill that fades IN as the sun fades OUT.
+    // Keeps objects shaded/3D at night instead of going flat. Comes from the
+    // opposite side of the sun so night has its own distinct key direction.
+    moonLight = new THREE.DirectionalLight(0x8fa6e0, 0);
+    moonLight.position.set(9, 16, 7);
+    scene.add(moonLight);
 
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -166,6 +173,10 @@ export function updateDayNight(progress) {
     // Hemisphere light
     lerpHex(hemiLight.color, a.hemiSky, b.hemiSky, f);
     lerpHex(hemiLight.groundColor, a.hemiGnd, b.hemiGnd, f);
+
+    // Moonlight fill: fades in as the sun fades out so night keeps 3D form.
+    const sunStrength = sunLight.intensity / 1.3;            // 0..1
+    moonLight.intensity = Math.max(0, 1 - sunStrength) * 0.7;
 }
 
 /** Returns true if it's nighttime (progress in dark range) */
@@ -174,18 +185,71 @@ export function isNightTime(progress) {
 }
 
 // Camera follow - only translates, never rotates
-export function updateCamera(targetPos, dt) {
-    const desiredX = targetPos.x;
-    const desiredY = targetPos.y + CAMERA_HEIGHT;
-    const desiredZ = targetPos.z + CAMERA_DISTANCE;
+let cameraSnapped = false;
 
-    const smooth = 1 - Math.exp(-4 * dt);
+// Debug/free camera override (for automated screenshots). When set, the camera
+// frames a fixed world point instead of following the player, with tunable
+// height/distance/pitch. Driven by URL params - see main.js.
+let camHeight = CAMERA_HEIGHT;
+let camDistance = CAMERA_DISTANCE;
+let debugTarget = null;
+
+// Screen shake - punchy positional jitter that decays fast. Added by juice events.
+let shake = 0;
+export function addShake(mag) { shake = Math.min(shake + mag, 0.6); }
+
+// Drag-to-pan: the camera can be dragged off the player, then lerps back to
+// following once the player moves again. Clamped so you can't lose the farm.
+let panX = 0, panZ = 0;
+const PAN_LIMIT = 16;
+export function panCamera(dx, dz) {
+    panX = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, panX + dx));
+    panZ = Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, panZ + dz));
+}
+export function recenterCamera() { panX = 0; panZ = 0; }
+
+export function setDebugCamera({ x, z, height, distance, pitch } = {}) {
+    if (x != null && z != null) debugTarget = { x, z };
+    if (height != null) camHeight = height;
+    if (distance != null) camDistance = distance;
+    if (pitch != null && camera) camera.rotation.set(pitch, 0, 0);
+    cameraSnapped = false; // re-snap to the new framing on the next frame
+}
+
+export function updateCamera(targetPos, dt, playerMoving) {
+    const t = debugTarget || targetPos;
+
+    // When the player runs around, lerp the drag-pan back to zero (re-follow)
+    if (!debugTarget && playerMoving && (panX !== 0 || panZ !== 0)) {
+        const k = 1 - Math.exp(-5 * dt);
+        panX += (0 - panX) * k;
+        panZ += (0 - panZ) * k;
+        if (Math.abs(panX) < 0.02) panX = 0;
+        if (Math.abs(panZ) < 0.02) panZ = 0;
+    }
+
+    const ox = debugTarget ? 0 : panX;
+    const oz = debugTarget ? 0 : panZ;
+    const desiredX = t.x + ox;
+    const desiredY = (debugTarget ? 0 : targetPos.y) + camHeight;
+    const desiredZ = t.z + oz + camDistance;
+
+    // First frame: snap directly to the player (no fly-in from world origin)
+    const smooth = cameraSnapped ? 1 - Math.exp(-4 * dt) : 1;
+    cameraSnapped = true;
     camera.position.x += (desiredX - camera.position.x) * smooth;
     camera.position.y += (desiredY - camera.position.y) * smooth;
     camera.position.z += (desiredZ - camera.position.z) * smooth;
 
-    // Curvature origin = player position (ground near player is flat)
-    curveUniforms.curveOrigin.value.set(targetPos.x, 0, targetPos.z);
+    // Screen shake on top of the followed position, decaying each frame
+    if (shake > 0.001) {
+        camera.position.x += (Math.random() * 2 - 1) * shake;
+        camera.position.y += (Math.random() * 2 - 1) * shake;
+        shake *= Math.max(0, 1 - 12 * dt);
+    } else shake = 0;
+
+    // Curvature origin = framed point (ground near it is flat), incl. pan
+    curveUniforms.curveOrigin.value.set(t.x + ox, 0, t.z + oz);
 }
 
 /**

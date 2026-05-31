@@ -268,19 +268,79 @@ export function createToolIcon(toolId) {
             }
             ctx.fillRect(4, 14, 3, 8); // thumb
             break;
+        case 'axe':
+            // Wooden handle
+            ctx.strokeStyle = '#8b6914';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(10, 30);
+            ctx.lineTo(22, 8);
+            ctx.stroke();
+            // Steel axe head
+            ctx.fillStyle = '#b8b8c0';
+            ctx.beginPath();
+            ctx.moveTo(18, 4);
+            ctx.lineTo(30, 8);
+            ctx.lineTo(28, 16);
+            ctx.lineTo(16, 12);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#7a7a85';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            break;
+        case 'sprinkler':
+            // Post with a blue sprinkler head + droplets
+            ctx.fillStyle = '#6b7886';
+            ctx.fillRect(14, 14, 4, 16);
+            ctx.fillStyle = '#3f8fd0';
+            ctx.beginPath(); ctx.arc(16, 12, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#aad8ff';
+            for (const [dx, dy] of [[6, 4], [-6, 4], [8, 9], [-8, 9]]) {
+                ctx.beginPath(); ctx.arc(16 + dx, 12 + dy, 1.6, 0, Math.PI * 2); ctx.fill();
+            }
+            break;
+        case 'wood':
+            // Stacked logs (end-on)
+            ctx.fillStyle = '#8b5a2b';
+            ctx.fillRect(5, 12, 22, 8);
+            ctx.fillRect(9, 20, 22, 8);
+            // Log ends (rings)
+            ctx.fillStyle = '#c8a86e';
+            ctx.beginPath(); ctx.arc(7, 16, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(11, 24, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#6e4a26';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(7, 16, 2, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(11, 24, 2, 0, Math.PI * 2); ctx.stroke();
+            break;
         default:
             // Seed packet
             const colors = {
                 'carrot_seed': '#f4845f',
                 'tomato_seed': '#e63946',
                 'potato_seed': '#c8a86e',
-                'wheat_seed': '#deb841'
+                'wheat_seed': '#deb841',
+                'strawberry_seed': '#e88',
+                'mint_seed': '#7ccf90',
+                'lavender_seed': '#b59ad6',
+                'tulip_seed': '#e88bb0',
+                'sunflower_seed': '#e8c44a',
+                'rose_seed': '#d6788a',
+                'square_watermelon_seed': '#3a8a4a'
             };
             const cropColors = {
                 'carrot_seed': '#ff7733',
                 'tomato_seed': '#ff2222',
                 'potato_seed': '#cc9944',
-                'wheat_seed': '#ddbb33'
+                'wheat_seed': '#ddbb33',
+                'strawberry_seed': '#e2452f',
+                'mint_seed': '#5fd07a',
+                'lavender_seed': '#9b6fd6',
+                'tulip_seed': '#e0588a',
+                'sunflower_seed': '#f2c21b',
+                'rose_seed': '#d62f4a',
+                'square_watermelon_seed': '#2f7a32'
             };
             ctx.fillStyle = colors[toolId] || '#888';
             ctx.fillRect(6, 4, 20, 24);
