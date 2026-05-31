@@ -66,6 +66,7 @@ import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, g
 import { harvestQuality } from '../js/quality.js';
 import { hideAllOverlays, anyOverlayOpen, initOverlayChrome } from '../js/overlays.js';
 import { applyMeal, tickBuffs, luckMult, speedMult, clearBuffs, activeBuffs, fmtBuffTime } from '../js/buffs.js';
+import { tileKey, packTile, createDeltaSet, packPlayer } from '../js/netsync.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -348,6 +349,28 @@ check('buffs: HUD helpers format remaining time + tag each buff with an icon (#5
     clearBuffs();
     assert(activeBuffs().length === 0, 'cleared');
     return '1:30 / 45s / 2:05, luck pill = 🍀';
+});
+
+check('netsync: tile deltas + player packets round-trip JSON-safe (#8 groundwork)', () => {
+    // packTile: only meaningful fields, defaults omitted (small packets)
+    const soil = packTile({ type: 1 });
+    assert(soil.ty === 1 && !('c' in soil) && !('w' in soil), 'soil should pack to just its type');
+    const planted = packTile({ type: 2, crop: 'carrot', cropStage: 2, watered: true });
+    assert(planted.ty === 2 && planted.c === 'carrot' && planted.s === 2 && planted.w === 1, 'planted+watered should pack fully');
+    // a delta set records edits and round-trips through JSON via encode/apply
+    const ds = createDeltaSet();
+    ds.record(3, 7, { type: 2, crop: 'tomato', cropStage: 1, watered: true });
+    ds.record(-2, 40, { type: 1 });
+    assert(ds.size === 2 && ds.has(3, 7), 'delta set should hold both edits');
+    const wire = JSON.parse(JSON.stringify(ds.encode())); // must survive transport
+    const got = {};
+    ds.apply(wire, (x, z, t) => { got[tileKey(x, z)] = { x, z, t }; });
+    assert(got['3,7'].x === 3 && got['3,7'].z === 7 && got['3,7'].t.c === 'tomato', 'delta applied at the right coord');
+    assert(got['-2,40'].x === -2 && got['-2,40'].z === 40, 'negative/large coords must parse back');
+    // player packet stays tiny but keeps identity
+    const pp = packPlayer({ x: 12.34567, z: -8.9876, r: 1.5708, name: 'Jenn' });
+    assert(pp.x === 12.35 && pp.z === -8.99 && pp.n === 'Jenn', `player packed wrong: ${JSON.stringify(pp)}`);
+    return `2 deltas round-trip; player @(${pp.x}, ${pp.z})`;
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {
