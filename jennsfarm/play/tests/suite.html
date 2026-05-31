@@ -43,6 +43,7 @@ import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates,
 import { createSpatialHash } from '../js/spatialhash.js';
 import { TOOL_TIERS, getToolLevel, getToolRadius, nextUpgrade, upgradeTool, tilesInRadius, serializeEquipment, loadEquipment } from '../js/equipment.js';
 import { nextMorning } from '../js/home.js';
+import { terrainHeight, AMP } from '../js/terrain.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -853,6 +854,22 @@ check('livestock get hungry over time, and feeding tops them back up', () => {
     assert(fed && fed.species === 'chicken', 'feedNearest did not reach the chicken');
     assert(getFedLevel('chicken') === 1, 'feeding did not restore hunger to full');
     return `hungry ${before.toFixed(2)} → fed 1.00`;
+});
+
+// ---------- TERRAIN HEIGHTMAP (#39) ----------
+
+check('terrain height is flat over the core farm, gentle + deterministic in the wild', () => {
+    assert(terrainHeight(24, 24) === 0, 'farm centre must stay flat');
+    assert(terrainHeight(10, 40) === 0, 'inside the core box must stay flat');
+    let max = 0;
+    for (let x = -60; x <= 110; x += 7) for (let z = -60; z <= 110; z += 7) {
+        const h = terrainHeight(x, z);
+        assert(Number.isFinite(h) && Math.abs(h) <= AMP + 1e-9, `height ${h} out of range at ${x},${z}`);
+        max = Math.max(max, Math.abs(h));
+    }
+    assert(max > 0.05, 'the wild should actually undulate');
+    assert(terrainHeight(123, -45) === terrainHeight(123, -45), 'must be deterministic');
+    return `flat core, wild within ±${AMP} (max ${max.toFixed(2)})`;
 });
 
 // ---------- HOME (sleep) ----------
