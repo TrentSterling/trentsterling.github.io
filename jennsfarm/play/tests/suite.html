@@ -54,6 +54,7 @@ import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet } from '.
 import { pickFish, FISH, fishIsValid } from '../js/fishing.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
 import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
+import { updateCloudShadows } from '../js/cloudshadows.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -933,6 +934,15 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- CLOUD SHADOWS (#43) ----------
+
+check('cloud shadows init + drift without throwing', () => {
+    ensureWorld();
+    updateCloudShadows(0.1, { x: 24, z: 24 });
+    for (let i = 0; i < 12; i++) updateCloudShadows(0.1, { x: 24 + i, z: 24 }); // drift + follow
+    return 'cloud shadows drift OK';
 });
 
 // ---------- SYSTEM REGISTRY (mod-loader core, #9) ----------

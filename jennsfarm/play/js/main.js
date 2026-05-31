@@ -12,8 +12,9 @@ import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showS
 import { nextMorning } from './home.js';
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, serializeMail, loadMail } from './mailbox.js';
 import { healValue } from './foods.js';
-import './weather.js';   // self-registers the weather system (#9)
-import './fireflies.js'; // self-registers the fireflies/butterflies system (#9)
+import './weather.js';      // self-registers the weather system (#9)
+import './fireflies.js';    // self-registers the fireflies/butterflies system (#9)
+import './cloudshadows.js'; // self-registers drifting cloud shadows (#43) — mod-loader proof: one import, no other wiring
 import { updateSystems } from './registry.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
