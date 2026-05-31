@@ -327,7 +327,8 @@ export function createToolIcon(toolId) {
                 'tulip_seed': '#e88bb0',
                 'sunflower_seed': '#e8c44a',
                 'rose_seed': '#d6788a',
-                'square_watermelon_seed': '#3a8a4a'
+                'square_watermelon_seed': '#3a8a4a',
+                'grape_seed': '#9b6fd6'
             };
             const cropColors = {
                 'carrot_seed': '#ff7733',
@@ -340,7 +341,8 @@ export function createToolIcon(toolId) {
                 'tulip_seed': '#e0588a',
                 'sunflower_seed': '#f2c21b',
                 'rose_seed': '#d62f4a',
-                'square_watermelon_seed': '#2f7a32'
+                'square_watermelon_seed': '#2f7a32',
+                'grape_seed': '#7a3f9a'
             };
             ctx.fillStyle = colors[toolId] || '#888';
             ctx.fillRect(6, 4, 20, 24);
