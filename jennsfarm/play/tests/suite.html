@@ -40,6 +40,7 @@ import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnim
 import { CHUNK, worldToChunk, desiredChunks, updateChunks, getLoadedChunkCount, resetChunks } from '../js/chunks.js';
 import { findPath } from '../js/pathfind.js';
 import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates, getCrateCount, serializeCrates, loadCrates } from '../js/crates.js';
+import { createSpatialHash } from '../js/spatialhash.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -595,11 +596,11 @@ check('chunk generation is deterministic (same coords → same terrain)', () => 
 
 check('the wild is packed with critters, skunks especially', () => {
     initAnimals(false);
-    assert(getAnimalCount() >= 18, `expected a lively population, got ${getAnimalCount()}`);
-    assert(getSpeciesCount('skunk') >= 6, `wifey wants more skunks, only ${getSpeciesCount('skunk')}`);
+    assert(getAnimalCount() >= 20, `expected a lively population, got ${getAnimalCount()}`);
+    assert(getSpeciesCount('skunk') >= 12, `wifey wants more skunks, only ${getSpeciesCount('skunk')}`);
     // re-init must not pile up duplicates (clears first)
     initAnimals(false);
-    assert(getSpeciesCount('skunk') >= 6 && getSpeciesCount('skunk') <= 12, `skunk count off after re-init: ${getSpeciesCount('skunk')}`);
+    assert(getSpeciesCount('skunk') >= 12 && getSpeciesCount('skunk') <= 16, `skunk count off after re-init: ${getSpeciesCount('skunk')}`);
     return `${getAnimalCount()} critters, ${getSpeciesCount('skunk')} skunks`;
 });
 
@@ -703,6 +704,45 @@ check('offline delivery leaves a few crates waiting (capped)', () => {
     assert(getCrateCount() === n, 'offline crates not actually placed');
     initCrates();
     return `${n} crates waiting after long absence`;
+});
+
+// ---------- SPATIAL HASH (fast critter queries) ----------
+
+check('spatial hash returns the nearest matching item within radius', () => {
+    const h = createSpatialHash(5);
+    const a = { x: 0, z: 0, kind: 'cat' };
+    const b = { x: 3, z: 0, kind: 'dog' };
+    const c = { x: 12, z: 0, kind: 'dog' };
+    h.insert(a, a.x, a.z); h.insert(b, b.x, b.z); h.insert(c, c.x, c.z);
+    assert(h.nearest(0, 0, 20, o => o.kind === 'dog') === b, 'should find the closer dog (b)');
+    assert(h.nearest(0, 0, 2, o => o.kind === 'dog') === null, 'nothing should match within radius 2');
+    assert(h.nearest(0, 0, 20, o => o.kind === 'cat') === a, 'should find the cat');
+    return 'nearest-within-radius OK';
+});
+
+check('spatial hash nearest agrees with brute force over a random set', () => {
+    const h = createSpatialHash(4);
+    const items = [];
+    for (let i = 0; i < 80; i++) {
+        const it = { x: Math.floor(Math.random() * 60 - 30), z: Math.floor(Math.random() * 60 - 30) };
+        items.push(it); h.insert(it, it.x, it.z);
+    }
+    const qx = 2, qz = -3, R = 16;
+    let brute = null, bd = R * R;
+    for (const it of items) { const d = (it.x - qx) ** 2 + (it.z - qz) ** 2; if (d < bd) { bd = d; brute = it; } }
+    const hit = h.nearest(qx, qz, R, null);
+    const dh = hit ? (hit.x - qx) ** 2 + (hit.z - qz) ** 2 : Infinity;
+    const db = brute ? (brute.x - qx) ** 2 + (brute.z - qz) ** 2 : Infinity;
+    assert(dh === db, `hash nearest dist ${dh} != brute ${db}`);
+    return `hash == brute over ${items.length} items`;
+});
+
+check('spatial hash within() returns everything inside the radius', () => {
+    const h = createSpatialHash(5);
+    for (let i = 0; i < 10; i++) { const it = { x: i, z: 0 }; h.insert(it, it.x, it.z); } // x=0..9
+    assert(h.within(0, 0, 4.5, null).length === 5, `expected 5 within 4.5, got ${h.within(0, 0, 4.5, null).length}`);
+    assert(h.within(0, 0, 100, o => o.x >= 7).length === 3, 'pred filter in within() failed');
+    return 'within() + predicate OK';
 });
 
 // ---------- RENDER ----------
