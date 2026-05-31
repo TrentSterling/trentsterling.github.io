@@ -55,7 +55,7 @@ import { pickFish, FISH, fishIsValid } from '../js/fishing.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
 import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
 import { updateCloudShadows } from '../js/cloudshadows.js';
-import { updateVisitors, getVisitorCount, clearVisitors } from '../js/visitors.js';
+import { updateVisitors, getVisitorCount, clearVisitors, placeFoodBowl, hasFoodBowl, serializeVisitors, loadVisitors } from '../js/visitors.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -949,6 +949,23 @@ check('visitor cats wander in over time, capped, then leave', () => {
     clearVisitors();
     assert(getVisitorCount() === 0, 'clear failed');
     return `up to ${max} cats visited`;
+});
+
+check('a food bowl draws more cats, faster, and persists', () => {
+    ensureWorld();
+    clearVisitors();
+    assert(!hasFoodBowl(), 'should start with no bowl');
+    placeFoodBowl();
+    assert(hasFoodBowl(), 'bowl not placed');
+    let max = 0;
+    for (let i = 0; i < 400; i++) { updateVisitors(0.5); max = Math.max(max, getVisitorCount()); } // ~200s with the bowl out
+    assert(max > 4, `bowl should draw more than the base cap of 4 (max ${max})`);
+    assert(serializeVisitors().bowl === true, 'bowl not serialized');
+    clearVisitors();
+    loadVisitors({ bowl: true });
+    assert(hasFoodBowl(), 'bowl not restored from save');
+    clearVisitors();
+    return `bowl drew up to ${max} cats`;
 });
 
 // ---------- CLOUD SHADOWS (#43) ----------
