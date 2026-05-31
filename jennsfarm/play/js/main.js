@@ -9,6 +9,7 @@ import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOf
 import { createInventory, ITEMS } from './inventory.js';
 import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, showHome, hideHome, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
 import { nextMorning } from './home.js';
+import { healValue } from './foods.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -871,14 +872,7 @@ function placeSprinkler(tx, tz, tile) {
 
 // --- Health & eating ---
 // Health gently drains while you work; eat crops/herbs/potions to top it up.
-function healValue(id) {
-    if (id === 'wood') return 0;                  // not food
-    if (ITEMS[id] && ITEMS[id].crafted) return 45; // potions / crafted goods
-    const c = CROPS[id];
-    if (c && c.kind === 'herb') return 16;        // mint
-    if (c && c.kind === 'flower') return 12;      // lavender, rose, tulip, sunflower
-    return 6;                                      // crops, fruit, produce
-}
+// healValue lives in foods.js (shared with the Bag tooltips + unit-tested).
 
 function eatItem(id) {
     if (inventory.count(id) <= 0) return;
