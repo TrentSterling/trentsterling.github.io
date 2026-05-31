@@ -181,6 +181,19 @@ body {
     opacity: 0; transition: opacity 0.3s;
 }
 
+/* ---- Active meal-buff pills (top-right, under the AFK badge) ---- */
+#buff-bar {
+    position: fixed; top: 54px; right: 16px; z-index: 12; pointer-events: none;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+}
+.buff-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--panel); border: 1px solid var(--edge); color: var(--cream);
+    font: 800 12px/1 var(--font); padding: 6px 10px; border-radius: var(--radius);
+    box-shadow: var(--shadow); backdrop-filter: var(--blur);
+}
+.buff-pill span { color: var(--gold); font-weight: 700; }
+
 /* ---- Name prompt modal ---- */
 #name-modal {
     position: fixed; inset: 0; z-index: 200; display: flex;

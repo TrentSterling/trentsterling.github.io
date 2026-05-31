@@ -65,7 +65,7 @@ import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactorie
 import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
 import { harvestQuality } from '../js/quality.js';
 import { hideAllOverlays, anyOverlayOpen, initOverlayChrome } from '../js/overlays.js';
-import { applyMeal, tickBuffs, luckMult, speedMult, clearBuffs } from '../js/buffs.js';
+import { applyMeal, tickBuffs, luckMult, speedMult, clearBuffs, activeBuffs, fmtBuffTime } from '../js/buffs.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -334,6 +334,20 @@ check('buffs: a growth meal makes crops ripen faster (#50)', () => {
     assert(baseP > 0, 'baseline crop should have grown');
     assert(buffP > baseP * 1.2, `growth buff should clearly outpace baseline (buff ${buffP.toFixed(1)} vs base ${baseP.toFixed(1)})`);
     return `growth buff ${buffP.toFixed(1)} > baseline ${baseP.toFixed(1)}`;
+});
+
+check('buffs: HUD helpers format remaining time + tag each buff with an icon (#50)', () => {
+    clearBuffs();
+    assert(fmtBuffTime(90) === '1:30', `90s → ${fmtBuffTime(90)}`);
+    assert(fmtBuffTime(45) === '45s', `45s → ${fmtBuffTime(45)}`);
+    assert(fmtBuffTime(125) === '2:05', `125s → ${fmtBuffTime(125)}`);
+    assert(fmtBuffTime(0) === '0s' && fmtBuffTime(-3) === '0s', 'non-positive time → 0s');
+    applyMeal('honey_cake');
+    const list = activeBuffs();
+    assert(list.length === 1 && list[0].stat === 'luck' && list[0].icon === '🍀', 'luck buff should carry a 🍀 icon for the pill');
+    clearBuffs();
+    assert(activeBuffs().length === 0, 'cleared');
+    return '1:30 / 45s / 2:05, luck pill = 🍀';
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {
