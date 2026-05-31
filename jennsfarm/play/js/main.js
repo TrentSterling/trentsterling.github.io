@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
 import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile } from './world.js';
-import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender } from './player.js';
+import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender, getTarget, getPath } from './player.js';
+import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDebugPath, tickDebug } from './debug.js';
 import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
 import { getSeason } from './seasons.js';
@@ -319,6 +320,7 @@ function onCollectProduce(itemId, qty) {
 updateChunks(getPlayerWorldPos().x, getPlayerWorldPos().z);
 
 refreshUI();
+initDebug(); // debug overlay (FPS + mouse/target/path) — toggle with backtick
 
 // --- Input ---
 
@@ -473,6 +475,7 @@ container.addEventListener('mousemove', (e) => {
     if (isOverlayOpen()) { hideHighlight(); return; }
 
     const hit = raycastGround(e);
+    if (hit) setMouseHit(hit.worldX, hit.worldZ); // debug: where the cursor actually lands
     if (hit && hit.x >= 0 && hit.x < WORLD_SIZE && hit.z >= 0 && hit.z < WORLD_SIZE) {
         const tile = getTile(hit.x, hit.z);
         showHighlight(hit.x, hit.z, highlightColor(getSelectedTool().id, tile, hit.x, hit.z));
@@ -506,6 +509,7 @@ document.addEventListener('keydown', (e) => {
         if (el && !el.classList.contains('hidden')) hideFactory();
         else openFactory();
     }
+    if (e.key === '`' || e.code === 'Backquote') toggleDebug(); // debug overlay
 });
 
 function toggleCraft() {
@@ -1355,7 +1359,8 @@ let lastTime = performance.now();
 function gameLoop(now) {
     requestAnimationFrame(gameLoop);
 
-    const dt = Math.min((now - lastTime) / 1000, 0.1);
+    const frameMs = now - lastTime;
+    const dt = Math.min(frameMs / 1000, 0.1);
     lastTime = now;
     gameTime += dt;
 
@@ -1461,6 +1466,11 @@ function gameLoop(now) {
         refreshUI();
         triggerAutoSave();
     }
+
+    // Debug overlay: show the move target + path, refresh FPS
+    setPlayerTarget(getTarget());
+    setDebugPath(getPath());
+    tickDebug(frameMs);
 
     render();
 }

@@ -213,6 +213,10 @@ export function isMoving() {
     return moving;
 }
 
+// Debug viz hooks (#55): current move target + active A* path, or null.
+export function getTarget() { return moving ? { x: targetX, z: targetZ } : null; }
+export function getPath() { return path ? path.slice() : null; }
+
 export function setPlayerPos(x, z) {
     currentX = x;
     currentZ = z;

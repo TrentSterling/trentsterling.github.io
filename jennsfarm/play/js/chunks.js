@@ -117,7 +117,7 @@ function buildChunk(cx, cz) {
             } else if (n > 0.73 && n2 > 0.55) {
                 rocks.push({ x, z, s: 0.6 + noise(x, z, 11) * 0.8 });
             } else {
-                const blades = n2 > 0.5 ? 3 : (n2 > 0.25 ? 2 : 1);
+                const blades = n2 > 0.62 ? 2 : (n2 > 0.3 ? 1 : 0); // thinned for perf (#35)
                 for (let i = 0; i < blades; i++) {
                     grass.push({ x: x + (noise(x + i, z, 70) - 0.5) * 0.85, z: z + (noise(x, z + i, 71) - 0.5) * 0.85, rot: noise(x + i, z + i, 72) * Math.PI, s: 0.7 + noise(x, z + i, 73) * 0.6, shade: noise(x + i, z, 74) });
                 }
