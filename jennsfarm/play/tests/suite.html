@@ -39,6 +39,7 @@ import { getSeason } from '../js/seasons.js';
 import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest } from '../js/animals.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
+import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -412,6 +413,92 @@ check('Grandpa speaks a filled, name-aware line', () => {
     // day-1 context should be able to address the player by name
     grandpaSay({ day: 1, name: 'Zelda', coins: 10, wood: 0, crops: 0 });
     return `said: "${document.getElementById('grandpa-bubble').textContent.slice(0, 40)}…"`;
+});
+
+// ---------- FACTORIES (auto-production) ----------
+
+check('every factory input/output is a known item and adds value', () => {
+    const n = Object.keys(FACTORY_TYPES).length;
+    assert(n > 0, 'no factories defined');
+    for (const t in FACTORY_TYPES) {
+        const f = FACTORY_TYPES[t];
+        assert(ITEMS[f.input], `factory ${t} -> unknown input "${f.input}"`);
+        assert(ITEMS[f.output], `factory ${t} -> unknown output "${f.output}"`);
+        assert(f.inCount > 0 && f.every > 0, `factory ${t} bad inCount/every`);
+        const inVal = (ITEMS[f.input].sellPrice || 0) * f.inCount;
+        assert(ITEMS[f.output].sellPrice > inVal, `factory ${t} not value-add (${ITEMS[f.output].sellPrice} <= ${inVal})`);
+    }
+    return `${n} factories OK`;
+});
+
+check('a factory converts raw inputs into products over time', () => {
+    loadFactories(null);
+    const inv = createInventory();
+    inv.add('grape', 30);
+    assert(buildFactory('winery'), 'could not build winery');
+    assert(!buildFactory('winery'), 'built the same factory twice');
+    let made = 0;
+    for (let i = 0; i < 200; i++) made += (updateFactories(0.5, inv).wine || 0); // ~100s
+    assert(made >= 1, 'winery produced no wine');
+    assert(inv.count('wine') === made, `wine count mismatch (${inv.count('wine')} vs ${made})`);
+    assert(inv.count('grape') === 30 - made * 3, 'grapes not consumed 3-per-wine');
+    return `winery made ${made} wine from grapes`;
+});
+
+check('hiring workers speeds a factory up', () => {
+    loadFactories(null);
+    const a = createInventory(); a.add('grape', 9999);
+    buildFactory('winery');
+    let base = 0; for (let i = 0; i < 100; i++) base += (updateFactories(0.5, a).wine || 0); // 50s, no crew
+    loadFactories(null);
+    const b = createInventory(); b.add('grape', 9999);
+    buildFactory('winery');
+    let hired = 0; while (hireEmployee('winery')) hired++;
+    assert(hired === FACTORY_TYPES.winery.maxEmployees, `hired ${hired}, expected ${FACTORY_TYPES.winery.maxEmployees}`);
+    assert(employeeCost('winery', 1) > employeeCost('winery', 0), 'hire cost should escalate');
+    let fast = 0; for (let i = 0; i < 100; i++) fast += (updateFactories(0.5, b).wine || 0); // 50s, full crew
+    assert(fast > base, `crew didn't speed production (${base} -> ${fast})`);
+    return `0 crew: ${base} wine vs full crew: ${fast} wine / 50s`;
+});
+
+check('a factory idles without inputs, then resumes when fed', () => {
+    loadFactories(null);
+    const inv = createInventory(); // no inputs
+    buildFactory('winery');
+    for (let i = 0; i < 100; i++) updateFactories(0.5, inv); // 50s starved
+    assert(inv.count('wine') === 0, 'made wine from nothing');
+    inv.add('grape', 3);
+    let made = 0; for (let i = 0; i < 100; i++) made += (updateFactories(0.5, inv).wine || 0);
+    assert(made === 1, `expected exactly 1 wine from 3 grapes, got ${made}`);
+    return 'idles dry, resumes on feed';
+});
+
+check('offline factory output is capped and input-limited', () => {
+    loadFactories(null);
+    const inv = createInventory(); inv.add('grape', 9999);
+    buildFactory('winery');
+    const big = creditOfflineFactories(10_000_000, inv);
+    assert(big.wine === 30, `offline not capped at 30 (got ${big.wine})`);
+    loadFactories(null);
+    const inv2 = createInventory(); inv2.add('grape', 12); // 4 batches only
+    buildFactory('winery');
+    const lim = creditOfflineFactories(10_000_000, inv2);
+    assert(lim.wine === 4, `offline not input-limited (got ${lim.wine})`);
+    assert(inv2.count('grape') === 0, 'offline grapes not consumed');
+    return 'offline capped 30, else input-limited';
+});
+
+check('factory ownership + crew survive a save/load round-trip', () => {
+    loadFactories(null);
+    buildFactory('creamery');
+    hireEmployee('creamery'); hireEmployee('creamery');
+    const s = serializeFactories();
+    loadFactories(s);
+    assert(ownsFactory('creamery'), 'creamery lost on reload');
+    assert(!ownsFactory('winery'), 'phantom winery after reload');
+    assert(serializeFactories().creamery.employees === 2, 'crew count not preserved');
+    loadFactories(null); // reset so later runs start clean
+    return 'creamery + 2 crew round-tripped';
 });
 
 // ---------- RENDER ----------
