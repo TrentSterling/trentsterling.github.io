@@ -16,6 +16,7 @@ import { updateFireflies } from './fireflies.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
+import { pickFish } from './fishing.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -351,6 +352,7 @@ container.addEventListener('click', (e) => {
     markInput();
     if (e.button !== 0) return; // only the left button acts
     if (isOverlayOpen()) return;
+    if (fishing && fishing.state === 'bite') { hookFish(); return; } // reel it in!
 
     const hit = raycastGround(e);
     if (!hit) return;
@@ -364,8 +366,14 @@ container.addEventListener('click', (e) => {
 
     const tile = getTile(tx, tz);
 
-    // If no tile data (wild area), still allow walking there
-    if (tile && tile.type === TILE.WATER) return;
+    // Pond water → go fishing (cast if you're at the edge, else walk over first)
+    if (tile && tile.type === TILE.WATER) {
+        const pos = getPlayerPos();
+        const wd = Math.abs(pos.x - tx) + Math.abs(pos.z - tz);
+        if (wd <= 1.5) startCast();
+        else { const nb = walkableNeighbor(tx, tz); pendingAction = { x: tx, z: tz, tool: { id: 'fish' } }; routeTo(nb ? nb.x : tx, nb ? nb.z : tz); }
+        return;
+    }
 
     // Delivered crate here? Click to open it (walk over first if out of reach).
     const crate = crateAt(tx, tz, 0.8);
@@ -569,6 +577,8 @@ function performAction(tx, tz, tool) {
     if (tool.id === 'crate') { openCrateAndCollect(crateAt(tx, tz, 1.2)); return; }
     // Arrived at the fountain — toss a coin
     if (tool.id === 'fountain') { tossCoinAtFountain(); return; }
+    // Arrived at the pond — cast a line
+    if (tool.id === 'fish') { startCast(); return; }
 
     // Axe is special: trees live in the wild, off the farm-tile grid
     if (tool.id === 'axe') {
@@ -825,6 +835,45 @@ function doChop(tx, tz) {
         addShake(0.04);
     }
     return true;
+}
+
+// --- Fishing (#49): cast at the pond → wait for a bite → click to reel in ---
+let fishing = null; // { state: 'cast'|'bite', timer }
+
+function startCast() {
+    if (fishing) return;
+    fishing = { state: 'cast', timer: 1.5 + Math.random() * 1.8 };
+    playWater();
+    notify('🎣 Casting...');
+}
+
+function updateFishing(dt) {
+    if (!fishing) return;
+    fishing.timer -= dt;
+    if (fishing.timer > 0) return;
+    if (fishing.state === 'cast') {
+        fishing.state = 'bite';
+        fishing.timer = 1.3; // window to react
+        notify('❗ A bite! Click to reel it in!');
+        addShake(0.05);
+    } else {
+        fishing = null; // missed the window
+        notify('🎣 ...it got away.');
+    }
+}
+
+function hookFish() {
+    if (!fishing || fishing.state !== 'bite') return;
+    const fish = pickFish(season.name, Math.random());
+    fishing = null;
+    inventory.add(fish, 1);
+    playHarvest();
+    const p = getPlayerWorldPos();
+    sparkle(p.x, 0.6, p.z, [0x9be8ff, 0xffffff]);
+    pop(getPlayerGroup(), 0.24);
+    notify(`🎣 Caught a ${ITEMS[fish].name}!`);
+    refreshUI();
+    triggerAutoSave();
 }
 
 function tryPet(tx, tz) {
@@ -1363,6 +1412,7 @@ function gameLoop(now) {
     const honey = updateBees(dt, gameTime);
     if (honey) { inventory.add('honey', honey); refreshUI(); }
     updateFountain(dt);
+    updateFishing(dt);
 
     // Delivery truck periodically drops a crate by the road — click it to open
     const deliveredCrate = updateCrates(dt);

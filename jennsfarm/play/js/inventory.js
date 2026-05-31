@@ -42,6 +42,13 @@ export const ITEMS = {
     goat_milk: { name: 'Goat Milk', type: 'crop', sellPrice: 52, icon: 'goat_milk' },
     honey:     { name: 'Honey',     type: 'crop', sellPrice: 75, icon: 'honey' }, // from beehives (#44)
 
+    // --- Fish (caught at the pond, #49) ---
+    minnow: { name: 'Minnow', type: 'crop', sellPrice: 12, icon: 'minnow' },
+    trout:  { name: 'Trout',  type: 'crop', sellPrice: 30, icon: 'trout' },
+    bass:   { name: 'Bass',   type: 'crop', sellPrice: 42, icon: 'bass' },
+    salmon: { name: 'Salmon', type: 'crop', sellPrice: 60, icon: 'salmon' },
+    pike:   { name: 'Pike',   type: 'crop', sellPrice: 78, icon: 'pike' },
+
     // --- Crafted goods (made in the Workshop, sold at market) ---
     cheese:       { name: 'Goat Cheese',  type: 'crop', crafted: true, sellPrice: 130, icon: 'cheese' },
     sunny_jam:    { name: 'Sunny Jam',    type: 'crop', crafted: true, sellPrice: 150, icon: 'sunny_jam' },
