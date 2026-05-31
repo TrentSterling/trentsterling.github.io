@@ -5,6 +5,7 @@ import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerW
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDebugPath, tickDebug } from './debug.js';
 import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
+import { harvestQuality } from './quality.js';
 import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
@@ -853,14 +854,17 @@ setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountai
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
     if (result) {
-        inventory.add(result.itemId, result.qty);
+        const q = harvestQuality(result.watered); // ⭐ well-watered crops are premium
+        const qty = result.qty + q.bonus;
+        inventory.add(result.itemId, qty);
         playHarvest();
-        sparkle(tx, 0.6, tz);
+        sparkle(tx, 0.6, tz, q.stars ? [0xffe066, 0xfff0c0, 0xffffff] : undefined);
         pop(getPlayerGroup(), 0.28);
         addShake(0.04);
         const tail = result.regrew ? ' (regrowing!)' : '';
+        const stars = q.stars ? ' ' + '⭐'.repeat(q.stars) : '';
         questEvent('harvest');
-        notify(`Harvested ${result.qty} ${ITEMS[result.itemId].name}!${tail}`);
+        notify(`Harvested ${qty} ${ITEMS[result.itemId].name}!${tail}${stars}`);
         // harvestCrop owns the tile state now (soil for one-shot, replanted for regrow)
         refreshUI();
         triggerAutoSave();
