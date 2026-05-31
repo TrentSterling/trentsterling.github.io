@@ -17,7 +17,16 @@ const CHAIN = [
     { id: 'harvest', text: 'Harvest the crops', goal: 4, event: 'harvest', reward: { coins: 40 },
       intro: "When they're ripe, harvest with your Hand. That's the payoff!" },
     { id: 'chop',    text: 'Chop a tree',       goal: 1, event: 'chop',    reward: { coins: 30 },
-      intro: "Last chore: grab the Axe and fell a tree at the wood's edge for lumber." },
+      intro: "Grab the Axe and fell a tree at the wood's edge for lumber. That's the basics done!" },
+    // --- Grandpa's "next chapter": bigger dreams once the basics click ---
+    { id: 'harvest2', text: 'Bring in a proper haul', goal: 12, event: 'harvest', reward: { coins: 90 },
+      intro: "You've got the touch now, {name}. Bring in a real harvest — a dozen crops." },
+    { id: 'plant2',   text: 'Plant a bigger field',   goal: 12, event: 'plant',   reward: { seeds: { wheat_seed: 6 } },
+      intro: "A farm grows by sowing more. Get a dozen seeds in the ground — try some wheat." },
+    { id: 'water2',   text: 'Keep the field watered', goal: 12, event: 'water',   reward: { coins: 70 },
+      intro: "Don't let 'em go thirsty, {name} — watered crops come in plumper. Water a dozen." },
+    { id: 'harvest3', text: 'Make Grandma proud',      goal: 30, event: 'harvest', reward: { coins: 250 },
+      intro: "One last dream: bring in thirty harvests. Do that and this farm's truly yours. 🌻" },
 ];
 
 let index = 0, progress = 0, done = false;
