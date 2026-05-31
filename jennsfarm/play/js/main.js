@@ -265,7 +265,7 @@ function selectSlot(index) {
 let dragDown = false, dragMoved = false, dragLastX = 0, dragLastY = 0, dragStartX = 0, dragStartY = 0;
 const PAN_SCALE = 0.03; // screen px -> world units
 container.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 2) return; // RIGHT button drags the camera; left is for actions
     markInput();
     dragDown = true; dragMoved = false;
     dragStartX = dragLastX = e.clientX;
@@ -279,7 +279,7 @@ window.addEventListener('mouseup', () => {
 
 container.addEventListener('click', (e) => {
     markInput();
-    if (dragMoved) { dragMoved = false; container.style.cursor = ''; return; } // was a pan, not a click
+    if (e.button !== 0) return; // only the left button acts
     if (isOverlayOpen()) return;
 
     const hit = raycastGround(e);
@@ -314,9 +314,10 @@ container.addEventListener('click', (e) => {
     }
 });
 
-// Right-click to quick-harvest
+// Right-click: TAP = quick-harvest, DRAG = pan camera (handled in mousemove)
 container.addEventListener('contextmenu', (e) => {
     e.preventDefault();
+    if (dragMoved) return;       // it was a camera pan, not a harvest tap
     if (isOverlayOpen()) return;
 
     const hit = raycastGround(e);
@@ -351,8 +352,8 @@ function highlightColor(toolId, tile, x, z) {
 container.addEventListener('mousemove', (e) => {
     markInput();
 
-    // Drag-to-pan: hold left button and drag to move the camera off the player
-    if (dragDown && (e.buttons & 1)) {
+    // Drag-to-pan: hold RIGHT button and drag to move the camera off the player
+    if (dragDown && (e.buttons & 2)) {
         if (!dragMoved && Math.abs(e.clientX - dragStartX) + Math.abs(e.clientY - dragStartY) > 6) {
             dragMoved = true;
             container.style.cursor = 'grabbing';

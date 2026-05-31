@@ -108,6 +108,21 @@ export function waterTile(tile) {
     tile.waterT = WATER_DURATION;
 }
 
+// --- Staggered crop sim (scales to huge farms) ---
+// Planted tiles are processed round-robin, a batch per frame. Each advances by
+// (cropClock - tile.lastTick), so a crop ticked rarely still grows correctly —
+// no per-frame scan of every tile. Stale entries self-remove when processed.
+let cropClock = 0;
+let cropCursor = 0;
+const cropList = []; // [{ x, z }]
+const CROP_BATCH = 64;
+
+function trackCrop(x, z) {
+    const t = getTile(x, z);
+    if (t) t.lastTick = cropClock;
+    cropList.push({ x, z });
+}
+
 function createCropMesh(cropId, stage) {
     const crop = CROPS[cropId];
     if (!crop) return null;
@@ -264,6 +279,7 @@ export function plantCrop(x, z, cropId) {
         scene.add(mesh);
         cropMeshes[cropKey(x, z)] = mesh;
     }
+    trackCrop(x, z);
     return true;
 }
 
@@ -304,50 +320,48 @@ export function harvestCrop(x, z) {
     return result;
 }
 
-let _cropAccum = 0;
-
 export function updateCrops(dt) {
-    // Throttle the O(all-tiles) simulation to ~5Hz with accumulated time — same
-    // growth, far less per-frame work on a big farm. (Visuals below run per frame.)
-    _cropAccum += dt;
-    if (_cropAccum >= 0.2) {
-    const step = _cropAccum;
-    _cropAccum = 0;
+    cropClock += dt;
 
-    forEachFarmTile((x, z, tile) => {
-        // Drain water on every farm tile over time
+    // Process a batch of planted tiles round-robin; each catches up via clock-diff,
+    // so growth is correct no matter how rarely any single crop is ticked.
+    const n = Math.min(CROP_BATCH, cropList.length);
+    for (let k = 0; k < n; k++) {
+        if (cropCursor >= cropList.length) cropCursor = 0;
+        const e = cropList[cropCursor];
+        const tile = getTile(e.x, e.z);
+
+        if (!tile || tile.type !== TILE.PLANTED || !tile.crop) {
+            cropList.splice(cropCursor, 1); // harvested/cleared — drop it (don't advance cursor)
+            continue;
+        }
+
+        const elapsed = cropClock - (tile.lastTick || cropClock);
+        tile.lastTick = cropClock;
+
         if (tile.waterT > 0) {
-            tile.waterT -= step;
+            tile.waterT -= elapsed;
             if (tile.waterT <= 0) { tile.waterT = 0; tile.watered = false; }
         }
 
-        if (tile.type !== TILE.PLANTED || !tile.crop) return;
-
         const crop = CROPS[tile.crop];
-        if (!crop || tile.cropStage >= 3) return;
-
-        // Watered crops grow at full speed; dry crops crawl (water now matters)
-        tile.cropTimer += step * (tile.watered ? 1 : DRY_GROWTH);
-        const stageTime = crop.growTime / 3;
-
-        if (tile.cropTimer >= stageTime) {
-            tile.cropTimer -= stageTime;
-            tile.cropStage++;
-
-            const key = cropKey(x, z);
-            if (cropMeshes[key]) {
-                scene.remove(cropMeshes[key]);
-                cropMeshes[key].traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
-            }
-            const mesh = createCropMesh(tile.crop, tile.cropStage);
-            if (mesh) {
-                mesh.position.set(x, 0.07, z);
-                scene.add(mesh);
-                cropMeshes[key] = mesh;
+        if (crop && tile.cropStage < 3) {
+            tile.cropTimer += elapsed * (tile.watered ? 1 : DRY_GROWTH);
+            const stageTime = crop.growTime / 3;
+            while (tile.cropStage < 3 && tile.cropTimer >= stageTime) { // multi-stage catch-up
+                tile.cropTimer -= stageTime;
+                tile.cropStage++;
+                const key = cropKey(e.x, e.z);
+                if (cropMeshes[key]) {
+                    scene.remove(cropMeshes[key]);
+                    cropMeshes[key].traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+                }
+                const mesh = createCropMesh(tile.crop, tile.cropStage);
+                if (mesh) { mesh.position.set(e.x, 0.07, e.z); scene.add(mesh); cropMeshes[key] = mesh; }
             }
         }
-    });
-    } // end throttled sim block
+        cropCursor++;
+    }
 
     // Animate sparkles on mature crops (cheap, every frame for smoothness)
     const time = performance.now() * 0.003;
@@ -370,7 +384,9 @@ export function rebuildCropMeshes() {
         cropMeshes[key].traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
         delete cropMeshes[key];
     }
-    // Recreate from tile data
+    // Recreate from tile data and re-register planted tiles in the sim queue
+    cropList.length = 0;
+    cropCursor = 0;
     forEachFarmTile((x, z, tile) => {
         if (tile.type === TILE.PLANTED && tile.crop) {
             const mesh = createCropMesh(tile.crop, tile.cropStage);
@@ -379,6 +395,7 @@ export function rebuildCropMeshes() {
                 scene.add(mesh);
                 cropMeshes[cropKey(x, z)] = mesh;
             }
+            trackCrop(x, z);
         }
     });
 }

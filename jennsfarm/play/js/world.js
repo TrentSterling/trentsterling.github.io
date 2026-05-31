@@ -261,24 +261,84 @@ function addBarnModel(x, z) {
 
 // --- Wild terrain decorations ---
 
+const _YAXIS = new THREE.Vector3(0, 1, 0);
+
 function generateDecorations() {
+    const grass = [];   // { x, z, rot, scale, shade }
+    const flowers = []; // { x, z, color }
+    const FLOWER_COLORS = [0xf9e04b, 0xf6f2e8, 0xe88bc4, 0xff8844, 0x8fb8ff];
+
     for (let z = 0; z < WORLD_SIZE; z++) {
         for (let x = 0; x < WORLD_SIZE; x++) {
-            // Skip farm area and nearby
             if (isInFarm(x, z)) continue;
             if (farmTiles.has(tileKey(x, z))) continue;
 
             const n = noise(x * 0.7, z * 0.7, 42);
             const n2 = noise(x * 1.3, z * 1.3, 99);
 
-            if (n > 0.78) {
-                addTree(x, z);
-            } else if (n > 0.72 && n2 > 0.5) {
-                addRock(x, z);
-            } else if (n2 > 0.82) {
-                addFlowers(x, z);
+            if (n > 0.78) { addTree(x, z); continue; }
+            if (n > 0.72 && n2 > 0.5) { addRock(x, z); continue; }
+
+            // Scattered grass tufts (dense, but instanced → ~free)
+            const blades = n2 > 0.45 ? 3 : (n2 > 0.2 ? 2 : 1);
+            for (let i = 0; i < blades; i++) {
+                grass.push({
+                    x: x + (noise(x + i, z, 70) - 0.5) * 0.85,
+                    z: z + (noise(x, z + i, 71) - 0.5) * 0.85,
+                    rot: noise(x + i, z + i, 72) * Math.PI,
+                    scale: 0.7 + noise(x, z + i, 73) * 0.6,
+                    shade: noise(x + i, z, 74),
+                });
+            }
+            // Occasional wildflowers
+            if (n2 > 0.82) {
+                const fc = 1 + Math.floor(noise(x, z, 75) * 3);
+                for (let i = 0; i < fc; i++) {
+                    flowers.push({
+                        x: x + (noise(x, z + i, 76) - 0.5) * 0.7,
+                        z: z + (noise(x + i, z, 77) - 0.5) * 0.7,
+                        color: FLOWER_COLORS[Math.floor(noise(x + i, z, 78) * FLOWER_COLORS.length)],
+                    });
+                }
             }
         }
+    }
+    buildInstancedDecor(grass, flowers);
+}
+
+// Thousands of grass tufts + flowers as TWO InstancedMeshes (one draw call each),
+// with per-instance color. The curvature shader already handles USE_INSTANCING.
+function buildInstancedDecor(grass, flowers) {
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion();
+    const p = new THREE.Vector3(), s = new THREE.Vector3(), col = new THREE.Color();
+
+    if (grass.length) {
+        const mesh = new THREE.InstancedMesh(new THREE.ConeGeometry(0.05, 0.24, 4), curvedMaterial({ color: 0xffffff }), grass.length);
+        grass.forEach((g, i) => {
+            p.set(g.x, 0.12 * g.scale, g.z);
+            q.setFromAxisAngle(_YAXIS, g.rot);
+            s.set(g.scale, g.scale, g.scale);
+            mesh.setMatrixAt(i, m.compose(p, q, s));
+            const lvl = 0.6 + g.shade * 0.45;
+            col.setRGB(0.2 * lvl, 0.55 * lvl, 0.22 * lvl);
+            mesh.setColorAt(i, col);
+        });
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+    }
+
+    if (flowers.length) {
+        const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(0.06, 5, 4), curvedMaterial({ color: 0xffffff }), flowers.length);
+        flowers.forEach((f, i) => {
+            mesh.setMatrixAt(i, m.makeTranslation(f.x, 0.12, f.z));
+            mesh.setColorAt(i, col.set(f.color));
+        });
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.frustumCulled = false;
+        scene.add(mesh);
     }
 }
 
@@ -297,20 +357,7 @@ function addRock(x, z) {
     scene.add(mesh);
 }
 
-function addFlowers(x, z) {
-    const colors = [0xf9e04b, 0xf0f0f0, 0xe88bc4, 0xff8844, 0x88bbff];
-    const count = 2 + Math.floor(noise(x, z, 70) * 3);
-    for (let i = 0; i < count; i++) {
-        const color = colors[Math.floor(noise(x + i, z, 71) * colors.length)];
-        const geo = new THREE.SphereGeometry(0.05, 4, 3);
-        const mat = curvedMaterial({ color });
-        const mesh = new THREE.Mesh(geo, mat);
-        const ox = (noise(x, z + i, 72) - 0.5) * 0.7;
-        const oz = (noise(x + i, z, 73) - 0.5) * 0.7;
-        mesh.position.set(x + ox, 0.08, z + oz);
-        scene.add(mesh);
-    }
-}
+// (flowers are now instanced in buildInstancedDecor)
 
 // --- Farm border markers ---
 
