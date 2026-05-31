@@ -206,6 +206,24 @@ function nearestOf(a, species) {
     return { best, dist: best ? Math.hypot(best.x - a.x, best.z - a.z) : Infinity };
 }
 
+// How a wildlife species reacts to Jenn nearby. Returns a move target
+// {tx,tz,flee} or null (ignore her). Pure + exported so it's unit-testable.
+//  - crow: skittish, bolts away   - ocelot: curious, pads toward her
+//  - skunk: chill unless you're right on top of it   - honey badger: don't care
+export function playerReaction(species, ax, az, px, pz) {
+    const dx = ax - px, dz = az - pz, dist = Math.hypot(dx, dz) || 0.0001;
+    if (species === 'crow' && dist < 6) {
+        return { tx: ax + (dx / dist) * 5, tz: az + (dz / dist) * 5, flee: true };
+    }
+    if (species === 'skunk' && dist < 2.5) {
+        return { tx: ax + (dx / dist) * 3, tz: az + (dz / dist) * 3, flee: true };
+    }
+    if (species === 'ocelot' && dist < 9 && dist > 2.5) {
+        return { tx: px, tz: pz, flee: false };
+    }
+    return null; // honey badger don't care; distant / other animals carry on
+}
+
 export function updateAnimals(dt, playerPos, onCollect) {
     const now = performance.now();
 
@@ -215,11 +233,17 @@ export function updateAnimals(dt, playerPos, onCollect) {
 
     for (const a of animals) {
         // --- Behaviour: choose target ---
-        if (a.species === 'honey_badger') {
+        // Jenn's presence comes first: skittish critters scatter, curious ones approach.
+        let reacted = false;
+        if (playerPos && a.kind === 'wildlife') {
+            const r = playerReaction(a.species, a.x, a.z, playerPos.x, playerPos.z);
+            if (r) { a.tx = r.tx; a.tz = r.tz; a.flee = r.flee; a.idle = 0; reacted = true; }
+        }
+        if (!reacted && a.species === 'honey_badger') {
             // Don't care. Relentlessly chase the nearest skunk; otherwise roam bold.
             const { best } = nearestOf(a, 'skunk');
             if (best) { a.tx = best.x; a.tz = best.z; a.idle = 0; }
-        } else if (a.species === 'skunk') {
+        } else if (!reacted && a.species === 'skunk') {
             const badger = nearestOf(a, 'honey_badger');
             if (badger.best && badger.dist < 5) {
                 // a honey badger is coming - even the skunk flees
@@ -231,7 +255,7 @@ export function updateAnimals(dt, playerPos, onCollect) {
                 const { best } = nearestOf(a, 'crow');
                 if (best) { a.tx = best.x; a.tz = best.z; a.idle = 0; }
             }
-        } else if (a.species === 'crow') {
+        } else if (!reacted && a.species === 'crow') {
             const { best, dist } = nearestOf(a, 'skunk');
             if (best && dist < 6) {
                 // flee directly away from the skunk
