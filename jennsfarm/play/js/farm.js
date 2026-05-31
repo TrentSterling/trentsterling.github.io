@@ -115,11 +115,15 @@ export function waterTile(tile) {
 let cropClock = 0;
 let cropCursor = 0;
 const cropList = []; // [{ x, z }]
+const cropSet = new Set(); // keys currently queued — prevents duplicate entries
 const CROP_BATCH = 64;
 
 function trackCrop(x, z) {
     const t = getTile(x, z);
-    if (t) t.lastTick = cropClock;
+    if (t) t.lastTick = cropClock; // (re)start its growth clock
+    const key = cropKey(x, z);
+    if (cropSet.has(key)) return;  // already queued — don't duplicate
+    cropSet.add(key);
     cropList.push({ x, z });
 }
 
@@ -332,6 +336,7 @@ export function updateCrops(dt) {
         const tile = getTile(e.x, e.z);
 
         if (!tile || tile.type !== TILE.PLANTED || !tile.crop) {
+            cropSet.delete(cropKey(e.x, e.z));
             cropList.splice(cropCursor, 1); // harvested/cleared — drop it (don't advance cursor)
             continue;
         }
@@ -386,6 +391,7 @@ export function rebuildCropMeshes() {
     }
     // Recreate from tile data and re-register planted tiles in the sim queue
     cropList.length = 0;
+    cropSet.clear();
     cropCursor = 0;
     forEachFarmTile((x, z, tile) => {
         if (tile.type === TILE.PLANTED && tile.crop) {
