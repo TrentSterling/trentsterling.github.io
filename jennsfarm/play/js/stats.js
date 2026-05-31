@@ -4,7 +4,10 @@
 
 const STATS = [
     { key: 'harvested', label: '🌾 Crops harvested' },
+    { key: 'planted',   label: '🌱 Seeds planted' },
+    { key: 'watered',   label: '💧 Crops watered' },
     { key: 'golden',    label: '🌟 Golden harvests' },
+    { key: 'sold',      label: '💰 Goods sold' },
     { key: 'fish',      label: '🎣 Fish caught' },
     { key: 'chopped',   label: '🪓 Trees chopped' },
     { key: 'cooked',    label: '🍲 Things cooked' },
@@ -18,7 +21,10 @@ for (const s of STATS) _label[s.key] = s.label;
 // just recognition; numbers going up is the point).
 const MILESTONES = {
     harvested: [50, 250, 1000, 5000],
+    planted:   [50, 250, 1000, 5000],
+    watered:   [50, 250, 1000, 5000],
     golden:    [1, 10, 50, 200],
+    sold:      [100, 500, 2500, 10000],
     fish:      [10, 50, 200],
     chopped:   [25, 100, 500],
     cooked:    [10, 50, 200],

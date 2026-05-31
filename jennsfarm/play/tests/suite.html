@@ -410,7 +410,8 @@ check('stats: the farm ledger bumps, totals, and round-trips (#18)', () => {
     const list = allStats();
     const h = list.find(s => s.key === 'harvested');
     assert(h && h.value === 5 && h.label.includes('harvested'), 'allStats should expose value + label');
-    assert(list.length >= 6, 'every declared stat row should be present');
+    assert(list.length >= 9, 'every declared stat row should be present');
+    assert(list.some(s => s.key === 'planted') && list.some(s => s.key === 'sold'), 'planted + sold rows should exist');
     const s = serializeStats(); clearStats();
     assert(getStat('harvested') === 0, 'cleared');
     loadStats(s);
@@ -421,8 +422,11 @@ check('stats: the farm ledger bumps, totals, and round-trips (#18)', () => {
     const hit = bumpStat('fish', 1); // crosses 10
     assert(hit && hit.key === 'fish' && hit.milestone === 10, 'the 10th fish should hit the 10-milestone');
     assert(bumpStat('fish', 1) === null, 'past a milestone should not re-fire it');
+    // a multi-unit bump can cross a milestone in one go (e.g. a big sale)
+    const bigSale = bumpStat('sold', 150); // crosses the 100 mark
+    assert(bigSale && bigSale.key === 'sold' && bigSale.milestone === 100, 'a 150-unit sale should cross the 100 milestone');
     clearStats();
-    return 'totals + round-trip; 10th fish = milestone';
+    return 'totals + round-trip; fish + sold milestones';
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {

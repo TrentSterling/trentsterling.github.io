@@ -657,6 +657,7 @@ function performAction(tx, tz, tool) {
             if (n > 0) {
                 playWater();
                 questEvent('water');
+                recordStat('watered', n);
                 notify(n > 1 ? `Watered ${n} tiles!` : 'Watered!');
             }
             handleBuildingInteraction(tile);
@@ -685,6 +686,7 @@ function performAction(tx, tz, tool) {
                         puff(tx, tz);
                         pop(getPlayerGroup(), 0.2);
                         questEvent('plant');
+                        recordStat('planted');
                         notify(`Planted ${CROPS[cropId].name}!`);
                         refreshUI();
                         triggerAutoSave();
@@ -1239,6 +1241,7 @@ function sellItem(itemId) {
     const earned = Math.round(qty * getPrice(itemId) * (1 + getSellBonus()));
     coins += earned;
     recordEarnings(earned);
+    recordStat('sold', qty);
     recordSale(itemId, qty);   // flooding the market lowers future price
     playSell();
     { const pp = getPlayerWorldPos(); coinBurst(pp.x, pp.z); addShake(0.05); }
@@ -1261,6 +1264,7 @@ function sellAllCrops() {
     }
     if (count > 0) {
         recordEarnings(total);
+        recordStat('sold', count);
         playSell();
         const pp = getPlayerWorldPos(); coinBurst(pp.x, pp.z); addShake(0.07);
         notify(`Sold ${count} items for 🪙${total}!`);
