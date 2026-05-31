@@ -11,4 +11,10 @@ export const RECIPES = {
     melon_juice: { name: 'Melon Juice',  out: 'melon_juice', inputs: { square_watermelon: 1 } },
     grand_elixir:{ name: 'Grand Elixir', out: 'grand_elixir',inputs: { lavender: 1, mint: 2, rose: 1 } },
     wine:        { name: 'Wine',         out: 'wine',        inputs: { grape: 3 } },
+
+    // --- Cooked meals (#50): tie crops + fish + honey + eggs together ---
+    veggie_soup: { name: 'Veggie Soup', out: 'veggie_soup', inputs: { carrot: 2, potato: 2, tomato: 1 } },
+    fruit_pie:   { name: 'Fruit Pie',   out: 'fruit_pie',   inputs: { apple: 3, wheat: 2, strawberry: 2 } },
+    fish_stew:   { name: 'Fish Stew',   out: 'fish_stew',   inputs: { trout: 1, potato: 2, carrot: 1 } },
+    honey_cake:  { name: 'Honey Cake',  out: 'honey_cake',  inputs: { honey: 1, wheat: 2, egg: 2 } },
 };

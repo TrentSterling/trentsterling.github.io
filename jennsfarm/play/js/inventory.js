@@ -61,6 +61,12 @@ export const ITEMS = {
     melon_juice:  { name: 'Melon Juice',  type: 'crop', crafted: true, sellPrice: 360, icon: 'melon_juice' },
     grand_elixir: { name: 'Grand Elixir', type: 'crop', crafted: true, sellPrice: 440, icon: 'grand_elixir' },
     wine:         { name: 'Wine',         type: 'crop', crafted: true, sellPrice: 220, icon: 'wine' },
+
+    // --- Cooked meals (made in the Kitchen/Workshop, heal a lot, sell well) #50 ---
+    veggie_soup:  { name: 'Veggie Soup',  type: 'crop', crafted: true, sellPrice: 120, icon: 'veggie_soup' },
+    fruit_pie:    { name: 'Fruit Pie',    type: 'crop', crafted: true, sellPrice: 160, icon: 'fruit_pie' },
+    fish_stew:    { name: 'Fish Stew',    type: 'crop', crafted: true, sellPrice: 140, icon: 'fish_stew' },
+    honey_cake:   { name: 'Honey Cake',   type: 'crop', crafted: true, sellPrice: 200, icon: 'honey_cake' },
 };
 
 export function createInventory() {
