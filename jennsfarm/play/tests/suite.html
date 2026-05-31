@@ -49,6 +49,7 @@ import { seasonWeather, updateWeather, clearWeather } from '../js/weather.js';
 import { ambientCritters, updateFireflies, clearFireflies } from '../js/fireflies.js';
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail } from '../js/mailbox.js';
 import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } from '../js/bees.js';
+import { rollBlessing, BLESSINGS } from '../js/fountain.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -928,6 +929,21 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- WISHING FOUNTAIN (#47) ----------
+
+check('wishing fountain rolls a valid, varied blessing for any coin toss', () => {
+    const kinds = new Set(BLESSINGS.map(b => b.kind));
+    for (let i = 0; i < 100; i++) {
+        const k = rollBlessing(i / 100);
+        assert(kinds.has(k), `roll produced an invalid blessing "${k}"`);
+    }
+    const seen = new Set();
+    for (let i = 0; i < 100; i++) seen.add(rollBlessing(i / 100));
+    assert(seen.size >= 3, `fountain blessings should vary (only saw ${seen.size})`);
+    assert(rollBlessing(1.7) && rollBlessing(-0.3), 'roll should tolerate any real number');
+    return `${seen.size} blessing kinds across tosses`;
 });
 
 // ---------- BEEHIVES (#44) ----------

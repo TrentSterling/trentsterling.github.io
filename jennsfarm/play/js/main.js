@@ -14,6 +14,7 @@ import { healValue } from './foods.js';
 import { updateWeather } from './weather.js';
 import { updateFireflies } from './fireflies.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
+import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -126,6 +127,7 @@ if (saved) {
     if (saved.equipment) loadEquipment(saved.equipment);
     if (saved.mail) loadMail(saved.mail);
     if (saved.hives) loadHives(saved.hives);
+    if (saved.fountain) loadFountain(saved.fountain);
     notify('Game loaded!');
 }
 
@@ -373,6 +375,15 @@ container.addEventListener('click', (e) => {
         return;
     }
 
+    // Wishing fountain? Click to toss a coin (walk over first if out of reach).
+    if (fountainAt(tx, tz, 0.9)) {
+        const pp = getPlayerPos(); const fp = getFountainPos();
+        const fd = Math.abs(pp.x - fp.x) + Math.abs(pp.z - fp.z);
+        if (fd <= 1.6) tossCoinAtFountain();
+        else { pendingAction = { x: fp.x, z: fp.z, tool: { id: 'fountain' } }; routeTo(fp.x, fp.z); }
+        return;
+    }
+
     const tool = getSelectedTool();
     const pos = getPlayerPos();
     const dist = Math.abs(pos.x - tx) + Math.abs(pos.z - tz);
@@ -554,6 +565,8 @@ if (resetBtn) resetBtn.addEventListener('click', () => {
 function performAction(tx, tz, tool) {
     // Arrived at a crate we walked to — pop it open
     if (tool.id === 'crate') { openCrateAndCollect(crateAt(tx, tz, 1.2)); return; }
+    // Arrived at the fountain — toss a coin
+    if (tool.id === 'fountain') { tossCoinAtFountain(); return; }
 
     // Axe is special: trees live in the wild, off the farm-tile grid
     if (tool.id === 'axe') {
@@ -711,7 +724,50 @@ function buyBeehive() {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
-setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive });
+// Wishing fountain: buy → place once; click it to toss a coin for a blessing (#47)
+function buyFountain() {
+    if (hasFountain()) { notify('You already have a fountain!'); return; }
+    if (coins < FOUNTAIN_COST) { playDeny(); notify("Can't afford a fountain!"); return; }
+    buildFountain();
+    coins -= FOUNTAIN_COST;
+    playExpand();
+    notify('Wishing fountain built! Walk up and toss a coin. ✨');
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
+
+const WISH_SEEDS = ['carrot_seed', 'tomato_seed', 'strawberry_seed', 'grape_seed', 'tulip_seed', 'sunflower_seed'];
+const WISH_LINES = ['Make a wish, kiddo. ✨', "The old well's lucky, you know.", 'Your grandmother loved this fountain. ❤'];
+function tossCoinAtFountain() {
+    if (coins < TOSS_COST) { playDeny(); notify(`Need 🪙${TOSS_COST} to toss a coin.`); return; }
+    coins -= TOSS_COST;
+    const fp = getFountainPos();
+    sparkle(fp.x, 0.7, fp.z, [0x9be8ff, 0xffffff, 0xffe066]);
+    const kind = rollBlessing(Math.random());
+    if (kind === 'coins') {
+        const g = 25 + Math.floor(Math.random() * 55);
+        coins += g; coinBurst(fp.x, fp.z); notify(`✨ The well bubbles up 🪙${g}!`);
+    } else if (kind === 'seeds') {
+        const s = WISH_SEEDS[Math.floor(Math.random() * WISH_SEEDS.length)];
+        const q = 2 + Math.floor(Math.random() * 3); inventory.add(s, q);
+        notify(`✨ A gift of ${q} ${ITEMS[s].name}!`);
+    } else if (kind === 'grow') {
+        advanceCropsOffline(60); rebuildCropMeshes();
+        notify('✨ A growth blessing — your crops surge!');
+    } else if (kind === 'fruit') {
+        const q = 3 + Math.floor(Math.random() * 4); inventory.add('apple', q);
+        notify(`✨ A basket of ${q} apples appears!`);
+    } else {
+        grandpaSayText(WISH_LINES[Math.floor(Math.random() * WISH_LINES.length)]);
+        notify('You toss a coin and make a wish...');
+    }
+    hearts(fp.x, 1.0, fp.z);
+    refreshUI();
+    triggerAutoSave();
+}
+
+setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain });
 
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
@@ -1215,6 +1271,7 @@ function triggerAutoSave() {
             equipment: serializeEquipment(),
             mail: serializeMail(),
             hives: serializeHives(),
+            fountain: serializeFountain(),
             lastSaved: Date.now(),
         });
     }, 1000);
@@ -1288,6 +1345,7 @@ function gameLoop(now) {
     // Beehives slowly make honey
     const honey = updateBees(dt, gameTime);
     if (honey) { inventory.add('honey', honey); refreshUI(); }
+    updateFountain(dt);
 
     // Delivery truck periodically drops a crate by the road — click it to open
     const deliveredCrate = updateCrates(dt);
