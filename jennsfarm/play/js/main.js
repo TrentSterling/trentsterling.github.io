@@ -15,7 +15,7 @@ import { healValue } from './foods.js';
 import './weather.js';      // self-registers the weather system (#9)
 import './fireflies.js';    // self-registers the fireflies/butterflies system (#9)
 import './cloudshadows.js'; // self-registers drifting cloud shadows (#43) — mod-loader proof: one import, no other wiring
-import './visitors.js';     // self-registers stray visitor cats (#54)
+import { placeFoodBowl, hasFoodBowl, FOOD_BOWL_COST, serializeVisitors, loadVisitors } from './visitors.js'; // self-registers visitor cats (#54)
 import { updateSystems } from './registry.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
@@ -140,6 +140,7 @@ if (saved) {
     if (saved.hives) loadHives(saved.hives);
     if (saved.fountain) loadFountain(saved.fountain);
     if (saved.pet) loadPet(saved.pet);
+    if (saved.visitors) loadVisitors(saved.visitors);
     notify('Game loaded!');
 }
 
@@ -805,7 +806,19 @@ function buyPet() {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
-setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet });
+// Food bowl: draws more visitor cats, faster (#54)
+function buyFoodBowl() {
+    if (hasFoodBowl()) { notify('You already put a food bowl out!'); return; }
+    if (coins < FOOD_BOWL_COST) { playDeny(); notify("Can't afford a food bowl!"); return; }
+    placeFoodBowl();
+    coins -= FOOD_BOWL_COST;
+    playExpand();
+    notify('Food bowl out! 🥣 More cats will come visit.');
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
+setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl });
 
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
@@ -1354,6 +1367,7 @@ function triggerAutoSave() {
             hives: serializeHives(),
             fountain: serializeFountain(),
             pet: serializePet(),
+            visitors: serializeVisitors(),
             lastSaved: Date.now(),
         });
     }, 1000);

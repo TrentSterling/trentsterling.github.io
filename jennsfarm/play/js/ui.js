@@ -11,14 +11,16 @@ import { healValue } from './foods.js';
 import { getHiveCount, HIVE_COST } from './bees.js';
 import { hasFountain, FOUNTAIN_COST } from './fountain.js';
 import { hasPet, PET_COST } from './pets.js';
+import { hasFoodBowl, FOOD_BOWL_COST } from './visitors.js';
 
 // Handlers registered once by main.js (avoids threading through every showShop call)
-let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null;
-export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet } = {}) {
+let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null, _onBuyFoodBowl = null;
+export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet, onBuyFoodBowl } = {}) {
     if (onUpgrade) _onUpgrade = onUpgrade;
     if (onBuyHive) _onBuyHive = onBuyHive;
     if (onBuyFountain) _onBuyFountain = onBuyFountain;
     if (onBuyPet) _onBuyPet = onBuyPet;
+    if (onBuyFoodBowl) _onBuyFoodBowl = onBuyFoodBowl;
 }
 
 // Small helper for the emoji-based "buildables" rows in the shop
@@ -376,6 +378,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
     if (_onBuyHive) shopItems.appendChild(shopBuildRow('🐝', 'Beehive', `makes honey · ${getHiveCount()} built`, HIVE_COST, coins >= HIVE_COST, getHiveCount() >= 6, _onBuyHive));
     if (_onBuyFountain) shopItems.appendChild(shopBuildRow('⛲', 'Wishing Fountain', 'toss a coin for luck', FOUNTAIN_COST, coins >= FOUNTAIN_COST, hasFountain(), _onBuyFountain));
     if (_onBuyPet) shopItems.appendChild(shopBuildRow('🐕', 'Puppy', 'follows you + fetches drops', PET_COST, coins >= PET_COST, hasPet(), _onBuyPet));
+    if (_onBuyFoodBowl) shopItems.appendChild(shopBuildRow('🥣', 'Food Bowl', 'draws more visitor cats', FOOD_BOWL_COST, coins >= FOOD_BOWL_COST, hasFoodBowl(), _onBuyFoodBowl));
 
     shopOverlay.classList.remove('hidden');
 }
