@@ -8,10 +8,14 @@ import { FACTORY_TYPES, ownsFactory, getFactories, employeeCost } from './factor
 import { getRank, getLifetime, getRankProgress, getSellBonus } from './corp.js';
 import { getToolName, nextUpgrade } from './equipment.js';
 import { healValue } from './foods.js';
+import { getHiveCount, HIVE_COST } from './bees.js';
 
 // Handlers registered once by main.js (avoids threading through every showShop call)
-let _onUpgrade = null;
-export function setShopHandlers({ onUpgrade } = {}) { if (onUpgrade) _onUpgrade = onUpgrade; }
+let _onUpgrade = null, _onBuyHive = null;
+export function setShopHandlers({ onUpgrade, onBuyHive } = {}) {
+    if (onUpgrade) _onUpgrade = onUpgrade;
+    if (onBuyHive) _onBuyHive = onBuyHive;
+}
 
 // DOM refs
 const hudCoins = document.getElementById('hud-coins');
@@ -348,6 +352,22 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
             }
             shopItems.appendChild(div);
         }
+    }
+
+    // Beehive — buildable; makes honey over time (#44)
+    if (_onBuyHive) {
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        const can = coins >= HIVE_COST;
+        if (!can) div.classList.add('cant-afford');
+        div.innerHTML = `
+            <div class="item-info">
+                <span class="item-name">🐝 Beehive</span>
+                <span class="item-qty">makes honey · ${getHiveCount()} built</span>
+            </div>
+            <span class="item-price">🪙 ${HIVE_COST}</span>`;
+        if (can) div.addEventListener('click', () => _onBuyHive());
+        shopItems.appendChild(div);
     }
 
     shopOverlay.classList.remove('hidden');

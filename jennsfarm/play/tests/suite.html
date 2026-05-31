@@ -48,6 +48,7 @@ import { healValue } from '../js/foods.js';
 import { seasonWeather, updateWeather, clearWeather } from '../js/weather.js';
 import { ambientCritters, updateFireflies, clearFireflies } from '../js/fireflies.js';
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail } from '../js/mailbox.js';
+import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } from '../js/bees.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -927,6 +928,24 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- BEEHIVES (#44) ----------
+
+check('beehives make honey over time, offline capped per hive', () => {
+    ensureWorld();
+    loadHives(null);
+    assert(getHiveCount() === 0, 'should start with no hives');
+    assert(placeHive(26, 24), 'could not place a hive');
+    assert(getHiveCount() === 1, 'hive not tracked');
+    let honey = 0;
+    for (let i = 0; i < 120; i++) honey += updateBees(0.5, i * 0.5); // ~60s, honey every 26s
+    assert(honey >= 1, `hive produced no honey (${honey})`);
+    const off = creditOfflineHoney(100000);
+    assert(off > 0 && off <= 20, `offline honey not capped per hive (${off})`);
+    loadHives(null);
+    assert(getHiveCount() === 0, 'reset did not clear hives');
+    return `hive made ${honey} honey in 60s`;
 });
 
 // ---------- GRANDPA'S MAILBOX (daily quests, #45) ----------
