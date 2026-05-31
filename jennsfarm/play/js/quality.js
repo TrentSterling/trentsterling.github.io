@@ -6,7 +6,10 @@
 export function harvestQuality(watered, roll = Math.random(), luck = 1) {
     if (!watered) return { stars: 0, bonus: 0 };
     const r = (((roll % 1) + 1) % 1);
-    const greatChance = Math.min(0.75, 0.25 * (luck || 1)); // a luck buff widens the ⭐⭐ band
-    if (r < greatChance) return { stars: 2, bonus: 2 };      // ⭐⭐ bumper crop
-    return { stars: 1, bonus: 1 };                           // ⭐ healthy
+    const L = luck || 1;
+    const goldenChance = Math.min(0.15, 0.02 * L); // rare ⭐⭐⭐ golden; a luck buff helps
+    const greatChance = Math.min(0.75, 0.25 * L);  // ⭐⭐ band, also widened by luck
+    if (r < goldenChance) return { stars: 3, bonus: 3, golden: true }; // 🌟 golden crop!
+    if (r < greatChance) return { stars: 2, bonus: 2 };                // ⭐⭐ bumper crop
+    return { stars: 1, bonus: 1 };                                     // ⭐ healthy
 }

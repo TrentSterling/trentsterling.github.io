@@ -302,6 +302,18 @@ check('crop quality: a luck buff widens the ⭐⭐ band (#50)', () => {
     return 'luck widens 0.25→0.5 band, capped 0.75';
 });
 
+check('crop quality: rare ⭐⭐⭐ golden harvest, luck-boosted (#53)', () => {
+    // very low roll on a watered crop = golden (the top tier)
+    const g = harvestQuality(true, 0.0, 1);
+    assert(g.stars === 3 && g.bonus === 3 && g.golden === true, 'roll ~0 watered should be a golden ⭐⭐⭐');
+    // golden is rare without luck, but a luck buff widens its band
+    assert(harvestQuality(true, 0.03, 1).golden !== true, '0.03 should not be golden at 1x luck');
+    assert(harvestQuality(true, 0.03, 3).golden === true, 'a luck buff should make 0.03 golden');
+    // never golden on a dry harvest, no matter the luck
+    assert(!harvestQuality(false, 0.0, 10).golden, 'dry harvest can never be golden');
+    return 'golden ⭐⭐⭐ at the rare low end, luck-boosted';
+});
+
 check('buffs: meals grant per-stat luck & speed buffs that expire independently (#50)', () => {
     clearBuffs();
     assert(luckMult() === 1 && speedMult() === 1, 'no buffs should be 1x both');
