@@ -6,13 +6,16 @@
 
 import { ITEMS } from './inventory.js';
 
-export const FISH = ['minnow', 'trout', 'bass', 'salmon', 'pike'];
+export const FISH = ['minnow', 'trout', 'bass', 'salmon', 'pike', 'catfish', 'bob'];
 const SEASON_FISH = { Spring: 'trout', Summer: 'bass', Autumn: 'salmon', Winter: 'pike' };
 const COMMON = ['minnow', 'trout', 'bass'];
 
-// Pure: pick a fish from a 0..1 roll, biased toward the season's special.
+// Pure: pick a fish from a 0..1 roll, biased toward the season's special, with a
+// couple of rare novelty catches (a catfish that has a cat face, and Bob).
 export function pickFish(seasonName, roll) {
     const r = (((roll % 1) + 1) % 1); // tolerate any real
+    if (r < 0.05) return 'catfish';   // rare: it has a cat face. meow.
+    if (r < 0.09) return 'bob';       // rare: a fish named Bob. hi Bob.
     const seasonal = SEASON_FISH[seasonName];
     if (seasonal && r < 0.45) return seasonal;
     return COMMON[Math.floor(r * COMMON.length) % COMMON.length];

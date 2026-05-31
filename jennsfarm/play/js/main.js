@@ -880,7 +880,11 @@ function hookFish() {
     const p = getPlayerWorldPos();
     sparkle(p.x, 0.6, p.z, [0x9be8ff, 0xffffff]);
     pop(getPlayerGroup(), 0.24);
-    notify(`🎣 Caught a ${ITEMS[fish].name}!`);
+    notify(
+        fish === 'catfish' ? '🎣 A Catfish — it literally has a cat face?! Meow. 🐱' :
+        fish === 'bob' ? '🎣 You caught Bob. Bob is a fish. Hi, Bob. 👋' :
+        `🎣 Caught a ${ITEMS[fish].name}!`
+    );
     refreshUI();
     triggerAutoSave();
 }
