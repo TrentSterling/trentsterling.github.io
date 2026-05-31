@@ -9,8 +9,10 @@
 // income — it stays clear of the economy.
 
 const MEAL_BUFFS = {
-    honey_cake:   { stat: 'luck', mult: 2, secs: 90,  label: '🍀 Honey Cake — lucky harvests for a while!' },
-    grand_elixir: { stat: 'luck', mult: 3, secs: 120, label: '🍀 Grand Elixir — very lucky harvests!' },
+    honey_cake:   { stat: 'luck',  mult: 2,    secs: 90,  label: '🍀 Honey Cake — lucky harvests for a while!' },
+    grand_elixir: { stat: 'luck',  mult: 3,    secs: 120, label: '🍀 Grand Elixir — very lucky harvests!' },
+    fish_stew:    { stat: 'speed', mult: 1.35, secs: 90,  label: '🐟 Fish Stew — quick feet!' },
+    country_cake: { stat: 'speed', mult: 1.2,  secs: 120, label: '🍰 Country Cake — a spring in your step!' },
 };
 
 let active = {}; // stat -> { mult, remaining }
@@ -34,6 +36,7 @@ export function tickBuffs(dt) {
 
 export function statMult(stat) { return active[stat] ? active[stat].mult : 1; }
 export function luckMult() { return statMult('luck'); }
+export function speedMult() { return statMult('speed'); }
 
 export function activeBuffs() {
     return Object.entries(active).map(([stat, b]) => ({ stat, mult: b.mult, remaining: Math.max(0, b.remaining) }));

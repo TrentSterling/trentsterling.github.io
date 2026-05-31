@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { isSolidTile } from './world.js';
 import { isBlockingTreeAt } from './trees.js';
+import { speedMult } from './buffs.js'; // a meal speed buff makes Jenn walk faster (#50)
 
 function blocked(x, z) { return isSolidTile(x, z) || isBlockingTreeAt(x, z); }
 
@@ -168,7 +169,7 @@ export function updatePlayer(dt) {
         currentZ = targetZ;
         if (!advanceWaypoint()) moving = false;   // reached final waypoint
     } else {
-        const step = Math.min(SPEED * dt, dist);
+        const step = Math.min(SPEED * speedMult() * dt, dist);
         const mx = (dx / dist) * step;
         const mz = (dz / dist) * step;
 
