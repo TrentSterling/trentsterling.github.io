@@ -16,9 +16,18 @@ const MEAL_BUFFS = {
     veggie_soup:  { stat: 'growth', mult: 1.5,  secs: 90,  label: '🌱 Veggie Soup — crops grow faster!' },
 };
 
+const STAT_ICON = { luck: '🍀', speed: '👟', growth: '🌱' };
+
 let active = {}; // stat -> { mult, remaining }
 
 export function buffForMeal(id) { return MEAL_BUFFS[id] || null; }
+
+// Format a remaining-seconds value for the HUD pill: "1:30", or "45s" under a minute.
+export function fmtBuffTime(secs) {
+    const s = Math.max(0, Math.ceil(secs));
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m}:${String(s % 60).padStart(2, '0')}` : `${s}s`;
+}
 
 // Eat a meal; if it grants a buff, (re)start it and return the buff (for a toast).
 export function applyMeal(id) {
@@ -41,7 +50,9 @@ export function speedMult() { return statMult('speed'); }
 export function growthMult() { return statMult('growth'); }
 
 export function activeBuffs() {
-    return Object.entries(active).map(([stat, b]) => ({ stat, mult: b.mult, remaining: Math.max(0, b.remaining) }));
+    return Object.entries(active).map(([stat, b]) => ({
+        stat, mult: b.mult, remaining: Math.max(0, b.remaining), icon: STAT_ICON[stat] || '✨',
+    }));
 }
 
 export function clearBuffs() { active = {}; }

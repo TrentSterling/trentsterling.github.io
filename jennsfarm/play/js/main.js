@@ -6,7 +6,7 @@ import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDeb
 import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
 import { harvestQuality } from './quality.js';
-import { applyMeal, tickBuffs, luckMult } from './buffs.js';
+import { applyMeal, tickBuffs, luckMult, activeBuffs, fmtBuffTime } from './buffs.js';
 import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
@@ -1059,6 +1059,21 @@ function setAutoBadge(on) {
     autoBadgeEl.style.opacity = on ? '1' : '0';
 }
 
+// Active meal buffs shown as small pills (icon + remaining time), top-right under
+// the AFK badge. Throttled to ~4Hz so the countdown ticks without per-frame churn. (#50)
+let buffBarEl = null;
+let buffHudTimer = 0;
+function renderBuffHud(dt) {
+    buffHudTimer -= dt;
+    if (buffHudTimer > 0) return;
+    buffHudTimer = 0.25;
+    if (!buffBarEl) { buffBarEl = document.createElement('div'); buffBarEl.id = 'buff-bar'; document.body.appendChild(buffBarEl); }
+    const buffs = activeBuffs();
+    if (!buffs.length) { buffBarEl.style.display = 'none'; buffBarEl.innerHTML = ''; return; }
+    buffBarEl.style.display = 'flex';
+    buffBarEl.innerHTML = buffs.map(b => `<div class="buff-pill">${b.icon}<span>${fmtBuffTime(b.remaining)}</span></div>`).join('');
+}
+
 function placeSprinkler(tx, tz, tile) {
     if (!inventory.has('sprinkler')) {
         playDeny();
@@ -1430,6 +1445,7 @@ function gameLoop(now) {
     gameTime += dt;
 
     tickBuffs(dt); // count down any active meal buffs (#50)
+    renderBuffHud(dt); // show them as pills top-right
     updatePlayer(dt);
 
     // Footstep sounds
