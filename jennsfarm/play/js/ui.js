@@ -6,6 +6,11 @@ import { ANIMALS } from './animals.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, ownsFactory, getFactories, employeeCost } from './factories.js';
 import { getRank, getLifetime, getRankProgress, getSellBonus } from './corp.js';
+import { getToolName, nextUpgrade } from './equipment.js';
+
+// Handlers registered once by main.js (avoids threading through every showShop call)
+let _onUpgrade = null;
+export function setShopHandlers({ onUpgrade } = {}) { if (onUpgrade) _onUpgrade = onUpgrade; }
 
 // DOM refs
 const hudCoins = document.getElementById('hud-coins');
@@ -297,6 +302,36 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
             `;
             if (coins >= a.cost) {
                 div.addEventListener('click', () => onBuyAnimal(id));
+            }
+            shopItems.appendChild(div);
+        }
+    }
+
+    // Equipment upgrades — widen a tool's work area (single tile → 3x3 → 5x5) (#33)
+    if (_onUpgrade) {
+        const sepE = document.createElement('div');
+        sepE.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;';
+        shopItems.appendChild(sepE);
+        for (const tool of ['water', 'hoe']) {
+            const up = nextUpgrade(tool);
+            const div = document.createElement('div');
+            div.className = 'shop-item';
+            if (!up) {
+                div.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-name">🔧 ${getToolName(tool)}</span>
+                        <span class="item-qty">max tier</span>
+                    </div>
+                    <span class="item-price">✓</span>`;
+            } else {
+                if (coins < up.cost) div.classList.add('cant-afford');
+                div.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-name">🔧 ${up.name}</span>
+                        <span class="item-qty">covers a bigger area</span>
+                    </div>
+                    <span class="item-price">🪙 ${up.cost}</span>`;
+                if (coins >= up.cost) div.addEventListener('click', () => _onUpgrade(tool));
             }
             shopItems.appendChild(div);
         }

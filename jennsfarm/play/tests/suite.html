@@ -41,6 +41,7 @@ import { CHUNK, worldToChunk, desiredChunks, updateChunks, getLoadedChunkCount, 
 import { findPath } from '../js/pathfind.js';
 import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates, getCrateCount, serializeCrates, loadCrates } from '../js/crates.js';
 import { createSpatialHash } from '../js/spatialhash.js';
+import { TOOL_TIERS, getToolLevel, getToolRadius, nextUpgrade, upgradeTool, tilesInRadius, serializeEquipment, loadEquipment } from '../js/equipment.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -759,6 +760,44 @@ check('spatial hash within() returns everything inside the radius', () => {
     assert(h.within(0, 0, 4.5, null).length === 5, `expected 5 within 4.5, got ${h.within(0, 0, 4.5, null).length}`);
     assert(h.within(0, 0, 100, o => o.x >= 7).length === 3, 'pred filter in within() failed');
     return 'within() + predicate OK';
+});
+
+// ---------- EQUIPMENT (tool-tier progression) ----------
+
+check('tool tiers upgrade and widen the work area, then max out', () => {
+    loadEquipment(null);
+    assert(getToolLevel('water') === 0 && getToolRadius('water') === 0, 'water should start single-tile');
+    const up = nextUpgrade('water');
+    assert(up && up.cost > 0, 'no first water upgrade offered');
+    assert(upgradeTool('water'), 'first upgrade failed');
+    assert(getToolRadius('water') === 1, 'radius did not widen to 1 (3x3)');
+    assert(upgradeTool('water'), 'second upgrade failed');
+    assert(getToolRadius('water') === 2, 'radius did not reach 2 (5x5)');
+    assert(nextUpgrade('water') === null && upgradeTool('water') === false, 'should be maxed out');
+    loadEquipment(null);
+    return 'single → 3x3 → 5x5, then maxed';
+});
+
+check('tilesInRadius covers the right square (radius 0 = exactly today\'s single tile)', () => {
+    const one = tilesInRadius(5, 5, 0);
+    assert(one.length === 1 && one[0].x === 5 && one[0].z === 5, 'radius 0 must be just the clicked tile');
+    assert(tilesInRadius(0, 0, 1).length === 9, 'radius 1 should be 3x3 = 9');
+    assert(tilesInRadius(0, 0, 2).length === 25, 'radius 2 should be 5x5 = 25');
+    return 'radii 0/1/2 → 1/9/25 tiles';
+});
+
+check('equipment levels survive a save/load round-trip and clamp', () => {
+    loadEquipment(null);
+    upgradeTool('hoe');
+    const s = serializeEquipment();
+    loadEquipment({ water: 0, hoe: 0 });
+    assert(getToolLevel('hoe') === 0, 'reset failed');
+    loadEquipment(s);
+    assert(getToolLevel('hoe') === 1, 'hoe level not restored');
+    loadEquipment({ water: 99 }); // out-of-range must clamp, not crash
+    assert(getToolLevel('water') === TOOL_TIERS.water.length - 1, 'level not clamped to max');
+    loadEquipment(null);
+    return 'levels round-trip + clamp';
 });
 
 // ---------- RENDER ----------
