@@ -7,6 +7,7 @@ import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
 import { harvestQuality } from './quality.js';
 import { applyMeal, tickBuffs, luckMult, activeBuffs, fmtBuffTime } from './buffs.js';
+import { bumpStat, allStats, serializeStats, loadStats } from './stats.js';
 import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
@@ -150,6 +151,7 @@ if (saved) {
     if (saved.greenhouse) loadGreenhouse(saved.greenhouse);
     if (saved.flytraps) loadFlytraps(saved.flytraps);
     if (saved.fishRecords) loadFishRecords(saved.fishRecords);
+    if (saved.stats) loadStats(saved.stats);
     notify('Game loaded!');
 }
 
@@ -537,6 +539,7 @@ function craftItem(recipeId) {
     if (!can) { playDeny(); notify('Missing ingredients!'); return; }
     for (const k in r.inputs) inventory.remove(k, r.inputs[k]);
     inventory.add(r.out, 1);
+    bumpStat('cooked');
     playBuy();
     notify(`Crafted ${ITEMS[r.out].name}!`);
     refreshUI();
@@ -861,6 +864,7 @@ function doHarvest(tx, tz) {
         const q = harvestQuality(result.watered, Math.random(), luckMult()); // ⭐ watered = premium; luck boosts ⭐⭐ and rare 🌟 golden
         const qty = result.qty + q.bonus;
         inventory.add(result.itemId, qty);
+        bumpStat('harvested'); if (q.golden) bumpStat('golden');
         playHarvest();
         pop(getPlayerGroup(), q.golden ? 0.4 : 0.28);
         const tail = result.regrew ? ' (regrowing!)' : '';
@@ -886,6 +890,7 @@ function doChop(tx, tz) {
     if (!result) return false;    // no tree within reach
     playChop();
     if (result.felled) {
+        bumpStat('chopped');
         const parts = [];
         for (const id in result.drops) {
             inventory.add(id, result.drops[id]);
@@ -938,6 +943,7 @@ function hookFish() {
     const isRecord = tryFishRecord(fish, weight);
     fishing = null;
     inventory.add(fish, 1);
+    bumpStat('fish');
     playHarvest();
     const p = getPlayerWorldPos();
     sparkle(p.x, 0.6, p.z, isRecord ? [0xffe066, 0xfff0c0, 0xffffff] : [0x9be8ff, 0xffffff]);
@@ -969,6 +975,7 @@ function tryPet(tx, tz) {
     }
     const a = petNearest(tx, tz);
     if (!a) return;
+    bumpStat('petted');
     hearts(a.x, 0.6, a.z);
     playStore();
     notify(`You pet the ${a.species}! 💛`);
@@ -1265,7 +1272,7 @@ function openBarn() {
 function openHome() {
     const letter = isClaimed(day) ? null : makeLetter(day);
     if (letter && letter.kind === 'request') letter.canDeliver = canFulfill(letter, inventory);
-    showHome(playerName, sleepAtHome, letter, () => claimMail(letter));
+    showHome(playerName, sleepAtHome, letter, () => claimMail(letter), allStats());
 }
 
 // Collect Grandpa's daily letter: a gift, or fulfil a delivery request.
@@ -1436,6 +1443,7 @@ function triggerAutoSave() {
             greenhouse: serializeGreenhouse(),
             flytraps: serializeFlytraps(),
             fishRecords: serializeFishRecords(),
+            stats: serializeStats(),
             lastSaved: Date.now(),
         });
     }, 1000);
