@@ -64,6 +64,7 @@ import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
 import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
 import { harvestQuality } from '../js/quality.js';
+import { hideAllOverlays, anyOverlayOpen } from '../js/overlays.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -178,6 +179,18 @@ check('market bag value sums every sellable stack at current price', () => {
     assert(bag.total === expected, `total ${bag.total} != expected ${expected}`);
     assert(sellableValue(createInventory()).total === 0, 'empty bag should be worth 0');
     return `bag ${bag.count} items = 🪙${bag.total}`;
+});
+
+check('overlays: ESC/backdrop close every menu generically (#56)', () => {
+    const a = document.createElement('div'); a.className = 'overlay';            // open
+    const b = document.createElement('div'); b.className = 'overlay hidden';     // already closed
+    document.body.append(a, b);
+    assert(anyOverlayOpen(), 'should detect the open overlay');
+    hideAllOverlays();
+    assert(a.classList.contains('hidden') && b.classList.contains('hidden'), 'not all overlays hidden');
+    assert(!anyOverlayOpen(), 'no overlay should remain open');
+    a.remove(); b.remove();
+    return 'open detected, all closed';
 });
 
 // ---------- TREE CHOPPING (render path) ----------

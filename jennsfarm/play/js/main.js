@@ -10,6 +10,7 @@ import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
 import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, showHome, hideHome, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
+import { hideAllOverlays, initOverlayDismiss } from './overlays.js';
 import { nextMorning } from './home.js';
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, serializeMail, loadMail } from './mailbox.js';
 import { healValue } from './foods.js';
@@ -505,12 +506,7 @@ document.addEventListener('keydown', (e) => {
         return;
     }
     if (e.key === 'Escape') {
-        hideShop();
-        hideMarket();
-        hideBarn();
-        hideCraft();
-        hideFactory();
-        hideHome();
+        hideAllOverlays(); // one call closes every menu — see overlays.js (#56)
     }
     if (e.key === 'c' || e.key === 'C') {
         toggleCraft();
@@ -522,6 +518,8 @@ document.addEventListener('keydown', (e) => {
     }
     if (e.key === '`' || e.code === 'Backquote') toggleDebug(); // debug overlay
 });
+
+initOverlayDismiss(); // click the dark backdrop to close any menu (#56)
 
 function toggleCraft() {
     const el = document.getElementById('craft-overlay');
