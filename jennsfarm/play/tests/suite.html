@@ -35,7 +35,7 @@ import { addSprinkler, updateSprinklers } from '../js/sprinklers.js';
 import { advanceCropsOffline } from '../js/offline.js';
 import { initBuyers, updateBuyers } from '../js/buyers.js';
 import { createPlayer, setHeldTool, setPlayerGender } from '../js/player.js';
-import { buyAnimalEntity, creditOfflineProduce, initAnimals } from '../js/animals.js';
+import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest } from '../js/animals.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 
@@ -238,6 +238,16 @@ check('player builds and held tools swap without throwing', () => {
     for (const t of ['water', 'hoe', 'axe', 'sprinkler', 'hand', 'carrot_seed', 'move']) setHeldTool(t);
     setPlayerGender('boy'); setPlayerGender('girl');
     return 'held tools + gender swap cleanly';
+});
+
+// ---------- PETTING ANIMALS ----------
+
+check('petting finds the nearest animal (and nothing in empty space)', () => {
+    initAnimals(false); // spawns a crow at (FARM_CX-6, FARM_CZ+7) = (18,31) among others
+    assert(petNearest(-99, -99) === null, 'should pet nothing way out in the void');
+    const pet = petNearest(18, 31);
+    assert(pet && pet.species, 'expected to pet a nearby animal');
+    return `petted a ${pet.species}`;
 });
 
 // ---------- OFFLINE ROADSIDE BUYERS ----------

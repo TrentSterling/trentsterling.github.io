@@ -128,7 +128,7 @@ function spawn(species, x, z) {
     animals.push({
         species, kind: def.kind || (species === 'grandpa' ? 'npc' : 'wildlife'),
         grp, x, z, tx: x, tz: z, idle: Math.random() * 3,
-        prodT: def.every || 0, speed: def.speed || 1.2, flee: false,
+        prodT: def.every || 0, speed: def.speed || 1.2, flee: false, hop: 0,
         home: { x, z }, range: species === 'grandpa' ? 4 : (def.kind === 'livestock' ? 6 : 11),
     });
 }
@@ -241,6 +241,11 @@ export function updateAnimals(dt, playerPos, onCollect) {
         // little hop/bob
         const bob = a.kind === 'livestock' || a.species === 'crow' ? 0.04 : 0.02;
         a.grp.position.y = 0.02 + Math.abs(Math.sin(now * 0.006 + a.x)) * bob;
+        // Happy hop when petted
+        if (a.hop > 0) {
+            a.hop -= dt;
+            a.grp.position.y += Math.sin(Math.max(0, a.hop) / 0.45 * Math.PI) * 0.28;
+        }
 
         // --- Produce ---
         if (a.prodT > 0 && ANIMALS[a.species] && ANIMALS[a.species].produce) {
@@ -281,6 +286,19 @@ export function loadAnimals(data) {
 }
 
 /** Nearest uncollected produce drop (egg/milk) to a point, for AFK collecting. */
+/** Pet the nearest (non-grandpa) animal to a point — makes it hop happily. */
+export function petNearest(x, z) {
+    let best = null, bd = 1.3 * 1.3;
+    for (const a of animals) {
+        if (a.species === 'grandpa') continue;
+        const d = (a.x - x) ** 2 + (a.z - z) ** 2;
+        if (d < bd) { bd = d; best = a; }
+    }
+    if (!best) return null;
+    best.hop = 0.45;
+    return { species: best.species, x: best.x, z: best.z };
+}
+
 export function getNearestDrop(x, z) {
     let best = null, bd = Infinity;
     for (const d of drops) {
