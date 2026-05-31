@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
+import { registerSystem } from './registry.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
 export const FOUNTAIN_COST = 500;
@@ -63,6 +64,9 @@ export function updateFountain(dt) {
     t += dt;
     fountain.grp.children[3].position.y = 0.68 + Math.sin(t * 2) * 0.03; // orb bob
 }
+
+// Self-register (#9): the fountain just bobs each tick (tossing is click-driven).
+registerSystem({ id: 'fountain', update(dt) { updateFountain(dt); } });
 
 export function serializeFountain() { return fountain ? { x: fountain.x, z: fountain.z } : null; }
 export function loadFountain(d) {

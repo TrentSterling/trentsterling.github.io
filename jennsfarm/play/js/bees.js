@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
+import { registerSystem } from './registry.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
 const HONEY_EVERY = 26;   // seconds per honey jar
@@ -78,6 +79,15 @@ export function creditOfflineHoney(seconds) {
 
 export function getHiveCount() { return hives.length; }
 export const HIVE_COST = 350;
+
+// Self-register (#9): produce honey each tick via the shared ctx.
+registerSystem({
+    id: 'bees',
+    update(dt, ctx) {
+        const honey = updateBees(dt, ctx.gameTime);
+        if (honey) { ctx.addItem('honey', honey); ctx.refreshUI(); }
+    },
+});
 
 export function serializeHives() { return hives.map(h => ({ x: h.x, z: h.z })); }
 export function loadHives(data) {

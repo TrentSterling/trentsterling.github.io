@@ -1423,24 +1423,11 @@ function gameLoop(now) {
     const made = updateFactories(dt, inventory);
     if (Object.keys(made).length) refreshUI();
 
-    // Beehives slowly make honey
-    const honey = updateBees(dt, gameTime);
-    if (honey) { inventory.add('honey', honey); refreshUI(); }
-    updateFountain(dt);
-    updateFishing(dt);
-
-    // Delivery truck periodically drops a crate by the road — click it to open
-    const deliveredCrate = updateCrates(dt);
-    if (deliveredCrate) {
-        notify(`📦 A truck dropped off a ${CRATE_KINDS[deliveredCrate.kind].name} by the road!`);
-        sparkle(deliveredCrate.x, 0.8, deliveredCrate.z, [0xffe0a0, 0xffffff]);
-        playStore();
-    }
+    updateFishing(dt); // bees, fountain, crates + pet now tick via the registry (updateSystems)
 
     const ppos = getPlayerWorldPos();
     updateChunks(ppos.x, ppos.z); // stream infinite terrain around Jenn
-    updatePet(dt, ppos, getNearestDrop); // pet follows + fetches drops
-    updateAnimals(dt, ppos, onCollectProduce, getPetPos());
+    updateAnimals(dt, ppos, onCollectProduce, getPetPos()); // pet ticks via the registry
     updateGrandpa(dt, {
         coins, day, name: playerName,
         wood: inventory.count('wood'),
@@ -1452,8 +1439,13 @@ function gameLoop(now) {
     const dayProgress = getDayProgress();
     updateDayNight(dayProgress);
     updateAmbient(isNightTime(dayProgress));
-    // Registered systems (weather, fireflies, …) tick generically via the registry
-    updateSystems(dt, { dt, gameTime, season, playerPos: ppos, isNight: isNightTime(dayProgress) });
+    // Registered systems (weather, fireflies, bees, fountain, crates, pet, …)
+    // tick generically via the registry, using this shared world API (ctx).
+    updateSystems(dt, {
+        dt, gameTime, season, playerPos: ppos, isNight: isNightTime(dayProgress),
+        addItem: (id, q) => inventory.add(id, q),
+        getNearestDrop, refreshUI, notify, sparkle, playStore,
+    });
 
     const newDay = Math.floor(gameTime / DAY_LENGTH) + 1;
     if (newDay > day) {

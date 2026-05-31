@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { ITEMS } from './inventory.js';
+import { registerSystem } from './registry.js';
 
 // Crates land just south of the roadside stall (buyers.js: stall at 30,25).
 const PAD_SLOTS = [ { x: 30, z: 27 }, { x: 29, z: 28 }, { x: 31, z: 28 }, { x: 29, z: 26 } ];
@@ -156,6 +157,19 @@ export function creditOfflineCrates(seconds) {
     while (crates.length < target && deliverCrate()) n++;
     return n;
 }
+
+// Self-register (#9): tick deliveries; announce a new crate via the shared ctx.
+registerSystem({
+    id: 'crates',
+    update(dt, ctx) {
+        const d = updateCrates(dt);
+        if (d) {
+            ctx.notify(`📦 A truck dropped off a ${CRATE_KINDS[d.kind].name} by the road!`);
+            ctx.sparkle(d.x, 0.8, d.z, [0xffe0a0, 0xffffff]);
+            ctx.playStore();
+        }
+    },
+});
 
 export function getCrateCount() { return crates.length; }
 export function getCrates() { return crates.map(c => ({ id: c.id, x: c.x, z: c.z, kind: c.kind })); }
