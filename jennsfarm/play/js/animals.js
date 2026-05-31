@@ -115,6 +115,16 @@ function buildModel(species) {
                 part(new THREE.CylinderGeometry(0.04, 0.04, 0.14, 5), 0x111111, g, lx, 0.07, lz); // stubby legs
             break;
         }
+        case 'possum': {
+            part(new THREE.SphereGeometry(0.15, 8, 6), 0xb8b2a6, g, 0, 0.16, 0);            // grey body
+            part(new THREE.SphereGeometry(0.1, 8, 6), 0xe8e2d6, g, 0, 0.2, 0.18);           // pale head
+            part(new THREE.ConeGeometry(0.04, 0.12, 5), 0xf0a0b0, g, 0, 0.19, 0.31).rotation.x = Math.PI / 2; // pink snout
+            part(new THREE.ConeGeometry(0.04, 0.07, 4), 0x2a2a2a, g, -0.06, 0.3, 0.16);     // ears
+            part(new THREE.ConeGeometry(0.04, 0.07, 4), 0x2a2a2a, g, 0.06, 0.3, 0.16);
+            const ptail = part(new THREE.CylinderGeometry(0.015, 0.03, 0.32, 5), 0xf0a0b0, g, 0, 0.18, -0.24); // pink rat tail
+            ptail.rotation.x = 0.6;
+            break;
+        }
         case 'grandpa': {
             part(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 8), 0x5a7d4a, g, 0, 0.4, 0);  // overalls
             part(new THREE.SphereGeometry(0.15, 8, 6), 0xf0c49a, g, 0, 0.78, 0);          // head
@@ -175,13 +185,14 @@ export function initAnimals(withStarter = true) {
             spawn(species, FARM_CX + Math.cos(ang) * r, FARM_CZ + Math.sin(ang) * r);
         }
     };
-    // SKUNKS. Her favourite — a row right in front of the camera (north of the
-    // farm) so you see them the moment the game loads, plus a swarm all around.
-    for (let i = 0; i < 5; i++) spawn('skunk', FARM_CX - 8 + i * 4, FARM_CZ - 6 - (i % 2) * 3);
-    scatter('skunk', 9, 6, 20);          // even more skunks, every direction
+    // SKUNKS. Wifey's favourite — she asked FIVE times. A big visible row right in
+    // front of the camera + a whole swarm all around. ~20 of them.
+    for (let i = 0; i < 8; i++) spawn('skunk', FARM_CX - 10 + i * 3, FARM_CZ - 6 - (i % 2) * 3);
+    scatter('skunk', 12, 5, 20);         // even more skunks, every direction
+    scatter('possum', 5, 7, 22);         // possums too! 🐀
     scatter('crow', 7, 8, 26);
     scatter('ocelot', 4, 8, 24);
-    scatter('honey_badger', 3, 10, 26);  // don't care. relentlessly hassle the skunks → chaos
+    scatter('honey_badger', 2, 12, 26);  // fewer chasers so the skunks linger to be admired
 
     // A starter chicken so players meet the produce loop immediately (fresh game only)
     if (withStarter) spawn('chicken', FARM_CX + 1, FARM_CZ + 1);
@@ -402,6 +413,27 @@ export function getNearestDrop(x, z) {
 
 export function getLivestockCount() {
     return animals.filter(a => a.kind === 'livestock').length;
+}
+
+// Pests a carnivorous plant may eat. Skunks are SACRED and never on this list (#58).
+const PESTS = ['crow'];
+
+// Eat (despawn) the nearest pest within range of (x,z). Returns {species,x,z} or
+// null. Will NEVER target a skunk — they're not pests, they're beloved.
+export function eatNearestPest(x, z, range = 3) {
+    let idx = -1, bd = range * range;
+    for (let i = 0; i < animals.length; i++) {
+        const a = animals[i];
+        if (!PESTS.includes(a.species)) continue;
+        const d = (a.x - x) ** 2 + (a.z - z) ** 2;
+        if (d < bd) { bd = d; idx = i; }
+    }
+    if (idx < 0) return null;
+    const a = animals[idx];
+    scene.remove(a.grp);
+    a.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    animals.splice(idx, 1);
+    return { species: a.species, x: a.x, z: a.z };
 }
 
 export function getAnimalCount() { return animals.length; }
