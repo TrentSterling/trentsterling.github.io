@@ -21,6 +21,7 @@ import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_CO
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
 import { pickFish } from './fishing.js';
+import { hasGreenhouse, buildGreenhouse, effectiveGrowth, GREENHOUSE_COST, serializeGreenhouse, loadGreenhouse } from './greenhouse.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -141,6 +142,7 @@ if (saved) {
     if (saved.fountain) loadFountain(saved.fountain);
     if (saved.pet) loadPet(saved.pet);
     if (saved.visitors) loadVisitors(saved.visitors);
+    if (saved.greenhouse) loadGreenhouse(saved.greenhouse);
     notify('Game loaded!');
 }
 
@@ -206,7 +208,7 @@ if (saved && saved.lastSaved) {
 if (saved && saved.playerName) playerName = saved.playerName;
 if (saved && saved.gender) { playerGender = saved.gender; setPlayerGender(saved.gender); }
 season = getSeason(day);
-setSeasonGrowth(season.growth);
+setSeasonGrowth(effectiveGrowth(season.growth)); // greenhouse lifts the floor (#51)
 initGrandpa();
 
 // Starting weeds: fresh games get an overgrown farm to clear; saves restore theirs
@@ -818,7 +820,20 @@ function buyFoodBowl() {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
-setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl });
+// Greenhouse: crops grow full-speed year-round (#51)
+function buyGreenhouse() {
+    if (hasGreenhouse()) { notify('You already have a greenhouse!'); return; }
+    if (coins < GREENHOUSE_COST) { playDeny(); notify("Can't afford a greenhouse!"); return; }
+    buildGreenhouse();
+    coins -= GREENHOUSE_COST;
+    setSeasonGrowth(effectiveGrowth(season.growth)); // apply right away
+    playExpand();
+    notify('Greenhouse built! 🌿 Crops now grow full-speed all year.');
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
+setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl, onBuyGreenhouse: buyGreenhouse });
 
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
@@ -1368,6 +1383,7 @@ function triggerAutoSave() {
             fountain: serializeFountain(),
             pet: serializePet(),
             visitors: serializeVisitors(),
+            greenhouse: serializeGreenhouse(),
             lastSaved: Date.now(),
         });
     }, 1000);
@@ -1470,7 +1486,7 @@ function gameLoop(now) {
         const ns = getSeason(day);
         if (ns.index !== season.index) {
             season = ns;
-            setSeasonGrowth(ns.growth);
+            setSeasonGrowth(effectiveGrowth(ns.growth)); // greenhouse keeps it full-speed (#51)
             notify(`${ns.emoji} ${ns.name} has arrived!`);
         } else {
             notify(`Day ${day} begins!`);
