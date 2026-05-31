@@ -6,6 +6,7 @@
 
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
+import { registerSystem } from './registry.js';
 
 const SPEED = 3.6;       // pet trot speed (tiles/sec) — a touch faster than Jenn
 const FETCH_RANGE = 10;  // how far the pet will range to fetch a drop
@@ -70,6 +71,9 @@ export function updatePet(dt, playerPos, getNearestDrop) {
     pet.bob += dt;
     pet.grp.position.set(pet.x, 0.02 + (moving ? Math.abs(Math.sin(pet.bob * 9)) * 0.05 : 0), pet.z);
 }
+
+// Self-register (#9): the pet follows + fetches each tick via the shared ctx.
+registerSystem({ id: 'pet', update(dt, ctx) { updatePet(dt, ctx.playerPos, ctx.getNearestDrop); } });
 
 export function serializePet() { return pet ? { species: pet.species, name: pet.name, x: pet.x, z: pet.z } : null; }
 export function loadPet(d) {
