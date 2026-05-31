@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
 import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile } from './world.js';
-import { createPlayer, moveTo, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup } from './player.js';
+import { createPlayer, moveTo, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool } from './player.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile } from './farm.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
@@ -257,6 +257,7 @@ function selectSlot(index) {
     if (index < 0 || index >= hotbarSlots.length) return;
     selectedSlot = index;
     updateToolLabel(hotbarSlots[index].label);
+    setHeldTool(hotbarSlots[index].id);
     refreshUI();
 }
 
