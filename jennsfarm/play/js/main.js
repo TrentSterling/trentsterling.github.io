@@ -10,6 +10,7 @@ import { createInventory, ITEMS } from './inventory.js';
 import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, showHome, hideHome, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
 import { nextMorning } from './home.js';
 import { healValue } from './foods.js';
+import { updateWeather } from './weather.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -1262,6 +1263,7 @@ function gameLoop(now) {
     const dayProgress = getDayProgress();
     updateDayNight(dayProgress);
     updateAmbient(isNightTime(dayProgress));
+    updateWeather(dt, season.name, ppos); // snow in winter, leaves in autumn
 
     const newDay = Math.floor(gameTime / DAY_LENGTH) + 1;
     if (newDay > day) {

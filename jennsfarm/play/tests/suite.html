@@ -45,6 +45,7 @@ import { TOOL_TIERS, getToolLevel, getToolRadius, nextUpgrade, upgradeTool, tile
 import { nextMorning } from '../js/home.js';
 import { terrainHeight, AMP } from '../js/terrain.js';
 import { healValue } from '../js/foods.js';
+import { seasonWeather, updateWeather, clearWeather } from '../js/weather.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -895,6 +896,22 @@ check('sleeping always advances to the next morning', () => {
     assert(nextMorning(2 * D + m, D) === 3 * D + m, 'day2 morning should wake on day3 morning');
     assert(nextMorning(150, D) > 150 && nextMorning(0, D) > 0, 'sleep must move time forward');
     return 'always wakes next morning';
+});
+
+// ---------- SEASONAL WEATHER (#42) ----------
+
+check('seasonal weather: snow in winter, leaves in autumn, clear otherwise', () => {
+    assert(seasonWeather('Winter').kind === 'snow', 'winter should snow');
+    assert(seasonWeather('Autumn').kind === 'leaves', 'autumn should drop leaves');
+    assert(seasonWeather('Spring') === null && seasonWeather('Summer') === null, 'spring/summer should be clear');
+    // build → animate (incl. recycle at the ground) → swap kind → clear, no throws
+    ensureWorld();
+    updateWeather(0.1, 'Winter', { x: 24, z: 24 });
+    for (let i = 0; i < 50; i++) updateWeather(0.2, 'Winter', { x: 24, z: 24 }); // ~10s: particles fall + recycle
+    updateWeather(0.1, 'Autumn', { x: 24, z: 24 }); // swap kind (rebuild)
+    updateWeather(0.1, 'Spring', { x: 24, z: 24 }); // clear (hide)
+    clearWeather();
+    return 'snow/leaves/clear, recycles + swaps cleanly';
 });
 
 // ---------- RENDER ----------
