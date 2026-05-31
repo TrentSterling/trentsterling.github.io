@@ -855,17 +855,23 @@ setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountai
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
     if (result) {
-        const q = harvestQuality(result.watered, Math.random(), luckMult()); // ⭐ watered = premium; a luck buff boosts ⭐⭐
+        const q = harvestQuality(result.watered, Math.random(), luckMult()); // ⭐ watered = premium; luck boosts ⭐⭐ and rare 🌟 golden
         const qty = result.qty + q.bonus;
         inventory.add(result.itemId, qty);
         playHarvest();
-        sparkle(tx, 0.6, tz, q.stars ? [0xffe066, 0xfff0c0, 0xffffff] : undefined);
-        pop(getPlayerGroup(), 0.28);
-        addShake(0.04);
+        pop(getPlayerGroup(), q.golden ? 0.4 : 0.28);
         const tail = result.regrew ? ' (regrowing!)' : '';
-        const stars = q.stars ? ' ' + '⭐'.repeat(q.stars) : '';
+        if (q.golden) {
+            sparkle(tx, 0.9, tz, [0xffd700, 0xffe066, 0xffffff]); // 🌟 a golden one!
+            addShake(0.08);
+            notify(`🌟 GOLDEN ${ITEMS[result.itemId].name}! ×${qty}${tail}`);
+        } else {
+            sparkle(tx, 0.6, tz, q.stars ? [0xffe066, 0xfff0c0, 0xffffff] : undefined);
+            addShake(0.04);
+            const stars = q.stars ? ' ' + '⭐'.repeat(q.stars) : '';
+            notify(`Harvested ${qty} ${ITEMS[result.itemId].name}!${tail}${stars}`);
+        }
         questEvent('harvest');
-        notify(`Harvested ${qty} ${ITEMS[result.itemId].name}!${tail}${stars}`);
         // harvestCrop owns the tile state now (soil for one-shot, replanted for regrow)
         refreshUI();
         triggerAutoSave();
