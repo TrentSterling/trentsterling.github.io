@@ -9,6 +9,7 @@ import { createInventory, ITEMS } from './inventory.js';
 import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, isOverlayOpen, updateBag, updateHealth } from './ui.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
+import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
 import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
@@ -100,6 +101,7 @@ if (saved) {
     if (saved.trees) loadTrees(saved.trees);
     if (saved.sprinklers) loadSprinklers(saved.sprinklers);
     if (saved.factories) loadFactories(saved.factories);
+    if (saved.corp) loadCorp(saved.corp);
     notify('Game loaded!');
 }
 
@@ -140,7 +142,12 @@ if (saved && saved.lastSaved) {
         let facCount = 0;
         for (const k in facProd) facCount += facProd[k];
         const sales = offlineBuyerSales(inventory, away); // roadside buyers came by
-        if (sales.count) coins += sales.coins;
+        if (sales.count) {
+            const bonused = Math.round(sales.coins * (1 + getSellBonus()));
+            coins += bonused;
+            addEarnings(bonused); // counts toward company value; no popup on load
+            sales.coins = bonused;
+        }
         const bits = [];
         if (cp.ripened) bits.push(`${cp.ripened} crops ripened`);
         if (pcount) bits.push(`+${pcount} produce`);
@@ -765,13 +772,32 @@ function eatItem(id) {
     triggerAutoSave();
 }
 
+// Count sale income toward the company's lifetime value; celebrate rank-ups.
+// This drives the farm→Shampoo Corporation progression (corp.js).
+function recordEarnings(amount) {
+    if (amount <= 0) return;
+    const before = getRankIndex();
+    addEarnings(amount);
+    if (getRankIndex() > before) {
+        const r = getRank();
+        const p = getPlayerWorldPos();
+        coinBurst(p.x, p.z); hearts(p.x, 1.2, p.z); addShake(0.18);
+        playExpand();
+        notify(`🏢 Your farm is now a ${r.emoji} ${r.name}! (+${Math.round(r.bonus * 100)}% sell bonus)`);
+        if (r.name === 'Shampoo Corporation') {
+            setTimeout(() => grandpaSayText(`A shampoo empire?! I always knew you'd make it big, kiddo. 🧴`), 1600);
+        }
+    }
+}
+
 // A drive-by buyer stops at the roadside stall and buys one good you're holding
 function buyerPurchase(wx, wz) {
     for (const id in ITEMS) {
         if (ITEMS[id].type !== 'crop' || inventory.count(id) <= 0) continue;
         inventory.remove(id, 1);
-        const price = getPrice(id);
+        const price = Math.round(getPrice(id) * (1 + getSellBonus()));
         coins += price;
+        recordEarnings(price);
         recordSale(id, 1); // selling still nudges the market price down
         playSell();
         coinBurst(wx, wz);
@@ -841,8 +867,9 @@ function sellItem(itemId) {
     if (!item || !inventory.has(itemId)) return;
     const qty = inventory.count(itemId);
     inventory.remove(itemId, qty);
-    const earned = qty * getPrice(itemId);
+    const earned = Math.round(qty * getPrice(itemId) * (1 + getSellBonus()));
     coins += earned;
+    recordEarnings(earned);
     recordSale(itemId, qty);   // flooding the market lowers future price
     playSell();
     { const pp = getPlayerWorldPos(); coinBurst(pp.x, pp.z); addShake(0.05); }
@@ -859,11 +886,12 @@ function sellAllCrops() {
         const qty = inventory.count(id);
         if (qty <= 0) continue;
         inventory.remove(id, qty);
-        const earned = qty * getPrice(id);
+        const earned = Math.round(qty * getPrice(id) * (1 + getSellBonus()));
         coins += earned; total += earned; count += qty;
         recordSale(id, qty); // flooding still tanks future prices
     }
     if (count > 0) {
+        recordEarnings(total);
         playSell();
         const pp = getPlayerWorldPos(); coinBurst(pp.x, pp.z); addShake(0.07);
         notify(`Sold ${count} items for 🪙${total}!`);
@@ -992,6 +1020,7 @@ function triggerAutoSave() {
             weeds: serializeWeeds(),
             quests: serializeQuests(),
             factories: serializeFactories(),
+            corp: serializeCorp(),
             lastSaved: Date.now(),
         });
     }, 1000);

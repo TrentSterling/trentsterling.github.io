@@ -40,6 +40,7 @@ import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest } from '
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
+import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -499,6 +500,57 @@ check('factory ownership + crew survive a save/load round-trip', () => {
     assert(serializeFactories().creamery.employees === 2, 'crew count not preserved');
     loadFactories(null); // reset so later runs start clean
     return 'creamery + 2 crew round-tripped';
+});
+
+// ---------- CORP ARC (farm → shampoo corporation) ----------
+
+check('corp ranks are an ascending ladder topped by the Shampoo Corporation', () => {
+    assert(RANKS.length >= 3, 'too few ranks');
+    for (let i = 1; i < RANKS.length; i++) {
+        assert(RANKS[i].need > RANKS[i - 1].need, `rank ${i} need not ascending`);
+        assert(RANKS[i].bonus >= RANKS[i - 1].bonus, `rank ${i} bonus not ascending`);
+    }
+    assert(RANKS[0].need === 0 && RANKS[0].bonus === 0, 'first rank should be free with no bonus');
+    assert(RANKS[RANKS.length - 1].name === 'Shampoo Corporation', 'top rank should be Shampoo Corporation');
+    return `${RANKS.length} ranks → ${RANKS[RANKS.length - 1].emoji} Shampoo Corporation`;
+});
+
+check('earnings lift the corporate rank and sell bonus', () => {
+    loadCorp(null);
+    assert(getRankIndex() === 0, 'should start at rank 0');
+    assert(getSellBonus() === 0, 'rank 0 has no bonus');
+    addEarnings(RANKS[1].need); // exactly enough for rank 1
+    assert(getRankIndex() === 1, `expected rank 1 at ${RANKS[1].need}, got ${getRankIndex()}`);
+    assert(getSellBonus() === RANKS[1].bonus, 'bonus did not match rank 1');
+    addEarnings(RANKS[RANKS.length - 1].need); // well past the top
+    assert(getRank().name === 'Shampoo Corporation', 'did not reach top rank');
+    assert(getRank().next === null, 'top rank should have no next');
+    loadCorp(null);
+    return '0 → rank 1 → Shampoo Corp';
+});
+
+check('rank progress is a 0..1 fraction toward the next rank', () => {
+    loadCorp(null);
+    assert(getRankProgress() === 0, 'fresh progress should be 0');
+    addEarnings(Math.round(RANKS[1].need / 2)); // halfway to rank 1 from 0
+    const p = getRankProgress();
+    assert(p > 0.3 && p < 0.7, `halfway progress out of range: ${p}`);
+    loadCorp({ lifetime: RANKS[RANKS.length - 1].need }); // maxed
+    assert(getRankProgress() === 1, 'maxed progress should be 1');
+    loadCorp(null);
+    return `mid ${(p * 100) | 0}%, maxed 100%`;
+});
+
+check('company value survives a save/load round-trip', () => {
+    loadCorp(null);
+    addEarnings(1234);
+    const s = serializeCorp();
+    loadCorp({ lifetime: 0 });
+    assert(getLifetime() === 0, 'reset failed');
+    loadCorp(s);
+    assert(getLifetime() === 1234, `lifetime not restored (${getLifetime()})`);
+    loadCorp(null); // clean for any later runs
+    return 'company value round-tripped';
 });
 
 // ---------- RENDER ----------
