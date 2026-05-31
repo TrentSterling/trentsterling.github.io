@@ -263,8 +263,16 @@ body {
 .item-info { display: flex; align-items: center; gap: 10px; }
 .item-icon { width: 32px; height: 32px; image-rendering: pixelated; }
 .item-name { font-weight: 700; }
-.item-price { color: var(--gold); font-weight: 800; }
+.item-price { color: var(--gold); font-weight: 800; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.25; }
+.item-price small { font-size: 11px; font-weight: 700; color: var(--green); opacity: 0.85; }
 .item-qty { color: var(--green); font-size: 13px; }
+
+.market-total {
+    display: flex; align-items: center; justify-content: space-between;
+    font: 800 13px var(--font); color: var(--text); margin: 2px 0 8px; padding: 8px 12px;
+    background: var(--row); border: 1px solid var(--edge); border-radius: 10px;
+}
+.market-total span { color: var(--gold); font-size: 16px; }
 
 .close-btn {
     display: block; margin: 14px auto 0; padding: 9px 32px;

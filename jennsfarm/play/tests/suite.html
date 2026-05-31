@@ -25,7 +25,7 @@
 import { ITEMS, createInventory } from '../js/inventory.js';
 import { CROPS, plantCrop, harvestCrop, updateCrops, waterTile } from '../js/farm.js';
 import { RECIPES } from '../js/craft.js';
-import { initMarket, getPrice, recordSale, dailyTick, offlineBuyerSales } from '../js/market.js';
+import { initMarket, getPrice, recordSale, dailyTick, offlineBuyerSales, sellableValue } from '../js/market.js';
 import { initRenderer } from '../js/renderer.js';
 import { createWorld, getTile, TILE, forEachFarmTile, isSolidTile } from '../js/world.js';
 import { chopTree, serializeTrees, loadTrees, updateTrees, creditOfflineFruit } from '../js/trees.js';
@@ -165,6 +165,19 @@ check('market price stays within floor/ceil and reacts to flooding', () => {
     const recovered = getPrice('wheat');
     assert(recovered >= flooded, 'price did not recover after a day');
     return `wheat ${base} -> flood ${flooded} -> +1day ${recovered}`;
+});
+
+check('market bag value sums every sellable stack at current price', () => {
+    initMarket();
+    const inv = createInventory();
+    inv.add('wheat', 3);
+    inv.add('honey', 2);
+    const expected = getPrice('wheat') * 3 + getPrice('honey') * 2;
+    const bag = sellableValue(inv);
+    assert(bag.count === 5, `count ${bag.count} != 5`);
+    assert(bag.total === expected, `total ${bag.total} != expected ${expected}`);
+    assert(sellableValue(createInventory()).total === 0, 'empty bag should be worth 0');
+    return `bag ${bag.count} items = 🪙${bag.total}`;
 });
 
 // ---------- TREE CHOPPING (render path) ----------
