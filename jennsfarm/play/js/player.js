@@ -1,11 +1,17 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
+import { isSolidTile } from './world.js';
+import { isBlockingTreeAt } from './trees.js';
+
+function blocked(x, z) { return isSolidTile(x, z) || isBlockingTreeAt(x, z); }
 
 let playerGroup;
 let targetX = 24, targetZ = 24;
 let currentX = 24, currentZ = 24;
 let moving = false;
+let stuckTimer = 0;
 const SPEED = 5; // tiles per second
+const PUSH_THROUGH = 0.7; // seconds fully pinned before you phase through a solid
 
 export function createPlayer() {
     playerGroup = new THREE.Group();
@@ -53,6 +59,7 @@ export function moveTo(x, z) {
     targetX = x;
     targetZ = z;
     moving = true;
+    stuckTimer = 0;
 }
 
 export function updatePlayer(dt) {
@@ -63,37 +70,37 @@ export function updatePlayer(dt) {
     const dist = Math.sqrt(dx * dx + dz * dz);
 
     if (dist < 0.05) {
-        // Arrived
-        currentX = targetX;
-        currentZ = targetZ;
-        playerGroup.position.x = currentX;
-        playerGroup.position.z = currentZ;
-        moving = false;
-        return;
-    }
-
-    // Move toward target
-    const step = SPEED * dt;
-    if (step >= dist) {
         currentX = targetX;
         currentZ = targetZ;
         moving = false;
     } else {
-        currentX += (dx / dist) * step;
-        currentZ += (dz / dist) * step;
+        const step = Math.min(SPEED * dt, dist);
+        const mx = (dx / dist) * step;
+        const mz = (dz / dist) * step;
+
+        // Soft collision: glide through clear ground, slide along walls (avoidance),
+        // but if you stay genuinely pinned and keep pushing, phase through after a beat.
+        if (!blocked(currentX + mx, currentZ + mz)) {
+            currentX += mx; currentZ += mz; stuckTimer = 0;
+        } else if (Math.abs(mx) > 0.001 && !blocked(currentX + mx, currentZ)) {
+            currentX += mx; stuckTimer = 0;                 // slide along a wall
+        } else if (Math.abs(mz) > 0.001 && !blocked(currentX, currentZ + mz)) {
+            currentZ += mz; stuckTimer = 0;                 // slide along a wall
+        } else {
+            stuckTimer += dt;                               // truly pinned
+            if (stuckTimer > PUSH_THROUGH) { currentX += mx; currentZ += mz; } // push through
+        }
+
+        if (Math.hypot(targetX - currentX, targetZ - currentZ) < 0.05) { moving = false; stuckTimer = 0; }
+
+        // Face movement direction
+        if (dist > 0.1) playerGroup.rotation.y = Math.atan2(dx, dz);
     }
 
     playerGroup.position.x = currentX;
     playerGroup.position.z = currentZ;
-
-    // Face movement direction
-    if (dist > 0.1) {
-        const angle = Math.atan2(dx, dz);
-        playerGroup.rotation.y = angle;
-    }
-
-    // Bobbing animation while moving
-    playerGroup.position.y = 0.07 + Math.sin(performance.now() * 0.01) * 0.03;
+    // Bob while moving, settle when stopped
+    playerGroup.position.y = 0.07 + (moving ? Math.sin(performance.now() * 0.01) * 0.03 : 0);
 }
 
 export function getPlayerPos() {

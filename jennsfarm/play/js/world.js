@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial, applyCurvature } from './renderer.js';
 import { createGrassTexture, createSoilTexture, createPathTexture, createWaterTexture, createBuildingTexture, createBarnTexture } from './textures.js';
+import { addTree } from './trees.js';
 
 export const WORLD_SIZE = 48;
 const FARM_CX = 24;
@@ -34,6 +35,7 @@ export const TILE = {
     SHOP: 'shop',
     MARKET: 'market',
     BARN: 'barn',
+    HOUSE: 'house',
 };
 
 // Sparse tile storage - only farm area + special tiles
@@ -73,6 +75,7 @@ function materialForTile(type) {
         [TILE.SHOP]: textures.shop,
         [TILE.MARKET]: textures.market,
         [TILE.BARN]: textures.barn,
+        [TILE.HOUSE]: textures.barn,
     };
     return curvedMaterial({ map: map[type] || textures.grass });
 }
@@ -181,6 +184,28 @@ function addPathsAndBuildings() {
             setSpecialTile(x, z, TILE.WATER);
         }
     }
+
+    // Grandpa's cottage, just north of the farm
+    addCottage(FARM_CX, FARM_CZ - 8);
+}
+
+function addCottage(x, z) {
+    setSpecialTile(x, z, TILE.HOUSE); // solid + wood floor under the model
+    // Walls
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.85, 1.05, 2, 2, 2), curvedMaterial({ color: 0xe8dcc0 }));
+    wall.position.set(x, 0.5, z); scene.add(wall);
+    // Pitched roof (4-sided cone), warm red
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.62, 4, 1), curvedMaterial({ color: 0xb04a3a }));
+    roof.position.set(x, 1.25, z); roof.rotation.y = Math.PI / 4; scene.add(roof);
+    // Door (faces south, toward the farm)
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.04), curvedMaterial({ color: 0x6e4423 }));
+    door.position.set(x, 0.3, z + 0.54); scene.add(door);
+    // Window
+    const win = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.04), curvedMaterial({ color: 0x9fdcec }));
+    win.position.set(x + 0.3, 0.56, z + 0.54); scene.add(win);
+    // Chimney
+    const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.42, 0.16), curvedMaterial({ color: 0x8a6a4a }));
+    chimney.position.set(x - 0.32, 1.18, z - 0.18); scene.add(chimney);
 }
 
 function setSpecialTile(x, z, type) {
@@ -257,39 +282,7 @@ function generateDecorations() {
     }
 }
 
-function addTree(x, z) {
-    const group = new THREE.Group();
-    const height = 0.6 + noise(x, z, 50) * 0.6;
-
-    // Trunk
-    const trunkGeo = new THREE.CylinderGeometry(0.06, 0.1, height, 6);
-    const trunkMat = curvedMaterial({ color: 0x8B5A2B });
-    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-    trunk.position.y = height / 2;
-    group.add(trunk);
-
-    // Foliage - explicit RGB to guarantee natural greens
-    const n1 = noise(x, z, 51);
-    const r = 30 + Math.floor(n1 * 45);       // 30-75
-    const g = 110 + Math.floor(noise(x, z, 52) * 70); // 110-180
-    const b = 30 + Math.floor(noise(x, z, 53) * 35);  // 30-65
-    const fColor = (r << 16) | (g << 8) | b;
-    const fMat = curvedMaterial({ color: fColor });
-
-    const f1 = new THREE.Mesh(new THREE.SphereGeometry(0.4 + noise(x, z, 52) * 0.2, 6, 5), fMat);
-    f1.position.y = height + 0.3;
-    group.add(f1);
-
-    const f2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 5, 4), fMat);
-    f2.position.set(0.12, height + 0.55, 0.08);
-    group.add(f2);
-
-    // Slight random offset within tile
-    const ox = (noise(x, z, 53) - 0.5) * 0.3;
-    const oz = (noise(x, z, 54) - 0.5) * 0.3;
-    group.position.set(x + ox, 0, z + oz);
-    scene.add(group);
-}
+// Trees are choppable entities - generation/rendering/persistence lives in trees.js
 
 function addRock(x, z) {
     const size = 0.12 + noise(x, z, 60) * 0.18;
@@ -433,6 +426,17 @@ export function setTileType(x, z, type) {
     createOverlay(x, z, type);
 }
 
+/** Solid tiles block movement: water, buildings, the cottage, and world edges.
+ *  Wild ground (no farm tile) is walkable so you can roam to chop trees. */
+export function isSolidTile(x, z) {
+    const ix = Math.round(x), iz = Math.round(z);
+    if (ix < 0 || ix >= WORLD_SIZE || iz < 0 || iz >= WORLD_SIZE) return true;
+    const t = farmTiles.get(tileKey(ix, iz));
+    if (!t) return false;
+    return t.type === TILE.WATER || t.type === TILE.SHOP || t.type === TILE.MARKET
+        || t.type === TILE.BARN || t.type === TILE.HOUSE;
+}
+
 export function forEachFarmTile(callback) {
     for (const [key, tile] of farmTiles) {
         const parts = key.split(',');
@@ -458,9 +462,10 @@ export function initHighlight() {
     scene.add(highlightMesh);
 }
 
-export function showHighlight(x, z) {
+export function showHighlight(x, z, color = 0xffffff) {
     if (!highlightMesh) return;
     highlightMesh.position.set(x, 0.01, z);
+    highlightMesh.material.color.setHex(color);
     highlightMesh.visible = true;
 }
 

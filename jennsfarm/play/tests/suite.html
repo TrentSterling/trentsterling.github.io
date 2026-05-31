@@ -1,0 +1,385 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Jenn's Farm — Test Suite</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<style>
+  body{margin:0;background:#10131a;color:#cfe;font:14px/1.5 monospace;padding:20px}
+  #c{display:none}
+  h1{font-size:18px;margin:0 0 12px}
+  #summary{font-size:22px;font-weight:bold;padding:8px 14px;border-radius:6px;display:inline-block;margin-bottom:14px}
+  .ok{background:#13371b;color:#7CFC9B}
+  .bad{background:#3a1414;color:#ff7b7b}
+  .row{padding:2px 0}
+  .pass::before{content:'PASS ';color:#7CFC9B}
+  .fail::before{content:'FAIL ';color:#ff7b7b}
+  .fail{color:#ff9b9b}
+  .msg{color:#8aa}
+</style>
+</head>
+<body>
+<div id="c"></div>
+<h1>Jenn's Farm — automated test suite</h1>
+<div id="summary">RUNNING…</div>
+<div id="results"></div>
+
+<script type="module">
+import { ITEMS } from '../js/inventory.js';
+import { CROPS, plantCrop, harvestCrop, updateCrops, waterTile } from '../js/farm.js';
+import { RECIPES } from '../js/craft.js';
+import { initMarket, getPrice, recordSale, dailyTick } from '../js/market.js';
+import { initRenderer } from '../js/renderer.js';
+import { createWorld, getTile, TILE, forEachFarmTile, isSolidTile } from '../js/world.js';
+import { chopTree, serializeTrees, loadTrees, updateTrees, creditOfflineFruit } from '../js/trees.js';
+import { damp, burst, pop, updateJuice } from '../js/juice.js';
+import { initGrandpa, grandpaSay } from '../js/grandpa.js';
+import { addSprinkler, updateSprinklers } from '../js/sprinklers.js';
+import { advanceCropsOffline } from '../js/offline.js';
+import { initBuyers, updateBuyers } from '../js/buyers.js';
+import { buyAnimalEntity, creditOfflineProduce, initAnimals } from '../js/animals.js';
+import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
+import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
+
+let _worldReady = false;
+function ensureWorld() {
+    if (_worldReady) return;
+    initRenderer(document.getElementById('c'));
+    createWorld();
+    _worldReady = true;
+}
+// find an empty tilled (soil) tile to plant on
+function findSoil() {
+    let found = null;
+    forEachFarmTile((x, z, t) => { if (!found && t.type === TILE.SOIL && !t.crop) found = { x, z }; });
+    return found;
+}
+
+const results = [];
+function check(name, fn) {
+    try {
+        const msg = fn();
+        results.push({ name, pass: true, msg: msg || '' });
+    } catch (e) {
+        results.push({ name, pass: false, msg: (e && e.message) || String(e) });
+    }
+}
+function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed'); }
+
+// ---------- ITEM REGISTRY INTEGRITY (guards "adding items") ----------
+
+check('every seed maps to a real crop', () => {
+    const seeds = Object.entries(ITEMS).filter(([, v]) => v.type === 'seed');
+    assert(seeds.length > 0, 'no seeds defined');
+    for (const [id, item] of seeds) {
+        assert(item.cropId, `${id} has no cropId`);
+        assert(CROPS[item.cropId], `${id} -> unknown crop "${item.cropId}"`);
+    }
+    return `${seeds.length} seeds OK`;
+});
+
+check('every crop is sellable with a positive price', () => {
+    const crops = Object.entries(ITEMS).filter(([, v]) => v.type === 'crop');
+    for (const [id, item] of crops) {
+        assert(typeof item.sellPrice === 'number' && item.sellPrice > 0, `${id} bad sellPrice`);
+        assert(item.name, `${id} missing name`);
+    }
+    return `${crops.length} sellable items OK`;
+});
+
+check('every harvestable CROP yields a real item', () => {
+    for (const id in CROPS) {
+        const h = CROPS[id].harvestItem;
+        assert(h && ITEMS[h], `crop ${id} -> unknown harvestItem "${h}"`);
+        assert(CROPS[id].harvestQty > 0, `crop ${id} bad harvestQty`);
+    }
+    return `${Object.keys(CROPS).length} crops OK`;
+});
+
+check('every recipe input/output is a known item', () => {
+    for (const id in RECIPES) {
+        const r = RECIPES[id];
+        assert(ITEMS[r.out], `recipe ${id} -> unknown output "${r.out}"`);
+        for (const k in r.inputs) assert(ITEMS[k], `recipe ${id} -> unknown input "${k}"`);
+    }
+    return `${Object.keys(RECIPES).length} recipes OK`;
+});
+
+// ---------- ECONOMY RULES (regression guards for stated requirements) ----------
+
+check('goat milk sells for more than cow milk', () =>
+    assert(ITEMS.goat_milk.sellPrice > ITEMS.cow_milk.sellPrice,
+        `goat ${ITEMS.goat_milk.sellPrice} !> cow ${ITEMS.cow_milk.sellPrice}`)
+    || `goat ${ITEMS.goat_milk.sellPrice} > cow ${ITEMS.cow_milk.sellPrice}`);
+
+check('square watermelon is the priciest raw crop', () => {
+    const raw = Object.entries(ITEMS).filter(([, v]) => v.type === 'crop' && !v.crafted);
+    const top = raw.sort((a, b) => b[1].sellPrice - a[1].sellPrice)[0][0];
+    assert(top === 'square_watermelon', `priciest raw crop is "${top}"`);
+    return `top raw = square_watermelon (${ITEMS.square_watermelon.sellPrice})`;
+});
+
+check('crafted goods are worth more than their inputs', () => {
+    for (const id in RECIPES) {
+        const r = RECIPES[id];
+        const inCost = Object.keys(r.inputs).reduce((s, k) => s + (ITEMS[k].sellPrice || 0) * r.inputs[k], 0);
+        assert(ITEMS[r.out].sellPrice > inCost, `${id}: out ${ITEMS[r.out].sellPrice} <= inputs ${inCost}`);
+    }
+    return 'all recipes profitable';
+});
+
+// ---------- MARKET DYNAMICS ----------
+
+check('market price stays within floor/ceil and reacts to flooding', () => {
+    initMarket();
+    const base = getPrice('wheat');
+    assert(base >= 1, 'price under 1');
+    recordSale('wheat', 200); // flood
+    const flooded = getPrice('wheat');
+    assert(flooded < base, `flooding did not lower price (${base} -> ${flooded})`);
+    dailyTick(); // recovers somewhat
+    const recovered = getPrice('wheat');
+    assert(recovered >= flooded, 'price did not recover after a day');
+    return `wheat ${base} -> flood ${flooded} -> +1day ${recovered}`;
+});
+
+// ---------- TREE CHOPPING (render path) ----------
+
+check('chopping a tree takes 3 hits, drops 2-4 wood, leaves a regrowing stump', () => {
+    ensureWorld();
+    // find first choppable tree
+    let hit = null;
+    outer:
+    for (let z = 0; z < 48; z++) for (let x = 0; x < 48; x++) {
+        const r = chopTree(x, z);
+        if (r) {
+            // chopTree returns the felled tree's own coords (3x3 forgiving search)
+            const key = `${r.x},${r.z}`;
+            assert(r.felled === false, 'tree felled in one hit (HP should be 3)');
+            const r2 = chopTree(r.x, r.z); assert(r2 && !r2.felled, 'felled on 2nd hit');
+            const r3 = chopTree(r.x, r.z); assert(r3 && r3.felled, 'not felled on 3rd hit');
+            const w = r3.drops.wood;
+            assert(w >= 2 && w <= 4, `wood drop out of range: ${w}`);
+            hit = { key, w };
+            break outer;
+        }
+    }
+    assert(hit, 'no choppable tree found in world');
+    const ser = serializeTrees();
+    const stump = ser.find(e => e.k === hit.key && e.s);
+    assert(stump, 'felled tree not serialized as stump');
+    assert(stump.r > 0, 'stump has no regrow timer');
+    loadTrees(ser); // round-trip must not throw
+    return `felled @${hit.key}, ${hit.w} wood, stump regrow=${stump.r}s`;
+});
+
+// ---------- CROPS: regrow + water ----------
+
+check('regrowing crop re-ripens; one-shot crop clears to soil', () => {
+    ensureWorld();
+    assert(CROPS.tomato.regrows, 'tomato should regrow');
+    assert(!CROPS.carrot.regrows, 'carrot should not regrow');
+
+    const a = findSoil();
+    assert(a, 'no soil tile to plant on');
+    plantCrop(a.x, a.z, 'tomato');
+    getTile(a.x, a.z).cropStage = 3; // force mature
+    const r1 = harvestCrop(a.x, a.z);
+    assert(r1 && r1.regrew, 'tomato harvest did not regrow');
+    const ta = getTile(a.x, a.z);
+    assert(ta.type === TILE.PLANTED && ta.crop === 'tomato' && ta.cropStage < 3, 'tomato tile not replanted');
+
+    const b = findSoil();
+    plantCrop(b.x, b.z, 'carrot');
+    getTile(b.x, b.z).cropStage = 3;
+    const r2 = harvestCrop(b.x, b.z);
+    assert(r2 && !r2.regrew, 'carrot should be one-shot');
+    assert(getTile(b.x, b.z).type === TILE.SOIL && !getTile(b.x, b.z).crop, 'carrot tile not cleared');
+    return 'tomato re-ripens, carrot clears';
+});
+
+check('watered crops grow faster than dry crops', () => {
+    ensureWorld();
+    const a = findSoil(); plantCrop(a.x, a.z, 'carrot'); waterTile(getTile(a.x, a.z));
+    const b = findSoil(); plantCrop(b.x, b.z, 'carrot'); // left dry
+    for (let i = 0; i < 130; i++) updateCrops(0.1); // ~13s
+    const wet = getTile(a.x, a.z).cropStage;
+    const dry = getTile(b.x, b.z).cropStage;
+    assert(wet > dry, `watered (${wet}) not ahead of dry (${dry})`);
+    return `watered stage ${wet} > dry stage ${dry}`;
+});
+
+check('a sprinkler auto-waters the tiles around it', () => {
+    ensureWorld();
+    const s = findSoil();
+    assert(s, 'no soil for sprinkler');
+    addSprinkler(s.x, s.z);          // waters immediately on place
+    updateSprinklers(1.0);           // and on tick
+    assert(getTile(s.x, s.z).watered, 'sprinkler tile not watered');
+    const nb = getTile(s.x + 1, s.z);
+    if (nb) assert(nb.watered, 'neighbor tile not watered by sprinkler');
+    return 'sprinkler keeps its 3x3 wet';
+});
+
+// ---------- ROAD BUYERS ----------
+
+check('drive-by buyers spawn, reach the stall, buy, and despawn', () => {
+    ensureWorld();
+    initBuyers();
+    let bought = 0;
+    for (let i = 0; i < 1500; i++) updateBuyers(0.05, () => bought++); // ~75s of sim
+    assert(bought >= 1, 'no buyer ever purchased at the stall');
+    return `buyers transacted ${bought}x`;
+});
+
+// ---------- COLLISION ----------
+
+check('solid tiles block movement; walkable ground does not', () => {
+    ensureWorld();
+    assert(isSolidTile(-1, -1) === true, 'world edge should be solid');
+    assert(isSolidTile(24, 16) === true, "Grandpa's cottage tile should be solid");
+    const soil = findSoil();
+    assert(isSolidTile(soil.x, soil.z) === false, 'tilled soil should be walkable');
+    return 'edges + cottage solid, soil walkable';
+});
+
+// ---------- FRUIT TREES ----------
+
+check('fruit trees exist and credit fruit offline (capped, no throw)', () => {
+    ensureWorld(); // generates trees, ~half bear fruit
+    const some = creditOfflineFruit(400);
+    assert(some > 0, 'no fruit credited — are there fruit trees?');
+    const capped = creditOfflineFruit(10_000_000);
+    assert(capped >= some, 'capped credit smaller than short credit');
+    // per-tree cap is 8, so a huge absence must equal (fruitTrees * 8) >= short credit, and finite
+    assert(capped < 1e9, 'fruit credit not capped');
+    updateTrees(0.1, { x: -999, z: -999 }, () => {}); // new signature must not throw
+    return `offline fruit: 400s→${some}, capped→${capped}`;
+});
+
+// ---------- IDLE / OFFLINE PROGRESS ----------
+
+check('offline: crops under a sprinkler ripen while away', () => {
+    ensureWorld();
+    const s = findSoil();
+    addSprinkler(s.x, s.z);               // covers its own tile
+    plantCrop(s.x, s.z, 'wheat');         // wheat growTime 40
+    advanceCropsOffline(2000);            // ~33 min away, sprinkler-watered
+    assert(getTile(s.x, s.z).cropStage === 3, `crop did not ripen offline (stage ${getTile(s.x, s.z).cropStage})`);
+    return 'sprinklered wheat ripened offline';
+});
+
+check('offline: livestock produce while away (capped)', () => {
+    initAnimals(false);                   // wildlife + grandpa, no starter livestock
+    buyAnimalEntity('chicken');           // egg every 16s
+    const prod = creditOfflineProduce(100); // -> floor(100/16) = 6
+    assert(prod.egg === 6, `expected 6 eggs, got ${prod.egg}`);
+    const capped = creditOfflineProduce(100000);
+    assert(capped.egg === 30, `produce not capped (got ${capped.egg})`);
+    return `100s -> 6 eggs, long absence capped at 30`;
+});
+
+// ---------- JUICE (game feel) ----------
+
+check('FRIM damp converges toward target, framerate-independent', () => {
+    // same total time in 1 big step vs many small steps should land close
+    let a = 0; a = damp(a, 100, 0.2, 1.0);
+    let b = 0; for (let i = 0; i < 100; i++) b = damp(b, 100, 0.2, 0.01);
+    assert(a > 0 && a < 100, `single-step out of range: ${a}`);
+    assert(Math.abs(a - b) < 2, `not framerate-independent: ${a.toFixed(1)} vs ${b.toFixed(1)}`);
+    return `1-step ${a.toFixed(1)} ≈ 100-step ${b.toFixed(1)}`;
+});
+
+check('squash/stretch pop animates an object then settles back', () => {
+    const obj = { scale: { x: 1, y: 1, z: 1, setScalar(v) { this.x = this.y = this.z = v; } } };
+    pop(obj, 0.4, 0.3);
+    updateJuice(0.15); // mid-tween
+    assert(obj.scale.y > 1.0, `pop did not stretch Y (got ${obj.scale.y})`);
+    assert(obj.scale.x < 1.0, `pop did not squash X (got ${obj.scale.x})`);
+    updateJuice(0.2);  // past dur -> settle
+    assert(Math.abs(obj.scale.y - 1) < 0.001, `pop did not settle (y=${obj.scale.y})`);
+    return 'stretch -> settle OK';
+});
+
+check('particle burst spawns and clears without throwing', () => {
+    burst(24, 0.5, 24, { count: 6 });   // needs scene (initRenderer ran above)
+    for (let i = 0; i < 80; i++) updateJuice(0.05); // age them all out
+    return '6 particles aged out';
+});
+
+// ---------- WEEDS ----------
+
+check('starting weeds spawn and clear', () => {
+    ensureWorld();
+    spawnInitialWeeds(14);
+    const list = serializeWeeds();
+    assert(list.length > 0, 'no weeds spawned');
+    const w = list[0];
+    assert(hasWeedAt(w.x, w.z), 'weed not registered at its tile');
+    assert(clearWeedAt(w.x, w.z) === true, 'clearWeedAt did not clear');
+    assert(!hasWeedAt(w.x, w.z), 'weed still present after clear');
+    assert(clearWeedAt(w.x, w.z) === false, 'clearing empty tile should be false');
+    return `${list.length} weeds, cleared 1`;
+});
+
+// ---------- QUESTS (Grandpa chore chain) ----------
+
+check('quest chain advances in order, rewards, and ignores wrong events', () => {
+    const rewards = [];
+    initQuests({ name: 'Jenn', reward: r => rewards.push(r) });
+    assert(serializeQuests().index === 0, 'should start on first chore');
+
+    questEvent('plant'); // wrong event for chore #1 (weed) - must not advance
+    assert(serializeQuests().index === 0 && serializeQuests().progress === 0, 'wrong event advanced quest');
+
+    for (let i = 0; i < 4; i++) questEvent('weed'); // complete chore #1
+    assert(serializeQuests().index === 1, 'did not advance after completing weeds');
+    assert(rewards.length === 1 && rewards[0].coins === 20, 'weed reward not paid');
+
+    for (let i = 0; i < 4; i++) questEvent('till');
+    assert(serializeQuests().index === 2, 'did not advance after tilling');
+    return `advanced to chore #${serializeQuests().index + 1}, ${rewards.length} reward(s)`;
+});
+
+check('finishing every chore fires the completion celebration', () => {
+    let completed = false;
+    initQuests({ name: 'Jenn', reward: () => {}, complete: () => { completed = true; } });
+    assert(serializeQuests().index === 0, 'init did not reset to first chore');
+    const seq = [['weed', 4], ['till', 4], ['plant', 4], ['water', 4], ['harvest', 4], ['chop', 1]];
+    for (const [ev, n] of seq) for (let i = 0; i < n; i++) questEvent(ev);
+    assert(serializeQuests().done === true, 'chain not marked done');
+    assert(completed, 'onComplete did not fire');
+    return 'full chore chain → done + celebration';
+});
+
+// ---------- GRANDPA (bark engine) ----------
+
+check('Grandpa speaks a filled, name-aware line', () => {
+    initGrandpa();
+    grandpaSay({ day: 1, name: 'Jenn', coins: 100, wood: 0, crops: 0 });
+    const el = document.getElementById('grandpa-bubble');
+    assert(el, 'no bubble element created');
+    assert(el.style.display === 'block', 'bubble not shown');
+    const t = el.textContent || '';
+    assert(t.length > 0, 'empty bark');
+    assert(!t.includes('{name}'), 'name placeholder not filled');
+    // day-1 context should be able to address the player by name
+    grandpaSay({ day: 1, name: 'Zelda', coins: 10, wood: 0, crops: 0 });
+    return `said: "${document.getElementById('grandpa-bubble').textContent.slice(0, 40)}…"`;
+});
+
+// ---------- RENDER ----------
+
+const total = results.length;
+const passed = results.filter(r => r.pass).length;
+const sum = document.getElementById('summary');
+sum.textContent = `${passed === total ? 'ALL PASS' : 'FAILURES'}  ${passed}/${total}`;
+sum.className = passed === total ? 'ok' : 'bad';
+
+const out = document.getElementById('results');
+out.innerHTML = results.map(r =>
+    `<div class="row ${r.pass ? 'pass' : 'fail'}">${r.name}` +
+    (r.msg ? ` <span class="msg">— ${r.msg}</span>` : '') + `</div>`
+).join('');
+
+// machine-readable marker (handy if console capture is ever wired up)
+document.title = `SUITE ${passed}/${total}`;
+</script>
+</body></html>

@@ -2,6 +2,8 @@ import { ITEMS } from './inventory.js';
 import { CROPS } from './farm.js';
 import { getFarmLevel, getNextExpansionCost } from './world.js';
 import { createToolIcon } from './textures.js';
+import { ANIMALS } from './animals.js';
+import { RECIPES } from './craft.js';
 
 // DOM refs
 const hudCoins = document.getElementById('hud-coins');
@@ -18,6 +20,11 @@ const barnOverlay = document.getElementById('barn-overlay');
 const barnItems = document.getElementById('barn-items');
 const barnCapacityEl = document.getElementById('barn-capacity');
 const notifEl = document.getElementById('notification');
+const bagEl = document.getElementById('bag');
+const healthEl = document.getElementById('health');
+const healthFill = document.getElementById('health-fill');
+const craftOverlay = document.getElementById('craft-overlay');
+const craftItems = document.getElementById('craft-items');
 
 let notifTimer = null;
 
@@ -27,11 +34,20 @@ const HOTBAR_SLOTS = [
     { id: 'move',       label: 'Walk' },
     { id: 'hoe',        label: 'Hoe' },
     { id: 'water',      label: 'Water' },
+    { id: 'hand',       label: 'Harvest' },
+    { id: 'axe',        label: 'Axe' },
+    { id: 'sprinkler',  label: 'Sprinkler' },
     { id: 'carrot_seed', label: 'Carrot Seeds' },
     { id: 'tomato_seed', label: 'Tomato Seeds' },
     { id: 'potato_seed', label: 'Potato Seeds' },
     { id: 'wheat_seed',  label: 'Wheat Seeds' },
-    { id: 'hand',       label: 'Harvest' },
+    { id: 'strawberry_seed', label: 'Strawberry Seeds' },
+    { id: 'mint_seed',   label: 'Mint Seeds' },
+    { id: 'lavender_seed', label: 'Lavender Seeds' },
+    { id: 'tulip_seed',  label: 'Tulip Bulbs' },
+    { id: 'sunflower_seed', label: 'Sunflower Seeds' },
+    { id: 'rose_seed',   label: 'Rose Seeds' },
+    { id: 'square_watermelon_seed', label: 'Square Melon Seeds' },
 ];
 
 export function getHotbarSlots() { return HOTBAR_SLOTS; }
@@ -47,15 +63,24 @@ function getIcon(id) {
 
 export function updateHotbar(selectedIndex, inventory, onSelect) {
     hotbarEl.innerHTML = '';
+    let seedBreakInserted = false;
     HOTBAR_SLOTS.forEach((slot, i) => {
+        // Force seeds onto their own row(s), separate from the tool group
+        if (!seedBreakInserted && slot.id.endsWith('_seed')) {
+            const br = document.createElement('div');
+            br.className = 'hotbar-break';
+            hotbarEl.appendChild(br);
+            seedBreakInserted = true;
+        }
+
         const div = document.createElement('div');
         div.className = 'hotbar-slot';
         if (i === selectedIndex) div.classList.add('selected');
 
-        // Check if seed and out of stock
-        const isSeed = slot.id.endsWith('_seed');
-        const qty = isSeed ? inventory.count(slot.id) : null;
-        if (isSeed && qty <= 0) div.classList.add('disabled');
+        // Seeds and placeables (sprinkler) show a stock count and grey out at 0
+        const isCountable = slot.id.endsWith('_seed') || slot.id === 'sprinkler';
+        const qty = isCountable ? inventory.count(slot.id) : null;
+        if (isCountable && qty <= 0) div.classList.add('disabled');
 
         // Key hint
         const keyHint = document.createElement('span');
@@ -70,8 +95,8 @@ export function updateHotbar(selectedIndex, inventory, onSelect) {
         img.src = iconCanvas.toDataURL();
         div.appendChild(img);
 
-        // Quantity for seeds
-        if (isSeed) {
+        // Quantity for seeds & placeables
+        if (isCountable) {
             const qtyEl = document.createElement('span');
             qtyEl.className = 'hotbar-qty';
             qtyEl.textContent = qty;
@@ -102,6 +127,27 @@ export function updateToolLabel(name) {
     toolLabel.textContent = name;
 }
 
+// --- Bag (held crops/produce/materials) ---
+
+export function updateBag(inventory, onEat) {
+    if (!bagEl) return;
+    const held = Object.entries(ITEMS).filter(([id, v]) => v.type === 'crop' && inventory.count(id) > 0);
+    if (!held.length) { bagEl.innerHTML = ''; return; }
+    bagEl.innerHTML = '<div class="bag-title">🎒 Bag <span class="bag-hint">click to eat</span></div>' + held
+        .map(([id, v]) => `<div class="bag-chip" data-id="${id}"><span>${v.name}</span><span class="n">×${inventory.count(id)}</span></div>`)
+        .join('');
+    if (onEat) bagEl.querySelectorAll('.bag-chip').forEach(c => c.addEventListener('click', () => onEat(c.dataset.id)));
+}
+
+// --- Health bar ---
+export function updateHealth(h, max) {
+    if (!healthFill) return;
+    const pct = Math.max(0, Math.min(100, (h / max) * 100));
+    healthFill.style.width = pct + '%';
+    healthFill.style.background = pct < 25 ? '#e05a5a' : pct < 55 ? '#e0b24a' : 'linear-gradient(90deg,#6fd06f,#9be88a)';
+    if (healthEl) healthEl.classList.toggle('low', pct < 25);
+}
+
 // --- Tooltip ---
 
 export function showTooltip(text, x, y) {
@@ -128,7 +174,7 @@ export function notify(text) {
 
 // --- Shop ---
 
-export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnUpgradeCost) {
+export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnUpgradeCost, onBuyAnimal) {
     shopItems.innerHTML = '';
 
     // Farm expansion option
@@ -192,6 +238,59 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
         }
         shopItems.appendChild(div);
     }
+
+    // Tools / placeables section
+    const tools = Object.entries(ITEMS).filter(([, v]) => v.type === 'tool');
+    if (tools.length) {
+        const sepT = document.createElement('div');
+        sepT.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;';
+        shopItems.appendChild(sepT);
+        for (const [id, item] of tools) {
+            const div = document.createElement('div');
+            div.className = 'shop-item';
+            if (coins < item.buyPrice) div.classList.add('cant-afford');
+            div.innerHTML = `
+                <div class="item-info">
+                    <img class="item-icon" src="${getIcon(id).toDataURL()}">
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-qty">auto-waters nearby tiles</span>
+                </div>
+                <span class="item-price">🪙 ${item.buyPrice}</span>
+            `;
+            if (coins >= item.buyPrice) div.addEventListener('click', () => onBuy(id));
+            shopItems.appendChild(div);
+        }
+    }
+
+    // Animals section
+    if (onBuyAnimal && ANIMALS) {
+        const sep2 = document.createElement('div');
+        sep2.style.cssText = 'border-top:1px solid rgba(255,255,255,0.1);margin:8px 0;';
+        shopItems.appendChild(sep2);
+
+        const emoji = { chicken: '🐔', rooster: '🐓', goat: '🐐', cow: '🐄' };
+        for (const id in ANIMALS) {
+            const a = ANIMALS[id];
+            const div = document.createElement('div');
+            div.className = 'shop-item';
+            if (coins < a.cost) div.classList.add('cant-afford');
+            const note = a.produce
+                ? `makes ${a.produce === 'goat_milk' ? 'goat milk' : a.produce === 'cow_milk' ? 'cow milk' : a.produce}`
+                : 'farm friend';
+            div.innerHTML = `
+                <div class="item-info">
+                    <span class="item-name">${emoji[id] || '🐾'} ${a.name}</span>
+                    <span class="item-qty">${note}</span>
+                </div>
+                <span class="item-price">🪙 ${a.cost}</span>
+            `;
+            if (coins >= a.cost) {
+                div.addEventListener('click', () => onBuyAnimal(id));
+            }
+            shopItems.appendChild(div);
+        }
+    }
+
     shopOverlay.classList.remove('hidden');
 }
 
@@ -201,7 +300,7 @@ export function hideShop() {
 
 // --- Market ---
 
-export function showMarket(inventory, onSell) {
+export function showMarket(inventory, onSell, getPrice, getTrend, onSellAll) {
     marketItems.innerHTML = '';
     const crops = Object.entries(ITEMS).filter(([, v]) => v.type === 'crop');
 
@@ -211,6 +310,11 @@ export function showMarket(inventory, onSell) {
         if (qty <= 0) continue;
         hasAnything = true;
 
+        const price = getPrice ? getPrice(id) : item.sellPrice;
+        const trend = getTrend ? getTrend(id) : 0;
+        const arrow = trend > 0 ? '<span class="trend up">▲ hot</span>'
+                    : trend < 0 ? '<span class="trend down">▼ glut</span>' : '';
+
         const div = document.createElement('div');
         div.className = 'market-item';
         div.innerHTML = `
@@ -218,7 +322,7 @@ export function showMarket(inventory, onSell) {
                 <span class="item-name">${item.name}</span>
                 <span class="item-qty">x${qty}</span>
             </div>
-            <span class="item-price">🪙 ${item.sellPrice} each</span>
+            <span class="item-price">🪙 ${price} each ${arrow}</span>
         `;
         div.addEventListener('click', () => onSell(id));
         marketItems.appendChild(div);
@@ -226,12 +330,49 @@ export function showMarket(inventory, onSell) {
 
     if (!hasAnything) {
         marketItems.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">Nothing to sell!</p>';
+    } else if (onSellAll) {
+        const btn = document.createElement('button');
+        btn.className = 'action-btn';
+        btn.textContent = 'Sell All Crops';
+        btn.addEventListener('click', () => onSellAll());
+        marketItems.appendChild(btn);
     }
     marketOverlay.classList.remove('hidden');
 }
 
 export function hideMarket() {
     marketOverlay.classList.add('hidden');
+}
+
+// --- Workshop / crafting ---
+
+export function showCraft(inventory, onCraft) {
+    craftItems.innerHTML = '';
+    for (const id in RECIPES) {
+        const r = RECIPES[id];
+        const out = ITEMS[r.out];
+        const can = Object.keys(r.inputs).every(k => inventory.count(k) >= r.inputs[k]);
+        const needs = Object.keys(r.inputs)
+            .map(k => `${r.inputs[k]}× ${ITEMS[k] ? ITEMS[k].name : k}`)
+            .join(', ');
+        const div = document.createElement('div');
+        div.className = 'craft-row' + (can ? '' : ' cant');
+        div.innerHTML = `
+            <div class="item-info">
+                <span class="item-name">${r.name} <span style="color:#9c8;">· 🪙${out ? out.sellPrice : '?'}</span></span>
+                <span class="needs">${needs}</span>
+            </div>
+            <button class="craft-mix" ${can ? '' : 'disabled'}>Mix</button>
+        `;
+        const btn = div.querySelector('.craft-mix');
+        if (can) btn.addEventListener('click', () => onCraft(id));
+        craftItems.appendChild(div);
+    }
+    craftOverlay.classList.remove('hidden');
+}
+
+export function hideCraft() {
+    craftOverlay.classList.add('hidden');
 }
 
 // --- Barn ---
@@ -302,5 +443,6 @@ export function hideBarn() {
 export function isOverlayOpen() {
     return !shopOverlay.classList.contains('hidden') ||
            !marketOverlay.classList.contains('hidden') ||
-           !barnOverlay.classList.contains('hidden');
+           !barnOverlay.classList.contains('hidden') ||
+           !craftOverlay.classList.contains('hidden');
 }

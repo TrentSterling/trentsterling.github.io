@@ -103,6 +103,20 @@ export function playWalk() {
     playNoise(0.06, 0.04, 400);
 }
 
+export function playChop() {
+    // Sharp axe thunk into wood
+    playTone(160, 0.08, 'square', 0.18);
+    playNoise(0.08, 0.12, 1200);
+    setTimeout(() => playTone(90, 0.1, 'triangle', 0.12), 30);
+}
+
+export function playTimber() {
+    // Creak then a low ground thud as the tree comes down
+    playTone(300, 0.25, 'sawtooth', 0.05);
+    setTimeout(() => playTone(220, 0.2, 'sawtooth', 0.05), 120);
+    setTimeout(() => { playTone(70, 0.25, 'triangle', 0.2); playNoise(0.25, 0.15, 500); }, 300);
+}
+
 export function playWater() {
     playNoise(0.2, 0.08, 2000);
     playTone(300, 0.15, 'sine', 0.05);

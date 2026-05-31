@@ -12,6 +12,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jenn's Farm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Surface real JS errors on screen (and in the title) so they can't slip by silently. -->
+    <script>
+    (function () {
+        var box;
+        function show(msg) {
+            if (!box) {
+                box = document.createElement('div');
+                box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#7a1414;color:#ffe;font:12px/1.4 monospace;padding:6px 10px;max-height:32%;overflow:auto;white-space:pre-wrap;border-top:2px solid #ff5b5b';
+                var add = function () { if (document.body && !box.parentNode) document.body.appendChild(box); };
+                if (document.body) add(); else document.addEventListener('DOMContentLoaded', add);
+            }
+            box.textContent += msg + '\n';
+            document.title = 'JS ERROR: ' + msg.slice(0, 70);
+        }
+        window.addEventListener('error', function (e) {
+            show('⚠ ' + (e.message || e.error) + (e.filename ? (' @ ' + String(e.filename).split('/').pop() + ':' + e.lineno) : ''));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            var r = (e && e.reason) || {};
+            show('⚠ promise: ' + (r.message || r.stack || r));
+        });
+        var oerr = console.error.bind(console);
+        console.error = function () { try { show('console.error: ' + Array.prototype.join.call(arguments, ' ')); } catch (_) {} oerr.apply(null, arguments); };
+    })();
+    </script>
     <link rel="stylesheet" href="css/style.css">
     <script type="importmap">
     {
@@ -31,11 +60,23 @@
         <div id="hud-time"></div>
     </div>
 
+    <!-- Health bar -->
+    <div id="health"><span class="hp-heart">❤</span><div class="hp-track"><div id="health-fill"></div></div></div>
+
     <!-- Tool name display -->
     <div id="tool-label">Walk</div>
 
+    <!-- Workshop button -->
+    <button id="craft-btn" title="Workshop (C)">⚗️</button>
+
+    <!-- New Game / reset save -->
+    <button id="reset-btn" title="New Game (erases your save)">🔄</button>
+
     <!-- Hotbar -->
     <div id="hotbar"></div>
+
+    <!-- Bag: what you're carrying (crops, produce, materials) -->
+    <div id="bag"></div>
 
     <!-- Tooltip -->
     <div id="tooltip"></div>
@@ -66,6 +107,16 @@
             <div id="barn-items"></div>
             <button id="barn-store-all" class="action-btn">Store All Crops</button>
             <button class="close-btn" onclick="document.getElementById('barn-overlay').classList.add('hidden')">Close</button>
+        </div>
+    </div>
+
+    <!-- Workshop / crafting overlay -->
+    <div id="craft-overlay" class="overlay hidden">
+        <div class="overlay-panel">
+            <h2>⚗️ Potion Workshop</h2>
+            <p style="font-size:13px;color:#bda;margin-bottom:10px;">Combine crops, herbs, flowers &amp; produce into valuable goods.</p>
+            <div id="craft-items"></div>
+            <button class="close-btn" onclick="document.getElementById('craft-overlay').classList.add('hidden')">Close</button>
         </div>
     </div>
 

@@ -1,0 +1,312 @@
+// js/animals.js - Livestock, wildlife & NPCs with low-poly models and simple AI.
+//  - Livestock (chicken/cow/goat): wander the farm, drop produce you collect.
+//  - Wildlife (crow/skunk/ocelot): ambient life. Skunks chase crows; crows flee.
+//  - NPC (grandpa): wanders near the cottage and chatters.
+
+import * as THREE from 'three';
+import { scene, curvedMaterial } from './renderer.js';
+
+const FARM_CX = 24, FARM_CZ = 24;
+
+// --- Definitions ---
+export const ANIMALS = {
+    chicken: { name: 'Chicken', kind: 'livestock', cost: 120, produce: 'egg',       every: 16, speed: 1.2 },
+    rooster: { name: 'Rooster', kind: 'livestock', cost: 160,                        every: 0,  speed: 1.3 },
+    goat:    { name: 'Goat',    kind: 'livestock', cost: 460, produce: 'goat_milk',  every: 24, speed: 1.0 },
+    cow:     { name: 'Cow',     kind: 'livestock', cost: 680, produce: 'cow_milk',   every: 32, speed: 0.8 },
+};
+
+let animals = [];   // {species, kind, grp, x, z, tx, tz, idle, prodT, speed, flee}
+let drops = [];     // {item, grp, x, z, baseY, t}
+
+// --- Model builders (low-poly, flat-shaded-ish via curved Lambert) ---
+
+function part(geo, color, parent, x, y, z) {
+    const m = new THREE.Mesh(geo, curvedMaterial({ color }));
+    m.position.set(x, y, z);
+    parent.add(m);
+    return m;
+}
+
+function buildModel(species) {
+    const g = new THREE.Group();
+    switch (species) {
+        case 'chicken': {
+            part(new THREE.SphereGeometry(0.16, 8, 6), 0xf4f4ee, g, 0, 0.18, 0);          // body
+            part(new THREE.SphereGeometry(0.1, 8, 6), 0xf8f8f2, g, 0, 0.34, 0.1);         // head
+            part(new THREE.ConeGeometry(0.04, 0.08, 4), 0xf2a23a, g, 0, 0.34, 0.2).rotation.x = Math.PI / 2; // beak
+            part(new THREE.BoxGeometry(0.06, 0.05, 0.02), 0xd6342a, g, 0, 0.42, 0.08);    // comb
+            part(new THREE.BoxGeometry(0.18, 0.02, 0.14), 0xf4f4ee, g, 0, 0.18, -0.12);   // tail
+            break;
+        }
+        case 'rooster': {
+            part(new THREE.SphereGeometry(0.18, 8, 6), 0xc9803a, g, 0, 0.2, 0);
+            part(new THREE.SphereGeometry(0.11, 8, 6), 0xd68b3f, g, 0, 0.38, 0.1);
+            part(new THREE.ConeGeometry(0.04, 0.08, 4), 0xf2c21b, g, 0, 0.38, 0.21).rotation.x = Math.PI / 2;
+            part(new THREE.BoxGeometry(0.08, 0.07, 0.02), 0xd62f2a, g, 0, 0.48, 0.08);    // big comb
+            const tail = part(new THREE.ConeGeometry(0.12, 0.3, 5), 0x2f6f3a, g, 0, 0.3, -0.18);
+            tail.rotation.x = -0.9;
+            break;
+        }
+        case 'goat': {
+            part(new THREE.BoxGeometry(0.34, 0.26, 0.5), 0xe7e2d6, g, 0, 0.34, 0);        // body
+            part(new THREE.BoxGeometry(0.2, 0.2, 0.2), 0xeee9dd, g, 0, 0.42, 0.32);       // head
+            part(new THREE.ConeGeometry(0.04, 0.14, 4), 0x9b8a6a, g, 0.06, 0.56, 0.32).rotation.x = -0.4; // horn
+            part(new THREE.ConeGeometry(0.04, 0.14, 4), 0x9b8a6a, g, -0.06, 0.56, 0.32).rotation.x = -0.4;
+            for (const lx of [-0.12, 0.12]) for (const lz of [-0.16, 0.16])
+                part(new THREE.CylinderGeometry(0.04, 0.04, 0.22, 5), 0xcfcabd, g, lx, 0.11, lz);
+            break;
+        }
+        case 'cow': {
+            part(new THREE.BoxGeometry(0.46, 0.34, 0.66), 0xf3f0ea, g, 0, 0.42, 0);       // body
+            part(new THREE.BoxGeometry(0.16, 0.14, 0.3), 0x2b241c, g, 0.12, 0.46, 0.1);   // brown patch
+            part(new THREE.BoxGeometry(0.24, 0.22, 0.22), 0xf6f3ee, g, 0, 0.5, 0.42);     // head
+            part(new THREE.BoxGeometry(0.14, 0.1, 0.06), 0xe9a9a0, g, 0, 0.44, 0.54);     // snout
+            for (const lx of [-0.16, 0.16]) for (const lz of [-0.22, 0.22])
+                part(new THREE.CylinderGeometry(0.06, 0.06, 0.28, 5), 0xe8e4dc, g, lx, 0.14, lz);
+            break;
+        }
+        case 'crow': {
+            part(new THREE.SphereGeometry(0.12, 7, 5), 0x1c1c24, g, 0, 0.16, 0);
+            part(new THREE.SphereGeometry(0.08, 7, 5), 0x24242e, g, 0, 0.28, 0.08);
+            part(new THREE.ConeGeometry(0.03, 0.1, 4), 0xf2c21b, g, 0, 0.28, 0.18).rotation.x = Math.PI / 2;
+            break;
+        }
+        case 'skunk': {
+            part(new THREE.SphereGeometry(0.16, 8, 6), 0x16161c, g, 0, 0.16, 0);          // body
+            part(new THREE.BoxGeometry(0.06, 0.06, 0.42), 0xf5f5f5, g, 0, 0.27, -0.02);   // white stripe
+            part(new THREE.SphereGeometry(0.1, 8, 6), 0x16161c, g, 0, 0.2, 0.18);         // head
+            const tail = part(new THREE.SphereGeometry(0.16, 8, 6), 0x111118, g, 0, 0.34, -0.22);
+            tail.scale.set(0.7, 1.4, 0.7);
+            part(new THREE.SphereGeometry(0.08, 6, 5), 0xf5f5f5, g, 0, 0.46, -0.24);      // white tail tip
+            break;
+        }
+        case 'ocelot': {
+            part(new THREE.BoxGeometry(0.22, 0.2, 0.46), 0xd9a45a, g, 0, 0.24, 0);        // body
+            part(new THREE.SphereGeometry(0.13, 8, 6), 0xe0ad63, g, 0, 0.32, 0.26);       // head
+            part(new THREE.ConeGeometry(0.05, 0.1, 4), 0xc98f45, g, -0.06, 0.44, 0.26);   // ear
+            part(new THREE.ConeGeometry(0.05, 0.1, 4), 0xc98f45, g, 0.06, 0.44, 0.26);    // ear
+            const tail = part(new THREE.CylinderGeometry(0.03, 0.03, 0.34, 5), 0xc98f45, g, 0, 0.34, -0.28);
+            tail.rotation.x = -0.7;
+            for (const lx of [-0.08, 0.08]) for (const lz of [-0.14, 0.14])
+                part(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 5), 0xcf9a50, g, lx, 0.1, lz);
+            break;
+        }
+        case 'honey_badger': {
+            // Honey badger don't care. Stocky, dark, pale stripe down the back.
+            part(new THREE.BoxGeometry(0.26, 0.18, 0.52), 0x161616, g, 0, 0.16, 0);      // body
+            part(new THREE.BoxGeometry(0.28, 0.07, 0.48), 0xdedacb, g, 0, 0.27, -0.02);  // pale back stripe
+            part(new THREE.SphereGeometry(0.12, 8, 6), 0x202020, g, 0, 0.2, 0.3);        // head
+            part(new THREE.BoxGeometry(0.16, 0.05, 0.1), 0xdedacb, g, 0, 0.28, 0.3);     // pale crown
+            const tail = part(new THREE.SphereGeometry(0.08, 6, 5), 0x161616, g, 0, 0.2, -0.3);
+            tail.scale.set(0.8, 0.8, 1.5);
+            for (const lx of [-0.1, 0.1]) for (const lz of [-0.17, 0.17])
+                part(new THREE.CylinderGeometry(0.04, 0.04, 0.14, 5), 0x111111, g, lx, 0.07, lz); // stubby legs
+            break;
+        }
+        case 'grandpa': {
+            part(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 8), 0x5a7d4a, g, 0, 0.4, 0);  // overalls
+            part(new THREE.SphereGeometry(0.15, 8, 6), 0xf0c49a, g, 0, 0.78, 0);          // head
+            part(new THREE.SphereGeometry(0.12, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.6), 0xe8e8e8, g, 0, 0.7, 0.06); // beard
+            part(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 8), 0x9c7b4a, g, 0, 0.9, 0);  // hat brim
+            part(new THREE.CylinderGeometry(0.12, 0.14, 0.14, 8), 0x9c7b4a, g, 0, 0.98, 0); // hat top
+            break;
+        }
+        default:
+            part(new THREE.SphereGeometry(0.15, 8, 6), 0xcccccc, g, 0, 0.2, 0);
+    }
+    return g;
+}
+
+// --- Spawning ---
+
+function spawn(species, x, z) {
+    const def = ANIMALS[species] || {};
+    const grp = buildModel(species);
+    grp.position.set(x, 0.02, z);
+    scene.add(grp);
+    animals.push({
+        species, kind: def.kind || (species === 'grandpa' ? 'npc' : 'wildlife'),
+        grp, x, z, tx: x, tz: z, idle: Math.random() * 3,
+        prodT: def.every || 0, speed: def.speed || 1.2, flee: false,
+        home: { x, z }, range: species === 'grandpa' ? 4 : (def.kind === 'livestock' ? 6 : 11),
+    });
+}
+
+export function buyAnimalEntity(species) {
+    // Spawn near barn-ish area inside the farm
+    const x = FARM_CX + (Math.random() * 6 - 3);
+    const z = FARM_CZ + (Math.random() * 6 - 3);
+    spawn(species, x, z);
+}
+
+export function initAnimals(withStarter = true) {
+    // Ambient wildlife + grandpa so the world feels alive from the start
+    spawn('crow', FARM_CX - 6, FARM_CZ + 7);
+    spawn('crow', FARM_CX + 8, FARM_CZ + 6);
+    spawn('skunk', FARM_CX - 9, FARM_CZ + 4);
+    spawn('ocelot', FARM_CX + 10, FARM_CZ - 4);
+    spawn('honey_badger', FARM_CX - 11, FARM_CZ - 9); // don't care. relentlessly hassles skunks.
+    spawn('grandpa', FARM_CX + 3, FARM_CZ - 6);
+    // A starter chicken so players meet the produce loop immediately (fresh game only)
+    if (withStarter) spawn('chicken', FARM_CX + 1, FARM_CZ + 1);
+}
+
+// --- Drops ---
+
+function makeDrop(item, x, z) {
+    const grp = new THREE.Group();
+    if (item === 'egg') {
+        const e = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), curvedMaterial({ color: 0xfff6e0 }));
+        e.scale.set(1, 1.3, 1); grp.add(e);
+    } else {
+        // milk bucket
+        const b = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.16, 8), curvedMaterial({ color: 0xcdd2d6 }));
+        grp.add(b);
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 8), curvedMaterial({ color: 0xffffff }));
+        m.position.y = 0.08; grp.add(m);
+    }
+    grp.position.set(x, 0.2, z);
+    scene.add(grp);
+    drops.push({ item, grp, x, z, baseY: 0.2, t: Math.random() * 6 });
+}
+
+// --- Update loop ---
+
+function nearestOf(a, species) {
+    let best = null, bd = Infinity;
+    for (const o of animals) {
+        if (o.species !== species) continue;
+        const d = (o.x - a.x) ** 2 + (o.z - a.z) ** 2;
+        if (d < bd) { bd = d; best = o; }
+    }
+    return { best, dist: Math.sqrt(bd) };
+}
+
+export function updateAnimals(dt, playerPos, onCollect) {
+    const now = performance.now();
+
+    for (const a of animals) {
+        // --- Behaviour: choose target ---
+        if (a.species === 'honey_badger') {
+            // Don't care. Relentlessly chase the nearest skunk; otherwise roam bold.
+            const { best } = nearestOf(a, 'skunk');
+            if (best) { a.tx = best.x; a.tz = best.z; a.idle = 0; }
+        } else if (a.species === 'skunk') {
+            const badger = nearestOf(a, 'honey_badger');
+            if (badger.best && badger.dist < 5) {
+                // a honey badger is coming - even the skunk flees
+                const dx = a.x - badger.best.x, dz = a.z - badger.best.z, d = Math.hypot(dx, dz) || 1;
+                a.tx = a.x + (dx / d) * 4; a.tz = a.z + (dz / d) * 4;
+                a.flee = true; a.idle = 0;
+            } else {
+                a.flee = false;
+                const { best } = nearestOf(a, 'crow');
+                if (best) { a.tx = best.x; a.tz = best.z; a.idle = 0; }
+            }
+        } else if (a.species === 'crow') {
+            const { best, dist } = nearestOf(a, 'skunk');
+            if (best && dist < 6) {
+                // flee directly away from the skunk
+                const dx = a.x - best.x, dz = a.z - best.z, d = Math.hypot(dx, dz) || 1;
+                a.tx = a.x + (dx / d) * 4; a.tz = a.z + (dz / d) * 4;
+                a.flee = true; a.idle = 0;
+            } else {
+                a.flee = false;
+            }
+        }
+
+        // --- Wander when no target / arrived ---
+        const arrived = Math.hypot(a.tx - a.x, a.tz - a.z) < 0.15;
+        if (arrived && a.species !== 'skunk') {
+            a.idle -= dt;
+            if (a.idle <= 0) {
+                a.tx = a.home.x + (Math.random() * 2 - 1) * a.range;
+                a.tz = a.home.z + (Math.random() * 2 - 1) * a.range;
+                a.idle = 1 + Math.random() * 3;
+            }
+        }
+
+        // --- Move ---
+        const dx = a.tx - a.x, dz = a.tz - a.z, d = Math.hypot(dx, dz);
+        if (d > 0.05) {
+            const spd = a.speed * (a.flee ? 1.8 : 1) * dt;
+            const step = Math.min(d, spd);
+            a.x += (dx / d) * step;
+            a.z += (dz / d) * step;
+            a.grp.rotation.y = Math.atan2(dx, dz);
+        }
+        a.grp.position.x = a.x;
+        a.grp.position.z = a.z;
+        // little hop/bob
+        const bob = a.kind === 'livestock' || a.species === 'crow' ? 0.04 : 0.02;
+        a.grp.position.y = 0.02 + Math.abs(Math.sin(now * 0.006 + a.x)) * bob;
+
+        // --- Produce ---
+        if (a.prodT > 0 && ANIMALS[a.species] && ANIMALS[a.species].produce) {
+            a.prodT -= dt;
+            if (a.prodT <= 0) {
+                a.prodT = ANIMALS[a.species].every;
+                makeDrop(ANIMALS[a.species].produce, a.x, a.z);
+            }
+        }
+    }
+
+    // --- Drops: bob + collect when player walks near ---
+    for (let i = drops.length - 1; i >= 0; i--) {
+        const dp = drops[i];
+        dp.t += dt;
+        dp.grp.position.y = dp.baseY + Math.sin(dp.t * 3) * 0.05;
+        dp.grp.rotation.y += dt * 1.5;
+        if (playerPos && Math.hypot(dp.x - playerPos.x, dp.z - playerPos.z) < 1.2) {
+            scene.remove(dp.grp);
+            dp.grp.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+            drops.splice(i, 1);
+            if (onCollect) onCollect(dp.item, 1);
+        }
+    }
+}
+
+// --- Save / load ---
+
+export function serializeAnimals() {
+    return animals
+        .filter(a => a.kind === 'livestock')
+        .map(a => ({ s: a.species, x: a.x, z: a.z }));
+}
+
+export function loadAnimals(data) {
+    if (!data) return;
+    for (const d of data) spawn(d.s, d.x, d.z);
+}
+
+/** Nearest uncollected produce drop (egg/milk) to a point, for AFK collecting. */
+export function getNearestDrop(x, z) {
+    let best = null, bd = Infinity;
+    for (const d of drops) {
+        const dd = (d.x - x) ** 2 + (d.z - z) ** 2;
+        if (dd < bd) { bd = dd; best = d; }
+    }
+    return best ? { x: best.x, z: best.z } : null;
+}
+
+export function getLivestockCount() {
+    return animals.filter(a => a.kind === 'livestock').length;
+}
+
+/** Produce each livestock would have made over `seconds` away (capped per animal). */
+export function creditOfflineProduce(seconds) {
+    const out = {};
+    for (const a of animals) {
+        const def = ANIMALS[a.species];
+        if (!def || !def.produce || !def.every) continue;
+        const n = Math.min(Math.floor(seconds / def.every), 30); // cap so a long absence can't flood
+        if (n > 0) out[def.produce] = (out[def.produce] || 0) + n;
+    }
+    return out;
+}
+
+export function getGrandpaPos() {
+    const g = animals.find(a => a.species === 'grandpa');
+    return g ? { x: g.x, z: g.z } : null;
+}
