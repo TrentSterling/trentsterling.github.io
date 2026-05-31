@@ -63,6 +63,7 @@ import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
 import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
+import { harvestQuality } from '../js/quality.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -230,6 +231,22 @@ check('watered crops grow faster than dry crops', () => {
     const dry = getTile(b.x, b.z).cropStage;
     assert(wet > dry, `watered (${wet}) not ahead of dry (${dry})`);
     return `watered stage ${wet} > dry stage ${dry}`;
+});
+
+check('crop quality: watered harvests are premium (bonus yield + stars)', () => {
+    // pure grading logic
+    assert(harvestQuality(false, 0.1).bonus === 0 && harvestQuality(false, 0.9).stars === 0, 'dry harvest earns nothing');
+    const good = harvestQuality(true, 0.9);
+    assert(good.stars === 1 && good.bonus === 1, 'watered should be ⭐ +1');
+    const great = harvestQuality(true, 0.1);
+    assert(great.stars === 2 && great.bonus === 2, 'lucky watered should be ⭐⭐ +2');
+    // harvestCrop must report the tile's watered state so main can grade it
+    ensureWorld();
+    const a = findSoil(); plantCrop(a.x, a.z, 'carrot'); waterTile(getTile(a.x, a.z));
+    getTile(a.x, a.z).cropStage = 3; // force mature
+    const r = harvestCrop(a.x, a.z);
+    assert(r && r.watered === true, 'harvestCrop did not report watered state');
+    return 'dry 0, watered ⭐+1, lucky ⭐⭐+2, harvest reports watered';
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {

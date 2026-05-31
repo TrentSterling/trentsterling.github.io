@@ -313,7 +313,7 @@ export function harvestCrop(x, z) {
     if (!tile || tile.type !== TILE.PLANTED || tile.cropStage < 3) return null;
 
     const crop = CROPS[tile.crop];
-    const result = { itemId: crop.harvestItem, qty: crop.harvestQty };
+    const result = { itemId: crop.harvestItem, qty: crop.harvestQty, watered: !!tile.watered };
 
     // Remove current crop mesh
     const key = cropKey(x, z);
