@@ -240,13 +240,13 @@ body {
     text-align: center; margin-bottom: 14px; font-size: 23px; color: var(--gold);
     text-shadow: 0 1px 3px rgba(0,0,0,0.5); flex: 0 0 auto;
 }
-#shop-items, #market-items, #barn-items, #craft-items {
+#shop-items, #market-items, #barn-items, #craft-items, #factory-items {
     overflow-y: auto; flex: 1 1 auto; min-height: 0; margin: 0 -6px; padding: 0 6px;
 }
 #shop-items::-webkit-scrollbar, #market-items::-webkit-scrollbar,
-#barn-items::-webkit-scrollbar, #craft-items::-webkit-scrollbar { width: 8px; }
+#barn-items::-webkit-scrollbar, #craft-items::-webkit-scrollbar, #factory-items::-webkit-scrollbar { width: 8px; }
 #shop-items::-webkit-scrollbar-thumb, #market-items::-webkit-scrollbar-thumb,
-#barn-items::-webkit-scrollbar-thumb, #craft-items::-webkit-scrollbar-thumb {
+#barn-items::-webkit-scrollbar-thumb, #craft-items::-webkit-scrollbar-thumb, #factory-items::-webkit-scrollbar-thumb {
     background: rgba(214,176,116,0.35); border-radius: 4px;
 }
 .overlay-panel .close-btn, .overlay-panel #barn-store-all, .overlay-panel #barn-capacity { flex: 0 0 auto; }
@@ -312,16 +312,17 @@ body {
 .trend.down { color: #ff8a8a; }
 
 /* ---- Top-left buttons (workshop + new game) — unified warm style ---- */
-#craft-btn, #reset-btn {
+#craft-btn, #reset-btn, #factory-btn {
     position: fixed; left: 16px; z-index: 11; cursor: pointer; line-height: 1;
     background: var(--panel); color: var(--cream); border: 1px solid var(--edge);
     backdrop-filter: var(--blur); box-shadow: var(--shadow);
     transition: transform 0.1s, filter 0.15s;
 }
 #craft-btn { top: 16px; width: 50px; height: 50px; border-radius: var(--radius); font-size: 24px; }
+#factory-btn { top: 16px; left: 74px; width: 50px; height: 50px; border-radius: var(--radius); font-size: 24px; }
 #reset-btn { top: 74px; width: 38px; height: 38px; border-radius: 11px; font-size: 16px; opacity: 0.85; }
-#craft-btn:hover, #reset-btn:hover { filter: brightness(1.12); transform: translateY(-2px); }
-#craft-btn:active, #reset-btn:active { transform: translateY(0) scale(0.94); }
+#craft-btn:hover, #reset-btn:hover, #factory-btn:hover { filter: brightness(1.12); transform: translateY(-2px); }
+#craft-btn:active, #reset-btn:active, #factory-btn:active { transform: translateY(0) scale(0.94); }
 
 /* ---- Workshop rows ---- */
 .craft-row { flex-direction: row; gap: 10px; }

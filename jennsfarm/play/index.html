@@ -69,6 +69,9 @@
     <!-- Workshop button -->
     <button id="craft-btn" title="Workshop (C)">⚗️</button>
 
+    <!-- Factories button -->
+    <button id="factory-btn" title="Factories (F)">🏭</button>
+
     <!-- New Game / reset save -->
     <button id="reset-btn" title="New Game (erases your save)">🔄</button>
 
@@ -117,6 +120,16 @@
             <p style="font-size:13px;color:#bda;margin-bottom:10px;">Combine crops, herbs, flowers &amp; produce into valuable goods.</p>
             <div id="craft-items"></div>
             <button class="close-btn" onclick="document.getElementById('craft-overlay').classList.add('hidden')">Close</button>
+        </div>
+    </div>
+
+    <!-- Factories overlay -->
+    <div id="factory-overlay" class="overlay hidden">
+        <div class="overlay-panel">
+            <h2>🏭 Factories</h2>
+            <p style="font-size:13px;color:#bda;margin-bottom:10px;">Build factories to passively turn raw goods into high-value products. Hire workers to speed them up.</p>
+            <div id="factory-items"></div>
+            <button class="close-btn" onclick="document.getElementById('factory-overlay').classList.add('hidden')">Close</button>
         </div>
     </div>
 

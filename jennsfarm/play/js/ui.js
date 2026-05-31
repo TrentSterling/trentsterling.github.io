@@ -4,6 +4,7 @@ import { getFarmLevel, getNextExpansionCost } from './world.js';
 import { createToolIcon } from './textures.js';
 import { ANIMALS } from './animals.js';
 import { RECIPES } from './craft.js';
+import { FACTORY_TYPES, ownsFactory, getFactories, employeeCost } from './factories.js';
 
 // DOM refs
 const hudCoins = document.getElementById('hud-coins');
@@ -25,6 +26,8 @@ const healthEl = document.getElementById('health');
 const healthFill = document.getElementById('health-fill');
 const craftOverlay = document.getElementById('craft-overlay');
 const craftItems = document.getElementById('craft-items');
+const factoryOverlay = document.getElementById('factory-overlay');
+const factoryItems = document.getElementById('factory-items');
 
 let notifTimer = null;
 
@@ -376,6 +379,56 @@ export function hideCraft() {
     craftOverlay.classList.add('hidden');
 }
 
+// --- Factories (auto-production) ---
+
+export function showFactory(coins, inventory, onBuild, onHire) {
+    factoryItems.innerHTML = '';
+    for (const type in FACTORY_TYPES) {
+        const def = FACTORY_TYPES[type];
+        const owns = ownsFactory(type);
+        const fac = owns ? getFactories()[type] : null;
+        const inName = ITEMS[def.input] ? ITEMS[def.input].name : def.input;
+        const outName = ITEMS[def.output] ? ITEMS[def.output].name : def.output;
+
+        const div = document.createElement('div');
+
+        if (!owns) {
+            const afford = coins >= def.cost;
+            div.className = 'craft-row' + (afford ? '' : ' cant');
+            div.innerHTML = `
+                <div class="item-info">
+                    <span class="item-name">${def.emoji} ${def.name} <span style="color:#9c8;">· makes ${outName}</span></span>
+                    <span class="needs">${def.inCount}× ${inName} → 1 ${outName} · every ${def.every}s</span>
+                </div>
+                <button class="craft-mix" ${afford ? '' : 'disabled'}>Build 🪙${def.cost}</button>`;
+            const btn = div.querySelector('.craft-mix');
+            if (afford) btn.addEventListener('click', () => onBuild(type));
+        } else {
+            const spd = 1 + fac.employees * 0.5;
+            const rate = Math.max(1, Math.round(def.every / spd));
+            const eCost = employeeCost(type, fac.employees);
+            const maxed = fac.employees >= def.maxEmployees;
+            const afford = coins >= eCost;
+            const stock = inventory.count(def.input);
+            div.className = 'craft-row' + ((maxed || afford) ? '' : ' cant');
+            div.innerHTML = `
+                <div class="item-info">
+                    <span class="item-name">${def.emoji} ${def.name} <span style="color:#9c8;">· 👷 ${fac.employees}/${def.maxEmployees}</span></span>
+                    <span class="needs">~1 ${outName} / ${rate}s · ${inName} in stock: ${stock}</span>
+                </div>
+                <button class="craft-mix" ${(maxed || !afford) ? 'disabled' : ''}>${maxed ? 'Full crew' : 'Hire 🪙' + eCost}</button>`;
+            const btn = div.querySelector('.craft-mix');
+            if (!maxed && afford) btn.addEventListener('click', () => onHire(type));
+        }
+        factoryItems.appendChild(div);
+    }
+    factoryOverlay.classList.remove('hidden');
+}
+
+export function hideFactory() {
+    factoryOverlay.classList.add('hidden');
+}
+
 // --- Barn ---
 
 export function showBarn(barnStorage, barnCapacity, inventory, onDeposit, onWithdraw, onDepositAll) {
@@ -445,5 +498,6 @@ export function isOverlayOpen() {
     return !shopOverlay.classList.contains('hidden') ||
            !marketOverlay.classList.contains('hidden') ||
            !barnOverlay.classList.contains('hidden') ||
-           !craftOverlay.classList.contains('hidden');
+           !craftOverlay.classList.contains('hidden') ||
+           !factoryOverlay.classList.contains('hidden');
 }

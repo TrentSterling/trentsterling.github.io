@@ -6,8 +6,9 @@ import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTil
 import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
-import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, isOverlayOpen, updateBag, updateHealth } from './ui.js';
+import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, isOverlayOpen, updateBag, updateHealth } from './ui.js';
 import { RECIPES } from './craft.js';
+import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
 import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
@@ -98,6 +99,7 @@ if (saved) {
     rebuildCropMeshes();
     if (saved.trees) loadTrees(saved.trees);
     if (saved.sprinklers) loadSprinklers(saved.sprinklers);
+    if (saved.factories) loadFactories(saved.factories);
     notify('Game loaded!');
 }
 
@@ -134,12 +136,16 @@ if (saved && saved.lastSaved) {
         for (const k in prod) { inventory.add(k, prod[k]); pcount += prod[k]; }
         const fruit = creditOfflineFruit(away);
         if (fruit) { inventory.add('apple', fruit); }
+        const facProd = creditOfflineFactories(away, inventory); // factories ran on stored goods
+        let facCount = 0;
+        for (const k in facProd) facCount += facProd[k];
         const sales = offlineBuyerSales(inventory, away); // roadside buyers came by
         if (sales.count) coins += sales.coins;
         const bits = [];
         if (cp.ripened) bits.push(`${cp.ripened} crops ripened`);
         if (pcount) bits.push(`+${pcount} produce`);
         if (fruit) bits.push(`+${fruit} fruit`);
+        if (facCount) bits.push(`+${facCount} from factories`);
         if (sales.count) bits.push(`🪙${sales.coins} from ${sales.count} roadside sales`);
         const mins = Math.round(away / 60);
         setTimeout(() => notify(`🌙 While you were away (${mins}m): ${bits.length ? bits.join(', ') : 'the farm rested'}.`), 900);
@@ -402,6 +408,7 @@ container.addEventListener('mousemove', (e) => {
 // Keyboard
 document.addEventListener('keydown', (e) => {
     markInput();
+    if (namePromptOpen) return; // don't act on shortcuts while naming the farmer
     const num = parseInt(e.key);
     if (num >= 1 && num <= hotbarSlots.length) {
         selectSlot(num - 1);
@@ -412,9 +419,15 @@ document.addEventListener('keydown', (e) => {
         hideMarket();
         hideBarn();
         hideCraft();
+        hideFactory();
     }
     if (e.key === 'c' || e.key === 'C') {
         toggleCraft();
+    }
+    if (e.key === 'f' || e.key === 'F') {
+        const el = document.getElementById('factory-overlay');
+        if (el && !el.classList.contains('hidden')) hideFactory();
+        else openFactory();
     }
 });
 
@@ -440,6 +453,42 @@ function craftItem(recipeId) {
 
 const craftBtn = document.getElementById('craft-btn');
 if (craftBtn) craftBtn.addEventListener('click', toggleCraft);
+
+// --- Factories (auto-production) ---
+function openFactory() {
+    showFactory(coins, inventory, buildFactoryAction, hireEmployeeAction);
+}
+
+function buildFactoryAction(type) {
+    const def = FACTORY_TYPES[type];
+    if (!def) return;
+    if (coins < def.cost) { playDeny(); notify("Can't afford that factory!"); return; }
+    if (!buildFactory(type)) { notify('Already built!'); return; }
+    coins -= def.cost;
+    playExpand();
+    const p = getPlayerWorldPos(); coinBurst(p.x, p.z); addShake(0.08);
+    notify(`Built the ${def.name}! It now turns your ${ITEMS[def.input].name} into ${ITEMS[def.output].name}.`);
+    refreshUI();
+    openFactory();
+    triggerAutoSave();
+}
+
+function hireEmployeeAction(type) {
+    const fac = getFactories()[type];
+    if (!fac) return;
+    const cost = employeeCost(type, fac.employees);
+    if (coins < cost) { playDeny(); notify("Can't afford to hire!"); return; }
+    if (!hireEmployee(type)) { notify('Full crew!'); return; }
+    coins -= cost;
+    playBuy();
+    notify(`Hired a worker at the ${FACTORY_TYPES[type].name}! 👷 Faster production.`);
+    refreshUI();
+    openFactory();
+    triggerAutoSave();
+}
+
+const factoryBtn = document.getElementById('factory-btn');
+if (factoryBtn) factoryBtn.addEventListener('click', openFactory);
 
 const resetBtn = document.getElementById('reset-btn');
 if (resetBtn) resetBtn.addEventListener('click', () => {
@@ -942,6 +991,7 @@ function triggerAutoSave() {
             sprinklers: serializeSprinklers(),
             weeds: serializeWeeds(),
             quests: serializeQuests(),
+            factories: serializeFactories(),
             lastSaved: Date.now(),
         });
     }, 1000);
@@ -1006,6 +1056,10 @@ function gameLoop(now) {
     updateSprinklers(dt);
     updateBuyers(dt, buyerPurchase);
     updateJuice(dt);
+
+    // Factories quietly convert raw goods (grapes, milk) into products over time
+    const made = updateFactories(dt, inventory);
+    if (Object.keys(made).length) refreshUI();
 
     const ppos = getPlayerWorldPos();
     updateAnimals(dt, ppos, onCollectProduce);
