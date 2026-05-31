@@ -10,7 +10,7 @@ import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
 import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, showHome, hideHome, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
-import { hideAllOverlays, initOverlayDismiss } from './overlays.js';
+import { hideAllOverlays, initOverlayDismiss, initOverlayChrome } from './overlays.js';
 import { nextMorning } from './home.js';
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, serializeMail, loadMail } from './mailbox.js';
 import { healValue } from './foods.js';
@@ -520,6 +520,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 initOverlayDismiss(); // click the dark backdrop to close any menu (#56)
+initOverlayChrome();  // give every panel a corner ✕ (#56)
 
 function toggleCraft() {
     const el = document.getElementById('craft-overlay');
