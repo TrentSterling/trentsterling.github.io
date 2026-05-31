@@ -65,7 +65,7 @@ import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactorie
 import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
 import { harvestQuality } from '../js/quality.js';
 import { hideAllOverlays, anyOverlayOpen, initOverlayChrome } from '../js/overlays.js';
-import { applyMeal, tickBuffs, luckMult, clearBuffs } from '../js/buffs.js';
+import { applyMeal, tickBuffs, luckMult, speedMult, clearBuffs } from '../js/buffs.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -301,16 +301,19 @@ check('crop quality: a luck buff widens the ⭐⭐ band (#50)', () => {
     return 'luck widens 0.25→0.5 band, capped 0.75';
 });
 
-check('buffs: eating a meal grants a timed luck buff that expires (#50)', () => {
+check('buffs: meals grant per-stat luck & speed buffs that expire independently (#50)', () => {
     clearBuffs();
-    assert(luckMult() === 1, 'no buff should be 1x luck');
+    assert(luckMult() === 1 && speedMult() === 1, 'no buffs should be 1x both');
     assert(applyMeal('carrot') === null, 'plain food should grant no buff');
-    const b = applyMeal('honey_cake');
-    assert(b && b.stat === 'luck' && luckMult() === 2, 'honey cake should give 2x luck');
-    tickBuffs(50); assert(luckMult() === 2, 'buff should still be active at 50s');
-    tickBuffs(50); assert(luckMult() === 1, 'buff should expire past its 90s duration');
+    assert(applyMeal('grand_elixir').stat === 'luck' && luckMult() === 3, 'grand elixir → 3x luck (120s)');
+    assert(applyMeal('fish_stew').stat === 'speed' && speedMult() === 1.35, 'fish stew → 1.35x speed (90s)');
+    assert(luckMult() === 3 && speedMult() === 1.35, 'luck and speed should both be active at once');
+    tickBuffs(95); // past speed's 90s, still inside luck's 120s
+    assert(speedMult() === 1 && luckMult() === 3, 'speed should expire while luck persists');
+    tickBuffs(30); // now past luck's 120s too
+    assert(luckMult() === 1, 'luck should expire too');
     clearBuffs();
-    return 'meal → 2x luck (90s) → expires';
+    return 'luck 3x(120s) + speed 1.35x(90s), independent expiry';
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {
