@@ -88,6 +88,13 @@ export const CROPS = {
         seedItem: 'square_watermelon_seed', harvestItem: 'square_watermelon', harvestQty: 1,
         colors: ['#8b6914', '#4a8c3f', '#3a7a2f', '#2f7a32'],
     },
+    grape: {
+        name: 'Grapes', kind: 'vine',
+        growTime: 70, stages: 4,
+        seedItem: 'grape_seed', harvestItem: 'grape', harvestQty: 3,
+        regrows: true, // vines keep fruiting
+        colors: ['#8b6914', '#4a8c3f', '#3a7a2f', '#7a3f9a'],
+    },
 };
 
 // Active crop meshes on the map
@@ -253,6 +260,17 @@ function createCropMesh(cropId, stage) {
                 const st = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.36, 0.36), stripeMat);
                 st.position.set(i * 0.11, 0.46, 0);
                 group.add(st);
+            }
+        } else if (crop.kind === 'vine') {
+            // Grapes on a little trellis post
+            const trellis = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 4), curvedMaterial({ color: 0x9c7b4a }));
+            trellis.position.y = 0.32;
+            group.add(trellis);
+            const grapeMat = curvedMaterial({ color });
+            for (const o of [[0.06, 0.42, 0.0], [-0.05, 0.47, 0.05], [0.01, 0.34, -0.05], [0.05, 0.52, 0.03], [-0.04, 0.39, -0.04]]) {
+                const b = new THREE.Mesh(new THREE.SphereGeometry(0.055, 5, 4), grapeMat);
+                b.position.set(o[0], o[1], o[2]);
+                group.add(b);
             }
         }
 

@@ -17,6 +17,7 @@ export const ITEMS = {
     sunflower_seed:         { name: 'Sunflower Seeds',  type: 'seed', cropId: 'sunflower',         buyPrice: 30,  icon: 'sunflower_seed' },
     rose_seed:              { name: 'Rose Seeds',       type: 'seed', cropId: 'rose',              buyPrice: 50,  icon: 'rose_seed' },
     square_watermelon_seed: { name: 'Square Melon Seeds', type: 'seed', cropId: 'square_watermelon', buyPrice: 130, icon: 'square_watermelon_seed' },
+    grape_seed:             { name: 'Grape Vine',         type: 'seed', cropId: 'grape',             buyPrice: 45,  icon: 'grape_seed' },
 
     // --- New crops (harvested) ---
     strawberry:        { name: 'Strawberry',        type: 'crop', sellPrice: 18,  icon: 'strawberry' },
@@ -26,6 +27,7 @@ export const ITEMS = {
     sunflower:         { name: 'Sunflower',         type: 'crop', sellPrice: 70,  icon: 'sunflower' },
     rose:              { name: 'Rose',              type: 'crop', sellPrice: 95,  icon: 'rose' },
     square_watermelon: { name: 'Square Watermelon', type: 'crop', sellPrice: 300, icon: 'square_watermelon' },
+    grape:             { name: 'Grapes',            type: 'crop', sellPrice: 55,  icon: 'grape' },
 
     // --- Materials (gathered, sellable; reuses the 'crop' sellable bucket) ---
     wood: { name: 'Wood', type: 'crop', sellPrice: 14, icon: 'wood' },
@@ -48,6 +50,7 @@ export const ITEMS = {
     love_potion:  { name: 'Love Potion',  type: 'crop', crafted: true, sellPrice: 280, icon: 'love_potion' },
     melon_juice:  { name: 'Melon Juice',  type: 'crop', crafted: true, sellPrice: 360, icon: 'melon_juice' },
     grand_elixir: { name: 'Grand Elixir', type: 'crop', crafted: true, sellPrice: 440, icon: 'grand_elixir' },
+    wine:         { name: 'Wine',         type: 'crop', crafted: true, sellPrice: 220, icon: 'wine' },
 };
 
 export function createInventory() {
