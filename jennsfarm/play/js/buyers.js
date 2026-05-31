@@ -16,12 +16,31 @@ let buyers = [];             // { grp, z, pause, bought }
 let spawnTimer = 3;
 let stall = null;
 
-function buildTruck(color) {
+const VEHICLE_TYPES = ['truck', 'car', 'van'];
+
+function buildVehicle(type, color) {
     const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.82), curvedMaterial({ color }));
-    body.position.y = 0.28; g.add(body);
-    const cab = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.26, 0.34), curvedMaterial({ color: 0xf0efe8 }));
-    cab.position.set(0, 0.42, 0.22); g.add(cab);
+    if (type === 'car') {
+        // low + sleek
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.18, 0.8), curvedMaterial({ color }));
+        body.position.y = 0.2; g.add(body);
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.16, 0.42), curvedMaterial({ color }));
+        cab.position.set(0, 0.36, 0.0); g.add(cab);
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.44), curvedMaterial({ color: 0x9fdcec }));
+        glass.position.set(0, 0.37, 0.0); g.add(glass);
+    } else if (type === 'van') {
+        // tall + boxy
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.46, 0.88), curvedMaterial({ color }));
+        body.position.y = 0.33; g.add(body);
+        const wind = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.18, 0.04), curvedMaterial({ color: 0x9fdcec }));
+        wind.position.set(0, 0.44, 0.45); g.add(wind);
+    } else {
+        // truck (cargo + pale cab)
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.82), curvedMaterial({ color }));
+        body.position.y = 0.28; g.add(body);
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.26, 0.34), curvedMaterial({ color: 0xf0efe8 }));
+        cab.position.set(0, 0.42, 0.22); g.add(cab);
+    }
     const wheelGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.08, 8);
     const wheelMat = curvedMaterial({ color: 0x18181a });
     for (const [wx, wz] of [[-0.24, 0.26], [0.24, 0.26], [-0.24, -0.26], [0.24, -0.26]]) {
@@ -61,10 +80,11 @@ function buildRoad() {
 export function initBuyers() { buildRoad(); }
 
 function spawn() {
-    const grp = buildTruck(TRUCK_COLORS[Math.floor(Math.random() * TRUCK_COLORS.length)]);
+    const type = VEHICLE_TYPES[Math.floor(Math.random() * VEHICLE_TYPES.length)];
+    const grp = buildVehicle(type, TRUCK_COLORS[Math.floor(Math.random() * TRUCK_COLORS.length)]);
     grp.position.set(ROAD_X, 0.02, Z_START);
     scene.add(grp);
-    buyers.push({ grp, z: Z_START, pause: 0, bought: false });
+    buyers.push({ grp, z: Z_START, pause: 0, bought: false, speed: SPEED * (0.85 + Math.random() * 0.45) });
 }
 
 /**
@@ -91,7 +111,7 @@ export function updateBuyers(dt, onBuy) {
             continue; // hold position while paused
         }
 
-        b.z += SPEED * dt;
+        b.z += (b.speed || SPEED) * dt; // each vehicle drives at its own pace
         b.grp.position.z = b.z;
         if (b.z > Z_END) {
             scene.remove(b.grp);
