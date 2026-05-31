@@ -67,6 +67,47 @@ export function clearWeedAt(x, z) {
     return true;
 }
 
+// --- Living overgrowth (#32): a neglected farm slowly sprouts weeds again, so
+// tending it is an ongoing job. Capped so it never fully overruns the place.
+let growTimer = 0;
+const GROW_EVERY = 30; // seconds between sprouts
+const GROW_CAP = 16;   // steady-state ceiling
+
+/** Tick weed regrowth. Sprouts at most one new weed on empty farm grass per
+ *  GROW_EVERY seconds, up to GROW_CAP. Returns the new weed {x,z} or null. */
+export function growWeeds(dt, farmLevel = 1) {
+    growTimer += dt;
+    if (growTimer < GROW_EVERY) return null;
+    growTimer = 0;
+    if (weeds.size >= GROW_CAP) return null;
+    const hs = 4 + (Math.max(1, farmLevel) - 1) * 3;
+    for (let tries = 0; tries < 30; tries++) {
+        const x = FARM_CX - hs + Math.floor(Math.random() * hs * 2);
+        const z = FARM_CZ - hs + Math.floor(Math.random() * hs * 2);
+        const t = getTile(x, z);
+        if (t && t.type === TILE.GRASS && !weeds.has(key(x, z))) { place(x, z); return { x, z }; }
+    }
+    return null;
+}
+
+/** Mow: clear every weed within a square radius of (cx,cz). Returns the count. */
+export function clearWeedsInRadius(cx, cz, radius) {
+    let n = 0;
+    for (let dz = -radius; dz <= radius; dz++)
+        for (let dx = -radius; dx <= radius; dx++)
+            if (clearWeedAt(cx + dx, cz + dz)) n++;
+    return n;
+}
+
+/** Remove every weed (new game / tests). */
+export function clearAllWeeds() {
+    for (const w of weeds.values()) {
+        scene.remove(w.grp);
+        w.grp.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+    }
+    weeds.clear();
+}
+
 export function getWeedCount() { return weeds.size; }
 
 export function serializeWeeds() {

@@ -21,7 +21,7 @@ import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals,
 import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } from './juice.js';
 import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
 import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
-import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount } from './weeds.js';
+import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount, growWeeds, clearWeedsInRadius } from './weeds.js';
 import { advanceCropsOffline } from './offline.js';
 import { initBuyers, updateBuyers } from './buyers.js';
 import { initQuests, questEvent, serializeQuests, loadQuests, setQuestName, completeSilently, getQuestIndex } from './quests.js';
@@ -563,7 +563,7 @@ function performAction(tx, tz, tool) {
             break;
 
         case 'hoe': {
-            if (hasWeedAt(tx, tz)) { clearWeed(tx, tz); break; } // pull weeds before tilling
+            if (hasWeedAt(tx, tz)) { mowWeeds(tx, tz); break; } // mow weeds (area) before tilling
             let n = 0;
             for (const c of tilesInRadius(tx, tz, getToolRadius('hoe'))) {
                 const t = getTile(c.x, c.z);
@@ -770,6 +770,18 @@ function clearWeed(tx, tz) {
     triggerAutoSave();
 }
 
+// The hoe mows weeds across its work area (a Tiller clears a whole 5x5 patch)
+function mowWeeds(tx, tz) {
+    const mowed = clearWeedsInRadius(tx, tz, getToolRadius('hoe'));
+    if (!mowed) return;
+    playStore();
+    puff(tx, tz);
+    pop(getPlayerGroup(), 0.18);
+    questEvent('weed');
+    notify(mowed > 1 ? `Mowed ${mowed} weeds!` : 'Pulled the weeds!');
+    triggerAutoSave();
+}
+
 // --- Idle autoplay (maintenance only) ---
 
 // AFK maintenance: collect loose drops, water dry crops, and wander.
@@ -792,7 +804,15 @@ function findMaintenanceTask() {
     });
     if (water) return water;
 
-    // 3. Wander to a nearby walkable tile so Jenn ambles around
+    // 3. Pull a weed (tidying — keep the farm clear while idle)
+    let weed = null;
+    forEachFarmTile((x, z, t) => {
+        if (weed || autoSkip.has(x + ',' + z)) return;
+        if (hasWeedAt(x, z)) weed = { x, z, tool: { id: 'hand' } };
+    });
+    if (weed) return weed;
+
+    // 4. Wander to a nearby walkable tile so Jenn ambles around
     for (let i = 0; i < 10; i++) {
         const wx = p.x + Math.floor(Math.random() * 7) - 3;
         const wz = p.z + Math.floor(Math.random() * 7) - 3;
@@ -1168,6 +1188,7 @@ function gameLoop(now) {
     if (healthUiTimer <= 0) { healthUiTimer = 0.25; updateHealth(health, MAX_HEALTH); }
 
     updateCrops(dt);
+    if (onboardingDone) growWeeds(dt, getFarmLevel()); // neglected farm slowly sprouts weeds again
     updateTrees(dt, getPlayerWorldPos(), onCollectFruit);
     updateSprinklers(dt);
     updateBuyers(dt, buyerPurchase);
