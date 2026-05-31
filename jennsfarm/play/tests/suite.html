@@ -964,7 +964,10 @@ check('fishing always yields a real fish; seasonal catches show up', () => {
     for (let i = 0; i < 50; i++) if (pickFish('Spring', i / 50) === 'trout') gotTrout = true;
     assert(gotTrout, 'spring should sometimes yield its seasonal trout');
     assert(FISH.every(f => ITEMS[f] && ITEMS[f].sellPrice > 0), 'every fish must be a sellable item');
-    return `${FISH.length} fish, all valid + seasonal reachable`;
+    let gotCat = false, gotBob = false;
+    for (let i = 0; i < 100; i++) { const f = pickFish('Summer', i / 100); if (f === 'catfish') gotCat = true; if (f === 'bob') gotBob = true; }
+    assert(gotCat && gotBob, 'the catfish 🐱 and Bob should both be catchable');
+    return `${FISH.length} fish (incl. catfish + Bob), all valid + reachable`;
 });
 
 // ---------- PETS (#48) ----------

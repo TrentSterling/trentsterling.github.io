@@ -47,7 +47,9 @@ export const ITEMS = {
     trout:  { name: 'Trout',  type: 'crop', sellPrice: 30, icon: 'trout' },
     bass:   { name: 'Bass',   type: 'crop', sellPrice: 42, icon: 'bass' },
     salmon: { name: 'Salmon', type: 'crop', sellPrice: 60, icon: 'salmon' },
-    pike:   { name: 'Pike',   type: 'crop', sellPrice: 78, icon: 'pike' },
+    pike:    { name: 'Pike',    type: 'crop', sellPrice: 78, icon: 'pike' },
+    catfish: { name: 'Catfish 🐱', type: 'crop', sellPrice: 55, icon: 'catfish' }, // it has a cat face. meow.
+    bob:     { name: 'Bob',        type: 'crop', sellPrice: 40, icon: 'bob' },     // a fish named Bob. hi Bob.
 
     // --- Crafted goods (made in the Workshop, sold at market) ---
     cheese:       { name: 'Goat Cheese',  type: 'crop', crafted: true, sellPrice: 130, icon: 'cheese' },
