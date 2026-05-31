@@ -22,6 +22,7 @@ import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, u
 import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
 import { pickFish } from './fishing.js';
 import { hasGreenhouse, buildGreenhouse, effectiveGrowth, GREENHOUSE_COST, serializeGreenhouse, loadGreenhouse } from './greenhouse.js';
+import { buyFlytrapPlacement, getFlytrapCount, FLYTRAP_COST, serializeFlytraps, loadFlytraps } from './flytrap.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -143,6 +144,7 @@ if (saved) {
     if (saved.pet) loadPet(saved.pet);
     if (saved.visitors) loadVisitors(saved.visitors);
     if (saved.greenhouse) loadGreenhouse(saved.greenhouse);
+    if (saved.flytraps) loadFlytraps(saved.flytraps);
     notify('Game loaded!');
 }
 
@@ -833,7 +835,18 @@ function buyGreenhouse() {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
-setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl, onBuyGreenhouse: buyGreenhouse });
+// Flytrap: carnivorous plant that snaps crows — never skunks (#58)
+function buyFlytrap() {
+    if (coins < FLYTRAP_COST) { playDeny(); notify("Can't afford a flytrap!"); return; }
+    if (!buyFlytrapPlacement()) { playDeny(); notify('No room for more flytraps!'); return; }
+    coins -= FLYTRAP_COST;
+    playExpand();
+    notify('Flytrap planted! 🪤 It snaps up crows (never skunks).');
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
+setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl, onBuyGreenhouse: buyGreenhouse, onBuyFlytrap: buyFlytrap });
 
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
@@ -1384,6 +1397,7 @@ function triggerAutoSave() {
             pet: serializePet(),
             visitors: serializeVisitors(),
             greenhouse: serializeGreenhouse(),
+            flytraps: serializeFlytraps(),
             lastSaved: Date.now(),
         });
     }, 1000);
@@ -1476,6 +1490,7 @@ function gameLoop(now) {
     updateSystems(dt, {
         dt, gameTime, season, playerPos: ppos, isNight: isNightTime(dayProgress),
         addItem: (id, q) => inventory.add(id, q),
+        gainCoins: (n) => { coins += n; },
         getNearestDrop, refreshUI, notify, sparkle, playStore,
     });
 

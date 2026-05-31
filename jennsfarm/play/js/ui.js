@@ -13,16 +13,18 @@ import { hasFountain, FOUNTAIN_COST } from './fountain.js';
 import { hasPet, PET_COST } from './pets.js';
 import { hasFoodBowl, FOOD_BOWL_COST } from './visitors.js';
 import { hasGreenhouse, GREENHOUSE_COST } from './greenhouse.js';
+import { getFlytrapCount, FLYTRAP_COST } from './flytrap.js';
 
 // Handlers registered once by main.js (avoids threading through every showShop call)
-let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null, _onBuyFoodBowl = null, _onBuyGreenhouse = null;
-export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet, onBuyFoodBowl, onBuyGreenhouse } = {}) {
+let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null, _onBuyFoodBowl = null, _onBuyGreenhouse = null, _onBuyFlytrap = null;
+export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet, onBuyFoodBowl, onBuyGreenhouse, onBuyFlytrap } = {}) {
     if (onUpgrade) _onUpgrade = onUpgrade;
     if (onBuyHive) _onBuyHive = onBuyHive;
     if (onBuyFountain) _onBuyFountain = onBuyFountain;
     if (onBuyPet) _onBuyPet = onBuyPet;
     if (onBuyFoodBowl) _onBuyFoodBowl = onBuyFoodBowl;
     if (onBuyGreenhouse) _onBuyGreenhouse = onBuyGreenhouse;
+    if (onBuyFlytrap) _onBuyFlytrap = onBuyFlytrap;
 }
 
 // Small helper for the emoji-based "buildables" rows in the shop
@@ -382,6 +384,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
     if (_onBuyPet) shopItems.appendChild(shopBuildRow('🐕', 'Puppy', 'follows you + fetches drops', PET_COST, coins >= PET_COST, hasPet(), _onBuyPet));
     if (_onBuyFoodBowl) shopItems.appendChild(shopBuildRow('🥣', 'Food Bowl', 'draws more visitor cats', FOOD_BOWL_COST, coins >= FOOD_BOWL_COST, hasFoodBowl(), _onBuyFoodBowl));
     if (_onBuyGreenhouse) shopItems.appendChild(shopBuildRow('🌿', 'Greenhouse', 'crops grow full-speed year-round', GREENHOUSE_COST, coins >= GREENHOUSE_COST, hasGreenhouse(), _onBuyGreenhouse));
+    if (_onBuyFlytrap) shopItems.appendChild(shopBuildRow('🪤', 'Flytrap', `snaps crows, never skunks · ${getFlytrapCount()}`, FLYTRAP_COST, coins >= FLYTRAP_COST, getFlytrapCount() >= 6, _onBuyFlytrap));
 
     shopOverlay.classList.remove('hidden');
 }
