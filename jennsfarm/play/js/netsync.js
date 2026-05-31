@@ -48,3 +48,38 @@ export function packPlayer(p) {
     const r2 = (n) => Math.round((n || 0) * 100) / 100;
     return { x: r2(p.x), z: r2(p.z), r: r2(p.r), n: p.name || '' };
 }
+
+// Interpolate an angle toward a target the SHORT way around the circle, so a
+// heading near 0 easing toward ~2π doesn't spin all the way back.
+export function lerpAngle(a, b, k) {
+    const TAU = Math.PI * 2;
+    let d = (b - a) % TAU;
+    if (d > Math.PI) d -= TAU;
+    if (d < -Math.PI) d += TAU;
+    return a + d * k;
+}
+
+// A remote player's smoothed transform. Packets arrive sparsely (low net rate);
+// step() eases the rendered position toward the latest packet each frame so the
+// avatar glides instead of teleporting. Snaps into place on the first packet.
+export function createRemotePeer() {
+    const cur = { x: 0, z: 0, r: 0 };
+    const target = { x: 0, z: 0, r: 0 };
+    let name = '', got = false;
+    return {
+        get name() { return name; },
+        get pos() { return { x: cur.x, z: cur.z, r: cur.r }; },
+        receive(pkt) {
+            target.x = pkt.x; target.z = pkt.z; target.r = pkt.r || 0;
+            if (pkt.n) name = pkt.n;
+            if (!got) { cur.x = target.x; cur.z = target.z; cur.r = target.r; got = true; }
+        },
+        step(dt, rate = 8) {
+            const k = Math.min(1, rate * dt);
+            cur.x += (target.x - cur.x) * k;
+            cur.z += (target.z - cur.z) * k;
+            cur.r = lerpAngle(cur.r, target.r, k);
+            return { x: cur.x, z: cur.z, r: cur.r };
+        },
+    };
+}
