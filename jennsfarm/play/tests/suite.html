@@ -53,6 +53,7 @@ import { rollBlessing, BLESSINGS } from '../js/fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet } from '../js/pets.js';
 import { pickFish, FISH, fishIsValid } from '../js/fishing.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
+import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -932,6 +933,32 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- SYSTEM REGISTRY (mod-loader core, #9) ----------
+
+check('system registry ticks, saves, loads + offline-credits registered systems', () => {
+    _resetSystems();
+    let ticks = 0, off = 0; const state = { n: 0 };
+    registerSystem({
+        id: 'fake',
+        update: (dt, ctx) => { ticks += dt; state.n += ctx.bump || 0; },
+        serialize: () => ({ n: state.n }),
+        load: (d) => { state.n = d.n; },
+        offline: (s) => { off += s; },
+    });
+    registerSystem({ id: 'fake', update() {} }); // duplicate id → ignored
+    assert(getSystems().length === 1, 'duplicate system id should be ignored');
+    updateSystems(0.5, { bump: 2 });
+    assert(ticks === 0.5 && state.n === 2, 'update not called with ctx');
+    const snap = serializeSystems();
+    assert(snap.fake && snap.fake.n === 2, 'serialize did not collect system state');
+    state.n = 99; loadSystems(snap);
+    assert(state.n === 2, 'load did not restore system state');
+    offlineSystems(120, {});
+    assert(off === 120, 'offline not credited');
+    _resetSystems();
+    return 'registry update/serialize/load/offline OK';
 });
 
 // ---------- DEBUG OVERLAY (#55) ----------

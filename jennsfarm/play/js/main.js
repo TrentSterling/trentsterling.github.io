@@ -12,8 +12,9 @@ import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showS
 import { nextMorning } from './home.js';
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, serializeMail, loadMail } from './mailbox.js';
 import { healValue } from './foods.js';
-import { updateWeather } from './weather.js';
-import { updateFireflies } from './fireflies.js';
+import './weather.js';   // self-registers the weather system (#9)
+import './fireflies.js'; // self-registers the fireflies/butterflies system (#9)
+import { updateSystems } from './registry.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
@@ -1451,8 +1452,8 @@ function gameLoop(now) {
     const dayProgress = getDayProgress();
     updateDayNight(dayProgress);
     updateAmbient(isNightTime(dayProgress));
-    updateWeather(dt, season.name, ppos); // snow in winter, leaves in autumn
-    updateFireflies(dt, isNightTime(dayProgress), ppos, gameTime); // fireflies at night, butterflies by day
+    // Registered systems (weather, fireflies, …) tick generically via the registry
+    updateSystems(dt, { dt, gameTime, season, playerPos: ppos, isNight: isNightTime(dayProgress) });
 
     const newDay = Math.floor(gameTime / DAY_LENGTH) + 1;
     if (newDay > day) {

@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { scene } from './renderer.js';
+import { registerSystem } from './registry.js';
 
 const SPREAD = 24;
 
@@ -83,3 +84,9 @@ export function updateFireflies(dt, isNight, playerPos, t) {
     }
     mesh.instanceMatrix.needsUpdate = true;
 }
+
+// Self-register with the orchestrator (#9): critters tick off the shared ctx.
+registerSystem({
+    id: 'fireflies',
+    update(dt, ctx) { updateFireflies(dt, ctx.isNight, ctx.playerPos, ctx.gameTime); },
+});
