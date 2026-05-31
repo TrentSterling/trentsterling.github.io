@@ -6,6 +6,7 @@ import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDeb
 import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
 import { harvestQuality } from './quality.js';
+import { applyMeal, tickBuffs, luckMult } from './buffs.js';
 import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
@@ -853,7 +854,7 @@ setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountai
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
     if (result) {
-        const q = harvestQuality(result.watered); // ⭐ well-watered crops are premium
+        const q = harvestQuality(result.watered, Math.random(), luckMult()); // ⭐ watered = premium; a luck buff boosts ⭐⭐
         const qty = result.qty + q.bonus;
         inventory.add(result.itemId, qty);
         playHarvest();
@@ -1087,6 +1088,8 @@ function eatItem(id) {
     hearts(p.x, 1.0, p.z);
     playStore();
     notify(`Ate ${ITEMS[id].name} — +${heal} health 💚`);
+    const buff = applyMeal(id); // some meals also grant a short buff (#50)
+    if (buff) { sparkle(p.x, 1.2, p.z, [0x66e07a, 0xd6ff8c, 0xffffff]); notify(buff.label); }
     refreshUI();
     triggerAutoSave();
 }
@@ -1420,6 +1423,7 @@ function gameLoop(now) {
     lastTime = now;
     gameTime += dt;
 
+    tickBuffs(dt); // count down any active meal buffs (#50)
     updatePlayer(dt);
 
     // Footstep sounds

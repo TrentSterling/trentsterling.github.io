@@ -65,6 +65,7 @@ import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactorie
 import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
 import { harvestQuality } from '../js/quality.js';
 import { hideAllOverlays, anyOverlayOpen, initOverlayChrome } from '../js/overlays.js';
+import { applyMeal, tickBuffs, luckMult, clearBuffs } from '../js/buffs.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -288,6 +289,28 @@ check('crop quality: watered harvests are premium (bonus yield + stars)', () => 
     const r = harvestCrop(a.x, a.z);
     assert(r && r.watered === true, 'harvestCrop did not report watered state');
     return 'dry 0, watered ⭐+1, lucky ⭐⭐+2, harvest reports watered';
+});
+
+check('crop quality: a luck buff widens the ⭐⭐ band (#50)', () => {
+    // roll 0.4: no luck (band 0.25) -> ⭐; 2x luck (band 0.5) -> ⭐⭐
+    assert(harvestQuality(true, 0.4, 1).stars === 1, 'no luck: 0.4 should be ⭐');
+    assert(harvestQuality(true, 0.4, 2).stars === 2, '2x luck: 0.4 should be ⭐⭐');
+    assert(harvestQuality(false, 0.1, 3).bonus === 0, 'dry harvest ignores luck');
+    // band is capped so a buff never makes ⭐⭐ a certainty
+    assert(harvestQuality(true, 0.74, 10).stars === 2 && harvestQuality(true, 0.99, 10).stars === 1, 'luck band should cap at 0.75');
+    return 'luck widens 0.25→0.5 band, capped 0.75';
+});
+
+check('buffs: eating a meal grants a timed luck buff that expires (#50)', () => {
+    clearBuffs();
+    assert(luckMult() === 1, 'no buff should be 1x luck');
+    assert(applyMeal('carrot') === null, 'plain food should grant no buff');
+    const b = applyMeal('honey_cake');
+    assert(b && b.stat === 'luck' && luckMult() === 2, 'honey cake should give 2x luck');
+    tickBuffs(50); assert(luckMult() === 2, 'buff should still be active at 50s');
+    tickBuffs(50); assert(luckMult() === 1, 'buff should expire past its 90s duration');
+    clearBuffs();
+    return 'meal → 2x luck (90s) → expires';
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {
