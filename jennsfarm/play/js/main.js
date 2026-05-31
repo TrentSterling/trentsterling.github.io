@@ -18,7 +18,7 @@ import { getToolRadius, nextUpgrade, upgradeTool, tilesInRadius, serializeEquipm
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
 import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
-import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals, loadAnimals, getLivestockCount, creditOfflineProduce, getNearestDrop, petNearest } from './animals.js';
+import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals, loadAnimals, getLivestockCount, creditOfflineProduce, getNearestDrop, petNearest, feedNearest } from './animals.js';
 import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } from './juice.js';
 import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
 import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
@@ -735,6 +735,19 @@ function doChop(tx, tz) {
 }
 
 function tryPet(tx, tz) {
+    // Holding wheat near livestock? Feed it — tops up hunger so it produces faster.
+    if (inventory.count('wheat') > 0) {
+        const fed = feedNearest(tx, tz);
+        if (fed) {
+            inventory.remove('wheat', 1);
+            hearts(fed.x, 0.7, fed.z);
+            playStore();
+            notify(`Fed the ${fed.species}! 🌾 Happy animals produce faster.`);
+            refreshUI();
+            triggerAutoSave();
+            return;
+        }
+    }
     const a = petNearest(tx, tz);
     if (!a) return;
     hearts(a.x, 0.6, a.z);
