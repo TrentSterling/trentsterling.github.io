@@ -66,7 +66,7 @@ import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, g
 import { harvestQuality } from '../js/quality.js';
 import { hideAllOverlays, anyOverlayOpen, initOverlayChrome } from '../js/overlays.js';
 import { applyMeal, tickBuffs, luckMult, speedMult, clearBuffs, activeBuffs, fmtBuffTime } from '../js/buffs.js';
-import { tileKey, packTile, createDeltaSet, packPlayer } from '../js/netsync.js';
+import { tileKey, packTile, createDeltaSet, packPlayer, lerpAngle, createRemotePeer } from '../js/netsync.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -383,6 +383,21 @@ check('netsync: tile deltas + player packets round-trip JSON-safe (#8 groundwork
     const pp = packPlayer({ x: 12.34567, z: -8.9876, r: 1.5708, name: 'Jenn' });
     assert(pp.x === 12.35 && pp.z === -8.99 && pp.n === 'Jenn', `player packed wrong: ${JSON.stringify(pp)}`);
     return `2 deltas round-trip; player @(${pp.x}, ${pp.z})`;
+});
+
+check('netsync: a remote peer eases toward received transforms (#8)', () => {
+    const peer = createRemotePeer();
+    peer.receive(packPlayer({ x: 10, z: 4, r: 0, name: 'Trent' }));
+    assert(peer.name === 'Trent', 'peer should take the name from the first packet');
+    assert(peer.pos.x === 10 && peer.pos.z === 4, 'first packet should snap into place (no slide from origin)');
+    peer.receive(packPlayer({ x: 20, z: 4 })); // new target; name unchanged
+    for (let i = 0; i < 60; i++) peer.step(0.1);
+    assert(Math.abs(peer.pos.x - 20) < 0.1, `peer should converge to the target (at ${peer.pos.x.toFixed(2)})`);
+    assert(peer.name === 'Trent', 'a nameless packet must not wipe the peer name');
+    // shortest-angle heading interpolation
+    assert(Math.abs(lerpAngle(0, Math.PI / 2, 1) - Math.PI / 2) < 1e-9, 'lerpAngle should reach the target in a full step');
+    assert(Math.abs(lerpAngle(0, 3 * Math.PI / 2, 1) - (-Math.PI / 2)) < 1e-9, 'lerpAngle should take the short way around');
+    return 'first packet snaps, then eases; heading takes the short way';
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {
