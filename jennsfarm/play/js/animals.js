@@ -5,8 +5,11 @@
 
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
+import { createSpatialHash } from './spatialhash.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
+const PERCEPTION = 18;                  // how far an animal notices others (tiles)
+const animalHash = createSpatialHash(6); // rebuilt each frame for fast nearest-queries
 
 // --- Definitions ---
 export const ANIMALS = {
@@ -163,7 +166,10 @@ export function initAnimals(withStarter = true) {
             spawn(species, FARM_CX + Math.cos(ang) * r, FARM_CZ + Math.sin(ang) * r);
         }
     };
-    scatter('skunk', 9, 7, 24);          // her favourite — lots of 'em
+    // SKUNKS. Her favourite — a row right in front of the camera (north of the
+    // farm) so you see them the moment the game loads, plus a swarm all around.
+    for (let i = 0; i < 5; i++) spawn('skunk', FARM_CX - 8 + i * 4, FARM_CZ - 6 - (i % 2) * 3);
+    scatter('skunk', 9, 6, 20);          // even more skunks, every direction
     scatter('crow', 7, 8, 26);
     scatter('ocelot', 4, 8, 24);
     scatter('honey_badger', 3, 10, 26);  // don't care. relentlessly hassle the skunks → chaos
@@ -193,18 +199,19 @@ function makeDrop(item, x, z) {
 
 // --- Update loop ---
 
+// Nearest animal of a species within perception range, via the spatial hash —
+// scales with local density, not the whole population (#40).
 function nearestOf(a, species) {
-    let best = null, bd = Infinity;
-    for (const o of animals) {
-        if (o.species !== species) continue;
-        const d = (o.x - a.x) ** 2 + (o.z - a.z) ** 2;
-        if (d < bd) { bd = d; best = o; }
-    }
-    return { best, dist: Math.sqrt(bd) };
+    const best = animalHash.nearest(a.x, a.z, PERCEPTION, o => o !== a && o.species === species);
+    return { best, dist: best ? Math.hypot(best.x - a.x, best.z - a.z) : Infinity };
 }
 
 export function updateAnimals(dt, playerPos, onCollect) {
     const now = performance.now();
+
+    // Rebuild the spatial index for this frame's nearest-queries (cheap, O(n))
+    animalHash.clear();
+    for (const a of animals) animalHash.insert(a, a.x, a.z);
 
     for (const a of animals) {
         // --- Behaviour: choose target ---
