@@ -36,7 +36,7 @@ import { advanceCropsOffline } from '../js/offline.js';
 import { initBuyers, updateBuyers } from '../js/buyers.js';
 import { createPlayer, setHeldTool, setPlayerGender } from '../js/player.js';
 import { getSeason } from '../js/seasons.js';
-import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnimalCount, getSpeciesCount, playerReaction, updateAnimals, fedRate, feedNearest, getFedLevel, getLivestock } from '../js/animals.js';
+import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnimalCount, getSpeciesCount, playerReaction, updateAnimals, fedRate, feedNearest, getFedLevel, getLivestock, eatNearestPest } from '../js/animals.js';
 import { CHUNK, worldToChunk, desiredChunks, updateChunks, getLoadedChunkCount, resetChunks } from '../js/chunks.js';
 import { findPath } from '../js/pathfind.js';
 import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates, getCrateCount, serializeCrates, loadCrates } from '../js/crates.js';
@@ -610,14 +610,26 @@ check('chunk generation is deterministic (same coords → same terrain)', () => 
 
 // ---------- WILDLIFE (wifey wants animals EVERYWHERE) ----------
 
-check('the wild is packed with critters, skunks especially', () => {
+check('the wild is packed with critters — lots of skunks + possums', () => {
     initAnimals(false);
-    assert(getAnimalCount() >= 20, `expected a lively population, got ${getAnimalCount()}`);
-    assert(getSpeciesCount('skunk') >= 12, `wifey wants more skunks, only ${getSpeciesCount('skunk')}`);
+    assert(getAnimalCount() >= 28, `expected a big population, got ${getAnimalCount()}`);
+    assert(getSpeciesCount('skunk') >= 16, `wifey wants MORE skunks, only ${getSpeciesCount('skunk')}`);
+    assert(getSpeciesCount('possum') >= 3, `possums should roam, only ${getSpeciesCount('possum')}`);
     // re-init must not pile up duplicates (clears first)
     initAnimals(false);
-    assert(getSpeciesCount('skunk') >= 12 && getSpeciesCount('skunk') <= 16, `skunk count off after re-init: ${getSpeciesCount('skunk')}`);
-    return `${getAnimalCount()} critters, ${getSpeciesCount('skunk')} skunks`;
+    assert(getSpeciesCount('skunk') >= 16 && getSpeciesCount('skunk') <= 24, `skunk count off after re-init: ${getSpeciesCount('skunk')}`);
+    return `${getAnimalCount()} critters, ${getSpeciesCount('skunk')} skunks, ${getSpeciesCount('possum')} possums`;
+});
+
+check('a flytrap eats crows but NEVER skunks', () => {
+    initAnimals(false);
+    const eaten = eatNearestPest(18, 31, 3); // a crow spawns at (18,31)
+    assert(eaten && eaten.species === 'crow', `should eat a crow, ate ${eaten && eaten.species}`);
+    for (let i = 0; i < 30; i++) {
+        const e = eatNearestPest(Math.random() * 48, Math.random() * 48, 6);
+        if (e) assert(e.species === 'crow', 'flytrap must ONLY eat crows — skunks are sacred!');
+    }
+    return 'eats crows, spares skunks';
 });
 
 check('wildlife reacts to Jenn: crows bolt, ocelots approach, badgers do not care', () => {
