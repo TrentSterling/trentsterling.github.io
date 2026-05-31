@@ -67,6 +67,7 @@ import { harvestQuality } from '../js/quality.js';
 import { hideAllOverlays, anyOverlayOpen, initOverlayChrome } from '../js/overlays.js';
 import { applyMeal, tickBuffs, luckMult, speedMult, clearBuffs, activeBuffs, fmtBuffTime } from '../js/buffs.js';
 import { tileKey, packTile, createDeltaSet, packPlayer, lerpAngle, createRemotePeer } from '../js/netsync.js';
+import { bumpStat, getStat, allStats, serializeStats, loadStats, clearStats } from '../js/stats.js';
 
 let _worldReady = false;
 function ensureWorld() {
@@ -398,6 +399,24 @@ check('netsync: a remote peer eases toward received transforms (#8)', () => {
     assert(Math.abs(lerpAngle(0, Math.PI / 2, 1) - Math.PI / 2) < 1e-9, 'lerpAngle should reach the target in a full step');
     assert(Math.abs(lerpAngle(0, 3 * Math.PI / 2, 1) - (-Math.PI / 2)) < 1e-9, 'lerpAngle should take the short way around');
     return 'first packet snaps, then eases; heading takes the short way';
+});
+
+check('stats: the farm ledger bumps, totals, and round-trips (#18)', () => {
+    clearStats();
+    assert(getStat('harvested') === 0, 'a fresh ledger should read 0');
+    bumpStat('harvested'); bumpStat('harvested', 4); bumpStat('fish');
+    assert(getStat('harvested') === 5, 'bumps should accumulate');
+    assert(getStat('fish') === 1, 'fish should be counted');
+    const list = allStats();
+    const h = list.find(s => s.key === 'harvested');
+    assert(h && h.value === 5 && h.label.includes('harvested'), 'allStats should expose value + label');
+    assert(list.length >= 6, 'every declared stat row should be present');
+    const s = serializeStats(); clearStats();
+    assert(getStat('harvested') === 0, 'cleared');
+    loadStats(s);
+    assert(getStat('harvested') === 5 && getStat('fish') === 1, 'should restore from the save');
+    clearStats();
+    return 'harvested=5, fish=1, round-trips';
 });
 
 check('a sprinkler auto-waters the tiles around it', () => {

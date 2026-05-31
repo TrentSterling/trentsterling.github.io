@@ -392,4 +392,13 @@ body {
 }
 .shop-header:first-child { border-top: none; padding-top: 0; margin-top: 2px; }
 
+/* ---- Home "farm ledger" (lifetime counters) ---- */
+.home-ledger {
+    margin: 8px 0 2px; padding: 10px 12px; background: var(--row);
+    border: 1px solid rgba(214,176,116,0.16); border-radius: 10px;
+}
+.ledger-title { font: 800 12px var(--font); color: var(--gold); letter-spacing: 0.5px; margin-bottom: 6px; }
+.ledger-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 13px; color: var(--cream); }
+.ledger-row b { color: var(--green); font-weight: 800; }
+
 /* Tile hover highlight is done in Three.js, not CSS */

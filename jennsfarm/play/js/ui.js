@@ -557,7 +557,7 @@ export function hideFactory() {
 
 // --- Home (cottage) ---
 
-export function showHome(playerName, onSleep, letter, onClaim) {
+export function showHome(playerName, onSleep, letter, onClaim, stats) {
     if (homeNote) {
         homeNote.textContent = /^jenn$/i.test(playerName || '')
             ? 'A framed photo of you and Grandpa sits on the shelf — this farm was always meant for you, Jenn. ❤'
@@ -584,6 +584,18 @@ export function showHome(playerName, onSleep, letter, onClaim) {
         if (can && onClaim) b.addEventListener('click', () => onClaim());
     }
     homeItems.appendChild(mail);
+
+    // 📊 Farm ledger — feel-good lifetime counters (only the ones you've started)
+    if (stats) {
+        const rows = stats.filter(s => s.value > 0);
+        if (rows.length) {
+            const led = document.createElement('div');
+            led.className = 'home-ledger';
+            led.innerHTML = '<div class="ledger-title">📊 Your farm so far</div>' +
+                rows.map(s => `<div class="ledger-row"><span>${s.label}</span><b>${s.value.toLocaleString()}</b></div>`).join('');
+            homeItems.appendChild(led);
+        }
+    }
 
     const btn = document.createElement('button');
     btn.className = 'action-btn';
