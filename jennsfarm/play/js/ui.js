@@ -381,7 +381,10 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
     if (_onBuyHive || _onBuyFountain || _onBuyPet || _onBuyFoodBowl || _onBuyGreenhouse || _onBuyFlytrap) shopItems.appendChild(shopHeader('🏗️ Buildings & Pets'));
     if (_onBuyHive) shopItems.appendChild(shopBuildRow('🐝', 'Beehive', `makes honey · ${getHiveCount()} built`, HIVE_COST, coins >= HIVE_COST, getHiveCount() >= 6, _onBuyHive));
     if (_onBuyFountain) shopItems.appendChild(shopBuildRow('⛲', 'Wishing Fountain', 'toss a coin for luck', FOUNTAIN_COST, coins >= FOUNTAIN_COST, hasFountain(), _onBuyFountain));
-    if (_onBuyPet) shopItems.appendChild(shopBuildRow('🐕', 'Puppy', 'follows you + fetches drops', PET_COST, coins >= PET_COST, hasPet(), _onBuyPet));
+    if (_onBuyPet) {
+        shopItems.appendChild(shopBuildRow('🐕', 'Puppy', 'follows you + fetches drops', PET_COST, coins >= PET_COST, hasPet(), () => _onBuyPet('dog')));
+        shopItems.appendChild(shopBuildRow('🐈', 'Kitten', 'a cat of your own — follows + fetches', PET_COST, coins >= PET_COST, hasPet(), () => _onBuyPet('cat')));
+    }
     if (_onBuyFoodBowl) shopItems.appendChild(shopBuildRow('🥣', 'Food Bowl', 'draws more visitor cats', FOOD_BOWL_COST, coins >= FOOD_BOWL_COST, hasFoodBowl(), _onBuyFoodBowl));
     if (_onBuyGreenhouse) shopItems.appendChild(shopBuildRow('🌿', 'Greenhouse', 'crops grow full-speed year-round', GREENHOUSE_COST, coins >= GREENHOUSE_COST, hasGreenhouse(), _onBuyGreenhouse));
     if (_onBuyFlytrap) shopItems.appendChild(shopBuildRow('🪤', 'Flytrap', `snaps crows, never skunks · ${getFlytrapCount()}`, FLYTRAP_COST, coins >= FLYTRAP_COST, getFlytrapCount() >= 6, _onBuyFlytrap));

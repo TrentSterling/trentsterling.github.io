@@ -801,15 +801,18 @@ function tossCoinAtFountain() {
 }
 
 // Adopt a pet that follows Jenn + fetches drops (#48)
-function buyPet() {
+function buyPet(species) {
+    const kind = species === 'cat' ? 'cat' : 'dog';
     if (hasPet()) { notify('You already have a pet!'); return; }
     if (coins < PET_COST) { playDeny(); notify("Can't afford a pet!"); return; }
     coins -= PET_COST;
     const p = getPlayerPos();
-    adoptPet('dog', p.x - 1, p.z + 1);
+    adoptPet(kind, p.x - 1, p.z + 1);
     playBuy();
     const wp = getPlayerWorldPos(); hearts(wp.x, 0.8, wp.z);
-    notify('You adopted a puppy! 🐕 It follows you and fetches drops.');
+    notify(kind === 'cat'
+        ? 'You adopted a kitten! 🐈 It follows you and fetches drops.'
+        : 'You adopted a puppy! 🐕 It follows you and fetches drops.');
     refreshUI();
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();

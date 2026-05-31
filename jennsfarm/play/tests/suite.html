@@ -50,7 +50,7 @@ import { ambientCritters, updateFireflies, clearFireflies } from '../js/fireflie
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail } from '../js/mailbox.js';
 import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } from '../js/bees.js';
 import { rollBlessing, BLESSINGS } from '../js/fountain.js';
-import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet } from '../js/pets.js';
+import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet, getPetName } from '../js/pets.js';
 import { pickFish, FISH, fishIsValid, rollFishSize, fishRecord, tryFishRecord, clearFishRecords } from '../js/fishing.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
 import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
@@ -1341,6 +1341,21 @@ check('pet follows Jenn and trots to fetch a nearby drop', () => {
     assert(hasPet(), 'pet not restored');
     loadPet(null);
     return 'pet follows + fetches + round-trips';
+});
+
+check('pets: you can adopt a cat too, and its species persists (#48)', () => {
+    ensureWorld();
+    loadPet(null);
+    adoptPet('cat', 5, 5, 'Mittens');
+    assert(hasPet() && getPetName() === 'Mittens', 'cat should be adopted with its name');
+    const s = serializePet();
+    assert(s.species === 'cat', 'serialized pet should record the cat species');
+    loadPet(null); loadPet(s);
+    assert(getPetName() === 'Mittens', 'cat should restore from the save');
+    loadPet(null); adoptPet('cat', 1, 1);
+    assert(getPetName() === 'Whiskers', 'a nameless cat should default to Whiskers');
+    loadPet(null);
+    return 'cat adopt + species persists';
 });
 
 // ---------- WISHING FOUNTAIN (#47) ----------
