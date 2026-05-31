@@ -10,7 +10,7 @@ import { RECIPES } from './craft.js';
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
 import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
-import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals, loadAnimals, getLivestockCount, creditOfflineProduce, getNearestDrop } from './animals.js';
+import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals, loadAnimals, getLivestockCount, creditOfflineProduce, getNearestDrop, petNearest } from './animals.js';
 import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } from './juice.js';
 import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
 import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
@@ -496,9 +496,8 @@ function performAction(tx, tz, tool) {
 
         case 'hand':
             if (hasWeedAt(tx, tz)) { clearWeed(tx, tz); break; }
-            if (tile.type === TILE.PLANTED && tile.cropStage >= 3) {
-                doHarvest(tx, tz);
-            }
+            if (tile.type === TILE.PLANTED && tile.cropStage >= 3) doHarvest(tx, tz);
+            else tryPet(tx, tz); // pet a nearby animal
             handleBuildingInteraction(tile);
             break;
 
@@ -606,6 +605,14 @@ function doChop(tx, tz) {
         addShake(0.04);
     }
     return true;
+}
+
+function tryPet(tx, tz) {
+    const a = petNearest(tx, tz);
+    if (!a) return;
+    hearts(a.x, 0.6, a.z);
+    playStore();
+    notify(`You pet the ${a.species}! 💛`);
 }
 
 function clearWeed(tx, tz) {
