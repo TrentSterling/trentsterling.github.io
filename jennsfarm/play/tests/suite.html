@@ -51,7 +51,7 @@ import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail }
 import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } from '../js/bees.js';
 import { rollBlessing, BLESSINGS } from '../js/fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet } from '../js/pets.js';
-import { pickFish, FISH, fishIsValid } from '../js/fishing.js';
+import { pickFish, FISH, fishIsValid, rollFishSize, fishRecord, tryFishRecord, clearFishRecords } from '../js/fishing.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
 import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
 import { updateCloudShadows } from '../js/cloudshadows.js';
@@ -1231,6 +1231,25 @@ check('fishing always yields a real fish; seasonal catches show up', () => {
     for (let i = 0; i < 100; i++) { const f = pickFish('Summer', i / 100); if (f === 'catfish') gotCat = true; if (f === 'bob') gotBob = true; }
     assert(gotCat && gotBob, 'the catfish 🐱 and Bob should both be catchable');
     return `${FISH.length} fish (incl. catfish + Bob), all valid + reachable`;
+});
+
+check('fishing: catches have a weight and track a personal best (#49)', () => {
+    clearFishRecords();
+    // every species rolls a positive weight inside a sane range
+    for (const f of FISH) {
+        const lo = rollFishSize(f, 0), hi = rollFishSize(f, 0.999);
+        assert(lo > 0 && hi >= lo && hi <= 30, `${f} weight range looks wrong (${lo}..${hi})`);
+    }
+    // bigger species run heavier at the top end
+    assert(rollFishSize('pike', 0.999) > rollFishSize('minnow', 0.999), 'pike should out-weigh a minnow');
+    // Bob is always exactly 4 lb, because Bob is Bob
+    assert(rollFishSize('bob', 0) === 4 && rollFishSize('bob', 1) === 4, 'Bob should always be 4 lb');
+    // records: first catch sets it; only a heavier one beats it
+    assert(tryFishRecord('bass', 3.0) === true, 'first bass should set a record');
+    assert(tryFishRecord('bass', 2.0) === false && fishRecord('bass') === 3.0, 'a smaller bass must not beat the record');
+    assert(tryFishRecord('bass', 5.5) === true && fishRecord('bass') === 5.5, 'a bigger bass should set a new record');
+    clearFishRecords();
+    return 'weights vary by species, Bob=4lb, records track best';
 });
 
 // ---------- PETS (#48) ----------
