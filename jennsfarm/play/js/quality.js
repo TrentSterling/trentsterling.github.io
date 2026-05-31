@@ -3,9 +3,10 @@
 // a bumper crop). Rewards keeping things watered. Pure + unit-testable; main
 // applies it in doHarvest (no changes to the crop sim or inventory tiers).
 
-export function harvestQuality(watered, roll = Math.random()) {
+export function harvestQuality(watered, roll = Math.random(), luck = 1) {
     if (!watered) return { stars: 0, bonus: 0 };
     const r = (((roll % 1) + 1) % 1);
-    if (r < 0.25) return { stars: 2, bonus: 2 }; // ⭐⭐ bumper crop
-    return { stars: 1, bonus: 1 };               // ⭐ healthy
+    const greatChance = Math.min(0.75, 0.25 * (luck || 1)); // a luck buff widens the ⭐⭐ band
+    if (r < greatChance) return { stars: 2, bonus: 2 };      // ⭐⭐ bumper crop
+    return { stars: 1, bonus: 1 };                           // ⭐ healthy
 }
