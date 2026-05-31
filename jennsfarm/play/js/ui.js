@@ -34,6 +34,9 @@ const craftOverlay = document.getElementById('craft-overlay');
 const craftItems = document.getElementById('craft-items');
 const factoryOverlay = document.getElementById('factory-overlay');
 const factoryItems = document.getElementById('factory-items');
+const homeOverlay = document.getElementById('home-overlay');
+const homeItems = document.getElementById('home-items');
+const homeNote = document.getElementById('home-note');
 
 let notifTimer = null;
 
@@ -486,6 +489,27 @@ export function hideFactory() {
     factoryOverlay.classList.add('hidden');
 }
 
+// --- Home (cottage) ---
+
+export function showHome(playerName, onSleep) {
+    if (homeNote) {
+        homeNote.textContent = /^jenn$/i.test(playerName || '')
+            ? 'A framed photo of you and Grandpa sits on the shelf — this farm was always meant for you, Jenn. ❤'
+            : `${playerName || 'Your'}'s cosy cottage. A framed photo of the farm hangs by the door.`;
+    }
+    homeItems.innerHTML = '';
+    const btn = document.createElement('button');
+    btn.className = 'action-btn';
+    btn.textContent = '🛏️ Sleep until morning';
+    btn.addEventListener('click', () => onSleep());
+    homeItems.appendChild(btn);
+    homeOverlay.classList.remove('hidden');
+}
+
+export function hideHome() {
+    homeOverlay.classList.add('hidden');
+}
+
 // --- Barn ---
 
 export function showBarn(barnStorage, barnCapacity, inventory, onDeposit, onWithdraw, onDepositAll) {
@@ -556,5 +580,6 @@ export function isOverlayOpen() {
            !marketOverlay.classList.contains('hidden') ||
            !barnOverlay.classList.contains('hidden') ||
            !craftOverlay.classList.contains('hidden') ||
-           !factoryOverlay.classList.contains('hidden');
+           !factoryOverlay.classList.contains('hidden') ||
+           !homeOverlay.classList.contains('hidden');
 }

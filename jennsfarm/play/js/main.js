@@ -7,7 +7,8 @@ import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTil
 import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
-import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
+import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, showHome, hideHome, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
+import { nextMorning } from './home.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -459,6 +460,7 @@ document.addEventListener('keydown', (e) => {
         hideBarn();
         hideCraft();
         hideFactory();
+        hideHome();
     }
     if (e.key === 'c' || e.key === 'C') {
         toggleCraft();
@@ -643,6 +645,8 @@ function handleBuildingInteraction(tile) {
         showMarket(inventory, sellItem, getPrice, getTrend, sellAllCrops);
     } else if (tile.type === TILE.BARN) {
         openBarn();
+    } else if (tile.type === TILE.HOUSE) {
+        openHome();
     }
 }
 
@@ -1012,6 +1016,37 @@ function sellAllCrops() {
 
 function openBarn() {
     showBarn(barnStorage, barnCapacity, inventory, barnDeposit, barnWithdraw, barnDepositAll);
+}
+
+// --- Home (cottage) ---
+
+function openHome() {
+    showHome(playerName, sleepAtHome);
+}
+
+// Sleep skips to next morning: heal up, and crops grow + animals produce while
+// you rest (reusing the offline helpers). The loop's new-day check ticks the
+// market/season as the day rolls over.
+function sleepAtHome() {
+    const target = nextMorning(gameTime, DAY_LENGTH);
+    const skipped = target - gameTime;
+    gameTime = target;
+    health = MAX_HEALTH;
+    const cp = advanceCropsOffline(skipped);
+    rebuildCropMeshes();
+    const prod = creditOfflineProduce(skipped);
+    let pc = 0;
+    for (const k in prod) { inventory.add(k, prod[k]); pc += prod[k]; }
+    playNewDay();
+    const p = getPlayerWorldPos();
+    sparkle(p.x, 0.9, p.z, [0xffe0a0, 0xfff0d0, 0xffffff]);
+    const bits = [];
+    if (cp.ripened) bits.push(`${cp.ripened} crops ripened`);
+    if (pc) bits.push(`+${pc} produce`);
+    notify(`😴 Slept until morning — fully rested!${bits.length ? ' (' + bits.join(', ') + ')' : ''}`);
+    hideHome();
+    refreshUI();
+    triggerAutoSave();
 }
 
 function barnDeposit(itemId) {
