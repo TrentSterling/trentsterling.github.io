@@ -36,7 +36,7 @@ import { advanceCropsOffline } from '../js/offline.js';
 import { initBuyers, updateBuyers } from '../js/buyers.js';
 import { createPlayer, setHeldTool, setPlayerGender } from '../js/player.js';
 import { getSeason } from '../js/seasons.js';
-import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnimalCount, getSpeciesCount } from '../js/animals.js';
+import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnimalCount, getSpeciesCount, playerReaction } from '../js/animals.js';
 import { CHUNK, worldToChunk, desiredChunks, updateChunks, getLoadedChunkCount, resetChunks } from '../js/chunks.js';
 import { findPath } from '../js/pathfind.js';
 import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates, getCrateCount, serializeCrates, loadCrates } from '../js/crates.js';
@@ -602,6 +602,22 @@ check('the wild is packed with critters, skunks especially', () => {
     initAnimals(false);
     assert(getSpeciesCount('skunk') >= 12 && getSpeciesCount('skunk') <= 16, `skunk count off after re-init: ${getSpeciesCount('skunk')}`);
     return `${getAnimalCount()} critters, ${getSpeciesCount('skunk')} skunks`;
+});
+
+check('wildlife reacts to Jenn: crows bolt, ocelots approach, badgers do not care', () => {
+    // crow within 6 flees directly AWAY from the player
+    const crow = playerReaction('crow', 10, 0, 8, 0); // player x=8, crow x=10 (dist 2)
+    assert(crow && crow.flee && crow.tx > 10, 'crow should bolt away when Jenn is close');
+    assert(playerReaction('crow', 100, 0, 8, 0) === null, 'a distant crow should ignore her');
+    // ocelot is curious — heads toward the player
+    const oce = playerReaction('ocelot', 14, 0, 8, 0); // dist 6, in (2.5,9)
+    assert(oce && !oce.flee && oce.tx === 8 && oce.tz === 0, 'ocelot should approach the player');
+    // skunk stays put unless you're right on top of it (so wifey can watch them)
+    assert(playerReaction('skunk', 20, 0, 8, 0) === null, 'far skunk should stay (visible)');
+    assert((playerReaction('skunk', 9, 0, 8, 0) || {}).flee === true, 'skunk only flees when adjacent');
+    // honey badger don't care
+    assert(playerReaction('honey_badger', 9, 0, 8, 0) === null, 'honey badger ignores the player');
+    return 'crow flees · ocelot approaches · skunk chill · badger ignores';
 });
 
 // ---------- PATHFINDING (A*: "get there no matter what") ----------
