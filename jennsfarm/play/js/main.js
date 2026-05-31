@@ -23,6 +23,7 @@ import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet
 import { pickFish } from './fishing.js';
 import { hasGreenhouse, buildGreenhouse, effectiveGrowth, GREENHOUSE_COST, serializeGreenhouse, loadGreenhouse } from './greenhouse.js';
 import { buyFlytrapPlacement, getFlytrapCount, FLYTRAP_COST, serializeFlytraps, loadFlytraps } from './flytrap.js';
+import { festivalFor, startFestival } from './festivals.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -211,6 +212,7 @@ if (saved && saved.playerName) playerName = saved.playerName;
 if (saved && saved.gender) { playerGender = saved.gender; setPlayerGender(saved.gender); }
 season = getSeason(day);
 setSeasonGrowth(effectiveGrowth(season.growth)); // greenhouse lifts the floor (#51)
+startFestival(season.name); // put up the current season's bunting (#52)
 initGrandpa();
 
 // Starting weeds: fresh games get an overgrown farm to clear; saves restore theirs
@@ -1502,7 +1504,14 @@ function gameLoop(now) {
         if (ns.index !== season.index) {
             season = ns;
             setSeasonGrowth(effectiveGrowth(ns.growth)); // greenhouse keeps it full-speed (#51)
-            notify(`${ns.emoji} ${ns.name} has arrived!`);
+            const fest = startFestival(ns.name); // season opens with a festival (#52)
+            if (fest) {
+                coins += fest.gift;
+                const fp = getPlayerWorldPos(); coinBurst(fp.x, fp.z); hearts(fp.x, 1.0, fp.z);
+                notify(`${fest.emoji} ${fest.name}! Grandpa gifts 🪙${fest.gift}`);
+            } else {
+                notify(`${ns.emoji} ${ns.name} has arrived!`);
+            }
         } else {
             notify(`Day ${day} begins!`);
         }

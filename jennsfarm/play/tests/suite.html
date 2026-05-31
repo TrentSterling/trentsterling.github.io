@@ -58,6 +58,7 @@ import { updateCloudShadows } from '../js/cloudshadows.js';
 import { updateVisitors, getVisitorCount, clearVisitors, placeFoodBowl, hasFoodBowl, serializeVisitors, loadVisitors } from '../js/visitors.js';
 import { hasGreenhouse, buildGreenhouse, effectiveGrowth, serializeGreenhouse, loadGreenhouse } from '../js/greenhouse.js';
 import { placeFlytrap, updateFlytraps, getFlytrapCount, loadFlytraps } from '../js/flytrap.js';
+import { festivalFor, startFestival, clearBunting } from '../js/festivals.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -949,6 +950,21 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- SEASONAL FESTIVALS (#52) ----------
+
+check('every season has a festival with a gift; bunting builds + swaps', () => {
+    for (const s of ['Spring', 'Summer', 'Autumn', 'Winter']) {
+        const f = festivalFor(s);
+        assert(f && f.name && f.gift > 0 && f.colors && f.colors.length, `${s} should have a festival + gift`);
+    }
+    assert(festivalFor('Nope') === null, 'unknown season has no festival');
+    ensureWorld();
+    assert(startFestival('Autumn').name === 'Harvest Festival', 'startFestival returns the festival');
+    startFestival('Winter'); // swap bunting
+    clearBunting();
+    return '4 festivals + bunting build/swap/clear';
 });
 
 // ---------- CARNIVOROUS FLYTRAP (#58) ----------
