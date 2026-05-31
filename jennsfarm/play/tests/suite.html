@@ -52,6 +52,7 @@ import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } fr
 import { rollBlessing, BLESSINGS } from '../js/fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet } from '../js/pets.js';
 import { pickFish, FISH, fishIsValid } from '../js/fishing.js';
+import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -931,6 +932,24 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- DEBUG OVERLAY (#55) ----------
+
+check('debug overlay inits, updates, and toggles without throwing', () => {
+    ensureWorld();
+    initDebug();
+    setMouseHit(5, 5);
+    setPlayerTarget({ x: 1, z: 2 });
+    setDbgPath([{ x: 0, z: 0 }, { x: 1, z: 1 }, { x: 2, z: 2 }]);
+    setPlayerTarget(null); setDbgPath(null);
+    for (let i = 0; i < 40; i++) tickDebug(16); // drive the FPS readout
+    const before = isDebugOn();
+    toggleDebug();
+    assert(isDebugOn() === !before, 'toggle did not flip debug state');
+    toggleDebug();
+    assert(isDebugOn() === before, 'toggle back failed');
+    return 'debug viz no-throw + toggles';
 });
 
 // ---------- FISHING (#49) ----------
