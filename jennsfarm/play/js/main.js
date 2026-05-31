@@ -15,6 +15,7 @@ import { updateWeather } from './weather.js';
 import { updateFireflies } from './fireflies.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
+import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -128,6 +129,7 @@ if (saved) {
     if (saved.mail) loadMail(saved.mail);
     if (saved.hives) loadHives(saved.hives);
     if (saved.fountain) loadFountain(saved.fountain);
+    if (saved.pet) loadPet(saved.pet);
     notify('Game loaded!');
 }
 
@@ -767,7 +769,21 @@ function tossCoinAtFountain() {
     triggerAutoSave();
 }
 
-setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain });
+// Adopt a pet that follows Jenn + fetches drops (#48)
+function buyPet() {
+    if (hasPet()) { notify('You already have a pet!'); return; }
+    if (coins < PET_COST) { playDeny(); notify("Can't afford a pet!"); return; }
+    coins -= PET_COST;
+    const p = getPlayerPos();
+    adoptPet('dog', p.x - 1, p.z + 1);
+    playBuy();
+    const wp = getPlayerWorldPos(); hearts(wp.x, 0.8, wp.z);
+    notify('You adopted a puppy! 🐕 It follows you and fetches drops.');
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
+setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet });
 
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
@@ -1272,6 +1288,7 @@ function triggerAutoSave() {
             mail: serializeMail(),
             hives: serializeHives(),
             fountain: serializeFountain(),
+            pet: serializePet(),
             lastSaved: Date.now(),
         });
     }, 1000);
@@ -1357,7 +1374,8 @@ function gameLoop(now) {
 
     const ppos = getPlayerWorldPos();
     updateChunks(ppos.x, ppos.z); // stream infinite terrain around Jenn
-    updateAnimals(dt, ppos, onCollectProduce);
+    updatePet(dt, ppos, getNearestDrop); // pet follows + fetches drops
+    updateAnimals(dt, ppos, onCollectProduce, getPetPos());
     updateGrandpa(dt, {
         coins, day, name: playerName,
         wood: inventory.count('wood'),
