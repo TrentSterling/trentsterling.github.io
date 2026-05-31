@@ -23,7 +23,7 @@ import { updateSystems } from './registry.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
-import { pickFish } from './fishing.js';
+import { pickFish, rollFishSize, tryFishRecord, serializeFishRecords, loadFishRecords } from './fishing.js';
 import { hasGreenhouse, buildGreenhouse, effectiveGrowth, GREENHOUSE_COST, serializeGreenhouse, loadGreenhouse } from './greenhouse.js';
 import { buyFlytrapPlacement, getFlytrapCount, FLYTRAP_COST, serializeFlytraps, loadFlytraps } from './flytrap.js';
 import { festivalFor, startFestival } from './festivals.js';
@@ -149,6 +149,7 @@ if (saved) {
     if (saved.visitors) loadVisitors(saved.visitors);
     if (saved.greenhouse) loadGreenhouse(saved.greenhouse);
     if (saved.flytraps) loadFlytraps(saved.flytraps);
+    if (saved.fishRecords) loadFishRecords(saved.fishRecords);
     notify('Game loaded!');
 }
 
@@ -924,16 +925,20 @@ function updateFishing(dt) {
 function hookFish() {
     if (!fishing || fishing.state !== 'bite') return;
     const fish = pickFish(season.name, Math.random());
+    const weight = rollFishSize(fish, Math.random());
+    const isRecord = tryFishRecord(fish, weight);
     fishing = null;
     inventory.add(fish, 1);
     playHarvest();
     const p = getPlayerWorldPos();
-    sparkle(p.x, 0.6, p.z, [0x9be8ff, 0xffffff]);
-    pop(getPlayerGroup(), 0.24);
+    sparkle(p.x, 0.6, p.z, isRecord ? [0xffe066, 0xfff0c0, 0xffffff] : [0x9be8ff, 0xffffff]);
+    pop(getPlayerGroup(), isRecord ? 0.34 : 0.24);
+    if (isRecord) addShake(0.08);
+    const rec = isRecord ? ' — 🏆 NEW PERSONAL BEST!' : '';
     notify(
-        fish === 'catfish' ? '🎣 A Catfish — it literally has a cat face?! Meow. 🐱' :
-        fish === 'bob' ? '🎣 You caught Bob. Bob is a fish. Hi, Bob. 👋' :
-        `🎣 Caught a ${ITEMS[fish].name}!`
+        fish === 'catfish' ? `🎣 A ${weight} lb Catfish — it has a cat face?! Meow. 🐱${rec}` :
+        fish === 'bob' ? `🎣 You caught Bob (${weight} lb). Bob is a fish. Hi, Bob. 👋${rec}` :
+        `🎣 Caught a ${weight} lb ${ITEMS[fish].name}!${rec}`
     );
     refreshUI();
     triggerAutoSave();
@@ -1406,6 +1411,7 @@ function triggerAutoSave() {
             visitors: serializeVisitors(),
             greenhouse: serializeGreenhouse(),
             flytraps: serializeFlytraps(),
+            fishRecords: serializeFishRecords(),
             lastSaved: Date.now(),
         });
     }, 1000);

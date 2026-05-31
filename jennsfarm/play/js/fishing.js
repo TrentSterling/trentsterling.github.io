@@ -23,3 +23,35 @@ export function pickFish(seasonName, roll) {
 
 // Guard so a misconfigured fish can't slip in (used by the suite).
 export function fishIsValid(id) { return FISH.includes(id) && !!ITEMS[id]; }
+
+// --- Fish sizes + personal-best records (#49 depth) ---
+// Each species has a weight range (lb); bigger fish run heavier. The roll is
+// squared so most catches are small and a lunker feels special. Bob is always
+// exactly 4 lb, because Bob is Bob.
+const FISH_WEIGHT = {
+    minnow:  [0.1, 0.6],
+    trout:   [0.5, 3.5],
+    bass:    [1, 6],
+    salmon:  [2, 12],
+    pike:    [3, 18],
+    catfish: [2, 25],
+    bob:     [4, 4],
+};
+
+export function rollFishSize(species, roll = Math.random()) {
+    const [lo, hi] = FISH_WEIGHT[species] || [0.2, 2];
+    const r = (((roll % 1) + 1) % 1);
+    const w = lo + (hi - lo) * (r * r); // squared bias toward the small end
+    return Math.round(w * 10) / 10;     // one decimal pound
+}
+
+let records = {}; // species -> best weight caught
+export function fishRecord(species) { return records[species] || 0; }
+// Record the catch; returns true if it's a new personal best for that species.
+export function tryFishRecord(species, weight) {
+    if (weight > (records[species] || 0)) { records[species] = weight; return true; }
+    return false;
+}
+export function serializeFishRecords() { return { ...records }; }
+export function loadFishRecords(d) { records = (d && typeof d === 'object') ? { ...d } : {}; }
+export function clearFishRecords() { records = {}; } // test isolation
