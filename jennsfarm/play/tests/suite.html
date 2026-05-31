@@ -475,11 +475,13 @@ check('finishing every chore fires the completion celebration', () => {
     let completed = false;
     initQuests({ name: 'Jenn', reward: () => {}, complete: () => { completed = true; } });
     assert(serializeQuests().index === 0, 'init did not reset to first chore');
-    const seq = [['weed', 4], ['till', 4], ['plant', 4], ['water', 4], ['harvest', 4], ['chop', 1]];
+    const seq = [['weed', 4], ['till', 4], ['plant', 4], ['water', 4], ['harvest', 4], ['chop', 1],
+                 // Grandpa's "next chapter" steps (harvest2, plant2, water2, harvest3)
+                 ['harvest', 12], ['plant', 12], ['water', 12], ['harvest', 30]];
     for (const [ev, n] of seq) for (let i = 0; i < n; i++) questEvent(ev);
     assert(serializeQuests().done === true, 'chain not marked done');
     assert(completed, 'onComplete did not fire');
-    return 'full chore chain → done + celebration';
+    return 'full 10-step chain → done + celebration';
 });
 
 // ---------- GRANDPA (bark engine) ----------
