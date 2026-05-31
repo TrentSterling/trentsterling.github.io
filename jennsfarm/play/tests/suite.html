@@ -34,6 +34,7 @@ import { initGrandpa, grandpaSay } from '../js/grandpa.js';
 import { addSprinkler, updateSprinklers } from '../js/sprinklers.js';
 import { advanceCropsOffline } from '../js/offline.js';
 import { initBuyers, updateBuyers } from '../js/buyers.js';
+import { createPlayer, setHeldTool } from '../js/player.js';
 import { buyAnimalEntity, creditOfflineProduce, initAnimals } from '../js/animals.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
@@ -227,6 +228,15 @@ check('drive-by buyers spawn, reach the stall, buy, and despawn', () => {
     for (let i = 0; i < 1500; i++) updateBuyers(0.05, () => bought++); // ~75s of sim
     assert(bought >= 1, 'no buyer ever purchased at the stall');
     return `buyers transacted ${bought}x`;
+});
+
+// ---------- PLAYER + HELD TOOLS ----------
+
+check('player builds and held tools swap without throwing', () => {
+    ensureWorld();
+    createPlayer();
+    for (const t of ['water', 'hoe', 'axe', 'sprinkler', 'hand', 'carrot_seed', 'move']) setHeldTool(t);
+    return 'held tools swap cleanly';
 });
 
 // ---------- COLLISION ----------

@@ -6,6 +6,7 @@ import { isBlockingTreeAt } from './trees.js';
 function blocked(x, z) { return isSolidTile(x, z) || isBlockingTreeAt(x, z); }
 
 let playerGroup;
+let heldGroup; // tool shown in Jenn's hand, swaps with the selected tool
 let targetX = 24, targetZ = 24;
 let currentX = 24, currentZ = 24;
 let moving = false;
@@ -49,10 +50,60 @@ export function createPlayer() {
     top.position.y = 1.0;
     playerGroup.add(top);
 
+    // Hand anchor for the held tool (front-right of the player)
+    heldGroup = new THREE.Group();
+    heldGroup.position.set(0.2, 0.42, 0.16);
+    playerGroup.add(heldGroup);
+
     playerGroup.position.set(currentX, 0.07, currentZ);
     scene.add(playerGroup);
 
     return playerGroup;
+}
+
+// Build a small in-hand tool model for the given hotbar tool id
+function buildHeldTool(toolId) {
+    const g = new THREE.Group();
+    const add = (geo, color, x, y, z, rx, rz) => {
+        const m = new THREE.Mesh(geo, curvedMaterial({ color }));
+        m.position.set(x, y, z);
+        if (rx) m.rotation.x = rx;
+        if (rz) m.rotation.z = rz;
+        g.add(m);
+    };
+    if (toolId === 'water') {
+        add(new THREE.BoxGeometry(0.16, 0.14, 0.14), 0x5b9bd5, 0, 0, 0);          // can body
+        add(new THREE.CylinderGeometry(0.015, 0.03, 0.18, 5), 0x5588bb, 0.12, 0.05, 0, 0, -0.9); // spout
+        add(new THREE.TorusGeometry(0.05, 0.012, 4, 8), 0x4477aa, 0, 0.1, 0, Math.PI / 2); // handle
+    } else if (toolId === 'hoe') {
+        add(new THREE.CylinderGeometry(0.012, 0.012, 0.42, 5), 0x8b6914, 0, 0.05, 0, 0, 0.4); // shaft
+        add(new THREE.BoxGeometry(0.03, 0.02, 0.1), 0x9a9a9a, 0.16, 0.22, 0);                 // head
+    } else if (toolId === 'axe') {
+        add(new THREE.CylinderGeometry(0.014, 0.014, 0.4, 5), 0x7a5320, 0, 0.05, 0, 0, 0.35); // handle
+        add(new THREE.BoxGeometry(0.02, 0.1, 0.12), 0xb8b8c0, 0.15, 0.2, 0);                  // blade
+    } else if (toolId === 'sprinkler') {
+        add(new THREE.CylinderGeometry(0.04, 0.05, 0.16, 6), 0x6b7886, 0, 0, 0);
+        add(new THREE.SphereGeometry(0.05, 6, 5), 0x3f8fd0, 0, 0.1, 0);
+    } else if (toolId === 'hand') {
+        add(new THREE.TorusGeometry(0.08, 0.02, 4, 10), 0xb8924a, 0, 0, 0, Math.PI / 2);       // a little basket hoop
+        add(new THREE.CylinderGeometry(0.08, 0.06, 0.08, 8), 0xc8a86e, 0, -0.04, 0);
+    } else if (toolId && toolId.endsWith('_seed')) {
+        add(new THREE.BoxGeometry(0.1, 0.12, 0.06), 0xb58a4a, 0, 0, 0);                        // seed pouch
+    } else {
+        return null; // 'move' / unknown — empty hands
+    }
+    return g;
+}
+
+export function setHeldTool(toolId) {
+    if (!heldGroup) return;
+    while (heldGroup.children.length) {
+        const c = heldGroup.children[0];
+        heldGroup.remove(c);
+        c.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    }
+    const tool = buildHeldTool(toolId);
+    if (tool) heldGroup.add(tool);
 }
 
 export function moveTo(x, z) {
