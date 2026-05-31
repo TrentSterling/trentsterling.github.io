@@ -55,7 +55,7 @@ import { pickFish, FISH, fishIsValid } from '../js/fishing.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
 import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
 import { updateCloudShadows } from '../js/cloudshadows.js';
-import { updateVisitors, getVisitorCount, clearVisitors, placeFoodBowl, hasFoodBowl, serializeVisitors, loadVisitors } from '../js/visitors.js';
+import { updateVisitors, getVisitorCount, clearVisitors, placeFoodBowl, hasFoodBowl, serializeVisitors, loadVisitors, pickVisitorSpecies } from '../js/visitors.js';
 import { hasGreenhouse, buildGreenhouse, effectiveGrowth, serializeGreenhouse, loadGreenhouse } from '../js/greenhouse.js';
 import { placeFlytrap, updateFlytraps, getFlytrapCount, loadFlytraps } from '../js/flytrap.js';
 import { festivalFor, startFestival, clearBunting } from '../js/festivals.js';
@@ -1102,7 +1102,18 @@ check('a food bowl draws more cats, faster, and persists', () => {
     loadVisitors({ bowl: true });
     assert(hasFoodBowl(), 'bowl not restored from save');
     clearVisitors();
-    return `bowl drew up to ${max} cats`;
+    return `bowl drew up to ${max} critters`;
+});
+
+check('visitors: a variety of critters drop by — incl. beloved skunks (#54)', () => {
+    assert(pickVisitorSpecies(0.1) === 'cat', 'low roll should be a cat');
+    assert(pickVisitorSpecies(0.5) === 'skunk', 'mid roll should be a skunk (wifey loves them)');
+    assert(pickVisitorSpecies(0.99) === 'possum', 'high roll should be a possum');
+    const seen = new Set();
+    for (let i = 0; i < 200; i++) seen.add(pickVisitorSpecies(i / 200));
+    assert(seen.size >= 4, `expected variety, only saw ${seen.size} species`);
+    assert(seen.has('skunk'), 'skunks must be among the visitors');
+    return `${seen.size} species visit: ${[...seen].join(', ')}`;
 });
 
 // ---------- CLOUD SHADOWS (#43) ----------
