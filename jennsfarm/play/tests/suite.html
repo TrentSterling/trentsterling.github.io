@@ -937,6 +937,19 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     return 'fireflies/butterflies swap + animate cleanly';
 });
 
+// ---------- COOKING / MEALS (#50) ----------
+
+check('cooking: meals are craftable, heal a lot, and sell well', () => {
+    for (const id of ['veggie_soup', 'fruit_pie', 'fish_stew', 'honey_cake']) {
+        assert(ITEMS[id] && ITEMS[id].crafted, `${id} should be a crafted meal`);
+        assert(RECIPES[id] && RECIPES[id].out === id, `${id} should have a recipe`);
+        for (const k in RECIPES[id].inputs) assert(ITEMS[k], `${id} input "${k}" must be a real item`);
+        assert(healValue(id) >= 45, `${id} should heal a lot (got ${healValue(id)})`);
+        assert(ITEMS[id].sellPrice >= 100, `${id} should sell well`);
+    }
+    return '4 meals: cook + heal + sell (uses fish & honey too)';
+});
+
 // ---------- VISITOR CATS (#54) ----------
 
 check('visitor cats wander in over time, capped, then leave', () => {
