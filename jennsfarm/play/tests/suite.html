@@ -47,6 +47,7 @@ import { terrainHeight, AMP } from '../js/terrain.js';
 import { healValue } from '../js/foods.js';
 import { seasonWeather, updateWeather, clearWeather } from '../js/weather.js';
 import { ambientCritters, updateFireflies, clearFireflies } from '../js/fireflies.js';
+import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail } from '../js/mailbox.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -926,6 +927,35 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- GRANDPA'S MAILBOX (daily quests, #45) ----------
+
+check("Grandpa's mail: deterministic daily letters, gifts + fulfillable requests", () => {
+    loadMail(null);
+    // same day → same letter (no reroll on reopen)
+    const a = makeLetter(5), b = makeLetter(5);
+    assert(a.kind === b.kind && (a.coins || a.reward) === (b.coins || b.reward), 'same day must give the same letter');
+    // both kinds occur over the first ~40 days
+    let gift = null, req = null;
+    for (let d = 1; d <= 40 && (!gift || !req); d++) { const L = makeLetter(d); if (L.kind === 'gift') gift = L; else req = L; }
+    assert(gift && gift.coins > 0, 'should produce gift letters with coins');
+    assert(req && req.qty > 0 && req.reward > 0 && ITEMS[req.crop], 'request letter should be valid + reference a real crop');
+    // fulfilling a request consumes the goods and pays the reward
+    const inv = createInventory();
+    assert(!canFulfill(req, inv), 'cannot fulfil empty-handed');
+    assert(claimLetter(req, inv) === 0, 'unfulfillable request grants nothing');
+    inv.add(req.crop, req.qty);
+    assert(canFulfill(req, inv), 'can fulfil with the goods');
+    assert(claimLetter(req, inv) === req.reward, 'fulfilling pays the reward');
+    assert(inv.count(req.crop) === 0, 'delivered crops are consumed');
+    // a gift just pays its coins
+    assert(claimLetter(gift, createInventory()) === gift.coins, 'gift pays its coins');
+    // claim tracking is per-day
+    markClaimed(3);
+    assert(isClaimed(3) && !isClaimed(4), 'claim tracking should be per-day');
+    loadMail(null);
+    return `gift +🪙${gift.coins}; request ${req.qty} ${req.crop} → 🪙${req.reward}`;
 });
 
 // ---------- RENDER ----------

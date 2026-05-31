@@ -9,6 +9,7 @@ import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOf
 import { createInventory, ITEMS } from './inventory.js';
 import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, showHome, hideHome, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
 import { nextMorning } from './home.js';
+import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, serializeMail, loadMail } from './mailbox.js';
 import { healValue } from './foods.js';
 import { updateWeather } from './weather.js';
 import { updateFireflies } from './fireflies.js';
@@ -122,6 +123,7 @@ if (saved) {
     if (saved.corp) loadCorp(saved.corp);
     if (saved.crates) loadCrates(saved.crates);
     if (saved.equipment) loadEquipment(saved.equipment);
+    if (saved.mail) loadMail(saved.mail);
     notify('Game loaded!');
 }
 
@@ -1030,7 +1032,30 @@ function openBarn() {
 // --- Home (cottage) ---
 
 function openHome() {
-    showHome(playerName, sleepAtHome);
+    const letter = isClaimed(day) ? null : makeLetter(day);
+    if (letter && letter.kind === 'request') letter.canDeliver = canFulfill(letter, inventory);
+    showHome(playerName, sleepAtHome, letter, () => claimMail(letter));
+}
+
+// Collect Grandpa's daily letter: a gift, or fulfil a delivery request.
+function claimMail(letter) {
+    if (!letter) return;
+    if (letter.kind === 'request' && !canFulfill(letter, inventory)) {
+        playDeny();
+        notify(`You need ${letter.qty} ${ITEMS[letter.crop] ? ITEMS[letter.crop].name : letter.crop} for that.`);
+        return;
+    }
+    const reward = claimLetter(letter, inventory); // consumes the goods for a request
+    if (reward <= 0) return;
+    coins += reward;
+    markClaimed(day);
+    playBuy();
+    const p = getPlayerWorldPos();
+    coinBurst(p.x, p.z); hearts(p.x, 1.0, p.z);
+    notify(letter.kind === 'gift' ? `Grandpa's gift: +🪙${reward}! 💛` : `Delivered! Grandpa paid 🪙${reward}. 💛`);
+    refreshUI();
+    openHome();
+    triggerAutoSave();
 }
 
 // Sleep skips to next morning: heal up, and crops grow + animals produce while
@@ -1172,6 +1197,7 @@ function triggerAutoSave() {
             corp: serializeCorp(),
             crates: serializeCrates(),
             equipment: serializeEquipment(),
+            mail: serializeMail(),
             lastSaved: Date.now(),
         });
     }, 1000);
