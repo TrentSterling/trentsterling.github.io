@@ -9,7 +9,7 @@ import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showS
 import { RECIPES } from './craft.js';
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
-import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket } from './market.js';
+import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
 import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals, loadAnimals, getLivestockCount, creditOfflineProduce, getNearestDrop } from './animals.js';
 import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } from './juice.js';
 import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
@@ -132,10 +132,13 @@ if (saved && saved.lastSaved) {
         for (const k in prod) { inventory.add(k, prod[k]); pcount += prod[k]; }
         const fruit = creditOfflineFruit(away);
         if (fruit) { inventory.add('apple', fruit); }
+        const sales = offlineBuyerSales(inventory, away); // roadside buyers came by
+        if (sales.count) coins += sales.coins;
         const bits = [];
         if (cp.ripened) bits.push(`${cp.ripened} crops ripened`);
         if (pcount) bits.push(`+${pcount} produce`);
         if (fruit) bits.push(`+${fruit} fruit`);
+        if (sales.count) bits.push(`🪙${sales.coins} from ${sales.count} roadside sales`);
         const mins = Math.round(away / 60);
         setTimeout(() => notify(`🌙 While you were away (${mins}m): ${bits.length ? bits.join(', ') : 'the farm rested'}.`), 900);
     }

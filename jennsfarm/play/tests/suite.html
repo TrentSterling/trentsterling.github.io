@@ -22,10 +22,10 @@
 <div id="results"></div>
 
 <script type="module">
-import { ITEMS } from '../js/inventory.js';
+import { ITEMS, createInventory } from '../js/inventory.js';
 import { CROPS, plantCrop, harvestCrop, updateCrops, waterTile } from '../js/farm.js';
 import { RECIPES } from '../js/craft.js';
-import { initMarket, getPrice, recordSale, dailyTick } from '../js/market.js';
+import { initMarket, getPrice, recordSale, dailyTick, offlineBuyerSales } from '../js/market.js';
 import { initRenderer } from '../js/renderer.js';
 import { createWorld, getTile, TILE, forEachFarmTile, isSolidTile } from '../js/world.js';
 import { chopTree, serializeTrees, loadTrees, updateTrees, creditOfflineFruit } from '../js/trees.js';
@@ -238,6 +238,21 @@ check('player builds and held tools swap without throwing', () => {
     for (const t of ['water', 'hoe', 'axe', 'sprinkler', 'hand', 'carrot_seed', 'move']) setHeldTool(t);
     setPlayerGender('boy'); setPlayerGender('girl');
     return 'held tools + gender swap cleanly';
+});
+
+// ---------- OFFLINE ROADSIDE BUYERS ----------
+
+check('offline roadside buyers sell held goods, capped', () => {
+    initMarket();
+    const inv = createInventory();
+    inv.add('tomato', 50);
+    const r = offlineBuyerSales(inv, 600); // 600/30 = 20 buyers (cap)
+    assert(r.count === 20, `expected 20 sales, got ${r.count}`);
+    assert(r.coins > 0, 'no coins earned');
+    assert(inv.count('tomato') === 30, `inventory not deducted (left ${inv.count('tomato')})`);
+    const none = offlineBuyerSales(createInventory(), 600);
+    assert(none.count === 0, 'sold from an empty bag');
+    return `20 sales for 🪙${r.coins}; empty bag -> 0`;
 });
 
 // ---------- COLLISION ----------

@@ -46,6 +46,25 @@ export function recordSale(id, qty) {
     state[id].pressure += qty * SELL_K;
 }
 
+// Roadside buyers that stopped by while you were away: ~1 per 30s (capped),
+// each buys one held good. Mutates the inventory, returns {coins, count}.
+export function offlineBuyerSales(inv, seconds) {
+    const buyers = Math.min(Math.floor(seconds / 30), 20);
+    let coins = 0, count = 0;
+    for (let b = 0; b < buyers; b++) {
+        let soldId = null;
+        for (const id in ITEMS) {
+            if (ITEMS[id].type === 'crop' && inv.count(id) > 0) { soldId = id; break; }
+        }
+        if (!soldId) break; // nothing left to sell
+        inv.remove(soldId, 1);
+        coins += getPrice(soldId);
+        recordSale(soldId, 1);
+        count++;
+    }
+    return { coins, count };
+}
+
 // Called when a new day starts: demand drifts, supply pressure recovers
 export function dailyTick() {
     for (const id of sellableIds()) {
