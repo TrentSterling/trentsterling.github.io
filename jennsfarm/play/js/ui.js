@@ -435,7 +435,7 @@ export function showMarket(inventory, onSell, getPrice, getTrend, onSellAll) {
                 <span class="item-name">${item.name}</span>
                 <span class="item-qty">x${qty}</span>
             </div>
-            <span class="item-price">🪙 ${price} ea ${arrow}<small>🪙 ${stack.toLocaleString()}</small></span>
+            <span class="item-price"><span class="ea">🪙 ${price} ea ${arrow}</span><small>🪙 ${stack.toLocaleString()}</small></span>
         `;
         div.title = `Sell all ${qty} for 🪙 ${stack.toLocaleString()}`;
         div.addEventListener('click', () => onSell(id));
