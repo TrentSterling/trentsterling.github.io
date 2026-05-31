@@ -46,6 +46,7 @@ import { nextMorning } from '../js/home.js';
 import { terrainHeight, AMP } from '../js/terrain.js';
 import { healValue } from '../js/foods.js';
 import { seasonWeather, updateWeather, clearWeather } from '../js/weather.js';
+import { ambientCritters, updateFireflies, clearFireflies } from '../js/fireflies.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -912,6 +913,19 @@ check('seasonal weather: snow in winter, leaves in autumn, clear otherwise', () 
     updateWeather(0.1, 'Spring', { x: 24, z: 24 }); // clear (hide)
     clearWeather();
     return 'snow/leaves/clear, recycles + swaps cleanly';
+});
+
+// ---------- AMBIENT CRITTERS (fireflies / butterflies, #46) ----------
+
+check('fireflies at night, butterflies by day, animating without throwing', () => {
+    assert(ambientCritters(true).kind === 'firefly', 'night should be fireflies');
+    assert(ambientCritters(false).kind === 'butterfly', 'day should be butterflies');
+    ensureWorld();
+    updateFireflies(0.1, true, { x: 24, z: 24 }, 1.0);
+    for (let i = 0; i < 20; i++) updateFireflies(0.2, true, { x: 24, z: 24 }, i * 0.2); // drift + twinkle
+    updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
+    clearFireflies();
+    return 'fireflies/butterflies swap + animate cleanly';
 });
 
 // ---------- RENDER ----------

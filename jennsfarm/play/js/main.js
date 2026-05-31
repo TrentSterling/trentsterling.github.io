@@ -11,6 +11,7 @@ import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showS
 import { nextMorning } from './home.js';
 import { healValue } from './foods.js';
 import { updateWeather } from './weather.js';
+import { updateFireflies } from './fireflies.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
@@ -1264,6 +1265,7 @@ function gameLoop(now) {
     updateDayNight(dayProgress);
     updateAmbient(isNightTime(dayProgress));
     updateWeather(dt, season.name, ppos); // snow in winter, leaves in autumn
+    updateFireflies(dt, isNightTime(dayProgress), ppos, gameTime); // fireflies at night, butterflies by day
 
     const newDay = Math.floor(gameTime / DAY_LENGTH) + 1;
     if (newDay > day) {
