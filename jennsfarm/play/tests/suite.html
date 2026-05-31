@@ -51,6 +51,7 @@ import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail }
 import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } from '../js/bees.js';
 import { rollBlessing, BLESSINGS } from '../js/fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet } from '../js/pets.js';
+import { pickFish, FISH, fishIsValid } from '../js/fishing.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -930,6 +931,21 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- FISHING (#49) ----------
+
+check('fishing always yields a real fish; seasonal catches show up', () => {
+    const seasons = ['Spring', 'Summer', 'Autumn', 'Winter'];
+    for (let i = 0; i < 120; i++) {
+        const f = pickFish(seasons[i % 4], i / 120);
+        assert(fishIsValid(f), `roll produced an invalid fish "${f}"`);
+    }
+    let gotTrout = false;
+    for (let i = 0; i < 50; i++) if (pickFish('Spring', i / 50) === 'trout') gotTrout = true;
+    assert(gotTrout, 'spring should sometimes yield its seasonal trout');
+    assert(FISH.every(f => ITEMS[f] && ITEMS[f].sellPrice > 0), 'every fish must be a sellable item');
+    return `${FISH.length} fish, all valid + seasonal reachable`;
 });
 
 // ---------- PETS (#48) ----------
