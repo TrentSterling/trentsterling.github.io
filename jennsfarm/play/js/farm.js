@@ -112,6 +112,9 @@ export function waterTile(tile) {
 // Planted tiles are processed round-robin, a batch per frame. Each advances by
 // (cropClock - tile.lastTick), so a crop ticked rarely still grows correctly —
 // no per-frame scan of every tile. Stale entries self-remove when processed.
+let seasonGrowth = 1;
+export function setSeasonGrowth(m) { seasonGrowth = m || 1; }
+
 let cropClock = 0;
 let cropCursor = 0;
 const cropList = []; // [{ x, z }]
@@ -351,7 +354,7 @@ export function updateCrops(dt) {
 
         const crop = CROPS[tile.crop];
         if (crop && tile.cropStage < 3) {
-            tile.cropTimer += elapsed * (tile.watered ? 1 : DRY_GROWTH);
+            tile.cropTimer += elapsed * (tile.watered ? 1 : DRY_GROWTH) * seasonGrowth;
             const stageTime = crop.growTime / 3;
             while (tile.cropStage < 3 && tile.cropTimer >= stageTime) { // multi-stage catch-up
                 tile.cropTimer -= stageTime;

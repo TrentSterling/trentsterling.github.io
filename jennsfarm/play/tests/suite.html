@@ -35,6 +35,7 @@ import { addSprinkler, updateSprinklers } from '../js/sprinklers.js';
 import { advanceCropsOffline } from '../js/offline.js';
 import { initBuyers, updateBuyers } from '../js/buyers.js';
 import { createPlayer, setHeldTool, setPlayerGender } from '../js/player.js';
+import { getSeason } from '../js/seasons.js';
 import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest } from '../js/animals.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
@@ -238,6 +239,18 @@ check('player builds and held tools swap without throwing', () => {
     for (const t of ['water', 'hoe', 'axe', 'sprinkler', 'hand', 'carrot_seed', 'move']) setHeldTool(t);
     setPlayerGender('boy'); setPlayerGender('girl');
     return 'held tools + gender swap cleanly';
+});
+
+// ---------- SEASONS ----------
+
+check('seasons cycle by day with a growth modifier', () => {
+    assert(getSeason(1).name === 'Spring', 'day 1 = Spring');
+    assert(getSeason(4).name === 'Summer', 'day 4 = Summer');
+    assert(getSeason(7).name === 'Autumn', 'day 7 = Autumn');
+    assert(getSeason(10).name === 'Winter', 'day 10 = Winter');
+    assert(getSeason(13).name === 'Spring', 'day 13 wraps to Spring');
+    assert(getSeason(10).growth < getSeason(4).growth, 'winter grows slower than summer');
+    return 'Spring→Summer→Autumn→Winter→loop';
 });
 
 // ---------- PETTING ANIMALS ----------
