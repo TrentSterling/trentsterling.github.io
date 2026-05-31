@@ -316,6 +316,26 @@ check('buffs: meals grant per-stat luck & speed buffs that expire independently 
     return 'luck 3x(120s) + speed 1.35x(90s), independent expiry';
 });
 
+check('buffs: a growth meal makes crops ripen faster (#50)', () => {
+    ensureWorld();
+    clearBuffs();
+    const stageTime = CROPS.carrot.growTime / 3;
+    const progress = (t) => t.cropStage * stageTime + t.cropTimer; // total growth-time accrued
+    // baseline: a watered carrot grown with NO buff
+    const a = findSoil(); plantCrop(a.x, a.z, 'carrot'); waterTile(getTile(a.x, a.z));
+    for (let i = 0; i < 60; i++) updateCrops(0.1);
+    const baseP = progress(getTile(a.x, a.z));
+    // buffed: a fresh watered carrot grown for the same time with the growth buff active
+    applyMeal('veggie_soup');
+    const b = findSoil(); plantCrop(b.x, b.z, 'carrot'); waterTile(getTile(b.x, b.z));
+    for (let i = 0; i < 60; i++) updateCrops(0.1);
+    const buffP = progress(getTile(b.x, b.z));
+    clearBuffs();
+    assert(baseP > 0, 'baseline crop should have grown');
+    assert(buffP > baseP * 1.2, `growth buff should clearly outpace baseline (buff ${buffP.toFixed(1)} vs base ${baseP.toFixed(1)})`);
+    return `growth buff ${buffP.toFixed(1)} > baseline ${baseP.toFixed(1)}`;
+});
+
 check('a sprinkler auto-waters the tiles around it', () => {
     ensureWorld();
     const s = findSoil();

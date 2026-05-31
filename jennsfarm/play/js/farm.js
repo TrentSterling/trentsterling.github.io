@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { getTile, TILE, forEachFarmTile } from './world.js';
+import { growthMult } from './buffs.js'; // meal growth buff multiplies crop growth (#50)
 
 // Crop definitions
 export const CROPS = {
@@ -347,6 +348,7 @@ export function harvestCrop(x, z) {
 
 export function updateCrops(dt) {
     cropClock += dt;
+    const growth = growthMult(); // a meal growth buff speeds every crop this tick (#50)
 
     // Process a batch of planted tiles round-robin; each catches up via clock-diff,
     // so growth is correct no matter how rarely any single crop is ticked.
@@ -372,7 +374,7 @@ export function updateCrops(dt) {
 
         const crop = CROPS[tile.crop];
         if (crop && tile.cropStage < 3) {
-            tile.cropTimer += elapsed * (tile.watered ? 1 : DRY_GROWTH) * seasonGrowth;
+            tile.cropTimer += elapsed * (tile.watered ? 1 : DRY_GROWTH) * seasonGrowth * growth;
             const stageTime = crop.growTime / 3;
             while (tile.cropStage < 3 && tile.cropTimer >= stageTime) { // multi-stage catch-up
                 tile.cropTimer -= stageTime;
