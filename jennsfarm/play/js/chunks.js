@@ -10,6 +10,7 @@
 
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
+import { terrainHeight, AMP } from './terrain.js';
 
 export const CHUNK = 16;          // tiles per chunk side
 const LOAD_RADIUS = 2;            // chunks kept loaded around the player (5x5)
@@ -42,18 +43,42 @@ export function desiredChunks(px, pz, radius = LOAD_RADIUS) {
 }
 
 // --- Shared resources (created once, reused by every chunk) ---
-let groundGeo, groundMat, trunkGeo, trunkMat, leafGeo, grassGeo, rockGeo, rockMat;
+// Ground geometry is per-chunk now (each carries its own heightmap + vertex
+// colours); the material and all decor geometries are shared.
+let groundMat, trunkGeo, trunkMat, leafGeo, grassGeo, rockGeo, rockMat;
+let SHARED_GEO = [];
 function ensureGeo() {
-    if (groundGeo) return;
-    groundGeo = new THREE.PlaneGeometry(CHUNK, CHUNK, CHUNK, CHUNK);
-    groundGeo.rotateX(-Math.PI / 2);
-    groundMat = curvedMaterial({ color: 0x6f9e54 });           // wild grass green
+    if (groundMat) return;
+    groundMat = curvedMaterial({ vertexColors: true });        // colour comes from the heightmap
     trunkGeo = new THREE.CylinderGeometry(0.09, 0.13, 0.7, 5);
     trunkMat = curvedMaterial({ color: 0x6b4a2a });
     leafGeo = new THREE.ConeGeometry(0.55, 1.1, 6);            // simple conifer canopy
     grassGeo = new THREE.ConeGeometry(0.05, 0.26, 4);
     rockGeo = new THREE.DodecahedronGeometry(0.22, 0);
     rockMat = curvedMaterial({ color: 0x8f8f8f });
+    SHARED_GEO = [trunkGeo, leafGeo, grassGeo, rockGeo];
+}
+
+// A per-chunk ground plane displaced by the heightmap, vertex-painted grass→drier
+// on the rises. Vertices are computed in world space (mesh sits at the chunk centre).
+const _gc = new THREE.Color();
+function makeGroundGeo(cx, cz) {
+    const geo = new THREE.PlaneGeometry(CHUNK, CHUNK, CHUNK, CHUNK);
+    geo.rotateX(-Math.PI / 2);
+    const cxw = cx * CHUNK + CHUNK / 2 - 0.5, czw = cz * CHUNK + CHUNK / 2 - 0.5;
+    const pos = geo.attributes.position;
+    const colors = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+        const h = terrainHeight(cxw + pos.getX(i), czw + pos.getZ(i));
+        pos.setY(i, h);
+        const t = (h / AMP + 1) * 0.5; // 0 (dip) .. 1 (rise)
+        _gc.setRGB(0.26 + t * 0.12, 0.48 + t * 0.14, 0.24 + t * 0.06);
+        colors[i * 3] = _gc.r; colors[i * 3 + 1] = _gc.g; colors[i * 3 + 2] = _gc.b;
+    }
+    pos.needsUpdate = true;
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+    return geo;
 }
 
 const loaded = new Map();   // ckey -> { group|null, cx, cz }
@@ -77,7 +102,7 @@ function buildChunk(cx, cz) {
     const group = new THREE.Group();
     const x0 = cx * CHUNK, z0 = cz * CHUNK;
 
-    const ground = new THREE.Mesh(groundGeo, groundMat);
+    const ground = new THREE.Mesh(makeGroundGeo(cx, cz), groundMat);
     ground.position.set(x0 + CHUNK / 2 - 0.5, GROUND_Y, z0 + CHUNK / 2 - 0.5);
     group.add(ground);
 
@@ -102,11 +127,11 @@ function buildChunk(cx, cz) {
 
     if (trees.length) {
         group.add(instanced(trunkGeo, trunkMat, trees, (t, i, mesh) => {
-            _p.set(t.x, 0.35 * t.s, t.z); _q.identity(); _s.set(t.s, t.s, t.s);
+            _p.set(t.x, terrainHeight(t.x, t.z) + 0.35 * t.s, t.z); _q.identity(); _s.set(t.s, t.s, t.s);
             mesh.setMatrixAt(i, _m.compose(_p, _q, _s));
         }));
         group.add(instanced(leafGeo, curvedMaterial({ color: 0xffffff }), trees, (t, i, mesh) => {
-            _p.set(t.x, 0.9 * t.s, t.z); _q.identity(); _s.set(t.s, t.s, t.s);
+            _p.set(t.x, terrainHeight(t.x, t.z) + 0.9 * t.s, t.z); _q.identity(); _s.set(t.s, t.s, t.s);
             mesh.setMatrixAt(i, _m.compose(_p, _q, _s));
             const g = 0.32 + t.c * 0.28;
             mesh.setColorAt(i, _col.setRGB(0.16 + g * 0.2, 0.45 + g * 0.3, 0.18 + g * 0.15));
@@ -114,7 +139,7 @@ function buildChunk(cx, cz) {
     }
     if (grass.length) {
         group.add(instanced(grassGeo, curvedMaterial({ color: 0xffffff }), grass, (g, i, mesh) => {
-            _p.set(g.x, 0.13 * g.s, g.z); _q.setFromAxisAngle(_YUP, g.rot); _s.set(g.s, g.s, g.s);
+            _p.set(g.x, terrainHeight(g.x, g.z) + 0.13 * g.s, g.z); _q.setFromAxisAngle(_YUP, g.rot); _s.set(g.s, g.s, g.s);
             mesh.setMatrixAt(i, _m.compose(_p, _q, _s));
             const lvl = 0.6 + g.shade * 0.45;
             mesh.setColorAt(i, _col.setRGB(0.22 * lvl, 0.55 * lvl, 0.24 * lvl));
@@ -122,7 +147,7 @@ function buildChunk(cx, cz) {
     }
     if (rocks.length) {
         group.add(instanced(rockGeo, rockMat, rocks, (r, i, mesh) => {
-            _p.set(r.x, 0.1 * r.s, r.z); _q.setFromAxisAngle(_YUP, noise(r.x, r.z, 12) * 3); _s.set(r.s, r.s, r.s);
+            _p.set(r.x, terrainHeight(r.x, r.z) + 0.1 * r.s, r.z); _q.setFromAxisAngle(_YUP, noise(r.x, r.z, 12) * 3); _s.set(r.s, r.s, r.s);
             mesh.setMatrixAt(i, _m.compose(_p, _q, _s));
         }));
     }
@@ -130,9 +155,12 @@ function buildChunk(cx, cz) {
 }
 
 function disposeGroup(group) {
-    group.traverse(o => { if (o.geometry && o.geometry !== groundGeo && o.geometry !== trunkGeo && o.geometry !== leafGeo && o.geometry !== grassGeo && o.geometry !== rockGeo) o.geometry.dispose(); if (o.material && o.material.dispose && o !== group) { /* shared mats kept */ } });
-    // Only per-chunk leaf/grass materials are unique (instanceColor variants); dispose them
-    group.children.forEach(c => { if (c.material && c.material !== groundMat && c.material !== trunkMat && c.material !== rockMat) c.material.dispose(); });
+    group.children.forEach(c => {
+        // per-chunk ground geo is unique → dispose; shared decor geos are kept
+        if (c.geometry && !SHARED_GEO.includes(c.geometry)) c.geometry.dispose();
+        // leaf/grass materials are per-chunk (instanceColor variants); ground/trunk/rock are shared
+        if (c.material && c.material !== groundMat && c.material !== trunkMat && c.material !== rockMat) c.material.dispose();
+    });
 }
 
 // Stream chunks around the player. Call every frame; cheap unless a boundary is
