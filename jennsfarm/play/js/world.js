@@ -206,6 +206,13 @@ function addCottage(x, z) {
     // Chimney
     const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.42, 0.16), curvedMaterial({ color: 0x8a6a4a }));
     chimney.position.set(x - 0.32, 1.18, z - 0.18); scene.add(chimney);
+    // Grandpa's mailbox by the door (daily letters — collected via the Home panel)
+    const mbPost = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 5), curvedMaterial({ color: 0x6e4423 }));
+    mbPost.position.set(x + 0.72, 0.25, z + 0.5); scene.add(mbPost);
+    const mbBox = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.14), curvedMaterial({ color: 0x4a6b8a }));
+    mbBox.position.set(x + 0.72, 0.52, z + 0.5); scene.add(mbBox);
+    const mbFlag = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.1, 0.08), curvedMaterial({ color: 0xd64545 }));
+    mbFlag.position.set(x + 0.84, 0.56, z + 0.5); scene.add(mbFlag);
 }
 
 function setSpecialTile(x, z, type) {

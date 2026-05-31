@@ -501,18 +501,40 @@ export function hideFactory() {
 
 // --- Home (cottage) ---
 
-export function showHome(playerName, onSleep) {
+export function showHome(playerName, onSleep, letter, onClaim) {
     if (homeNote) {
         homeNote.textContent = /^jenn$/i.test(playerName || '')
             ? 'A framed photo of you and Grandpa sits on the shelf — this farm was always meant for you, Jenn. ❤'
             : `${playerName || 'Your'}'s cosy cottage. A framed photo of the farm hangs by the door.`;
     }
     homeItems.innerHTML = '';
+
+    // 📬 Grandpa's mail — a daily gift or a delivery request
+    const mail = document.createElement('div');
+    mail.className = 'craft-row';
+    if (!letter) {
+        mail.innerHTML = `<div class="item-info"><span class="item-name">📭 Mailbox</span><span class="needs">No new mail today — check back tomorrow.</span></div>`;
+    } else {
+        const can = letter.kind === 'gift' || letter.canDeliver;
+        const label = letter.kind === 'gift' ? `Collect 🪙${letter.coins}` : 'Deliver';
+        mail.className = 'craft-row' + (can ? '' : ' cant');
+        mail.innerHTML = `
+            <div class="item-info">
+                <span class="item-name">📬 Letter from Grandpa</span>
+                <span class="needs">${letter.text}</span>
+            </div>
+            <button class="craft-mix" ${can ? '' : 'disabled'}>${label}</button>`;
+        const b = mail.querySelector('.craft-mix');
+        if (can && onClaim) b.addEventListener('click', () => onClaim());
+    }
+    homeItems.appendChild(mail);
+
     const btn = document.createElement('button');
     btn.className = 'action-btn';
     btn.textContent = '🛏️ Sleep until morning';
     btn.addEventListener('click', () => onSleep());
     homeItems.appendChild(btn);
+
     homeOverlay.classList.remove('hidden');
 }
 
