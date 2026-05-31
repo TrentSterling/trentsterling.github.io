@@ -87,7 +87,12 @@ function walkableNeighbor(tx, tz) {
 function routeTo(tx, tz) {
     const p = getPlayerPos();
     const route = findPath(p.x, p.z, tx, tz);
-    if (route && route.length) moveAlong(route);
+    const last = route && route.length ? route[route.length - 1] : null;
+    // Follow A* only if it actually reaches the goal (or a walkable neighbour of a
+    // solid target). On a far/open click that hit the node budget it returns a
+    // partial path — in that case just walk straight there (open ground needs no
+    // routing). Fixes "she stops short / doesn't go where I click".
+    if (last && Math.abs(last.x - tx) + Math.abs(last.z - tz) <= 1) moveAlong(route);
     else moveTo(tx, tz);
 }
 
