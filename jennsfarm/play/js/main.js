@@ -7,12 +7,13 @@ import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTil
 import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
-import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, isOverlayOpen, updateBag, updateHealth } from './ui.js';
+import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
 import { updateChunks } from './chunks.js';
 import { CRATE_KINDS, updateCrates, crateAt, openCrateAt, creditOfflineCrates, serializeCrates, loadCrates } from './crates.js';
+import { getToolRadius, nextUpgrade, upgradeTool, tilesInRadius, serializeEquipment, loadEquipment } from './equipment.js';
 import { saveGame, loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
 import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
@@ -116,6 +117,7 @@ if (saved) {
     if (saved.factories) loadFactories(saved.factories);
     if (saved.corp) loadCorp(saved.corp);
     if (saved.crates) loadCrates(saved.crates);
+    if (saved.equipment) loadEquipment(saved.equipment);
     notify('Game loaded!');
 }
 
@@ -560,14 +562,19 @@ function performAction(tx, tz, tool) {
             handleBuildingInteraction(tile);
             break;
 
-        case 'hoe':
+        case 'hoe': {
             if (hasWeedAt(tx, tz)) { clearWeed(tx, tz); break; } // pull weeds before tilling
-            if (tile.type === TILE.GRASS && isInFarm(tx, tz)) {
-                setTileType(tx, tz, TILE.SOIL);
+            let n = 0;
+            for (const c of tilesInRadius(tx, tz, getToolRadius('hoe'))) {
+                const t = getTile(c.x, c.z);
+                if (t && t.type === TILE.GRASS && isInFarm(c.x, c.z)) {
+                    setTileType(c.x, c.z, TILE.SOIL); puff(c.x, c.z); n++;
+                }
+            }
+            if (n > 0) {
                 playTill();
-                puff(tx, tz);
                 questEvent('till');
-                notify('Tilled soil!');
+                notify(n > 1 ? `Tilled ${n} tiles!` : 'Tilled soil!');
                 triggerAutoSave();
             } else if (tile.type === TILE.GRASS && !isInFarm(tx, tz)) {
                 playDeny();
@@ -575,17 +582,25 @@ function performAction(tx, tz, tool) {
             }
             handleBuildingInteraction(tile);
             break;
+        }
 
-        case 'water':
-            if (tile.type === TILE.PLANTED || tile.type === TILE.SOIL) {
-                waterTile(tile);
+        case 'water': {
+            let n = 0;
+            for (const c of tilesInRadius(tx, tz, getToolRadius('water'))) {
+                const t = getTile(c.x, c.z);
+                if (t && (t.type === TILE.PLANTED || t.type === TILE.SOIL)) {
+                    waterTile(t); n++;
+                    if (n <= 9) sparkle(c.x, 0.4, c.z, [0x66bbff, 0xaad8ff, 0xffffff]); // water splash
+                }
+            }
+            if (n > 0) {
                 playWater();
-                sparkle(tx, 0.4, tz, [0x66bbff, 0xaad8ff, 0xffffff]); // water splash
                 questEvent('water');
-                notify('Watered!');
+                notify(n > 1 ? `Watered ${n} tiles!` : 'Watered!');
             }
             handleBuildingInteraction(tile);
             break;
+        }
 
         case 'hand':
             if (hasWeedAt(tx, tz)) { clearWeed(tx, tz); break; }
@@ -657,6 +672,21 @@ function buyBarnUpgrade() {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, nextCost, buyAnimal);
     triggerAutoSave();
 }
+
+// Equipment upgrades: widen a tool's work area (watering can / hoe → tiller)
+function buyToolUpgrade(tool) {
+    const up = nextUpgrade(tool);
+    if (!up) return;
+    if (coins < up.cost) { playDeny(); notify("Can't afford that upgrade!"); return; }
+    coins -= up.cost;
+    upgradeTool(tool);
+    playExpand();
+    notify(`Upgraded to ${up.name}! Bigger work area.`);
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
+setShopHandlers({ onUpgrade: buyToolUpgrade });
 
 function doHarvest(tx, tz) {
     const result = harvestCrop(tx, tz);
@@ -1077,6 +1107,7 @@ function triggerAutoSave() {
             factories: serializeFactories(),
             corp: serializeCorp(),
             crates: serializeCrates(),
+            equipment: serializeEquipment(),
             lastSaved: Date.now(),
         });
     }, 1000);
