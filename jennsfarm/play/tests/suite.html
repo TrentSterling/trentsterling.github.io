@@ -42,6 +42,7 @@ import { findPath } from '../js/pathfind.js';
 import { initCrates, spawnCrate, deliverCrate, openCrateAt, creditOfflineCrates, getCrateCount, serializeCrates, loadCrates } from '../js/crates.js';
 import { createSpatialHash } from '../js/spatialhash.js';
 import { TOOL_TIERS, getToolLevel, getToolRadius, nextUpgrade, upgradeTool, tilesInRadius, serializeEquipment, loadEquipment } from '../js/equipment.js';
+import { nextMorning } from '../js/home.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -828,6 +829,17 @@ check('mowing clears every weed within the radius in one sweep', () => {
     assert(getWeedCount() === 0, 'weeds remained after a full sweep');
     clearAllWeeds();
     return `mowed all ${mowed} in one sweep`;
+});
+
+// ---------- HOME (sleep) ----------
+
+check('sleeping always advances to the next morning', () => {
+    const D = 300, m = D * 0.2;
+    assert(nextMorning(150, D) === D + m, `midday sleep wrong: ${nextMorning(150, D)}`);
+    assert(nextMorning(290, D) === D + m, `late-night sleep wrong: ${nextMorning(290, D)}`);
+    assert(nextMorning(2 * D + m, D) === 3 * D + m, 'day2 morning should wake on day3 morning');
+    assert(nextMorning(150, D) > 150 && nextMorning(0, D) > 0, 'sleep must move time forward');
+    return 'always wakes next morning';
 });
 
 // ---------- RENDER ----------

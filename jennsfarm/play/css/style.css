@@ -349,4 +349,7 @@ body {
 .corp-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #ff9f1c); border-radius: 999px;
     transition: width 0.4s ease; }
 
+/* ---- Home (cottage) ---- */
+#home-photo { font-size: 46px; text-align: center; margin: 2px 0 0; }
+
 /* Tile hover highlight is done in Three.js, not CSS */
