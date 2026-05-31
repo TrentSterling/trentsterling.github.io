@@ -140,14 +140,34 @@ export function buyAnimalEntity(species) {
     spawn(species, x, z);
 }
 
+function clearAll() {
+    const dump = o => o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+    for (const a of animals) { scene.remove(a.grp); dump(a.grp); }
+    for (const d of drops) { scene.remove(d.grp); dump(d.grp); }
+    animals = [];
+    drops = [];
+}
+
 export function initAnimals(withStarter = true) {
-    // Ambient wildlife + grandpa so the world feels alive from the start
+    clearAll(); // start fresh (also prevents double-spawn if ever re-inited)
+    // A crow right here + Grandpa so the world reads as alive immediately
     spawn('crow', FARM_CX - 6, FARM_CZ + 7);
-    spawn('crow', FARM_CX + 8, FARM_CZ + 6);
-    spawn('skunk', FARM_CX - 9, FARM_CZ + 4);
-    spawn('ocelot', FARM_CX + 10, FARM_CZ - 4);
-    spawn('honey_badger', FARM_CX - 11, FARM_CZ - 9); // don't care. relentlessly hassles skunks.
     spawn('grandpa', FARM_CX + 3, FARM_CZ - 6);
+
+    // Wifey wants critters EVERYWHERE — scatter a lively wild population in a ring
+    // around the farm (skunks especially, per direct request).
+    const scatter = (species, n, near, far) => {
+        for (let i = 0; i < n; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const r = near + Math.random() * (far - near);
+            spawn(species, FARM_CX + Math.cos(ang) * r, FARM_CZ + Math.sin(ang) * r);
+        }
+    };
+    scatter('skunk', 9, 7, 24);          // her favourite — lots of 'em
+    scatter('crow', 7, 8, 26);
+    scatter('ocelot', 4, 8, 24);
+    scatter('honey_badger', 3, 10, 26);  // don't care. relentlessly hassle the skunks → chaos
+
     // A starter chicken so players meet the produce loop immediately (fresh game only)
     if (withStarter) spawn('chicken', FARM_CX + 1, FARM_CZ + 1);
 }
@@ -311,6 +331,9 @@ export function getNearestDrop(x, z) {
 export function getLivestockCount() {
     return animals.filter(a => a.kind === 'livestock').length;
 }
+
+export function getAnimalCount() { return animals.length; }
+export function getSpeciesCount(species) { return animals.filter(a => a.species === species).length; }
 
 /** Produce each livestock would have made over `seconds` away (capped per animal). */
 export function creditOfflineProduce(seconds) {

@@ -57,13 +57,20 @@ const HOTBAR_SLOTS = [
 
 export function getHotbarSlots() { return HOTBAR_SLOTS; }
 
-// Cache icons
+// Cache icons (canvas) AND their encoded data-URLs. toDataURL() re-encodes a PNG
+// every call, which is surprisingly heavy when the hotbar rebuilds on every
+// refreshUI — so cache the string and reuse it.
 const iconCache = {};
+const iconURLCache = {};
 function getIcon(id) {
     if (!iconCache[id]) {
         iconCache[id] = createToolIcon(id);
     }
     return iconCache[id];
+}
+function getIconURL(id) {
+    if (!iconURLCache[id]) iconURLCache[id] = getIcon(id).toDataURL();
+    return iconURLCache[id];
 }
 
 export function updateHotbar(selectedIndex, inventory, onSelect) {
@@ -94,10 +101,9 @@ export function updateHotbar(selectedIndex, inventory, onSelect) {
         div.appendChild(keyHint);
 
         // Icon
-        const iconCanvas = getIcon(slot.id);
         const img = document.createElement('img');
         img.className = 'hotbar-icon';
-        img.src = iconCanvas.toDataURL();
+        img.src = getIconURL(slot.id);
         div.appendChild(img);
 
         // Quantity for seeds & placeables
@@ -232,7 +238,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
 
         div.innerHTML = `
             <div class="item-info">
-                <img class="item-icon" src="${getIcon(id).toDataURL()}">
+                <img class="item-icon" src="${getIconURL(id)}">
                 <span class="item-name">${item.name}</span>
             </div>
             <span class="item-price">🪙 ${item.buyPrice}</span>
@@ -256,7 +262,7 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
             if (coins < item.buyPrice) div.classList.add('cant-afford');
             div.innerHTML = `
                 <div class="item-info">
-                    <img class="item-icon" src="${getIcon(id).toDataURL()}">
+                    <img class="item-icon" src="${getIconURL(id)}">
                     <span class="item-name">${item.name}</span>
                     <span class="item-qty">auto-waters nearby tiles</span>
                 </div>
