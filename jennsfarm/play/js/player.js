@@ -11,6 +11,8 @@ let targetX = 24, targetZ = 24;
 let currentX = 24, currentZ = 24;
 let moving = false;
 let stuckTimer = 0;
+let bodyMesh, ponytail; // for gender appearance
+let gender = 'girl';
 const SPEED = 5; // tiles per second
 const PUSH_THROUGH = 0.7; // seconds fully pinned before you phase through a solid
 
@@ -23,6 +25,7 @@ export function createPlayer() {
     const body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.y = 0.4;
     playerGroup.add(body);
+    bodyMesh = body;
 
     // Head
     const headGeo = new THREE.SphereGeometry(0.16, 8, 6);
@@ -49,6 +52,13 @@ export function createPlayer() {
     const top = new THREE.Mesh(topGeo, hatMat);
     top.position.y = 1.0;
     playerGroup.add(top);
+
+    // Ponytail (shown for the girl variant) at the back of the head
+    ponytail = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), curvedMaterial({ color: 0x6b3f1e }));
+    ponytail.scale.set(1, 1.8, 1);
+    ponytail.position.set(0, 0.72, -0.15);
+    playerGroup.add(ponytail);
+    setPlayerGender(gender); // apply current appearance
 
     // Hand anchor for the held tool (front-right of the player)
     heldGroup = new THREE.Group();
@@ -93,6 +103,12 @@ function buildHeldTool(toolId) {
         return null; // 'move' / unknown — empty hands
     }
     return g;
+}
+
+export function setPlayerGender(g) {
+    gender = (g === 'boy') ? 'boy' : 'girl';
+    if (bodyMesh) bodyMesh.material.color.set(gender === 'boy' ? 0x5b9bd5 : 0xe0699a); // blue vs rose shirt
+    if (ponytail) ponytail.visible = (gender === 'girl');
 }
 
 export function setHeldTool(toolId) {

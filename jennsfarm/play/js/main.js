@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
 import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile } from './world.js';
-import { createPlayer, moveTo, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool } from './player.js';
+import { createPlayer, moveTo, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender } from './player.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile } from './farm.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
@@ -30,6 +30,7 @@ let coins = 100;
 let day = 1;
 let gameTime = 0;
 let playerName = 'Jenn'; // the farmer is Jenn (nameable later - task #2)
+let playerGender = 'girl';
 let health = 100;
 const MAX_HEALTH = 100;
 const HEALTH_DRAIN = 0.35;  // per second while actively playing (not AFK)
@@ -141,6 +142,7 @@ if (saved && saved.lastSaved) {
 }
 
 if (saved && saved.playerName) playerName = saved.playerName;
+if (saved && saved.gender) { playerGender = saved.gender; setPlayerGender(saved.gender); }
 initGrandpa();
 
 // Starting weeds: fresh games get an overgrown farm to clear; saves restore theirs
@@ -183,8 +185,10 @@ if (saved && getQuestIndex() === 0 && getWeedCount() === 0 && !serializeQuests()
 
 // First-time players name their farmer (defaults to Jenn). ?noname skips it (dev shots).
 if (!saved && !_params.has('noname')) {
-    showNamePrompt((name) => {
+    showNamePrompt((name, g) => {
         playerName = name;
+        playerGender = g;
+        setPlayerGender(g);
         setQuestName(name);
         triggerAutoSave();
         // Easter egg: this farm (and this whole game) is really for Jenn ❤
@@ -207,10 +211,19 @@ function showNamePrompt(onDone) {
         <h2>Welcome to the farm!</h2>
         <p>Grandpa's handing it over. What's your name?</p>
         <input id="jf-name" maxlength="14" value="Jenn" autocomplete="off">
+        <div class="gender-row">
+          <button class="gbtn sel" data-g="girl">👧 Girl</button>
+          <button class="gbtn" data-g="boy">👦 Boy</button>
+        </div>
         <button id="jf-go">Start farming 🌱</button>
       </div>`;
     document.body.appendChild(ov);
     namePromptOpen = true;
+    let g = 'girl';
+    ov.querySelectorAll('.gbtn').forEach(b => b.addEventListener('click', () => {
+        g = b.dataset.g;
+        ov.querySelectorAll('.gbtn').forEach(x => x.classList.toggle('sel', x === b));
+    }));
     const input = ov.querySelector('#jf-name');
     input.focus(); input.select();
     const go = () => {
@@ -218,7 +231,7 @@ function showNamePrompt(onDone) {
         if (ov.parentNode) document.body.removeChild(ov);
         namePromptOpen = false;
         markInput();
-        onDone(v);
+        onDone(v, g);
     };
     ov.querySelector('#jf-go').addEventListener('click', go);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
@@ -900,6 +913,7 @@ function triggerAutoSave() {
             day,
             gameTime,
             playerName,
+            gender: playerGender,
             health,
             farmLevel: getFarmLevel(),
             barnLevel,

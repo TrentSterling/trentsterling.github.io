@@ -206,6 +206,13 @@ body {
     font: 800 15px var(--font); cursor: pointer; transition: transform 0.1s, filter 0.15s;
 }
 .name-card button:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.name-card .gender-row { display: flex; gap: 8px; margin-top: 12px; }
+.name-card .gbtn {
+    flex: 1; width: auto; margin-top: 0; padding: 9px;
+    background: var(--row); border: 1px solid var(--edge); color: var(--cream);
+    font: 700 13px var(--font); border-radius: 10px;
+}
+.name-card .gbtn.sel { background: rgba(255,214,110,0.22); border-color: var(--edge-strong); }
 
 /* ---- Tooltip ---- */
 #tooltip {
