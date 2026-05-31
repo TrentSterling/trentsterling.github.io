@@ -57,6 +57,7 @@ import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystem
 import { updateCloudShadows } from '../js/cloudshadows.js';
 import { updateVisitors, getVisitorCount, clearVisitors, placeFoodBowl, hasFoodBowl, serializeVisitors, loadVisitors } from '../js/visitors.js';
 import { hasGreenhouse, buildGreenhouse, effectiveGrowth, serializeGreenhouse, loadGreenhouse } from '../js/greenhouse.js';
+import { placeFlytrap, updateFlytraps, getFlytrapCount, loadFlytraps } from '../js/flytrap.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -948,6 +949,23 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- CARNIVOROUS FLYTRAP (#58) ----------
+
+check('flytrap snaps up a nearby crow — and never a skunk', () => {
+    ensureWorld();
+    loadFlytraps(null);
+    initAnimals(false); // a crow spawns at (18,31); ~20 skunks
+    const crowsBefore = getSpeciesCount('crow');
+    const skunksBefore = getSpeciesCount('skunk');
+    assert(placeFlytrap(18, 31), 'flytrap not placed');
+    for (let i = 0; i < 120; i++) updateFlytraps(0.5, { gainCoins() {}, sparkle() {} }); // ~60s of snapping
+    assert(getSpeciesCount('crow') < crowsBefore, 'flytrap should have eaten a crow');
+    assert(getSpeciesCount('skunk') === skunksBefore, 'flytrap must NEVER touch a skunk');
+    loadFlytraps(null);
+    assert(getFlytrapCount() === 0, 'flytrap clear failed');
+    return 'ate a crow, skunks untouched';
 });
 
 // ---------- GREENHOUSE (#51) ----------
