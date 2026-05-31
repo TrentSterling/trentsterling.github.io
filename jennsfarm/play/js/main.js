@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
 import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile } from './world.js';
-import { createPlayer, moveTo, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender } from './player.js';
+import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender } from './player.js';
+import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
 import { getSeason } from './seasons.js';
 import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
@@ -67,6 +68,16 @@ function walkableNeighbor(tx, tz) {
         if (d < bd) { bd = d; best = { x: nx, z: nz }; }
     }
     return best;
+}
+
+// Send Jenn to a tile, routing around buildings/water/trees with A* so she
+// always gets there (no more dead-ending in the corner by the Market). Falls
+// back to a straight walk if no grid route exists.
+function routeTo(tx, tz) {
+    const p = getPlayerPos();
+    const route = findPath(p.x, p.z, tx, tz);
+    if (route && route.length) moveAlong(route);
+    else moveTo(tx, tz);
 }
 
 // --- Init ---
@@ -346,10 +357,10 @@ container.addEventListener('click', (e) => {
         performAction(tx, tz, tool);
     } else {
         pendingAction = actionable ? { x: tx, z: tz, tool } : null;
-        // If the target tile is solid (building/cottage), walk to a reachable
-        // neighbour so the action still fires on arrival (dist<=1).
-        const approach = isSolidTile(tx, tz) ? walkableNeighbor(tx, tz) : null;
-        moveTo(approach ? approach.x : tx, approach ? approach.z : tz);
+        // A* routes around buildings/water/trees and, for a solid target tile
+        // (e.g. the Market), ends on a walkable neighbour so the action still
+        // fires on arrival (dist<=1). No more getting stuck in the corner.
+        routeTo(tx, tz);
     }
 });
 

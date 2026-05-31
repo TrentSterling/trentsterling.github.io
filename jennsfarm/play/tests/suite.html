@@ -38,6 +38,7 @@ import { createPlayer, setHeldTool, setPlayerGender } from '../js/player.js';
 import { getSeason } from '../js/seasons.js';
 import { buyAnimalEntity, creditOfflineProduce, initAnimals, petNearest, getAnimalCount, getSpeciesCount } from '../js/animals.js';
 import { CHUNK, worldToChunk, desiredChunks, updateChunks, getLoadedChunkCount, resetChunks } from '../js/chunks.js';
+import { findPath } from '../js/pathfind.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -599,6 +600,44 @@ check('the wild is packed with critters, skunks especially', () => {
     initAnimals(false);
     assert(getSpeciesCount('skunk') >= 6 && getSpeciesCount('skunk') <= 12, `skunk count off after re-init: ${getSpeciesCount('skunk')}`);
     return `${getAnimalCount()} critters, ${getSpeciesCount('skunk')} skunks`;
+});
+
+// ---------- PATHFINDING (A*: "get there no matter what") ----------
+
+check('A* finds a clear interior path that never crosses a solid', () => {
+    ensureWorld();
+    const path = findPath(21, 21, 26, 21);
+    assert(path && path.length > 0, 'no path across open farm ground');
+    for (const w of path) assert(isSolidTile(w.x, w.z) === false, `path crossed a solid at ${w.x},${w.z}`);
+    const last = path[path.length - 1];
+    assert(last.x === 26 && last.z === 21, `did not reach the goal (ended ${last.x},${last.z})`);
+    return `routed ${path.length} clear steps`;
+});
+
+check('A* routes to a walkable neighbour when the target itself is solid (the Market)', () => {
+    ensureWorld();
+    let solid = null;
+    forEachFarmTile((x, z, t) => { if (!solid && (t.type === TILE.MARKET || t.type === TILE.SHOP)) solid = { x, z }; });
+    assert(solid, 'no market/shop tile found');
+    const p = findPath(24, 24, solid.x, solid.z);
+    assert(p && p.length > 0, 'no path toward the market');
+    const last = p[p.length - 1];
+    assert(isSolidTile(last.x, last.z) === false, 'path ended on a solid tile');
+    assert(Math.max(Math.abs(last.x - solid.x), Math.abs(last.z - solid.z)) <= 1, 'did not end adjacent to the market');
+    for (const w of p) assert(!isSolidTile(w.x, w.z), 'routed through a solid');
+    return `reached market neighbour at ${last.x},${last.z}`;
+});
+
+check('A* returns empty for start==goal and detours around the solid cottage', () => {
+    ensureWorld();
+    const here = findPath(24, 24, 24, 24);
+    assert(Array.isArray(here) && here.length === 0, 'start==goal should be an empty path');
+    // Grandpa's cottage at (24,16) is solid — a south→north route must bend around it
+    const p = findPath(24, 20, 24, 12);
+    assert(p && p.length > 0, 'no path past the cottage');
+    for (const w of p) assert(!isSolidTile(w.x, w.z), `detour crossed a solid at ${w.x},${w.z}`);
+    assert(p.some(w => w.x !== 24), 'path went straight through the cottage instead of around');
+    return `detoured around the cottage in ${p.length} steps`;
 });
 
 // ---------- RENDER ----------
