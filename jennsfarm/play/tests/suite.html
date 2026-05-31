@@ -55,6 +55,7 @@ import { pickFish, FISH, fishIsValid } from '../js/fishing.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
 import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
 import { updateCloudShadows } from '../js/cloudshadows.js';
+import { updateVisitors, getVisitorCount, clearVisitors } from '../js/visitors.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
@@ -934,6 +935,20 @@ check('fireflies at night, butterflies by day, animating without throwing', () =
     updateFireflies(0.1, false, { x: 24, z: 24 }, 5.0); // swap to butterflies (rebuild)
     clearFireflies();
     return 'fireflies/butterflies swap + animate cleanly';
+});
+
+// ---------- VISITOR CATS (#54) ----------
+
+check('visitor cats wander in over time, capped, then leave', () => {
+    ensureWorld();
+    clearVisitors();
+    assert(getVisitorCount() === 0, 'should start with no visitors');
+    let max = 0;
+    for (let i = 0; i < 240; i++) { updateVisitors(0.5); max = Math.max(max, getVisitorCount()); } // ~120s
+    assert(max > 0 && max <= 4, `visitors should arrive, capped (max ${max})`);
+    clearVisitors();
+    assert(getVisitorCount() === 0, 'clear failed');
+    return `up to ${max} cats visited`;
 });
 
 // ---------- CLOUD SHADOWS (#43) ----------
