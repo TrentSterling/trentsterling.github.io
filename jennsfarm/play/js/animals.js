@@ -81,6 +81,7 @@ const _speciesGeo = {};                 // species -> canonical merged geometry 
 let _speciesIM = {};                    // species -> InstancedMesh of all live animals of it
 let _animDirty = true;                  // animal set changed (spawn/clear) -> rebuild IMs
 const _ae = new THREE.Euler(), _aq = new THREE.Quaternion(), _ap = new THREE.Vector3(), _as = new THREE.Vector3(1, 1, 1), _am = new THREE.Matrix4();
+const _zeroM = new THREE.Matrix4().makeScale(0, 0, 0); // degenerate = invisible instance
 
 function speciesGeo(species) {
     if (!_speciesGeo[species]) _speciesGeo[species] = mergeGeoFromGroup(buildModel(species));
@@ -542,6 +543,9 @@ export function eatNearestPest(x, z, range = 3) {
     }
     if (idx < 0) return null;
     const a = animals[idx];
+    // Hide its instance THIS frame (zero-scale) so it doesn't ghost for a frame
+    // before the rebuild — the eat happens after updateAnimals already ran.
+    if (a._im && a._idx >= 0) { a._im.setMatrixAt(a._idx, _zeroM); a._im.instanceMatrix.needsUpdate = true; }
     animals.splice(idx, 1);
     _animDirty = true; // the eaten pest leaves the instanced batch (rebuilt next tick)
     return { species: a.species, x: a.x, z: a.z };
