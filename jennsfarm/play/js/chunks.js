@@ -116,7 +116,7 @@ function buildChunk(cx, cz) {
             const x = x0 + lx, z = z0 + lz;
             if (inCore(x, z)) continue;                 // the core handles its own decor
             const n = noise(x * 0.7, z * 0.7, 42), n2 = noise(x * 1.3, z * 1.3, 99);
-            if (n > 0.80) {
+            if (n > 0.86) { // thinned — the wild was too dense (perf + "trees spreading too much")
                 trees.push({ x: x + (noise(x, z, 7) - 0.5) * 0.5, z: z + (noise(z, x, 8) - 0.5) * 0.5, s: 0.8 + noise(x, z, 9) * 0.7, c: noise(x, z, 10) });
             } else if (n > 0.73 && n2 > 0.55) {
                 rocks.push({ x, z, s: 0.6 + noise(x, z, 11) * 0.8 });

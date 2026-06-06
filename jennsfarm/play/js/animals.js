@@ -29,7 +29,8 @@ export const ANIMALS = {
 
 let animals = [];   // {species, kind, grp, x, z, tx, tz, idle, prodT, speed, flee}
 let drops = [];     // {item, grp, x, z, baseY, t}
-const MAX_DROPS = 24; // loose eggs/milk on the ground are capped — they were piling up forever (#35 + clutter)
+const MAX_DROPS = 24;   // loose eggs/milk on the ground are capped — they were piling up forever (#35 + clutter)
+const MAX_PER_CELL = 6; // …and no more than this many in any one grid cell
 
 // --- Model builders (low-poly, flat-shaded-ish via curved Lambert) ---
 
@@ -241,6 +242,7 @@ export function initAnimals(withStarter = true) {
 // --- Drops ---
 
 function makeDrop(item, x, z) {
+    if (dropsInCell(x, z) >= MAX_PER_CELL) return; // don't pile drops up in one cell
     // Recycle the oldest drop once the ground's full, so eggs don't litter the
     // whole farm (and the draw count stays bounded). Coops bank eggs anyway.
     while (drops.length >= MAX_DROPS) {
@@ -456,6 +458,30 @@ export function getNearestDrop(x, z) {
         if (dd < bd) { bd = dd; best = d; }
     }
     return best ? { x: best.x, z: best.z } : null;
+}
+
+// Vacuum up the nearest loose drop within range (used by the employee vacuum dudes).
+// Removes it from the ground and returns its item id, or null if none in reach.
+export function collectDropNear(x, z, range = 0.8) {
+    let bi = -1, bd = range * range;
+    for (let i = 0; i < drops.length; i++) {
+        const dd = (drops[i].x - x) ** 2 + (drops[i].z - z) ** 2;
+        if (dd <= bd) { bd = dd; bi = i; }
+    }
+    if (bi < 0) return null;
+    const d = drops[bi];
+    scene.remove(d.grp);
+    d.grp.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+    drops.splice(bi, 1);
+    return d.item;
+}
+
+// How many drops sit in the same integer grid cell as (x,z) — for per-cell caps.
+export function dropsInCell(x, z) {
+    const cx = Math.round(x), cz = Math.round(z);
+    let n = 0;
+    for (const d of drops) if (Math.round(d.x) === cx && Math.round(d.z) === cz) n++;
+    return n;
 }
 
 export function getLivestockCount() {
