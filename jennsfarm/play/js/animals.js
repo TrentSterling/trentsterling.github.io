@@ -29,6 +29,7 @@ export const ANIMALS = {
 
 let animals = [];   // {species, kind, grp, x, z, tx, tz, idle, prodT, speed, flee}
 let drops = [];     // {item, grp, x, z, baseY, t}
+const MAX_DROPS = 24; // loose eggs/milk on the ground are capped — they were piling up forever (#35 + clutter)
 
 // --- Model builders (low-poly, flat-shaded-ish via curved Lambert) ---
 
@@ -240,6 +241,13 @@ export function initAnimals(withStarter = true) {
 // --- Drops ---
 
 function makeDrop(item, x, z) {
+    // Recycle the oldest drop once the ground's full, so eggs don't litter the
+    // whole farm (and the draw count stays bounded). Coops bank eggs anyway.
+    while (drops.length >= MAX_DROPS) {
+        const old = drops.shift();
+        scene.remove(old.grp);
+        old.grp.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+    }
     const grp = new THREE.Group();
     if (item === 'egg') {
         const e = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), curvedMaterial({ color: 0xfff6e0 }));
