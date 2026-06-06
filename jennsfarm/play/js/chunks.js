@@ -94,7 +94,11 @@ function instanced(geo, mat, list, place) {
     list.forEach((d, i) => place(d, i, mesh));
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    mesh.frustumCulled = false;
+    // Compute a bounding sphere over the instances so frustum culling works — a
+    // chunk behind/beside the camera is skipped entirely (was: never culled, #35).
+    // Pad the radius for tall trees + the curved-world shader bending geometry.
+    mesh.computeBoundingSphere();
+    if (mesh.boundingSphere) mesh.boundingSphere.radius += 3;
     return mesh;
 }
 
