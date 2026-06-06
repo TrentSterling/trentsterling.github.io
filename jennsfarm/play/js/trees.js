@@ -283,6 +283,8 @@ export function removeTreesInside(test) {
         }
     }
     for (let i = fruitTrees.length - 1; i >= 0; i--) if (test(fruitTrees[i].x, fruitTrees[i].z)) fruitTrees.splice(i, 1);
+    // also clear any apples already on the ground over the removed land (no orphaned meshes)
+    for (let i = fruitDrops.length - 1; i >= 0; i--) if (test(fruitDrops[i].x, fruitDrops[i].z)) { disposeMesh(fruitDrops[i].mesh); fruitDrops.splice(i, 1); }
     if (changed) imDirty = true; // rebuild the instanced batches without the cleared trees
 }
 
