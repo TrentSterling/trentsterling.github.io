@@ -91,7 +91,7 @@ function buildTreeGeo(isFruit) {
 // instead of one mesh each — ~400 tree draws collapse to ~2. A tree being felled
 // pops out a temporary individual mesh to topple; shake updates one instance.
 let plainGeo = null, fruitGeo = null, plainIM = null, fruitIM = null, imDirty = true;
-const _te = new THREE.Euler(), _tq = new THREE.Quaternion(), _tp = new THREE.Vector3(), _ts = new THREE.Vector3(), _tm = new THREE.Matrix4();
+const _te = new THREE.Euler(), _tq = new THREE.Quaternion(), _tp = new THREE.Vector3(), _ts = new THREE.Vector3(), _tm = new THREE.Matrix4(), _tc = new THREE.Color();
 
 function composeTree(t, shakeZ) {
     _te.set(0, t.rotY || 0, shakeZ || 0);
@@ -104,8 +104,15 @@ function composeTree(t, shakeZ) {
 function makeIM(geo, list) {
     if (!list.length) return null;
     const im = new THREE.InstancedMesh(geo, treeMat, list.length);
-    list.forEach((t, i) => { t._im = im; t._idx = i; im.setMatrixAt(i, composeTree(t, 0)); });
+    list.forEach((t, i) => {
+        t._im = im; t._idx = i;
+        im.setMatrixAt(i, composeTree(t, 0));
+        // Per-tree tint so the forest isn't one flat green (multiplies the baked colours).
+        const v = noise(t.x, t.z, 60), v2 = noise(t.z, t.x, 61);
+        im.setColorAt(i, _tc.setRGB(0.82 + v * 0.34, 0.84 + v2 * 0.3, 0.78 + v * 0.26));
+    });
     im.instanceMatrix.needsUpdate = true;
+    if (im.instanceColor) im.instanceColor.needsUpdate = true;
     im.computeBoundingSphere();
     scene.add(im);
     return im;
