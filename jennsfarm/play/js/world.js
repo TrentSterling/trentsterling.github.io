@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial, applyCurvature } from './renderer.js';
 import { createGrassTexture, createSoilTexture, createPathTexture, createWaterTexture, createBuildingTexture, createBarnTexture } from './textures.js';
-import { addTree } from './trees.js';
+import { addTree, removeTreesInside } from './trees.js';
 
 export const WORLD_SIZE = 48;
 const FARM_CX = 24;
@@ -463,6 +463,7 @@ export function expandFarm() {
     farmLevel++;
     initFarmTiles();
     updateFarmBorder();
+    removeTreesInside(isInFarm); // clear any wild trees the farm just grew over
     return true;
 }
 
@@ -470,6 +471,7 @@ export function setFarmLevel(level) {
     farmLevel = level;
     initFarmTiles();
     updateFarmBorder();
+    removeTreesInside(isInFarm); // saved farm size may enclose trees from world-gen
 }
 
 // --- Public API ---

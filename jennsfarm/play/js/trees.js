@@ -270,6 +270,22 @@ function regrowTree(tree) {
  *   { felled: true, drops: {wood: n} }  when the tree comes down
  *   { felled: false, hp: n }            on a non-final hit
  */
+// Permanently remove every tree whose tile satisfies test(x,z) — used to clear
+// trees off land the farm has expanded over (no trees on tilled ground).
+export function removeTreesInside(test) {
+    let changed = false;
+    for (const [k, t] of trees) {
+        if (test(t.x, t.z)) {
+            if (t.stumpMesh) disposeMesh(t.stumpMesh);
+            active.delete(t);
+            trees.delete(k);
+            changed = true;
+        }
+    }
+    for (let i = fruitTrees.length - 1; i >= 0; i--) if (test(fruitTrees[i].x, fruitTrees[i].z)) fruitTrees.splice(i, 1);
+    if (changed) imDirty = true; // rebuild the instanced batches without the cleared trees
+}
+
 export function chopTree(tx, tz) {
     const tree = findLiveTreeNear(tx, tz);
     if (!tree) return null;

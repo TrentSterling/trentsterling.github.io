@@ -56,7 +56,14 @@ export const hearts    = (x, y, z) => { ensureGeo(); burst(x, y, z, { count: 12,
 // Squash/stretch: pops scale.y up and scale.xz in, then settles back (sin envelope).
 export function pop(obj, amount = 0.35, dur = 0.32) {
     if (!obj) return;
-    tweens.push({ obj, t: 0, dur, amount, base: obj.scale.x || 1 });
+    // If a pop is already running on this object, reuse ITS true base scale and
+    // restart — otherwise we'd capture a mid-squash scale as the new base and
+    // shrink the object a little every overlapping pop (the "tiny Jenn" bug).
+    let base = obj.scale.x || 1;
+    for (let i = tweens.length - 1; i >= 0; i--) {
+        if (tweens[i].obj === obj) { base = tweens[i].base; obj.scale.setScalar(base); tweens.splice(i, 1); }
+    }
+    tweens.push({ obj, t: 0, dur, amount, base });
 }
 
 export function updateJuice(dt) {
