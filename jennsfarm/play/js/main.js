@@ -22,6 +22,7 @@ import './cloudshadows.js'; // self-registers drifting cloud shadows (#43) — m
 import { placeFoodBowl, hasFoodBowl, FOOD_BOWL_COST, serializeVisitors, loadVisitors } from './visitors.js'; // self-registers visitor cats (#54)
 import { updateSystems } from './registry.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
+import { buyCoopPlacement, creditOfflineEggs, getCoopCount, COOP_COST, serializeCoops, loadCoops } from './coop.js';
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
 import { pickFish, rollFishSize, tryFishRecord, serializeFishRecords, loadFishRecords } from './fishing.js';
@@ -145,6 +146,7 @@ if (saved) {
     if (saved.equipment) loadEquipment(saved.equipment);
     if (saved.mail) loadMail(saved.mail);
     if (saved.hives) loadHives(saved.hives);
+    if (saved.coops) loadCoops(saved.coops);
     if (saved.fountain) loadFountain(saved.fountain);
     if (saved.pet) loadPet(saved.pet);
     if (saved.visitors) loadVisitors(saved.visitors);
@@ -194,6 +196,8 @@ if (saved && saved.lastSaved) {
         const crateCount = creditOfflineCrates(away); // delivery trucks left crates by the road
         const honeyOff = creditOfflineHoney(away); // beehives kept making honey
         if (honeyOff) inventory.add('honey', honeyOff);
+        const eggsOff = creditOfflineEggs(away); // coops kept laying eggs
+        if (eggsOff) inventory.add('egg', eggsOff);
         const sales = offlineBuyerSales(inventory, away); // roadside buyers came by
         if (sales.count) {
             const bonused = Math.round(sales.coins * (1 + getSellBonus()));
@@ -762,6 +766,17 @@ function buyBeehive() {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
+// Chicken coop: buy → auto-place; it lays eggs on its own so you don't chase hens
+function buyCoop() {
+    if (coins < COOP_COST) { playDeny(); notify("Can't afford a coop!"); return; }
+    if (!buyCoopPlacement()) { playDeny(); notify('No room for more coops!'); return; }
+    coins -= COOP_COST;
+    playExpand();
+    notify('Chicken coop built! 🐔 It lays eggs on its own.');
+    refreshUI();
+    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    triggerAutoSave();
+}
 // Wishing fountain: buy → place once; click it to toss a coin for a blessing (#47)
 function buyFountain() {
     if (hasFountain()) { notify('You already have a fountain!'); return; }
@@ -858,7 +873,7 @@ function buyFlytrap() {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
-setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl, onBuyGreenhouse: buyGreenhouse, onBuyFlytrap: buyFlytrap });
+setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl, onBuyGreenhouse: buyGreenhouse, onBuyFlytrap: buyFlytrap, onBuyCoop: buyCoop });
 
 // Bump a lifetime stat; if it crosses a milestone, celebrate it (#18).
 function recordStat(key, n = 1) {
@@ -1452,6 +1467,7 @@ function triggerAutoSave() {
             equipment: serializeEquipment(),
             mail: serializeMail(),
             hives: serializeHives(),
+            coops: serializeCoops(),
             fountain: serializeFountain(),
             pet: serializePet(),
             visitors: serializeVisitors(),
