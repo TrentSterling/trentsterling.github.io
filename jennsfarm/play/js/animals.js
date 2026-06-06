@@ -40,7 +40,7 @@ const _amC = new THREE.Color();
 
 // Bake a built model Group (parts each with their own colour/rotation/scale) into
 // ONE mesh carrying per-vertex colour — 1 draw call per animal instead of 5-10 (#35).
-function mergeGroup(group) {
+function mergeGeoFromGroup(group) {
     const baked = [];
     let total = 0;
     group.traverse(c => {
@@ -70,7 +70,45 @@ function mergeGroup(group) {
     merged.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     merged.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
     merged.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    return new THREE.Mesh(merged, _animMat);
+    return merged;
+}
+
+// --- Per-species instancing (#35 "batch moar") ---
+// Every animal of a species shares ONE canonical geometry, drawn as a single
+// InstancedMesh — hundreds of skunks/chickens collapse to ~one draw per species.
+// Each frame we just push each animal's transform into its instance slot.
+const _speciesGeo = {};                 // species -> canonical merged geometry (built once)
+let _speciesIM = {};                    // species -> InstancedMesh of all live animals of it
+let _animDirty = true;                  // animal set changed (spawn/clear) -> rebuild IMs
+const _ae = new THREE.Euler(), _aq = new THREE.Quaternion(), _ap = new THREE.Vector3(), _as = new THREE.Vector3(1, 1, 1), _am = new THREE.Matrix4();
+
+function speciesGeo(species) {
+    if (!_speciesGeo[species]) _speciesGeo[species] = mergeGeoFromGroup(buildModel(species));
+    return _speciesGeo[species];
+}
+
+function composeAnim(a) {
+    _ae.set(0, a.rotY || 0, 0);
+    _aq.setFromEuler(_ae);
+    _ap.set(a.x, a.bobY != null ? a.bobY : 0.02, a.z);
+    return _am.compose(_ap, _aq, _as);
+}
+
+function rebuildAnimalIMs() {
+    for (const s in _speciesIM) { scene.remove(_speciesIM[s]); _speciesIM[s].dispose(); }
+    _speciesIM = {};
+    const byS = {};
+    for (const a of animals) (byS[a.species] || (byS[a.species] = [])).push(a);
+    for (const s in byS) {
+        const list = byS[s];
+        const im = new THREE.InstancedMesh(speciesGeo(s), _animMat, list.length);
+        im.frustumCulled = false; // whole-species batch roams the map; it's only ~1 draw anyway
+        list.forEach((a, i) => { a._idx = i; a._im = im; im.setMatrixAt(i, composeAnim(a)); });
+        im.instanceMatrix.needsUpdate = true;
+        scene.add(im);
+        _speciesIM[s] = im;
+    }
+    _animDirty = false;
 }
 
 function part(geo, color, parent, x, y, z) {
@@ -177,23 +215,21 @@ function buildModel(species) {
         default:
             part(new THREE.SphereGeometry(0.15, 8, 6), 0xcccccc, g, 0, 0.2, 0);
     }
-    return mergeGroup(g); // collapse the parts into a single-draw mesh (#35)
+    return g; // a built Group of parts; speciesGeo() merges it into one canonical geometry
 }
 
 // --- Spawning ---
 
 function spawn(species, x, z) {
     const def = ANIMALS[species] || {};
-    const grp = buildModel(species);
-    grp.position.set(x, 0.02, z);
-    scene.add(grp);
     animals.push({
         species, kind: def.kind || (species === 'grandpa' ? 'npc' : 'wildlife'),
-        grp, x, z, tx: x, tz: z, idle: Math.random() * 3,
+        x, z, tx: x, tz: z, rotY: 0, bobY: 0.02, _im: null, _idx: -1, idle: Math.random() * 3,
         prodT: def.every || 0, speed: def.speed || 1.2, flee: false, hop: 0,
         fed: 1, // 1 = well fed (full production), drains over time (#23)
         home: { x, z }, range: species === 'grandpa' ? 4 : (def.kind === 'livestock' ? 6 : 11),
     });
+    _animDirty = true; // a new animal needs an instance slot
 }
 
 export function buyAnimalEntity(species) {
@@ -204,11 +240,13 @@ export function buyAnimalEntity(species) {
 }
 
 function clearAll() {
+    for (const s in _speciesIM) { scene.remove(_speciesIM[s]); _speciesIM[s].dispose(); }
+    _speciesIM = {};
     const dump = o => o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material && c.material !== _animMat) c.material.dispose(); });
-    for (const a of animals) { scene.remove(a.grp); dump(a.grp); }
     for (const d of drops) { scene.remove(d.grp); dump(d.grp); }
     animals = [];
     drops = [];
+    _animDirty = true;
 }
 
 export function initAnimals(withStarter = true) {
@@ -296,6 +334,8 @@ export function playerReaction(species, ax, az, px, pz) {
 export function updateAnimals(dt, playerPos, onCollect, petPos) {
     const now = performance.now();
 
+    if (_animDirty) rebuildAnimalIMs(); // an animal was added/cleared — rebuild the per-species batches
+
     // Rebuild the spatial index for this frame's nearest-queries (cheap, O(n))
     animalHash.clear();
     for (const a of animals) animalHash.insert(a, a.x, a.z);
@@ -354,18 +394,14 @@ export function updateAnimals(dt, playerPos, onCollect, petPos) {
             const step = Math.min(d, spd);
             a.x += (dx / d) * step;
             a.z += (dz / d) * step;
-            a.grp.rotation.y = Math.atan2(dx, dz);
+            a.rotY = Math.atan2(dx, dz);
         }
-        a.grp.position.x = a.x;
-        a.grp.position.z = a.z;
-        // little hop/bob
+        // little hop/bob (baked into the instance Y)
         const bob = a.kind === 'livestock' || a.species === 'crow' ? 0.04 : 0.02;
-        a.grp.position.y = 0.02 + Math.abs(Math.sin(now * 0.006 + a.x)) * bob;
-        // Happy hop when petted
-        if (a.hop > 0) {
-            a.hop -= dt;
-            a.grp.position.y += Math.sin(Math.max(0, a.hop) / 0.45 * Math.PI) * 0.28;
-        }
+        let y = 0.02 + Math.abs(Math.sin(now * 0.006 + a.x)) * bob;
+        if (a.hop > 0) { a.hop -= dt; y += Math.sin(Math.max(0, a.hop) / 0.45 * Math.PI) * 0.28; } // happy pet hop
+        a.bobY = y;
+        if (a._im && a._idx >= 0) a._im.setMatrixAt(a._idx, composeAnim(a));
 
         // --- Hunger + produce ---
         if (a.kind === 'livestock') {
@@ -379,6 +415,9 @@ export function updateAnimals(dt, playerPos, onCollect, petPos) {
             }
         }
     }
+
+    // Push this frame's instance matrices to the GPU, one upload per species.
+    for (const s in _speciesIM) _speciesIM[s].instanceMatrix.needsUpdate = true;
 
     // --- Drops: bob + collect when player walks near ---
     for (let i = drops.length - 1; i >= 0; i--) {
@@ -503,9 +542,8 @@ export function eatNearestPest(x, z, range = 3) {
     }
     if (idx < 0) return null;
     const a = animals[idx];
-    scene.remove(a.grp);
-    a.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
     animals.splice(idx, 1);
+    _animDirty = true; // the eaten pest leaves the instanced batch (rebuilt next tick)
     return { species: a.species, x: a.x, z: a.z };
 }
 
