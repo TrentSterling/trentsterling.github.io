@@ -31,45 +31,62 @@ function noise(x, y, seed) {
 
 // --- Mesh builders ---
 
-function buildFoliage(x, z, isFruit) {
-    const group = new THREE.Group();
-    const height = 0.6 + noise(x, z, 50) * 0.6;
+// One shared material for every tree — colour comes from baked vertex colours, so
+// all trees can share it (no per-tree material). vertexColors lets one mesh carry
+// brown trunk + green canopy + red apples.
+const treeMat = curvedMaterial({ vertexColors: true });
+const _mc = new THREE.Color();
 
-    // Trunk
-    const trunkGeo = new THREE.CylinderGeometry(0.06, 0.1, height, 6);
-    const trunkMat = curvedMaterial({ color: 0x8B5A2B });
-    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-    trunk.position.y = height / 2;
-    group.add(trunk);
-
-    // Foliage - explicit RGB to guarantee natural greens
-    const n1 = noise(x, z, 51);
-    const r = 30 + Math.floor(n1 * 45);                 // 30-75
-    const g = 110 + Math.floor(noise(x, z, 52) * 70);   // 110-180
-    const b = 30 + Math.floor(noise(x, z, 53) * 35);    // 30-65
-    const fColor = (r << 16) | (g << 8) | b;
-    const fMat = curvedMaterial({ color: fColor });
-
-    const f1 = new THREE.Mesh(new THREE.SphereGeometry(0.4 + noise(x, z, 52) * 0.2, 6, 5), fMat);
-    f1.position.y = height + 0.3;
-    group.add(f1);
-
-    const f2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 5, 4), fMat);
-    f2.position.set(0.12, height + 0.55, 0.08);
-    group.add(f2);
-
-    // Fruit trees show little red apples in the canopy
-    if (isFruit) {
-        const appleMat = curvedMaterial({ color: 0xe23b3b });
-        const spots = [[0.22, height + 0.25, 0.1], [-0.18, height + 0.4, -0.12], [0.05, height + 0.55, -0.2]];
-        for (const s of spots) {
-            const a = new THREE.Mesh(new THREE.SphereGeometry(0.07, 5, 4), appleMat);
-            a.position.set(s[0], s[1], s[2]);
-            group.add(a);
+// Merge several positioned, single-colour geometries into ONE BufferGeometry with
+// baked per-vertex colour. Lets a whole tree render as a single draw call (#35) —
+// trees were 3-6 separate meshes each, which dominated the draw count.
+function mergeColored(parts) {
+    const expanded = parts.map(p => {
+        const g = p.geo.clone();
+        g.translate(p.pos[0], p.pos[1], p.pos[2]);
+        return { g: g.index ? g.toNonIndexed() : g, color: _mc.set(p.color).clone() };
+    });
+    let total = 0;
+    for (const e of expanded) total += e.g.attributes.position.count;
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+    let o = 0;
+    for (const e of expanded) {
+        const ep = e.g.attributes.position, en = e.g.attributes.normal, c = e.color;
+        for (let i = 0; i < ep.count; i++) {
+            const j = (o + i) * 3;
+            pos[j] = ep.getX(i); pos[j + 1] = ep.getY(i); pos[j + 2] = ep.getZ(i);
+            if (en) { nor[j] = en.getX(i); nor[j + 1] = en.getY(i); nor[j + 2] = en.getZ(i); }
+            col[j] = c.r; col[j + 1] = c.g; col[j + 2] = c.b;
         }
+        o += ep.count;
+        e.g.dispose();
     }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    return geo;
+}
 
-    return group;
+function buildFoliage(x, z, isFruit) {
+    const height = 0.6 + noise(x, z, 50) * 0.6;
+    // Foliage colour - explicit RGB to guarantee natural greens
+    const r = 30 + Math.floor(noise(x, z, 51) * 45);     // 30-75
+    const g = 110 + Math.floor(noise(x, z, 52) * 70);    // 110-180
+    const b = 30 + Math.floor(noise(x, z, 53) * 35);     // 30-65
+    const fColor = (r << 16) | (g << 8) | b;
+
+    const parts = [
+        { geo: new THREE.CylinderGeometry(0.06, 0.1, height, 6), color: 0x8B5A2B, pos: [0, height / 2, 0] },
+        { geo: new THREE.SphereGeometry(0.4 + noise(x, z, 52) * 0.2, 6, 5), color: fColor, pos: [0, height + 0.3, 0] },
+        { geo: new THREE.SphereGeometry(0.3, 5, 4), color: fColor, pos: [0.12, height + 0.55, 0.08] },
+    ];
+    if (isFruit) {
+        for (const s of [[0.22, height + 0.25, 0.1], [-0.18, height + 0.4, -0.12], [0.05, height + 0.55, -0.2]])
+            parts.push({ geo: new THREE.SphereGeometry(0.07, 5, 4), color: 0xe23b3b, pos: s });
+    }
+    // One merged mesh = one draw call per tree (was 3-6).
+    return new THREE.Mesh(mergeColored(parts), treeMat);
 }
 
 function buildFruit(x, z) {
@@ -106,7 +123,8 @@ function disposeMesh(mesh) {
     scene.remove(mesh);
     mesh.traverse(c => {
         if (c.geometry) c.geometry.dispose();
-        if (c.material) c.material.dispose(); // free materials too (long-idle leak)
+        // free per-instance materials, but NEVER the shared tree material
+        if (c.material && c.material !== treeMat) c.material.dispose();
     });
 }
 
