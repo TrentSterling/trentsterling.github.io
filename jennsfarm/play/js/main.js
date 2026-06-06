@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
 import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile } from './world.js';
 import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender, getTarget, getPath } from './player.js';
-import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDebugPath, tickDebug } from './debug.js';
+import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDebugPath, tickDebug, profBegin, profMark } from './debug.js';
 import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
 import { harvestQuality } from './quality.js';
@@ -1476,6 +1476,7 @@ function gameLoop(now) {
     lastTime = now;
     gameTime += dt;
 
+    profBegin(); // per-phase frame profiler (#35) — see breakdown in the debug HUD (`)
     tickBuffs(dt); // count down any active meal buffs (#50)
     renderBuffHud(dt); // show them as pills top-right
     updatePlayer(dt);
@@ -1520,8 +1521,10 @@ function gameLoop(now) {
     if (!autoActive && health > 0) health = Math.max(0, health - HEALTH_DRAIN * dt);
     healthUiTimer -= dt;
     if (healthUiTimer <= 0) { healthUiTimer = 0.25; updateHealth(health, MAX_HEALTH); }
+    profMark('player');
 
     updateCrops(dt);
+    profMark('crops');
     if (onboardingDone) growWeeds(dt, getFarmLevel()); // neglected farm slowly sprouts weeds again
     updateTrees(dt, getPlayerWorldPos(), onCollectFruit);
     updateSprinklers(dt);
@@ -1533,16 +1536,20 @@ function gameLoop(now) {
     if (Object.keys(made).length) refreshUI();
 
     updateFishing(dt); // bees, fountain, crates + pet now tick via the registry (updateSystems)
+    profMark('world');
 
     const ppos = getPlayerWorldPos();
     updateChunks(ppos.x, ppos.z); // stream infinite terrain around Jenn
+    profMark('chunks');
     updateAnimals(dt, ppos, onCollectProduce, getPetPos()); // pet ticks via the registry
+    profMark('animals');
     updateGrandpa(dt, {
         coins, day, name: playerName,
         wood: inventory.count('wood'),
         crops: Object.entries(ITEMS).reduce((s, [id, v]) => v.type === 'crop' ? s + inventory.count(id) : s, 0),
     });
     updateCamera(new THREE.Vector3(ppos.x, 0, ppos.z), dt, isMoving());
+    profMark('misc');
 
     // Day/night cycle
     const dayProgress = getDayProgress();
@@ -1556,6 +1563,7 @@ function gameLoop(now) {
         gainCoins: (n) => { coins += n; },
         getNearestDrop, refreshUI, notify, sparkle, playStore,
     });
+    profMark('systems');
 
     const newDay = Math.floor(gameTime / DAY_LENGTH) + 1;
     if (newDay > day) {
@@ -1587,6 +1595,7 @@ function gameLoop(now) {
     tickDebug(frameMs);
 
     render();
+    profMark('render');
 }
 
 requestAnimationFrame(gameLoop);
