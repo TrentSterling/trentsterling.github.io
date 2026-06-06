@@ -138,6 +138,52 @@ function trackCrop(x, z) {
     cropList.push({ x, z });
 }
 
+// One shared material for every crop mesh — colour comes from baked vertex colours.
+const _cropMat = curvedMaterial({ vertexColors: true });
+const _ccol = new THREE.Color();
+
+// Collapse a built crop Group (stem + fruit/petals/etc, each its own colour) into a
+// SINGLE mesh with baked per-vertex colour — 1 draw per crop instead of up to ~7
+// (flowers/herbs were the worst). The harvest sparkle bakes in as a bright bump.
+function mergeCropGroup(group) {
+    const baked = []; let total = 0;
+    group.traverse(c => {
+        if (!c.isMesh || !c.geometry) return;
+        c.updateMatrix();
+        const g = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
+        g.applyMatrix4(c.matrix);
+        const col = (c.material && c.material.color) ? c.material.color : _ccol.set(0xffffff);
+        baked.push({ g, r: col.r, gg: col.g, b: col.b });
+        total += g.attributes.position.count;
+        if (c.geometry !== g) c.geometry.dispose();
+        if (c.material) c.material.dispose();
+    });
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+    let o = 0;
+    for (const b of baked) {
+        const p = b.g.attributes.position, nn = b.g.attributes.normal;
+        for (let i = 0; i < p.count; i++) {
+            const j = (o + i) * 3;
+            pos[j] = p.getX(i); pos[j + 1] = p.getY(i); pos[j + 2] = p.getZ(i);
+            if (nn) { nor[j] = nn.getX(i); nor[j + 1] = nn.getY(i); nor[j + 2] = nn.getZ(i); }
+            col[j] = b.r; col[j + 1] = b.gg; col[j + 2] = b.b;
+        }
+        o += p.count; b.g.dispose();
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    return new THREE.Mesh(geo, _cropMat);
+}
+
+// Dispose a crop mesh's unique geometry, but NEVER the shared crop material.
+function disposeCropMesh(m) {
+    if (!m) return;
+    scene.remove(m);
+    m.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material && c.material !== _cropMat) c.material.dispose(); });
+}
+
 function createCropMesh(cropId, stage) {
     const crop = CROPS[cropId];
     if (!crop) return null;
@@ -280,11 +326,10 @@ function createCropMesh(cropId, stage) {
         const sparkleMat = new THREE.MeshBasicMaterial({ color: 0xfff5aa, transparent: true, opacity: 0.8 });
         const sparkle = new THREE.Mesh(sparkleGeo, sparkleMat);
         sparkle.position.y = 0.75;
-        sparkle.userData.isSparkle = true;
         group.add(sparkle);
     }
 
-    return group;
+    return mergeCropGroup(group); // one merged mesh = one draw per crop (#35)
 }
 
 // --- Public API ---
@@ -318,11 +363,7 @@ export function harvestCrop(x, z) {
 
     // Remove current crop mesh
     const key = cropKey(x, z);
-    if (cropMeshes[key]) {
-        scene.remove(cropMeshes[key]);
-        cropMeshes[key].traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
-        delete cropMeshes[key];
-    }
+    if (cropMeshes[key]) { disposeCropMesh(cropMeshes[key]); delete cropMeshes[key]; }
 
     if (crop.regrows) {
         // Multi-harvest: drop back to a growing stage and keep the plant
@@ -380,10 +421,7 @@ export function updateCrops(dt) {
                 tile.cropTimer -= stageTime;
                 tile.cropStage++;
                 const key = cropKey(e.x, e.z);
-                if (cropMeshes[key]) {
-                    scene.remove(cropMeshes[key]);
-                    cropMeshes[key].traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
-                }
+                if (cropMeshes[key]) disposeCropMesh(cropMeshes[key]);
                 const mesh = createCropMesh(tile.crop, tile.cropStage);
                 if (mesh) { mesh.position.set(e.x, 0.07, e.z); scene.add(mesh); cropMeshes[key] = mesh; }
             }
@@ -391,17 +429,7 @@ export function updateCrops(dt) {
         cropCursor++;
     }
 
-    // Animate sparkles on mature crops (cheap, every frame for smoothness)
-    const time = performance.now() * 0.003;
-    for (const key in cropMeshes) {
-        const group = cropMeshes[key];
-        group.traverse(child => {
-            if (child.userData.isSparkle) {
-                child.position.y = 0.75 + Math.sin(time + group.position.x * 3) * 0.05;
-                child.material.opacity = 0.5 + Math.sin(time * 2 + group.position.z * 5) * 0.3;
-            }
-        });
-    }
+    // (crop sparkles are baked into the merged crop mesh now — no per-frame loop)
 }
 
 // Rebuild crop meshes from tile data (after load)
