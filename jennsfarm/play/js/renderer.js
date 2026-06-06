@@ -74,9 +74,11 @@ export function initRenderer(container) {
     camera.rotation.order = 'YXZ';
     camera.rotation.set(CAMERA_PITCH, 0, 0);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    // high-performance hints the browser to use the discrete GPU (the GTX 1060),
+    // not the integrated Intel chip — a big win on hybrid-graphics laptops.
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // 2x is wasteful; 1.5 looks the same here
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
 
