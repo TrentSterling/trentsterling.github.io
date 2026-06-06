@@ -32,6 +32,45 @@ let drops = [];     // {item, grp, x, z, baseY, t}
 
 // --- Model builders (low-poly, flat-shaded-ish via curved Lambert) ---
 
+// One shared material for every animal — colour comes from baked vertex colours.
+const _animMat = curvedMaterial({ vertexColors: true });
+const _amC = new THREE.Color();
+
+// Bake a built model Group (parts each with their own colour/rotation/scale) into
+// ONE mesh carrying per-vertex colour — 1 draw call per animal instead of 5-10 (#35).
+function mergeGroup(group) {
+    const baked = [];
+    let total = 0;
+    group.traverse(c => {
+        if (!c.isMesh || !c.geometry) return;
+        c.updateMatrix(); // local transform from position/rotation/scale
+        const g = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
+        g.applyMatrix4(c.matrix);
+        const col = (c.material && c.material.color) ? c.material.color : _amC.set(0xcccccc);
+        baked.push({ g, r: col.r, gg: col.g, b: col.b });
+        total += g.attributes.position.count;
+        if (c.geometry !== g) c.geometry.dispose();
+        if (c.material) c.material.dispose();
+    });
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+    let o = 0;
+    for (const b of baked) {
+        const p = b.g.attributes.position, nn = b.g.attributes.normal;
+        for (let i = 0; i < p.count; i++) {
+            const j = (o + i) * 3;
+            pos[j] = p.getX(i); pos[j + 1] = p.getY(i); pos[j + 2] = p.getZ(i);
+            if (nn) { nor[j] = nn.getX(i); nor[j + 1] = nn.getY(i); nor[j + 2] = nn.getZ(i); }
+            col[j] = b.r; col[j + 1] = b.gg; col[j + 2] = b.b;
+        }
+        o += p.count; b.g.dispose();
+    }
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    merged.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    merged.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    return new THREE.Mesh(merged, _animMat);
+}
+
 function part(geo, color, parent, x, y, z) {
     const m = new THREE.Mesh(geo, curvedMaterial({ color }));
     m.position.set(x, y, z);
@@ -136,7 +175,7 @@ function buildModel(species) {
         default:
             part(new THREE.SphereGeometry(0.15, 8, 6), 0xcccccc, g, 0, 0.2, 0);
     }
-    return g;
+    return mergeGroup(g); // collapse the parts into a single-draw mesh (#35)
 }
 
 // --- Spawning ---
@@ -163,7 +202,7 @@ export function buyAnimalEntity(species) {
 }
 
 function clearAll() {
-    const dump = o => o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+    const dump = o => o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material && c.material !== _animMat) c.material.dispose(); });
     for (const a of animals) { scene.remove(a.grp); dump(a.grp); }
     for (const d of drops) { scene.remove(d.grp); dump(d.grp); }
     animals = [];
