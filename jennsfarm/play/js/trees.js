@@ -68,25 +68,69 @@ function mergeColored(parts) {
     return geo;
 }
 
-function buildFoliage(x, z, isFruit) {
-    const height = 0.6 + noise(x, z, 50) * 0.6;
-    // Foliage colour - explicit RGB to guarantee natural greens
-    const r = 30 + Math.floor(noise(x, z, 51) * 45);     // 30-75
-    const g = 110 + Math.floor(noise(x, z, 52) * 70);    // 110-180
-    const b = 30 + Math.floor(noise(x, z, 53) * 35);     // 30-65
-    const fColor = (r << 16) | (g << 8) | b;
-
+// Build ONE merged tree geometry (trunk + canopy [+ apples]) at a canonical
+// height. Per-tree size/rotation come from the instance matrix, not the geometry,
+// so every tree can share these two geometries via InstancedMesh.
+function buildTreeGeo(isFruit) {
+    const height = 0.95;
+    const fColor = (52 << 16) | (140 << 8) | 48; // one natural green for all trees
     const parts = [
         { geo: new THREE.CylinderGeometry(0.06, 0.1, height, 6), color: 0x8B5A2B, pos: [0, height / 2, 0] },
-        { geo: new THREE.SphereGeometry(0.4 + noise(x, z, 52) * 0.2, 6, 5), color: fColor, pos: [0, height + 0.3, 0] },
+        { geo: new THREE.SphereGeometry(0.5, 6, 5), color: fColor, pos: [0, height + 0.3, 0] },
         { geo: new THREE.SphereGeometry(0.3, 5, 4), color: fColor, pos: [0.12, height + 0.55, 0.08] },
     ];
     if (isFruit) {
         for (const s of [[0.22, height + 0.25, 0.1], [-0.18, height + 0.4, -0.12], [0.05, height + 0.55, -0.2]])
             parts.push({ geo: new THREE.SphereGeometry(0.07, 5, 4), color: 0xe23b3b, pos: s });
     }
-    // One merged mesh = one draw call per tree (was 3-6).
-    return new THREE.Mesh(mergeColored(parts), treeMat);
+    return mergeColored(parts);
+}
+
+// --- Instanced tree rendering (#35) ---
+// All live (non-stump) trees draw as just TWO InstancedMeshes (plain + fruit)
+// instead of one mesh each — ~400 tree draws collapse to ~2. A tree being felled
+// pops out a temporary individual mesh to topple; shake updates one instance.
+let plainGeo = null, fruitGeo = null, plainIM = null, fruitIM = null, imDirty = true;
+const _te = new THREE.Euler(), _tq = new THREE.Quaternion(), _tp = new THREE.Vector3(), _ts = new THREE.Vector3(), _tm = new THREE.Matrix4();
+
+function composeTree(t, shakeZ) {
+    _te.set(0, t.rotY || 0, shakeZ || 0);
+    _tq.setFromEuler(_te);
+    _tp.set(t.x + t.ox, 0, t.z + t.oz);
+    _ts.setScalar(t.scale || 1);
+    return _tm.compose(_tp, _tq, _ts);
+}
+
+function makeIM(geo, list) {
+    if (!list.length) return null;
+    const im = new THREE.InstancedMesh(geo, treeMat, list.length);
+    list.forEach((t, i) => { t._im = im; t._idx = i; im.setMatrixAt(i, composeTree(t, 0)); });
+    im.instanceMatrix.needsUpdate = true;
+    im.computeBoundingSphere();
+    scene.add(im);
+    return im;
+}
+
+function rebuildTreeIMs() {
+    if (!plainGeo) { plainGeo = buildTreeGeo(false); fruitGeo = buildTreeGeo(true); }
+    if (plainIM) { scene.remove(plainIM); plainIM.dispose(); }
+    if (fruitIM) { scene.remove(fruitIM); fruitIM.dispose(); }
+    const plain = [], fruit = [];
+    for (const t of trees.values()) { if (t.isStump) continue; (t.fruit ? fruit : plain).push(t); }
+    plainIM = makeIM(plainGeo, plain);
+    fruitIM = makeIM(fruitGeo, fruit);
+    imDirty = false;
+}
+
+// A standalone tree mesh (shares the geometry + material) for the topple animation.
+function buildFallingTree(tree) {
+    if (!plainGeo) { plainGeo = buildTreeGeo(false); fruitGeo = buildTreeGeo(true); }
+    const m = new THREE.Mesh(tree.fruit ? fruitGeo : plainGeo, treeMat);
+    m.position.set(tree.x + tree.ox, 0, tree.z + tree.oz);
+    m.scale.setScalar(tree.scale || 1);
+    m.rotation.y = tree.rotY || 0;
+    scene.add(m);
+    return m;
 }
 
 function buildFruit(x, z) {
@@ -134,13 +178,13 @@ export function addTree(x, z) {
     const ox = (noise(x, z, 53) - 0.5) * 0.3;
     const oz = (noise(x, z, 54) - 0.5) * 0.3;
     const isFruit = noise(x, z, 80) > 0.5; // ~half the trees bear fruit
-    const mesh = buildFoliage(x, z, isFruit);
-    mesh.position.set(x + ox, 0, z + oz);
-    scene.add(mesh);
 
     const tree = {
         x, z, ox, oz,
-        mesh,
+        scale: 0.8 + noise(x, z, 50) * 0.55,  // per-tree size (was canopy height) — via instance matrix
+        rotY: noise(x, z, 55) * Math.PI * 2,  // a little rotational variety
+        _im: null, _idx: -1,                   // which InstancedMesh + slot (assigned on rebuild)
+        stumpMesh: null,
         hp: TREE_HP,
         maxHp: TREE_HP,
         isStump: false,
@@ -152,6 +196,7 @@ export function addTree(x, z) {
     };
     trees.set(key(x, z), tree);
     if (isFruit) fruitTrees.push(tree);
+    imDirty = true; // a new tree needs to join the instanced meshes
 }
 
 // --- Chopping ---
@@ -193,31 +238,30 @@ function fell(tree, regrowTime, animate = false) {
     stump.position.set(tree.x + tree.ox, 0, tree.z + tree.oz);
     scene.add(stump);
 
-    // ...and either topple the old foliage (live chop) or just remove it (load).
-    if (animate && tree.mesh) {
-        fallers.push({ mesh: tree.mesh, t: 0, dur: 0.6, dir: Math.random() < 0.5 ? 1 : -1 });
-    } else {
-        disposeMesh(tree.mesh);
+    // On a live chop, pop a standalone tree mesh out of the instanced batch and
+    // topple it. (On load there's nothing to topple — the instance just vanishes
+    // when the meshes rebuild without this stump'd tree.)
+    if (animate) {
+        const faller = buildFallingTree(tree);
+        fallers.push({ mesh: faller, t: 0, dur: 0.6, dir: Math.random() < 0.5 ? 1 : -1, temp: true });
     }
 
-    tree.mesh = stump;
+    tree.stumpMesh = stump;
     tree.isStump = true;
     tree.hp = 0;
     tree.shake = 0;
     tree.regrow = regrowTime;
     active.add(tree);
+    imDirty = true; // tree leaves the instanced batch
 }
 
 function regrowTree(tree) {
-    disposeMesh(tree.mesh);
-    const mesh = buildFoliage(tree.x, tree.z, tree.fruit);
-    mesh.position.set(tree.x + tree.ox, 0, tree.z + tree.oz);
-    scene.add(mesh);
-    tree.mesh = mesh;
+    if (tree.stumpMesh) { disposeMesh(tree.stumpMesh); tree.stumpMesh = null; }
     tree.isStump = false;
     tree.hp = tree.maxHp;
     tree.regrow = 0;
     active.delete(tree);
+    imDirty = true; // tree rejoins the instanced batch
 }
 
 /**
@@ -248,6 +292,8 @@ export function chopTree(tx, tz) {
 
 export function updateTrees(dt, playerPos, onCollectFruit) {
     const now = performance.now();
+
+    if (imDirty) rebuildTreeIMs(); // a tree was added/felled/regrown — rebuild the batches
 
     // Fruit trees periodically drop a fruit at their base
     for (const tree of fruitTrees) {
@@ -288,16 +334,17 @@ export function updateTrees(dt, playerPos, onCollectFruit) {
         f.mesh.rotation.z = f.dir * k * k * 1.5;   // accelerate the fall
         f.mesh.position.y = -k * 0.15;
         if (k > 0.7) f.mesh.scale.setScalar(Math.max(0.01, 1 - (k - 0.7) / 0.3));
-        if (k >= 1) { disposeMesh(f.mesh); fallers.splice(i, 1); }
+        // temp fallers share the canonical geo + treeMat — just unhook, never dispose those
+        if (k >= 1) { scene.remove(f.mesh); fallers.splice(i, 1); }
     }
 
     for (const tree of active) {
-        if (tree.shake > 0) {
+        if (!tree.isStump && tree.shake > 0) {
             tree.shake -= dt;
-            if (tree.shake <= 0) {
-                tree.mesh.rotation.z = 0;
-            } else {
-                tree.mesh.rotation.z = Math.sin(now * 0.06) * tree.shake * 0.6;
+            const sz = tree.shake > 0 ? Math.sin(now * 0.06) * tree.shake * 0.6 : 0;
+            if (tree._im && tree._idx >= 0) {
+                tree._im.setMatrixAt(tree._idx, composeTree(tree, sz)); // shake one instance
+                tree._im.instanceMatrix.needsUpdate = true;
             }
         }
         if (tree.isStump) {
