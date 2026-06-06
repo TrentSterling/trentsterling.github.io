@@ -390,6 +390,7 @@ function updateFarmBorder() {
     const railMat = curvedMaterial({ color: 0xb8924a });
 
     const SPACING = 2;
+    const _posts = [], _rails = []; // collected, then batched into 2 InstancedMeshes (#35)
 
     // Build fence along each edge: posts every 2 tiles, rails connecting them
     // Top edge (minZ) and bottom edge (maxZ)
@@ -424,12 +425,23 @@ function updateFarmBorder() {
     scene.add(lintel);
     borderMeshes.push(lintel);
 
-    function addPost(px, pz) {
-        const post = new THREE.Mesh(postGeo, postMat);
-        post.position.set(px, 0.3, pz);
-        scene.add(post);
-        borderMeshes.push(post);
+    // Batch all posts + rails into one InstancedMesh each. These were hundreds of
+    // separate meshes — a big chunk of the draw calls on a big farm (#35). ~2 draws now.
+    const _fm = new THREE.Matrix4(), _fq = new THREE.Quaternion(), _fp = new THREE.Vector3(), _fs = new THREE.Vector3(1, 1, 1), _fy = new THREE.Vector3(0, 1, 0);
+    if (_posts.length) {
+        const im = new THREE.InstancedMesh(postGeo, postMat, _posts.length);
+        _posts.forEach(([px, pz], i) => { _fp.set(px, 0.3, pz); im.setMatrixAt(i, _fm.compose(_fp, _fq.identity(), _fs)); });
+        im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere();
+        scene.add(im); borderMeshes.push(im);
     }
+    if (_rails.length) {
+        const im = new THREE.InstancedMesh(railGeo, railMat, _rails.length);
+        _rails.forEach(([px, py, pz, rotY], i) => { _fp.set(px, py, pz); _fq.setFromAxisAngle(_fy, rotY); im.setMatrixAt(i, _fm.compose(_fp, _fq, _fs)); });
+        im.instanceMatrix.needsUpdate = true; im.computeBoundingSphere();
+        scene.add(im); borderMeshes.push(im);
+    }
+
+    function addPost(px, pz) { _posts.push([px, pz]); }
 
     function addGatePost(px, pz) {
         const gp = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.95, 6), postMat);
@@ -439,18 +451,8 @@ function updateFarmBorder() {
     }
 
     function addRail(px, pz, rotY) {
-        // Upper rail
-        const rail1 = new THREE.Mesh(railGeo, railMat);
-        rail1.position.set(px, 0.42, pz);
-        rail1.rotation.y = rotY;
-        scene.add(rail1);
-        borderMeshes.push(rail1);
-        // Lower rail
-        const rail2 = new THREE.Mesh(railGeo, railMat);
-        rail2.position.set(px, 0.22, pz);
-        rail2.rotation.y = rotY;
-        scene.add(rail2);
-        borderMeshes.push(rail2);
+        _rails.push([px, 0.42, pz, rotY]); // upper
+        _rails.push([px, 0.22, pz, rotY]); // lower
     }
 }
 
