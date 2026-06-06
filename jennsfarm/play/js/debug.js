@@ -8,7 +8,7 @@
 // show through terrain. Pure-ish; the suite just checks it doesn't throw.
 
 import * as THREE from 'three';
-import { scene } from './renderer.js';
+import { scene, renderer } from './renderer.js';
 
 let on = true; // default on while we're actively debugging (backtick toggles)
 let hud = null;
@@ -72,12 +72,34 @@ export function setPath(path) {
     } else pathLine.visible = false;
 }
 
+// --- Per-phase frame profiler (#35) ---
+// gameLoop calls profBegin() once, then profMark('label') after each phase. We
+// keep an exponentially-smoothed ms per label and show the breakdown in the HUD,
+// so we can SEE which system eats the frame instead of guessing.
+const prof = {};
+let profLast = 0;
+export function profBegin() { profLast = performance.now(); }
+export function profMark(label) {
+    const now = performance.now();
+    prof[label] = (prof[label] || 0) * 0.85 + (now - profLast) * 0.15;
+    profLast = now;
+}
+export function getProfile() { return prof; }
+
 // Feed the raw frame time (ms); refreshes the FPS readout twice a second.
 export function tickDebug(frameMs) {
     frames++; accum += frameMs;
     if (accum >= 500) {
         fps = Math.round(frames / (accum / 1000));
         frames = 0; accum = 0;
-        if (on && hud) hud.textContent = `FPS ${fps}\n${(1000 / Math.max(fps, 1)).toFixed(1)} ms`;
+        if (on && hud) {
+            const rows = Object.entries(prof)
+                .sort((a, b) => b[1] - a[1])
+                .map(([k, v]) => `${k.padEnd(9)}${v.toFixed(2)}`)
+                .join('\n');
+            const r = renderer && renderer.info ? renderer.info.render : null;
+            const draws = r ? `\ndraws ${r.calls}\ntris ${(r.triangles / 1000).toFixed(0)}k` : '';
+            hud.textContent = `FPS ${fps}   ${(1000 / Math.max(fps, 1)).toFixed(1)}ms\n${rows}${draws}`;
+        }
     }
 }
