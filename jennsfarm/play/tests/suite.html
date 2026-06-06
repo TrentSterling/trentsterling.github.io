@@ -49,6 +49,7 @@ import { seasonWeather, updateWeather, clearWeather } from '../js/weather.js';
 import { ambientCritters, updateFireflies, clearFireflies } from '../js/fireflies.js';
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail } from '../js/mailbox.js';
 import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } from '../js/bees.js';
+import { placeCoop, updateCoops, creditOfflineEggs, getCoopCount, loadCoops } from '../js/coop.js';
 import { rollBlessing, BLESSINGS } from '../js/fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet, getPetName } from '../js/pets.js';
 import { pickFish, FISH, fishIsValid, rollFishSize, fishRecord, tryFishRecord, clearFishRecords } from '../js/fishing.js';
@@ -1418,6 +1419,22 @@ check('beehives make honey over time, offline capped per hive', () => {
     loadHives(null);
     assert(getHiveCount() === 0, 'reset did not clear hives');
     return `hive made ${honey} honey in 60s`;
+});
+
+check('chicken coop lays eggs over time, offline capped per coop', () => {
+    ensureWorld();
+    loadCoops(null);
+    assert(getCoopCount() === 0, 'should start with no coops');
+    assert(placeCoop(22, 24), 'could not place a coop');
+    assert(getCoopCount() === 1, 'coop not tracked');
+    let eggs = 0;
+    for (let i = 0; i < 120; i++) eggs += updateCoops(0.5); // ~60s, egg every 15s
+    assert(eggs >= 3, `coop laid too few eggs (${eggs})`);
+    const off = creditOfflineEggs(100000);
+    assert(off > 0 && off <= 30, `offline eggs not capped per coop (${off})`);
+    loadCoops(null);
+    assert(getCoopCount() === 0, 'reset did not clear coops');
+    return `coop laid ${eggs} eggs in 60s`;
 });
 
 // ---------- GRANDPA'S MAILBOX (daily quests, #45) ----------

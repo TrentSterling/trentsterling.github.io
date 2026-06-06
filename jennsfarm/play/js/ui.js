@@ -10,6 +10,7 @@ import { sellableValue } from './market.js';
 import { getToolName, nextUpgrade } from './equipment.js';
 import { healValue } from './foods.js';
 import { getHiveCount, HIVE_COST } from './bees.js';
+import { getCoopCount, COOP_COST } from './coop.js';
 import { hasFountain, FOUNTAIN_COST } from './fountain.js';
 import { hasPet, PET_COST } from './pets.js';
 import { hasFoodBowl, FOOD_BOWL_COST } from './visitors.js';
@@ -17,8 +18,8 @@ import { hasGreenhouse, GREENHOUSE_COST } from './greenhouse.js';
 import { getFlytrapCount, FLYTRAP_COST } from './flytrap.js';
 
 // Handlers registered once by main.js (avoids threading through every showShop call)
-let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null, _onBuyFoodBowl = null, _onBuyGreenhouse = null, _onBuyFlytrap = null;
-export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet, onBuyFoodBowl, onBuyGreenhouse, onBuyFlytrap } = {}) {
+let _onUpgrade = null, _onBuyHive = null, _onBuyFountain = null, _onBuyPet = null, _onBuyFoodBowl = null, _onBuyGreenhouse = null, _onBuyFlytrap = null, _onBuyCoop = null;
+export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet, onBuyFoodBowl, onBuyGreenhouse, onBuyFlytrap, onBuyCoop } = {}) {
     if (onUpgrade) _onUpgrade = onUpgrade;
     if (onBuyHive) _onBuyHive = onBuyHive;
     if (onBuyFountain) _onBuyFountain = onBuyFountain;
@@ -26,6 +27,7 @@ export function setShopHandlers({ onUpgrade, onBuyHive, onBuyFountain, onBuyPet,
     if (onBuyFoodBowl) _onBuyFoodBowl = onBuyFoodBowl;
     if (onBuyGreenhouse) _onBuyGreenhouse = onBuyGreenhouse;
     if (onBuyFlytrap) _onBuyFlytrap = onBuyFlytrap;
+    if (onBuyCoop) _onBuyCoop = onBuyCoop;
 }
 
 // Small helper for the emoji-based "buildables" rows in the shop
@@ -378,8 +380,9 @@ export function showShop(coins, inventory, onBuy, onExpand, onBarnUpgrade, barnU
     }
 
     // Buildables: beehive (#44), wishing fountain (#47), pet (#48)…
-    if (_onBuyHive || _onBuyFountain || _onBuyPet || _onBuyFoodBowl || _onBuyGreenhouse || _onBuyFlytrap) shopItems.appendChild(shopHeader('🏗️ Buildings & Pets'));
+    if (_onBuyHive || _onBuyFountain || _onBuyPet || _onBuyFoodBowl || _onBuyGreenhouse || _onBuyFlytrap || _onBuyCoop) shopItems.appendChild(shopHeader('🏗️ Buildings & Pets'));
     if (_onBuyHive) shopItems.appendChild(shopBuildRow('🐝', 'Beehive', `makes honey · ${getHiveCount()} built`, HIVE_COST, coins >= HIVE_COST, getHiveCount() >= 6, _onBuyHive));
+    if (_onBuyCoop) shopItems.appendChild(shopBuildRow('🐔', 'Chicken Coop', `lays eggs on its own · ${getCoopCount()} built`, COOP_COST, coins >= COOP_COST, getCoopCount() >= 6, _onBuyCoop));
     if (_onBuyFountain) shopItems.appendChild(shopBuildRow('⛲', 'Wishing Fountain', 'toss a coin for luck', FOUNTAIN_COST, coins >= FOUNTAIN_COST, hasFountain(), _onBuyFountain));
     if (_onBuyPet) {
         shopItems.appendChild(shopBuildRow('🐕', 'Puppy', 'follows you + fetches drops', PET_COST, coins >= PET_COST, hasPet(), () => _onBuyPet('dog')));
