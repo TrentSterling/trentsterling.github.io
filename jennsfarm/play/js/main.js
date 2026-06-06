@@ -19,6 +19,7 @@ import { healValue } from './foods.js';
 import './weather.js';      // self-registers the weather system (#9)
 import './fireflies.js';    // self-registers the fireflies/butterflies system (#9)
 import './cloudshadows.js'; // self-registers drifting cloud shadows (#43) — mod-loader proof: one import, no other wiring
+import './workers.js';      // self-registers the employee "vacuum dudes" that tidy loose drops
 import { placeFoodBowl, hasFoodBowl, FOOD_BOWL_COST, serializeVisitors, loadVisitors } from './visitors.js'; // self-registers visitor cats (#54)
 import { updateSystems } from './registry.js';
 import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';

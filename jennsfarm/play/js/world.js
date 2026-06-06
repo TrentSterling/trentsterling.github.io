@@ -283,7 +283,7 @@ function generateDecorations() {
             const n = noise(x * 0.7, z * 0.7, 42);
             const n2 = noise(x * 1.3, z * 1.3, 99);
 
-            if (n > 0.78) { addTree(x, z); continue; }
+            if (n > 0.85) { addTree(x, z); continue; } // thinned — trees were too dense/invasive
             if (n > 0.72 && n2 > 0.5) { addRock(x, z); continue; }
 
             // Scattered grass tufts (dense, but instanced → ~free)
