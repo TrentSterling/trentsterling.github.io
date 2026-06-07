@@ -100,6 +100,52 @@ function resolvePendingRoute() {
     if (last && Math.abs(last.x - tx) + Math.abs(last.z - tz) <= 1) moveAlong(route);
 }
 
+// --- Task queue (#70): click several tiles in a row and Jenn does each in order,
+// Alice-Greenfingers style, with an on-screen icon per queued task (cap 10). ---
+let taskQueue = []; // [{ x, z, tool }]
+const MAX_QUEUE = 10;
+const TOOL_EMOJI = { hand: '🧺', hoe: '⛏️', water: '💧', axe: '🪓', sprinkler: '💦', fish: '🎣', move: '👣', crate: '📦', bin: '🧺', fountain: '🪙' };
+function taskEmoji(tool) {
+    if (!tool) return '🎯';
+    if (tool.id && tool.id.endsWith('_seed')) return '🌱';
+    return TOOL_EMOJI[tool.id] || '🎯';
+}
+let _taskQueueEl = null;
+function renderTaskQueue() {
+    if (!_taskQueueEl) {
+        _taskQueueEl = document.createElement('div');
+        _taskQueueEl.style.cssText = 'position:fixed;left:50%;bottom:152px;transform:translateX(-50%);z-index:55;display:flex;gap:4px;pointer-events:none';
+        document.body.appendChild(_taskQueueEl);
+    }
+    const items = [];
+    if (G.pendingAction && G.pendingAction.tool) items.push({ tool: G.pendingAction.tool, active: true });
+    for (const t of taskQueue) items.push({ tool: t.tool, active: false });
+    _taskQueueEl.innerHTML = items.map(it =>
+        `<span style="font-size:${it.active ? 22 : 17}px;line-height:1;background:rgba(30,22,12,${it.active ? 0.95 : 0.7});border:2px solid ${it.active ? '#ffd24a' : '#5a4326'};border-radius:8px;padding:3px 5px;${it.active ? 'box-shadow:0 0 8px #ffd24a' : ''}">${taskEmoji(it.tool)}</span>`
+    ).join('');
+}
+// Queue a tile action; start it immediately if Jenn is free.
+function enqueueTask(task) {
+    if (taskQueue.length >= MAX_QUEUE) { notify(`Task queue full (${MAX_QUEUE})!`); return; }
+    taskQueue.push(task);
+    if (!G.pendingAction && !isMoving()) startNextTask(); else renderTaskQueue();
+}
+// Pull the next queued task and walk/act on it; chains through the whole queue.
+function startNextTask() {
+    if (G.pendingAction || !taskQueue.length) return;
+    const t = taskQueue.shift();
+    const pos = getPlayerPos();
+    if (Math.abs(pos.x - t.x) + Math.abs(pos.z - t.z) <= 1) {
+        performAction(t.x, t.z, t.tool);   // already adjacent → do it now, then chain
+        renderTaskQueue();
+        startNextTask();
+    } else {
+        G.pendingAction = t; routeTo(t.x, t.z);
+        renderTaskQueue();
+    }
+}
+function clearTaskQueue() { taskQueue.length = 0; renderTaskQueue(); }
+
 // --- Init ---
 
 const container = document.getElementById('game-container');
@@ -317,13 +363,13 @@ container.addEventListener('click', (e) => {
     // The axe works on trees in the wild, where there's no farm tile data
     const actionable = tile || tool.id === 'axe';
 
-    if (dist <= 1 && actionable) {
-        performAction(tx, tz, tool);
+    if (actionable) {
+        // Queue it (#70). Click several plants in a row → Jenn does each in order.
+        // enqueueTask does it immediately if she's free + adjacent, else routes/queues.
+        enqueueTask({ x: tx, z: tz, tool });
     } else {
-        G.pendingAction = actionable ? { x: tx, z: tz, tool } : null;
-        // A* routes around buildings/water/trees and, for a solid target tile
-        // (e.g. the Market), ends on a walkable neighbour so the action still
-        // fires on arrival (dist<=1). No more getting stuck in the corner.
+        // A plain move click interrupts the queue and just walks there.
+        clearTaskQueue(); G.pendingAction = null;
         routeTo(tx, tz);
     }
 });
@@ -1507,6 +1553,7 @@ function gameLoop(now) {
             if (G.autoSkip.size > 40) G.autoSkip.clear();
         }
         G.pendingAction = null;
+        startNextTask(); // chain to the next queued task (#70); refreshes the icons
     }
 
     // Idle autoplay: once onboarding is done, an idle player's farm tends itself
