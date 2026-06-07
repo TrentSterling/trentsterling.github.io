@@ -1,23 +1,32 @@
-// js/workers.js — visible "vacuum dudes": one little farmhand per hired factory
-// employee, wandering the farm and sucking up loose drops (eggs/milk/fruit) into
-// your bag. Makes the abstract employee count ALIVE and keeps the ground tidy.
-// Self-registering (#9); each worker is a single merged mesh (1 draw, capped).
+// js/workers.js — visible farmhand employees (one per hired factory employee).
+// They run a real labour loop (#12/#67): walk to a ripe crop → harvest it → carry
+// the armful to the nearest Wooden Crate → deposit; if there's no crop or crate they
+// fall back to vacuuming loose drops, else amble. Each picks a DISTINCT crop (claimed)
+// so they never dogpile, and commits to its task until done (Alice-Greenfingers-ish).
+// Self-registering (#9); body is one merged mesh + a tiny "carry" cube (1-2 draws).
 
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { registerSystem } from './registry.js';
 import { getFactories } from './factories.js';
 import { getDrops, collectDropNear } from './animals.js';
+import { nearestRipeCrop, harvestCrop } from './farm.js';
+import { nearestBinWithSpace, depositToBin } from './bins.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
 const MAX_WORKERS = 10;     // cap so a giant payroll can't tank perf
 const SPEED = 2.4;
 const VACUUM_RANGE = 0.75;
+const WORK_RANGE = 0.6;     // how close to a crop/crate before acting
+const SEARCH_R = 30;        // how far a farmhand looks for crops/crates
 const SEP_RADIUS = 0.9;     // boids-lite: workers within this push apart
 const SEP_WEIGHT = 1.6;     // how hard separation steers vs. heading for the target
 
 const _wmat = curvedMaterial({ vertexColors: true });
+const _carryMat = curvedMaterial({ color: 0x86c452 }); // armful of crops
 const _wc = new THREE.Color();
+const claimedCrops = new Set(); // "x,z" tiles a harvester is currently walking to
+const ckey = (x, z) => x + ',' + z;
 
 // Merge positioned, single-colour parts into one vertex-coloured geometry (1 draw).
 function mergeParts(parts) {
@@ -60,23 +69,30 @@ function workerGeo() {
     return _workerGeo;
 }
 
-let workers = []; // { x, z, tx, tz, grp, bob, idle }
+let workers = []; // { x, z, grp, carryMesh, bob, load, loadItem, task }
 
 function spawnWorker() {
-    const g = new THREE.Mesh(workerGeo(), _wmat);
+    const grp = new THREE.Group();
+    grp.add(new THREE.Mesh(workerGeo(), _wmat));
+    const carryMesh = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), _carryMat);
+    carryMesh.position.y = 0.86; carryMesh.visible = false; // shown while hauling an armful
+    grp.add(carryMesh);
     const x = FARM_CX + (Math.random() * 2 - 1) * 6, z = FARM_CZ + (Math.random() * 2 - 1) * 6;
-    g.position.set(x, 0.02, z);
-    scene.add(g);
-    workers.push({ x, z, tx: x, tz: z, grp: g, bob: Math.random() * 6, idle: 0 });
+    grp.position.set(x, 0.02, z);
+    scene.add(grp);
+    workers.push({ x, z, grp, carryMesh, bob: Math.random() * 6, load: 0, loadItem: null, task: null });
 }
+
+function releaseClaim(w) { if (w.task && w.task.type === 'crop') claimedCrops.delete(ckey(w.task.x, w.task.z)); }
+
 function despawnWorker() {
     const w = workers.pop();
-    if (w) scene.remove(w.grp); // geometry + material are shared — never dispose them
+    if (w) { releaseClaim(w); scene.remove(w.grp); } // geo/materials shared — never dispose
 }
 
 export function getWorkerCount() { return workers.length; }
 
-// One vacuum dude per hired factory employee, capped.
+// One farmhand per hired factory employee, capped.
 export function desiredWorkers() {
     let emp = 0;
     const f = getFactories();
@@ -84,63 +100,93 @@ export function desiredWorkers() {
     return Math.min(emp, MAX_WORKERS);
 }
 
+// Pick the next job for a free farmhand (priority: deliver → harvest → vacuum → amble).
+function assignTask(w, ctx) {
+    releaseClaim(w); w.task = null;
+    // Carrying an armful → take it to the nearest crate with room.
+    if (w.load > 0) {
+        const bin = nearestBinWithSpace(w.x, w.z, SEARCH_R);
+        if (bin) { w.task = { type: 'crate', x: bin.x, z: bin.z, bin }; return; }
+        if (ctx && ctx.addItem) ctx.addItem(w.loadItem, w.load); // no crate → dump to bag, don't get stuck
+        w.load = 0; w.loadItem = null; w.carryMesh.visible = false;
+    }
+    // Harvest — only worth it if there's a crate to fill AND an unclaimed ripe crop.
+    if (nearestBinWithSpace(w.x, w.z, SEARCH_R)) {
+        const crop = nearestRipeCrop(w.x, w.z, SEARCH_R, (tx, tz) => claimedCrops.has(ckey(tx, tz)));
+        if (crop) { claimedCrops.add(ckey(crop.x, crop.z)); w.task = { type: 'crop', x: crop.x, z: crop.z }; return; }
+    }
+    // Tidy up a loose drop.
+    const drops = getDrops();
+    if (drops.length) {
+        let best = null, bd = Infinity;
+        for (const d of drops) { const dd = (d.x - w.x) ** 2 + (d.z - w.z) ** 2; if (dd < bd) { bd = dd; best = d; } }
+        if (best) { w.task = { type: 'drop', x: best.x, z: best.z }; return; }
+    }
+    // Nothing to do — amble.
+    w.task = { type: 'wander', x: FARM_CX + (Math.random() * 2 - 1) * 7, z: FARM_CZ + (Math.random() * 2 - 1) * 7 };
+}
+
+// Act once a farmhand reaches its target; sets up the next task.
+function resolveTask(w, ctx) {
+    const t = w.task;
+    if (t.type === 'crop') {
+        const r = harvestCrop(t.x, t.z); // null if already gone
+        if (r) { w.load += r.qty; w.loadItem = r.itemId; w.carryMesh.visible = true; }
+    } else if (t.type === 'crate') {
+        if (w.load > 0 && w.loadItem) {
+            const overflow = depositToBin(t.bin, w.loadItem, w.load);
+            w.load = overflow;
+            if (w.load === 0) { w.loadItem = null; w.carryMesh.visible = false; }
+        }
+    } else if (t.type === 'drop') {
+        const item = collectDropNear(w.x, w.z, VACUUM_RANGE);
+        if (item && ctx && ctx.addItem) ctx.addItem(item, 1);
+    }
+    assignTask(w, ctx); // immediately line up the next job
+}
+
 export function updateWorkers(dt, ctx) {
     const want = desiredWorkers();
     while (workers.length < want) spawnWorker();
     while (workers.length > want) despawnWorker();
 
-    // --- Assign DISTINCT targets (#12): greedily hand each worker its nearest
-    // still-unclaimed drop, so they fan out instead of all chasing one item. ---
-    const drops = getDrops();
-    const claimed = new Array(drops.length).fill(false);
     for (const w of workers) {
-        let bi = -1, bd = Infinity;
-        for (let i = 0; i < drops.length; i++) {
-            if (claimed[i]) continue;
-            const dd = (drops[i].x - w.x) ** 2 + (drops[i].z - w.z) ** 2;
-            if (dd < bd) { bd = dd; bi = i; }
-        }
-        if (bi >= 0) { claimed[bi] = true; w.tx = drops[bi].x; w.tz = drops[bi].z; w.idle = 0; }
-        else { // nothing to grab — amble to a fresh wander point
-            w.idle -= dt;
-            if (w.idle <= 0) { w.tx = FARM_CX + (Math.random() * 2 - 1) * 7; w.tz = FARM_CZ + (Math.random() * 2 - 1) * 7; w.idle = 1 + Math.random() * 2; }
-        }
-    }
+        if (!w.task) assignTask(w, ctx);
+        const t = w.task;
 
-    // --- Move with boids-lite steering: arrive-at-target + separation from
-    // nearby workers (no cohesion — Trent wants them to spread, not flock). ---
-    for (const w of workers) {
-        let dx = w.tx - w.x, dz = w.tz - w.z;
-        const d = Math.hypot(dx, dz);
-        let vx = 0, vz = 0;
-        if (d > 0.001) { vx = dx / d; vz = dz / d; } // desired heading toward target
-
-        // separation: sum of pushes away from neighbours inside SEP_RADIUS
+        // Steer toward the task with boids-lite separation (spread, no flocking).
+        let vx = t.x - w.x, vz = t.z - w.z;
+        const d = Math.hypot(vx, vz);
+        if (d > 0.001) { vx /= d; vz /= d; }
         let sx = 0, sz = 0;
         for (const o of workers) {
             if (o === w) continue;
-            const ox = w.x - o.x, oz = w.z - o.z;
-            const od = Math.hypot(ox, oz);
+            const ox = w.x - o.x, oz = w.z - o.z, od = Math.hypot(ox, oz);
             if (od > 0.0001 && od < SEP_RADIUS) { const f = (SEP_RADIUS - od) / SEP_RADIUS; sx += (ox / od) * f; sz += (oz / od) * f; }
         }
         vx += sx * SEP_WEIGHT; vz += sz * SEP_WEIGHT;
-
         const vlen = Math.hypot(vx, vz);
         if (vlen > 0.0001) {
-            const step = Math.min(d > 0.05 ? SPEED * dt : vlen * SPEED * dt, SPEED * dt);
+            const step = Math.min(SPEED * dt, d > 0.05 ? SPEED * dt : d);
             w.x += (vx / vlen) * step; w.z += (vz / vlen) * step;
-            w.grp.rotation.y = Math.atan2(vx, vz); // face actual travel direction
+            w.grp.rotation.y = Math.atan2(vx, vz);
         }
 
-        const item = collectDropNear(w.x, w.z, VACUUM_RANGE); // suck it up
-        if (item && ctx && ctx.addItem) { ctx.addItem(item, 1); if (ctx.refreshUI) ctx.refreshUI(); }
+        // Arrived? Do the job. (Drops have a slightly longer reach so they get vacuumed.)
+        const reach = t.type === 'drop' ? VACUUM_RANGE : (t.type === 'wander' ? 0.35 : WORK_RANGE);
+        if (d <= reach) {
+            if (t.type === 'wander') assignTask(w, ctx); else resolveTask(w, ctx);
+        }
 
         w.bob += dt;
         w.grp.position.set(w.x, 0.02 + Math.abs(Math.sin(w.bob * 7)) * 0.03, w.z);
     }
 }
 
-export function clearWorkers() { for (const w of workers) scene.remove(w.grp); workers = []; }
+export function clearWorkers() {
+    for (const w of workers) scene.remove(w.grp);
+    workers = []; claimedCrops.clear();
+}
 
 // Self-register: spawn/move/vacuum each tick using the shared ctx.
 registerSystem({ id: 'workers', update(dt, ctx) { updateWorkers(dt, ctx); } });

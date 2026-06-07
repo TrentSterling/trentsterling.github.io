@@ -395,6 +395,19 @@ export function plantCrop(x, z, cropId) {
     return true;
 }
 
+// Nearest ripe (stage>=3) crop tile to (x,z) within maxR — harvester employees use
+// this to find work (#12). Returns {x,z} or null. O(farmTiles); called infrequently.
+export function nearestRipeCrop(x, z, maxR = 99, isTaken = null) {
+    let best = null, bd = maxR * maxR;
+    forEachFarmTile((tx, tz, tile) => {
+        if (tile.type !== TILE.PLANTED || tile.cropStage < 3) return;
+        if (isTaken && isTaken(tx, tz)) return; // already claimed by another harvester
+        const d = (tx - x) ** 2 + (tz - z) ** 2;
+        if (d < bd) { bd = d; best = { x: tx, z: tz }; }
+    });
+    return best;
+}
+
 export function harvestCrop(x, z) {
     const tile = getTile(x, z);
     if (!tile || tile.type !== TILE.PLANTED || tile.cropStage < 3) return null;
