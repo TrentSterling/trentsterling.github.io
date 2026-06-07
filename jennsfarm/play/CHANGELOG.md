@@ -91,6 +91,9 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - **🌸 Perfumery — late-game tier (#63):** a new high-end factory (🪙3500) turning Roses → Perfume (🪙300). First of more late-game content to come.
 - **❄️ Snow + seasons beefed (#65):** Winter snow is now ~2.5× denser with varied flake sizes and wind drift, plus a soft **snow blanket** that eases onto the ground around you. Autumn drops more leaves too.
 - **🐉 Premium late-game crops (#63):** **Dragonfruit** (slow-growing, re-fruiting, 🪙130×2) and the **Golden Pumpkin** (150s grow, 🪙400 — the new priciest raw crop) give big farms a real money goal. Buy seeds in the shop, plant from the hotbar.
+- **🔭 Aggressive culling + tight view (#35):** chunk load radius 2→1, camera far 200→60, fog 12–32 → 8–16. You see ~16 tiles of cozy world instead of the whole valley — far fewer objects for Three.js to matrix-update, cull and draw.
+- **🧊 Static-world matrices (#35):** streamed chunk decor freezes its matrices after build (`matrixAutoUpdate=false`), so Three.js stops recomputing thousands of static transforms every frame.
+- **🩹 Snow-dome fix:** the winter ground-snow now fades out radially (no more giant white dome at the horizon).
 
 ---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._
