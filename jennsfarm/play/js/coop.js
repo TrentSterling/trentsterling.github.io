@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { registerSystem } from './registry.js';
+import { mergedMesh, mergedMat } from './meshmerge.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
 const EGG_EVERY = 15;     // seconds per egg, per coop
@@ -17,17 +18,19 @@ export const COOP_COST = 260;
 let coops = []; // { x, z, prodT, grp }
 
 function buildCoop(x, z) {
-    const grp = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.6), curvedMaterial({ color: 0xc8a06a }));
-    body.position.y = 0.27; grp.add(body);
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.12, 0.74), curvedMaterial({ color: 0xb5532a }));
-    roof.position.y = 0.55; grp.add(roof);
-    const gable = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), curvedMaterial({ color: 0xc9612f }));
-    gable.position.y = 0.66; gable.rotation.y = Math.PI / 4; grp.add(gable); // little diamond peak
-    const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 10), curvedMaterial({ color: 0x2a1c10 }));
-    hole.rotation.x = Math.PI / 2; hole.position.set(0, 0.25, 0.31); grp.add(hole); // entrance
-    const ramp = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.32), curvedMaterial({ color: 0x9c7b4a }));
-    ramp.position.set(0, 0.1, 0.44); ramp.rotation.x = 0.5; grp.add(ramp);
+    // Whole coop merges into ONE draw call (shared material).
+    const grp = mergedMesh(g => {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.6), curvedMaterial({ color: 0xc8a06a }));
+        body.position.y = 0.27; g.add(body);
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.12, 0.74), curvedMaterial({ color: 0xb5532a }));
+        roof.position.y = 0.55; g.add(roof);
+        const gable = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), curvedMaterial({ color: 0xc9612f }));
+        gable.position.y = 0.66; gable.rotation.y = Math.PI / 4; g.add(gable); // little diamond peak
+        const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.06, 10), curvedMaterial({ color: 0x2a1c10 }));
+        hole.rotation.x = Math.PI / 2; hole.position.set(0, 0.25, 0.31); g.add(hole); // entrance
+        const ramp = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.32), curvedMaterial({ color: 0x9c7b4a }));
+        ramp.position.set(0, 0.1, 0.44); ramp.rotation.x = 0.5; g.add(ramp);
+    });
     grp.position.set(x, 0.02, z);
     scene.add(grp);
     return { grp };
@@ -35,7 +38,7 @@ function buildCoop(x, z) {
 
 function disposeCoop(cp) {
     scene.remove(cp.grp);
-    cp.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    cp.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material !== mergedMat) o.material.dispose(); });
 }
 
 export function placeCoop(x, z) {
