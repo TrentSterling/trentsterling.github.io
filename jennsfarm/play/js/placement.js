@@ -7,13 +7,20 @@
 import * as THREE from 'three';
 import { scene } from './renderer.js';
 
-// active = { kind, ghost, ring, valid }
-// kind: { id, name, cost, footprint, color, canPlace(x,z)->bool, place(x,z)->void,
+// active = { kind, ghost, valid, rot }
+// kind: { id, name, cost, footprint, canPlace(x,z)->bool, place(x,z,rot)->void,
 //         afford()->bool, onExit?() }
 let active = null;
 
 export function isPlacing() { return !!active; }
 export function placingName() { return active ? active.kind.name : null; }
+
+// Spin the prop a quarter-turn (Sims-style). Re-render the ghost rotation.
+export function rotatePlacement() {
+    if (!active) return;
+    active.rot = (active.rot + Math.PI / 2) % (Math.PI * 2);
+    active.ghost.rotation.y = active.rot;
+}
 
 const _ghostMat = new THREE.MeshBasicMaterial({ color: 0x6cff6c, transparent: true, opacity: 0.32, depthWrite: false });
 const _ghostBad = new THREE.MeshBasicMaterial({ color: 0xff5555, transparent: true, opacity: 0.32, depthWrite: false });
@@ -31,7 +38,7 @@ export function beginPlacement(kind) {
     const knob = new THREE.Mesh(new THREE.BoxGeometry(f * 0.5, f * 0.5, f * 0.5), _ghostMat);
     knob.position.y = f; g.add(knob);
     scene.add(g);
-    active = { kind, ghost: g, valid: false };
+    active = { kind, ghost: g, valid: false, rot: 0 };
 }
 
 // Slide the ghost to the hovered tile and recolour by validity.
@@ -49,7 +56,7 @@ export function moveGhost(x, z) {
 export function confirmPlace(x, z) {
     if (!active) return 'invalid';
     if (!active.kind.canPlace(x, z) || !active.kind.afford()) return 'invalid';
-    active.kind.place(x, z);
+    active.kind.place(x, z, active.rot);
     // Stay in build mode for rapid multi-placement, but bail if broke now.
     if (!active.kind.afford()) { cancelPlacement(); return 'done'; }
     return 'placed';

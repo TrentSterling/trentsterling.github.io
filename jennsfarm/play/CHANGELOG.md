@@ -81,6 +81,7 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - **Crossroads gates:** N/S/E/W openings at the farm's centre on each edge
 - **Smarter farmhands:** workers claim DISTINCT drops + boids-lite separation steering (no more dogpiling one egg)
 - **Sims-style build mode (#36):** buying a beehive/coop opens placement — a green/red ghost follows the cursor, click to place (re-arms for rapid building), ESC / right-click cancels. No more random auto-placement.
+- **🔨 Build catalog (#36):** a dedicated Build panel (button + `B` key) listing structures **and 12 new cosmetic decor props** — hay bale, flower bed, signpost, bench, gnome, lamp post, topiary, bird bath, picnic table, stone well, statue, windmill. `R` rotates while placing. Every prop **type is one InstancedMesh** (a hundred of one = a single draw) and decor is saved with your farm.
 
 ---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._
