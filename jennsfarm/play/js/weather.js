@@ -13,14 +13,12 @@ const TOP = 11;    // spawn / recycle height
 
 // Pure: which weather a season has (null = clear). Counts beefed up for wifey (#65).
 export function seasonWeather(seasonName) {
-    if (seasonName === 'Winter') return { kind: 'snow', count: 240, fall: 1.4, size: 0.07, ground: true };
+    if (seasonName === 'Winter') return { kind: 'snow', count: 240, fall: 1.4, size: 0.07 };
     if (seasonName === 'Autumn') return { kind: 'leaves', count: 120, fall: 0.9, size: 0.09 };
     return null;
 }
 
 let mesh = null, currentKind = null, parts = [], cfg = null;
-let ground = null, groundOp = 0; // snow blanket on the ground + its eased opacity
-
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion();
 const _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _zAxis = new THREE.Vector3(0, 0, 1);
 
@@ -34,32 +32,9 @@ function newParticle(cx, cz) {
     };
 }
 
-// A soft white disc laid on the ground — reads as snow accumulation (#65).
-// Radial alpha fade (opaque centre → transparent rim) so there's NO hard circular
-// edge (that was the "white dome" artifact). Opacity is per-vertex; material.opacity
-// scales the whole thing for the ease in/out.
-function ensureGround() {
-    if (ground) return;
-    const geo = new THREE.CircleGeometry(SPREAD * 0.5, 28);
-    geo.rotateX(-Math.PI / 2);
-    const n = geo.attributes.position.count;          // index 0 = centre, rest = rim
-    const col = new Float32Array(n * 4);
-    for (let i = 0; i < n; i++) {
-        col[i * 4] = 0.96; col[i * 4 + 1] = 0.98; col[i * 4 + 2] = 1.0; // soft snow white
-        col[i * 4 + 3] = i === 0 ? 0.6 : 0.0;          // centre opaque, rim transparent
-    }
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 4));
-    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, depthWrite: false });
-    ground = new THREE.Mesh(geo, mat);
-    ground.frustumCulled = false;
-    ground.renderOrder = -1; // draw under props
-    scene.add(ground);
-}
-
 export function clearWeather() {
     if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); mesh.material.dispose(); }
-    if (ground) { scene.remove(ground); ground.geometry.dispose(); ground.material.dispose(); }
-    mesh = null; currentKind = null; parts = []; cfg = null; ground = null; groundOp = 0;
+    mesh = null; currentKind = null; parts = []; cfg = null;
 }
 
 function rebuild(w, cx = 0, cz = 0) {
@@ -88,16 +63,6 @@ function rebuild(w, cx = 0, cz = 0) {
 export function updateWeather(dt, seasonName, playerPos) {
     const w = seasonWeather(seasonName);
     const px = playerPos ? playerPos.x : 0, pz = playerPos ? playerPos.z : 0;
-
-    // Ground snow blanket eases in during winter, out otherwise.
-    const wantGround = !!(w && w.ground);
-    if (wantGround || groundOp > 0.01) {
-        ensureGround();
-        groundOp += ((wantGround ? 0.5 : 0) - groundOp) * Math.min(1, dt * 0.8);
-        ground.material.opacity = groundOp;
-        ground.visible = groundOp > 0.01;
-        ground.position.set(px, 0.04, pz);
-    }
 
     if (!w) { if (mesh) mesh.visible = false; return; }
     if (w.kind !== currentKind) rebuild(w, px, pz);
