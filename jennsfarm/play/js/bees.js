@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { registerSystem } from './registry.js';
+import { mergedMesh, mergedMat } from './meshmerge.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
 const HONEY_EVERY = 26;   // seconds per honey jar
@@ -18,12 +19,14 @@ let hives = []; // { x, z, prodT, grp, beeMesh, bees:[{a,r,hh,sp}] }
 const _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(1, 1, 1);
 
 function buildHive(x, z) {
-    const grp = new THREE.Group();
-    const tiers = [[0.22, 0.26, 0.16, 0.08, 0xe0b24a], [0.18, 0.22, 0.14, 0.22, 0xd6a23a], [0.12, 0.18, 0.12, 0.34, 0xcc9430]];
-    for (const [rt, rb, h, y, c] of tiers) {
-        const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 10), curvedMaterial({ color: c }));
-        m.position.y = y; grp.add(m);
-    }
+    // The skep (3 stacked tiers) merges into ONE draw; the bees stay a separate swarm.
+    const grp = mergedMesh(g => {
+        const tiers = [[0.22, 0.26, 0.16, 0.08, 0xe0b24a], [0.18, 0.22, 0.14, 0.22, 0xd6a23a], [0.12, 0.18, 0.12, 0.34, 0xcc9430]];
+        for (const [rt, rb, h, y, c] of tiers) {
+            const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 10), curvedMaterial({ color: c }));
+            m.position.y = y; g.add(m);
+        }
+    });
     grp.position.set(x, 0.02, z);
     scene.add(grp);
 
@@ -38,7 +41,7 @@ function buildHive(x, z) {
 
 function disposeHive(hv) {
     scene.remove(hv.grp); scene.remove(hv.beeMesh);
-    hv.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+    hv.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material !== mergedMat) o.material.dispose(); });
     hv.beeMesh.geometry.dispose(); hv.beeMesh.material.dispose();
 }
 
