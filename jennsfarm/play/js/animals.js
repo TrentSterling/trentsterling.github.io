@@ -158,9 +158,16 @@ function buildModel(species) {
             break;
         }
         case 'crow': {
-            part(new THREE.SphereGeometry(0.12, 7, 5), 0x1c1c24, g, 0, 0.16, 0);
-            part(new THREE.SphereGeometry(0.08, 7, 5), 0x24242e, g, 0, 0.28, 0.08);
-            part(new THREE.ConeGeometry(0.03, 0.1, 4), 0xf2c21b, g, 0, 0.28, 0.18).rotation.x = Math.PI / 2;
+            part(new THREE.SphereGeometry(0.13, 7, 5), 0x1c1c24, g, 0, 0.16, 0);          // body
+            const ctail = part(new THREE.SphereGeometry(0.09, 6, 5), 0x16161c, g, 0, 0.16, -0.16);
+            ctail.scale.set(0.6, 0.5, 1.7);                                                // tail
+            part(new THREE.SphereGeometry(0.09, 7, 5), 0x24242e, g, 0, 0.27, 0.12);        // head
+            part(new THREE.ConeGeometry(0.03, 0.12, 4), 0xf2c21b, g, 0, 0.27, 0.24).rotation.x = Math.PI / 2; // beak
+            // swept wings — make it read as a BIRD, not a black blob (#62)
+            const wl = part(new THREE.BoxGeometry(0.34, 0.03, 0.16), 0x15151b, g, -0.2, 0.2, -0.02);
+            wl.rotation.z = 0.35; wl.rotation.y = 0.3;
+            const wr = part(new THREE.BoxGeometry(0.34, 0.03, 0.16), 0x15151b, g, 0.2, 0.2, -0.02);
+            wr.rotation.z = -0.35; wr.rotation.y = -0.3;
             break;
         }
         case 'skunk': {
@@ -252,8 +259,10 @@ function clearAll() {
 
 export function initAnimals(withStarter = true) {
     clearAll(); // start fresh (also prevents double-spawn if ever re-inited)
-    // A crow right here + Grandpa so the world reads as alive immediately
+    // A couple of crows circling right over the farm + Grandpa so the world reads
+    // as alive immediately (crows fly now, so they're visible birds — #62)
     spawn('crow', FARM_CX - 6, FARM_CZ + 7);
+    spawn('crow', FARM_CX + 5, FARM_CZ + 3);
     spawn('grandpa', FARM_CX + 3, FARM_CZ - 6);
 
     // Wifey wants critters EVERYWHERE — scatter a lively wild population in a ring
@@ -270,7 +279,7 @@ export function initAnimals(withStarter = true) {
     for (let i = 0; i < 8; i++) spawn('skunk', FARM_CX - 10 + i * 3, FARM_CZ - 6 - (i % 2) * 3);
     scatter('skunk', 12, 5, 20);         // even more skunks, every direction
     scatter('possum', 5, 7, 22);         // possums too! 🐀
-    scatter('crow', 7, 8, 26);
+    scatter('crow', 10, 6, 24);          // a proper flock wheeling around the farm
     scatter('ocelot', 4, 8, 24);
     scatter('honey_badger', 2, 12, 26);  // fewer chasers so the skunks linger to be admired
 
@@ -391,17 +400,29 @@ export function updateAnimals(dt, playerPos, onCollect, petPos) {
         // --- Move ---
         const dx = a.tx - a.x, dz = a.tz - a.z, d = Math.hypot(dx, dz);
         if (d > 0.05) {
-            const spd = a.speed * (a.flee ? 1.8 : 1) * dt;
+            const birdy = a.species === 'crow' ? 1.5 : 1; // crows cover ground faster (they fly)
+            const spd = a.speed * (a.flee ? 1.8 : 1) * birdy * dt;
             const step = Math.min(d, spd);
             a.x += (dx / d) * step;
             a.z += (dz / d) * step;
             a.rotY = Math.atan2(dx, dz);
         }
-        // little hop/bob (baked into the instance Y)
-        const bob = a.kind === 'livestock' || a.species === 'crow' ? 0.04 : 0.02;
-        let y = 0.02 + Math.abs(Math.sin(now * 0.006 + a.x)) * bob;
-        if (a.hop > 0) { a.hop -= dt; y += Math.sin(Math.max(0, a.hop) / 0.45 * Math.PI) * 0.28; } // happy pet hop
-        a.bobY = y;
+        // --- Vertical motion (baked into the instance Y) ---
+        if (a.species === 'crow') {
+            // Crows FLY: cruise at altitude with a wing-flap bob, periodically swoop
+            // to the ground to peck, and climb steeply when a skunk spooks them (#62).
+            a.peckT = (a.peckT == null) ? 2 + Math.random() * 4 : a.peckT - dt;
+            const diving = !a.flee && a.peckT < 0 && a.peckT > -0.7;
+            if (a.peckT < -0.7) a.peckT = 3 + Math.random() * 5;
+            const cruise = a.flee ? 2.2 : diving ? 0.16 : 1.0 + Math.sin(now * 0.0011 + a.x) * 0.3;
+            a.flyY = (a.flyY == null) ? cruise : a.flyY + (cruise - a.flyY) * Math.min(1, dt * 3); // ease
+            a.bobY = a.flyY + Math.abs(Math.sin(now * 0.022 + a.x * 1.7)) * 0.11;                   // wing-beat
+        } else {
+            const bob = a.kind === 'livestock' ? 0.04 : 0.02;
+            let y = 0.02 + Math.abs(Math.sin(now * 0.006 + a.x)) * bob;
+            if (a.hop > 0) { a.hop -= dt; y += Math.sin(Math.max(0, a.hop) / 0.45 * Math.PI) * 0.28; } // happy pet hop
+            a.bobY = y;
+        }
         if (a._im && a._idx >= 0) a._im.setMatrixAt(a._idx, composeAnim(a));
 
         // --- Hunger + produce ---

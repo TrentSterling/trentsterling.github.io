@@ -86,6 +86,7 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - **📊 Perf HUD overhaul (#35):** frame-time **histogram**, p50/p95/p99/max, **CPU work ms vs real GPU ms** (timer-query), tris/geo/tex counts, a CPU/GPU/vsync-**bound verdict**, and a `no-cull` count — so spikes the EMA hid are finally visible.
 - **🌲 Trees are soft obstacles (#25):** A* now routes *through* a couple trees (small cost penalty) instead of taking a giant detour, and Jenn brushes straight through them — fences/buildings/water stay hard blocks.
 - **🩹 Shader-churn fix (#35):** chunk leaf/grass now use SHARED materials instead of a new pair per chunk — wandering no longer churns materials or risks shader-program recompiles (a 50ms hitch source). Added a live `prog` (shader count) readout to the HUD.
+- **🐦 Crows are real birds now (#62):** added wings + tail to the model and gave them flight — they cruise at altitude with a wing-flap, swoop down to peck, and climb steeply when a skunk spooks them. A flock of ~12 wheels around the farm so skunks finally have something visible to chase.
 
 ---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._
