@@ -1,59 +1,60 @@
 import * as THREE from 'three';
-import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera, zoomCamera, followPlayer, focusCamera, isCameraFollowing } from './renderer.js';
-import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile, updateOverlays } from './world.js';
-import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender, getTarget, getPath, setPlayerMood } from './player.js';
+import { initRenderer, updateCamera, raycastGround, render, updateDayNight, isNightTime, addShake, panCamera, zoomCamera, followPlayer, focusCamera, isCameraFollowing } from './renderer.js';
+import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, expandFarm, getFarmLevel, getNextExpansionCost, forEachFarmTile, isSolidTile, updateOverlays } from './world.js';
+import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, getPlayerGroup, setHeldTool, setPlayerGender, getTarget, getPath, setPlayerMood } from './player.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDebugPath, tickDebug, profBegin, profMark } from './debug.js';
 import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
 import { harvestQuality } from './quality.js';
 import { applyMeal, tickBuffs, luckMult, activeBuffs, fmtBuffTime } from './buffs.js';
-import { bumpStat, allStats, serializeStats, loadStats } from './stats.js';
+import { bumpStat, allStats } from './stats.js';
 import { getSeason } from './seasons.js';
-import { chopTree, updateTrees, serializeTrees, loadTrees, hasTreeNear, creditOfflineFruit, getNearestFruitDrop } from './trees.js';
+import { chopTree, updateTrees, hasTreeNear, getNearestFruitDrop } from './trees.js';
 import { createInventory, ITEMS } from './inventory.js';
 import { updateHotbar, updateHUD, updateToolLabel, getHotbarSlots, notify, showShop, hideShop, showMarket, hideMarket, showBarn, hideBarn, showCraft, hideCraft, showFactory, hideFactory, showHome, hideHome, setShopHandlers, isOverlayOpen, updateBag, updateHealth } from './ui.js';
 import { hideAllOverlays, initOverlayDismiss, initOverlayChrome } from './overlays.js';
 import { nextMorning } from './home.js';
-import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, serializeMail, loadMail } from './mailbox.js';
+import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed } from './mailbox.js';
 import { healValue } from './foods.js';
 import './weather.js';      // self-registers the weather system (#9)
 import './fireflies.js';    // self-registers the fireflies/butterflies system (#9)
 import './cloudshadows.js'; // self-registers drifting cloud shadows (#43) — mod-loader proof: one import, no other wiring
 import './workers.js';      // self-registers the employee "vacuum dudes" that tidy loose drops
-import { placeFoodBowl, hasFoodBowl, FOOD_BOWL_COST, serializeVisitors, loadVisitors } from './visitors.js'; // self-registers visitor cats (#54)
+import { placeFoodBowl, hasFoodBowl, FOOD_BOWL_COST } from './visitors.js'; // self-registers visitor cats (#54)
 import { updateSystems } from './registry.js';
-import { placeHive, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
-import { placeCoop, creditOfflineEggs, getCoopCount, COOP_COST, serializeCoops, loadCoops } from './coop.js';
-import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
-import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
-import { pickFish, rollFishSize, tryFishRecord, serializeFishRecords, loadFishRecords } from './fishing.js';
-import { hasGreenhouse, buildGreenhouse, effectiveGrowth, GREENHOUSE_COST, serializeGreenhouse, loadGreenhouse } from './greenhouse.js';
-import { buyFlytrapPlacement, getFlytrapCount, FLYTRAP_COST, serializeFlytraps, loadFlytraps } from './flytrap.js';
+import { placeHive, updateBees, getHiveCount, HIVE_COST } from './bees.js';
+import { placeCoop, getCoopCount, COOP_COST } from './coop.js';
+import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST } from './fountain.js';
+import { hasPet, getPetPos, adoptPet, updatePet, PET_COST } from './pets.js';
+import { pickFish, rollFishSize, tryFishRecord } from './fishing.js';
+import { hasGreenhouse, buildGreenhouse, effectiveGrowth, GREENHOUSE_COST } from './greenhouse.js';
+import { buyFlytrapPlacement, getFlytrapCount, FLYTRAP_COST } from './flytrap.js';
 import { festivalFor, startFestival } from './festivals.js';
 import { RECIPES } from './craft.js';
-import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
+import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories } from './factories.js';
 import { syncFactoryBuildings } from './factorybuildings.js';
-import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
+import { addEarnings, getSellBonus, getRank, getRankIndex } from './corp.js';
 import { updateChunks } from './chunks.js';
-import { CRATE_KINDS, updateCrates, crateAt, openCrateAt, creditOfflineCrates, serializeCrates, loadCrates } from './crates.js';
-import { getToolRadius, nextUpgrade, upgradeTool, tilesInRadius, serializeEquipment, loadEquipment } from './equipment.js';
-import { saveGame, loadGame, deleteSave } from './save.js';
+import { CRATE_KINDS, updateCrates, crateAt, openCrateAt } from './crates.js';
+import { getToolRadius, nextUpgrade, upgradeTool, tilesInRadius } from './equipment.js';
+import { loadGame, deleteSave } from './save.js';
 import { playTill, playPlant, playHarvest, playBuy, playSell, playDeny, playExpand, playWalk, playWater, playStore, playWithdraw, playNewDay, playChop, playTimber, updateAmbient } from './audio.js';
-import { initMarket, getPrice, getTrend, recordSale, dailyTick, serializeMarket, loadMarket, offlineBuyerSales } from './market.js';
-import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals, loadAnimals, getLivestockCount, creditOfflineProduce, getNearestDrop, petNearest, feedNearest } from './animals.js';
+import { initMarket, getPrice, getTrend, recordSale, dailyTick } from './market.js';
+import { updateAnimals, buyAnimalEntity, ANIMALS, getLivestockCount, creditOfflineProduce, getNearestDrop, petNearest, feedNearest } from './animals.js';
 import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } from './juice.js';
-import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
-import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
+import { updateGrandpa, grandpaSayText } from './grandpa.js';
+import { addSprinkler, updateSprinklers } from './sprinklers.js';
 import { isPlacing, placingName, beginPlacement, moveGhost, confirmPlace, cancelPlacement, rotatePlacement } from './placement.js';
-import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, countByType, beautyScore, decorModel } from './decor.js';
-import { placeBin, updateBins, serializeBins, loadBins, getBinCount, nearestFullishBin, emptyBin, CRATE_CAP, crateModel } from './bins.js';
-import { placeBarn, getBarnCount, serializeBarns, loadBarns, barnModel, BARN_CAP } from './barns.js';
+import { DECOR_CATALOG, placeDecor, updateDecor, countByType, beautyScore, decorModel } from './decor.js';
+import { placeBin, updateBins, getBinCount, nearestFullishBin, emptyBin, CRATE_CAP, crateModel } from './bins.js';
+import { placeBarn, getBarnCount, barnModel, BARN_CAP } from './barns.js';
 import { showBuildMenu, hideBuildMenu } from './buildmenu.js';
-import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount, growWeeds, clearWeedsInRadius } from './weeds.js';
+import { clearWeedAt, hasWeedAt, growWeeds, clearWeedsInRadius } from './weeds.js';
 import { advanceCropsOffline } from './offline.js';
 import { initBuyers, updateBuyers } from './buyers.js';
-import { initQuests, questEvent, serializeQuests, loadQuests, setQuestName, completeSilently, getQuestIndex } from './quests.js';
+import { questEvent, serializeQuests, setQuestName } from './quests.js';
 import { G, inventory, barnStorage, MAX_HEALTH, HEALTH_DRAIN, DAY_LENGTH, AFK_MS, PAN_SCALE, BARN_UPGRADE_COSTS } from './state.js';
+import { triggerAutoSave, applySave } from './saveload.js';
 
 // --- Game State ---
 // Shared mutable state now lives on `G` (see state.js, #9 modularization keystone).
@@ -114,151 +115,16 @@ inventory.add('carrot_seed', 8);
 inventory.add('tomato_seed', 4);
 inventory.add('potato_seed', 6);
 
-// Try loading save
+// Try loading save. applySave() handles BOTH fresh (saved===null) and loaded games:
+// the load block, dev URL params, offline-progress crediting, season/festival/Grandpa,
+// starter animals + weeds, and the quest/onboarding wiring all live in saveload.js (#9 step 2).
+// recalcBarnCapacity stays in main.js (it owns barn capacity), so we call it right after.
 const saved = loadGame();
-if (saved) {
-    G.coins = saved.coins ?? 100;
-    G.day = saved.day ?? 1;
-    G.gameTime = saved.gameTime ?? 0;
-    G.health = saved.health ?? 100;
-    inventory.load(saved.inventory ?? {});
-    if (saved.barnStorage) barnStorage.load(saved.barnStorage);
-    if (saved.barnLevel) G.barnLevel = saved.barnLevel; // capacity recalc'd after barns load
-    setPlayerPos(saved.playerX ?? 24, saved.playerZ ?? 24);
-    if (saved.farmLevel) setFarmLevel(saved.farmLevel);
-    if (saved.market) loadMarket(saved.market);
-    loadWorld(saved.tiles, saved.farmLevel);
-    rebuildCropMeshes();
-    if (saved.trees) loadTrees(saved.trees);
-    if (saved.sprinklers) loadSprinklers(saved.sprinklers);
-    if (saved.factories) loadFactories(saved.factories);
-    syncFactoryBuildings(); // show buildings for any factories the save owns (#64)
-    if (saved.corp) loadCorp(saved.corp);
-    if (saved.crates) loadCrates(saved.crates);
-    if (saved.equipment) loadEquipment(saved.equipment);
-    if (saved.mail) loadMail(saved.mail);
-    if (saved.hives) loadHives(saved.hives);
-    if (saved.coops) loadCoops(saved.coops);
-    loadDecor(saved.decor); // build-mode props (safe with no data → clears)
-    loadBins(saved.bins);   // wooden crates + contents (safe with no data → clears)
-    loadBarns(saved.barns); recalcBarnCapacity(); // placed barns + their storage (#71)
-    if (saved.fountain) loadFountain(saved.fountain);
-    if (saved.pet) loadPet(saved.pet);
-    if (saved.visitors) loadVisitors(saved.visitors);
-    if (saved.greenhouse) loadGreenhouse(saved.greenhouse);
-    if (saved.flytraps) loadFlytraps(saved.flytraps);
-    if (saved.fishRecords) loadFishRecords(saved.fishRecords);
-    if (saved.stats) loadStats(saved.stats);
-    notify('Game loaded!');
-}
-
-// Dev/debug params: ?noon jumps to midday, ?money=N grants coins
-const _params = new URLSearchParams(location.search);
-if (_params.has('noon')) G.gameTime = DAY_LENGTH * 0.27;
-if (_params.has('money')) G.coins += parseInt(_params.get('money')) || 0;
-
-// Debug/free camera for automated screenshots:
-//   ?camx=24&camz=24&camh=34&camd=2&campitch=-1.3
-const _num = (k) => _params.has(k) ? parseFloat(_params.get(k)) : undefined;
-if (['camx', 'camz', 'camh', 'camd', 'campitch'].some(k => _params.has(k))) {
-    setDebugCamera({
-        x: _num('camx'), z: _num('camz'),
-        height: _num('camh'), distance: _num('camd'), pitch: _num('campitch'),
-    });
-}
-if (_params.has('nofog')) scene.fog = null; // clean wide/top-down inspection shots
-
-// Animals: wildlife + grandpa always; livestock restored from save, else a starter chicken
-initAnimals(!saved);
-if (saved && saved.animals) loadAnimals(saved.animals);
-
-// Idle reward: advance the farm for the real time spent away (crops grow under
-// sprinklers, livestock produce). Capped so a long absence can't run wild.
-if (saved && saved.lastSaved) {
-    const away = Math.min((Date.now() - saved.lastSaved) / 1000, 4 * 3600); // cap 4h
-    if (away > 60) {
-        G.gameTime += away;
-        const cp = advanceCropsOffline(away);
-        rebuildCropMeshes();
-        const prod = creditOfflineProduce(away);
-        let pcount = 0;
-        for (const k in prod) { inventory.add(k, prod[k]); pcount += prod[k]; }
-        const fruit = creditOfflineFruit(away);
-        if (fruit) { inventory.add('apple', fruit); }
-        const facProd = creditOfflineFactories(away, inventory, barnStorage); // factories ran on bag + barn goods
-        let facCount = 0;
-        for (const k in facProd) facCount += facProd[k];
-        const crateCount = creditOfflineCrates(away); // delivery trucks left crates by the road
-        const honeyOff = creditOfflineHoney(away); // beehives kept making honey
-        if (honeyOff) inventory.add('honey', honeyOff);
-        const eggsOff = creditOfflineEggs(away); // coops kept laying eggs
-        if (eggsOff) inventory.add('egg', eggsOff);
-        const sales = offlineBuyerSales(inventory, away); // roadside buyers came by
-        if (sales.count) {
-            const bonused = Math.round(sales.coins * (1 + getSellBonus()));
-            G.coins += bonused;
-            addEarnings(bonused); // counts toward company value; no popup on load
-            sales.coins = bonused;
-        }
-        const bits = [];
-        if (cp.ripened) bits.push(`${cp.ripened} crops ripened`);
-        if (pcount) bits.push(`+${pcount} produce`);
-        if (fruit) bits.push(`+${fruit} fruit`);
-        if (facCount) bits.push(`+${facCount} from factories`);
-        if (crateCount) bits.push(`📦 ${crateCount} crate${crateCount > 1 ? 's' : ''} waiting`);
-        if (honeyOff) bits.push(`+${honeyOff} honey`);
-        if (sales.count) bits.push(`🪙${sales.coins} from ${sales.count} roadside sales`);
-        const mins = Math.round(away / 60);
-        setTimeout(() => notify(`🌙 While you were away (${mins}m): ${bits.length ? bits.join(', ') : 'the farm rested'}.`), 900);
-    }
-}
-
-if (saved && saved.playerName) G.playerName = saved.playerName;
-if (saved && saved.gender) { G.playerGender = saved.gender; setPlayerGender(saved.gender); }
-G.season = getSeason(G.day);
-setSeasonGrowth(effectiveGrowth(G.season.growth)); // greenhouse lifts the floor (#51)
-startFestival(G.season.name); // put up the current season's bunting (#52)
-initGrandpa();
-
-// Starting weeds: fresh games get an overgrown farm to clear; saves restore theirs
-if (!saved) {
-    spawnInitialWeeds();
-    if (!_params.has('noon')) G.gameTime = DAY_LENGTH * 0.2; // open in bright morning, not 6am dark
-}
-else if (saved.weeds) loadWeeds(saved.weeds);
-
-// Grandpa's intro chore chain
-function grantReward(r) {
-    if (!r) return;
-    if (r.coins) G.coins += r.coins;
-    if (r.seeds) for (const k in r.seeds) inventory.add(k, r.seeds[k]);
-    if (r.items) for (const k in r.items) inventory.add(k, r.items[k]);
-    if (r.coins) notify(`Grandpa paid you 🪙${r.coins}!`);
-    refreshUI();
-    triggerAutoSave();
-}
-initQuests({
-    name: G.playerName,
-    reward: grantReward,
-    complete: () => {
-        G.coins += 100;
-        const p = getPlayerWorldPos();
-        hearts(p.x, 1.0, p.z);
-        coinBurst(p.x, p.z);
-        addShake(0.12);
-        notify('🌻 Grandpa: the farm is all yours now! (+🪙100)');
-        refreshUI();
-        triggerAutoSave();
-    },
-});
-if (saved && saved.quests) loadQuests(saved.quests);
-// Un-stick old saves: if loading onto the very first chore with no weeds to
-// clear (e.g. a save from before the weeds feature), skip the onboarding.
-if (saved && getQuestIndex() === 0 && getWeedCount() === 0 && !serializeQuests().done) {
-    completeSilently();
-}
+applySave(saved);
+recalcBarnCapacity();
 
 // First-time players name their farmer (defaults to Jenn). ?noname skips it (dev shots).
+const _params = new URLSearchParams(location.search);
 if (!saved && !_params.has('noname')) {
     showNamePrompt((name, g) => {
         G.playerName = name;
@@ -1596,53 +1462,8 @@ function doRefreshUI() {
 function refreshUI() { G._uiDirty = true; }
 
 // --- Save ---
-
-function triggerAutoSave() {
-    if (G.saveTimer) clearTimeout(G.saveTimer);
-    G.saveTimer = setTimeout(() => {
-        const pos = getPlayerPos();
-        saveGame({
-            version: 4,
-            coins: G.coins,
-            day: G.day,
-            gameTime: G.gameTime,
-            playerName: G.playerName,
-            gender: G.playerGender,
-            health: G.health,
-            farmLevel: getFarmLevel(),
-            barnLevel: G.barnLevel,
-            playerX: pos.x,
-            playerZ: pos.z,
-            inventory: inventory.serialize(),
-            barnStorage: barnStorage.serialize(),
-            market: serializeMarket(),
-            animals: serializeAnimals(),
-            tiles: serializeWorld(),
-            trees: serializeTrees(),
-            sprinklers: serializeSprinklers(),
-            weeds: serializeWeeds(),
-            quests: serializeQuests(),
-            factories: serializeFactories(),
-            corp: serializeCorp(),
-            crates: serializeCrates(),
-            equipment: serializeEquipment(),
-            mail: serializeMail(),
-            hives: serializeHives(),
-            coops: serializeCoops(),
-            decor: serializeDecor(),
-            bins: serializeBins(),
-            barns: serializeBarns(),
-            fountain: serializeFountain(),
-            pet: serializePet(),
-            visitors: serializeVisitors(),
-            greenhouse: serializeGreenhouse(),
-            flytraps: serializeFlytraps(),
-            fishRecords: serializeFishRecords(),
-            stats: serializeStats(),
-            lastSaved: Date.now(),
-        });
-    }, 1000);
-}
+// triggerAutoSave() now lives in saveload.js (#9 step 2) and is imported at the top.
+// Its ~30 call sites in this file resolve to that imported binding (same name).
 
 // --- Game Loop ---
 
