@@ -65,6 +65,7 @@ import { festivalFor, startFestival, clearBunting } from '../js/festivals.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, getWeedCount, growWeeds, clearWeedsInRadius, clearAllWeeds } from '../js/weeds.js';
 import { initQuests, questEvent, serializeQuests } from '../js/quests.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, updateFactories, creditOfflineFactories, serializeFactories, loadFactories, ownsFactory } from '../js/factories.js';
+import { syncFactoryBuildings, clearFactoryBuildings } from '../js/factorybuildings.js';
 import { RANKS, addEarnings, getLifetime, getRankIndex, getRank, getSellBonus, getRankProgress, serializeCorp, loadCorp } from '../js/corp.js';
 import { harvestQuality } from '../js/quality.js';
 import { hideAllOverlays, anyOverlayOpen, initOverlayChrome } from '../js/overlays.js';
@@ -477,6 +478,19 @@ check('decor beauty attracts more visitors (#54)', () => {
     assert(prettyCap > bareCap, `pretty-farm cap ${prettyCap} should beat bare ${bareCap}`);
     loadDecor(null); clearVisitors();                  // clean up for later tests
     return `beauty ${b} lifts visitor cap ${bareCap} → ${prettyCap}`;
+});
+
+check('factories: perfumery is a profitable late-game tier + buildings render (#63/#64)', () => {
+    ensureWorld();
+    const p = FACTORY_TYPES.perfumery;
+    assert(p, 'perfumery factory type missing');
+    const inCost = ITEMS[p.input].sellPrice * p.inCount, outVal = ITEMS[p.output].sellPrice;
+    assert(outVal > inCost, `perfumery must profit: ${p.input}x${p.inCount}=${inCost} → ${p.output}=${outVal}`);
+    for (const t in FACTORY_TYPES) buildFactory(t);    // own them all
+    syncFactoryBuildings();                            // build every visible model — throws if a geo is bad
+    clearFactoryBuildings();
+    loadFactories({});                                 // reset owned so later factory tests start clean
+    return `perfumery ${inCost}→${outVal}; all ${Object.keys(FACTORY_TYPES).length} factory buildings render`;
 });
 
 // ---------- ROAD BUYERS ----------

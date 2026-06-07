@@ -15,9 +15,10 @@ const OFFLINE_CAP = 30;  // max conversions per factory while away (anti-runaway
 // reference real ITEMS, and every output is worth more than its inputs (guarded
 // by the suite) so a factory always adds value.
 export const FACTORY_TYPES = {
-    winery:   { name: 'Winery',   emoji: '🍷', cost: 700,  input: 'grape',             inCount: 3, output: 'wine',        every: 16, maxEmployees: 4 },
-    creamery: { name: 'Creamery', emoji: '🧀', cost: 1000, input: 'goat_milk',         inCount: 2, output: 'cheese',      every: 18, maxEmployees: 4 },
-    juicery:  { name: 'Juicery',  emoji: '🥤', cost: 1600, input: 'square_watermelon', inCount: 1, output: 'melon_juice', every: 22, maxEmployees: 4 },
+    winery:    { name: 'Winery',    emoji: '🍷', cost: 700,  input: 'grape',             inCount: 3, output: 'wine',        every: 16, maxEmployees: 4 },
+    creamery:  { name: 'Creamery',  emoji: '🧀', cost: 1000, input: 'goat_milk',         inCount: 2, output: 'cheese',      every: 18, maxEmployees: 4 },
+    juicery:   { name: 'Juicery',   emoji: '🥤', cost: 1600, input: 'square_watermelon', inCount: 1, output: 'melon_juice', every: 22, maxEmployees: 4 },
+    perfumery: { name: 'Perfumery', emoji: '🌸', cost: 3500, input: 'rose',              inCount: 2, output: 'perfume',     every: 24, maxEmployees: 5 }, // late-game tier
 };
 
 // Hiring the (n+1)-th worker costs more each time — escalating money sink.
