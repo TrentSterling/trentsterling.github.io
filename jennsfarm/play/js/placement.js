@@ -27,16 +27,26 @@ const _ghostBad = new THREE.MeshBasicMaterial({ color: 0xff5555, transparent: tr
 
 export function beginPlacement(kind) {
     cancelPlacement();
-    const f = kind.footprint || 0.9;
-    const g = new THREE.Group();
-    // footprint pad
-    const pad = new THREE.Mesh(new THREE.BoxGeometry(f, 0.06, f), _ghostMat);
-    pad.position.y = 0.05; g.add(pad);
-    // a little floating marker so it reads as "to place" even on busy ground
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, f * 0.9, 6), _ghostMat);
-    post.position.y = f * 0.55; g.add(post);
-    const knob = new THREE.Mesh(new THREE.BoxGeometry(f * 0.5, f * 0.5, f * 0.5), _ghostMat);
-    knob.position.y = f; g.add(knob);
+    let g;
+    if (kind.preview) {
+        // Real-model ghost: build the actual structure, then strip its materials to a
+        // translucent green/red silhouette so you see the true shape before placing (#36 polish).
+        g = kind.preview();
+        g.traverse(o => { if (o.isMesh) { if (o.material && o.material.dispose) o.material.dispose(); o.material = _ghostMat; } });
+        // a faint footprint pad under it so the placement spot reads clearly
+        const f = kind.footprint || 0.9;
+        const pad = new THREE.Mesh(new THREE.BoxGeometry(f, 0.04, f), _ghostMat);
+        pad.position.y = 0.02; g.add(pad);
+    } else {
+        const f = kind.footprint || 0.9;
+        g = new THREE.Group();
+        const pad = new THREE.Mesh(new THREE.BoxGeometry(f, 0.06, f), _ghostMat);
+        pad.position.y = 0.05; g.add(pad);
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, f * 0.9, 6), _ghostMat);
+        post.position.y = f * 0.55; g.add(post);
+        const knob = new THREE.Mesh(new THREE.BoxGeometry(f * 0.5, f * 0.5, f * 0.5), _ghostMat);
+        knob.position.y = f; g.add(knob);
+    }
     scene.add(g);
     active = { kind, ghost: g, valid: false, rot: 0 };
 }

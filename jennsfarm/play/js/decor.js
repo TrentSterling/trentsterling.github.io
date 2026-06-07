@@ -129,6 +129,13 @@ export const DECOR_TYPES = {
 // Catalog array for the build menu UI.
 export const DECOR_CATALOG = Object.entries(DECOR_TYPES).map(([id, t]) => ({ id, ...t }));
 
+// A fresh Group of the real prop model (for the build-mode ghost preview, #36).
+export function decorModel(id) {
+    const g = new THREE.Group();
+    if (BUILD[id]) BUILD[id](g);
+    return g;
+}
+
 // --- placed instances + per-type InstancedMesh rendering ---
 let placed = [];            // { id, x, z, rot }
 const _geo = {};            // id -> merged geometry (cached, built once per type)
