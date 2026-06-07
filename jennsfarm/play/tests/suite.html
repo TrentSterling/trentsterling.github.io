@@ -50,7 +50,7 @@ import { ambientCritters, updateFireflies, clearFireflies } from '../js/fireflie
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail } from '../js/mailbox.js';
 import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } from '../js/bees.js';
 import { placeCoop, updateCoops, creditOfflineEggs, getCoopCount, loadCoops } from '../js/coop.js';
-import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, getDecorCount } from '../js/decor.js';
+import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, getDecorCount, beautyScore } from '../js/decor.js';
 import { desiredWorkers, getWorkerCount, updateWorkers, clearWorkers } from '../js/workers.js';
 import { rollBlessing, BLESSINGS } from '../js/fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet, getPetName } from '../js/pets.js';
@@ -58,7 +58,7 @@ import { pickFish, FISH, fishIsValid, rollFishSize, fishRecord, tryFishRecord, c
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDbgPath, tickDebug, isDebugOn } from '../js/debug.js';
 import { registerSystem, getSystems, updateSystems, serializeSystems, loadSystems, offlineSystems, _resetSystems } from '../js/registry.js';
 import { updateCloudShadows } from '../js/cloudshadows.js';
-import { updateVisitors, getVisitorCount, clearVisitors, placeFoodBowl, hasFoodBowl, serializeVisitors, loadVisitors, pickVisitorSpecies } from '../js/visitors.js';
+import { updateVisitors, getVisitorCount, clearVisitors, placeFoodBowl, hasFoodBowl, serializeVisitors, loadVisitors, pickVisitorSpecies, visitorCap } from '../js/visitors.js';
 import { hasGreenhouse, buildGreenhouse, effectiveGrowth, serializeGreenhouse, loadGreenhouse } from '../js/greenhouse.js';
 import { placeFlytrap, updateFlytraps, getFlytrapCount, loadFlytraps } from '../js/flytrap.js';
 import { festivalFor, startFestival, clearBunting } from '../js/festivals.js';
@@ -462,6 +462,21 @@ check('build catalog: every decor type places, instances + round-trips (#36)', (
     assert(getDecorCount() === saved.length, 'decor did not survive a save round-trip');
     loadDecor(null); updateDecor();                    // leave the scene clean for later tests
     return `catalog builds all ${DECOR_CATALOG.length} props`;
+});
+
+check('decor beauty attracts more visitors (#54)', () => {
+    ensureWorld();
+    loadDecor(null); clearVisitors();                  // bare-farm baseline
+    assert(beautyScore() === 0, 'a fresh farm should have 0 beauty');
+    const bareCap = visitorCap();
+    for (let i = 0; i < 4; i++) { placeDecor('statue', 24, 24, 0); placeDecor('windmill', 25, 24, 0); }
+    updateDecor();
+    const b = beautyScore();
+    assert(b >= 50, `beauty should climb with fancy props (got ${b})`);
+    const prettyCap = visitorCap();
+    assert(prettyCap > bareCap, `pretty-farm cap ${prettyCap} should beat bare ${bareCap}`);
+    loadDecor(null); clearVisitors();                  // clean up for later tests
+    return `beauty ${b} lifts visitor cap ${bareCap} → ${prettyCap}`;
 });
 
 // ---------- ROAD BUYERS ----------

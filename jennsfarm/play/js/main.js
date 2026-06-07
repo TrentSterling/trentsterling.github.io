@@ -44,7 +44,7 @@ import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } f
 import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
 import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
 import { isPlacing, placingName, beginPlacement, moveGhost, confirmPlace, cancelPlacement, rotatePlacement } from './placement.js';
-import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, countByType } from './decor.js';
+import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, countByType, beautyScore } from './decor.js';
 import { showBuildMenu, hideBuildMenu } from './buildmenu.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount, growWeeds, clearWeedsInRadius } from './weeds.js';
 import { advanceCropsOffline } from './offline.js';
@@ -848,7 +848,7 @@ function startDecorPlacement(d) {
         place: (x, z, rot) => {
             placeDecor(d.id, x, z, rot);
             coins -= d.cost; playExpand();
-            notify(`${d.emoji} ${d.name} placed!`); refreshUI(); triggerAutoSave();
+            notify(`${d.emoji} ${d.name} placed! ✨ Beauty ${beautyScore()}`); refreshUI(); triggerAutoSave();
         },
     });
     notify(`${d.emoji} Click to place — R rotates, ESC cancels.`);
@@ -861,8 +861,8 @@ function openBuild() {
         { section: '🏗️ Structures' },
         { id: 'hive', emoji: '🐝', name: 'Beehive', cost: HIVE_COST, note: 'makes honey', max: 6, count: getHiveCount(), start: buyBeehive },
         { id: 'coop', emoji: '🐔', name: 'Chicken Coop', cost: COOP_COST, note: 'lays eggs', max: 6, count: getCoopCount(), start: buyCoop },
-        { section: '🌷 Decor' },
-        ...DECOR_CATALOG.map(d => ({ ...d, count: counts[d.id] || 0, start: () => startDecorPlacement(d) })),
+        { section: `🌷 Decor  ·  ✨ Farm Beauty ${beautyScore()} (draws more visitors)` },
+        ...DECOR_CATALOG.map(d => ({ ...d, note: `${d.note} · ✨${d.beauty}`, count: counts[d.id] || 0, start: () => startDecorPlacement(d) })),
     ];
     showBuildMenu(coins, catalog, (entry) => { hideBuildMenu(); entry.start(); });
 }
