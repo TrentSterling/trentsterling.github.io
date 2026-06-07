@@ -23,7 +23,8 @@
 
 <script type="module">
 import { ITEMS, createInventory } from '../js/inventory.js';
-import { CROPS, plantCrop, harvestCrop, updateCrops, waterTile } from '../js/farm.js';
+import { CROPS, plantCrop, harvestCrop, updateCrops, waterTile, nearestRipeCrop } from '../js/farm.js';
+import { placeBin, depositToBin, emptyBin, serializeBins, loadBins, getBinCount, getBins, nearestBinWithSpace, updateBins, CRATE_CAP } from '../js/bins.js';
 import { RECIPES } from '../js/craft.js';
 import { initMarket, getPrice, recordSale, dailyTick, offlineBuyerSales, sellableValue } from '../js/market.js';
 import { initRenderer } from '../js/renderer.js';
@@ -492,6 +493,40 @@ check('factories: perfumery is a profitable late-game tier + buildings render (#
     clearFactoryBuildings();
     loadFactories({});                                 // reset owned so later factory tests start clean
     return `perfumery ${inCost}→${outVal}; all ${Object.keys(FACTORY_TYPES).length} factory buildings render`;
+});
+
+check('wooden crates: fill, cap at 50, collect + round-trip (#67)', () => {
+    ensureWorld();
+    loadBins(null);
+    assert(getBinCount() === 0, 'should start with no crates');
+    placeBin(24, 24);
+    assert(getBinCount() === 1, 'crate not placed');
+    const bin = getBins()[0];
+    let over = depositToBin(bin, 'carrot', 30);
+    assert(over === 0 && bin.total === 30, `deposit failed (total ${bin.total})`);
+    over = depositToBin(bin, 'carrot', 40);                  // 30+40 → 50 in, 20 overflow
+    assert(bin.total === CRATE_CAP && over === 20, `cap/overflow wrong (total ${bin.total}, over ${over})`);
+    assert(!nearestBinWithSpace(24, 24, 5), 'a full crate should offer no space');
+    const contents = emptyBin(bin);
+    assert(contents.carrot === 50 && bin.total === 0, 'empty failed');
+    updateBins();                                            // builds box + fill IMs, no throw
+    depositToBin(bin, 'wheat', 5);
+    loadBins(serializeBins());
+    assert(getBins()[0].total === 5, 'crate did not survive a save round-trip');
+    loadBins(null); updateBins();
+    return 'crate fills, caps at 50, collects + round-trips';
+});
+
+check('harvesters find ripe crops + skip claimed ones (#67)', () => {
+    ensureWorld();
+    const s = findSoil();
+    plantCrop(s.x, s.z, 'carrot');
+    getTile(s.x, s.z).cropStage = 3;                         // force ripe
+    const ripe = nearestRipeCrop(s.x - 1, s.z, 10);
+    assert(ripe && ripe.x === s.x && ripe.z === s.z, 'did not find the ripe crop');
+    const taken = nearestRipeCrop(s.x - 1, s.z, 10, (tx, tz) => tx === s.x && tz === s.z);
+    assert(taken === null, 'a claimed crop should be skipped');
+    return 'ripe-crop search + claim-skip works';
 });
 
 // ---------- ROAD BUYERS ----------

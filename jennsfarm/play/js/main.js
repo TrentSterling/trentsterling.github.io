@@ -46,6 +46,7 @@ import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
 import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
 import { isPlacing, placingName, beginPlacement, moveGhost, confirmPlace, cancelPlacement, rotatePlacement } from './placement.js';
 import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, countByType, beautyScore } from './decor.js';
+import { placeBin, updateBins, serializeBins, loadBins, getBinCount, nearestFullishBin, emptyBin, CRATE_CAP } from './bins.js';
 import { showBuildMenu, hideBuildMenu } from './buildmenu.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount, growWeeds, clearWeedsInRadius } from './weeds.js';
 import { advanceCropsOffline } from './offline.js';
@@ -165,6 +166,7 @@ if (saved) {
     if (saved.hives) loadHives(saved.hives);
     if (saved.coops) loadCoops(saved.coops);
     loadDecor(saved.decor); // build-mode props (safe with no data → clears)
+    loadBins(saved.bins);   // wooden crates + contents (safe with no data → clears)
     if (saved.fountain) loadFountain(saved.fountain);
     if (saved.pet) loadPet(saved.pet);
     if (saved.visitors) loadVisitors(saved.visitors);
@@ -354,6 +356,19 @@ function onCollectProduce(itemId, qty) {
     triggerAutoSave();
 }
 
+// Empty a wooden crate's crops into the bag (#67).
+function collectBin(bin) {
+    const contents = emptyBin(bin);
+    let total = 0;
+    for (const id in contents) { inventory.add(id, contents[id]); total += contents[id]; }
+    if (total > 0) {
+        playStore();
+        const pp = getPlayerWorldPos(); sparkle(pp.x, 0.6, pp.z);
+        notify(`Collected ${total} crops from the crate! 🧺`);
+        refreshUI(); triggerAutoSave();
+    }
+}
+
 // Stream the first ring of terrain so Jenn doesn't start staring into the void
 updateChunks(getPlayerWorldPos().x, getPlayerWorldPos().z);
 
@@ -434,6 +449,16 @@ container.addEventListener('click', (e) => {
         const cd = Math.abs(pp.x - crate.x) + Math.abs(pp.z - crate.z);
         if (cd <= 1.4) openCrateAndCollect(crate);
         else { pendingAction = { x: crate.x, z: crate.z, tool: { id: 'crate' } }; routeTo(crate.x, crate.z); }
+        return;
+    }
+
+    // Wooden crate (crop bin) here with crops in it? Click to collect into your bag.
+    const bin = nearestFullishBin(tx, tz, 0.8);
+    if (bin) {
+        const pp = getPlayerPos();
+        const bd = Math.abs(pp.x - bin.x) + Math.abs(pp.z - bin.z);
+        if (bd <= 1.6) collectBin(bin);
+        else { pendingAction = { x: bin.x, z: bin.z, tool: { id: 'bin' } }; routeTo(bin.x, bin.z); }
         return;
     }
 
@@ -672,6 +697,12 @@ function performAction(tx, tz, tool) {
             handleBuildingInteraction(tile);
             break;
 
+        case 'bin': { // arrived at a wooden crate → collect its crops
+            const b = nearestFullishBin(tx, tz, 1.2);
+            if (b) collectBin(b);
+            break;
+        }
+
         case 'hoe': {
             if (hasWeedAt(tx, tz)) { mowWeeds(tx, tz); break; } // mow weeds (area) before tilling
             let n = 0;
@@ -858,12 +889,28 @@ function startDecorPlacement(d) {
     });
     notify(`${d.emoji} Click to place — R rotates, ESC cancels.`);
 }
+// Wooden Crate: a finite crop bin that harvester employees fill — click a full one to collect (#67)
+const CRATE_PRICE = 40;
+function startCratePlacement() {
+    if (coins < CRATE_PRICE) { playDeny(); notify("Can't afford a crate!"); return; }
+    beginPlacement({
+        id: 'crate', name: 'Wooden Crate', cost: CRATE_PRICE, footprint: 0.6,
+        afford: () => coins >= CRATE_PRICE,
+        canPlace: canPlaceStructure,
+        place: (x, z) => {
+            placeBin(x, z); coins -= CRATE_PRICE; playExpand();
+            notify(`🧺 Crate placed! Farmhands fill it — click a full one to collect.`); refreshUI(); triggerAutoSave();
+        },
+    });
+    notify('🧺 Click to place your crate — ESC to cancel.');
+}
 // Open the Sims-style Build catalog: structures + cosmetic decor in one panel.
 function openBuild() {
     hideAllOverlays();
     const counts = countByType();
     const catalog = [
         { section: '🏗️ Structures' },
+        { id: 'crate', emoji: '🧺', name: 'Wooden Crate', cost: CRATE_PRICE, note: `holds ${CRATE_CAP} crops · farmhands fill it`, count: getBinCount(), start: startCratePlacement },
         { id: 'hive', emoji: '🐝', name: 'Beehive', cost: HIVE_COST, note: 'makes honey', max: 6, count: getHiveCount(), start: buyBeehive },
         { id: 'coop', emoji: '🐔', name: 'Chicken Coop', cost: COOP_COST, note: 'lays eggs', max: 6, count: getCoopCount(), start: buyCoop },
         { section: `🌷 Decor  ·  ✨ Farm Beauty ${beautyScore()} (draws more visitors)` },
@@ -1568,6 +1615,7 @@ function triggerAutoSave() {
             hives: serializeHives(),
             coops: serializeCoops(),
             decor: serializeDecor(),
+            bins: serializeBins(),
             fountain: serializeFountain(),
             pet: serializePet(),
             visitors: serializeVisitors(),
@@ -1663,6 +1711,7 @@ function gameLoop(now) {
     updateChunks(ppos.x, ppos.z); // stream infinite terrain around Jenn
     updateOverlays(); // rebuild instanced tile overlays if a tile changed type
     updateDecor();    // rebuild instanced build-mode props if one was placed/removed
+    updateBins();     // rebuild crate boxes + fill bars if a crate was placed/filled
     profMark('chunks');
     updateAnimals(dt, ppos, onCollectProduce, getPetPos()); // pet ticks via the registry
     profMark('animals');
