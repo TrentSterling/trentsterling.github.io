@@ -7,12 +7,14 @@ import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { registerSystem } from './registry.js';
 import { getFactories } from './factories.js';
-import { getNearestDrop, collectDropNear } from './animals.js';
+import { getDrops, collectDropNear } from './animals.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
 const MAX_WORKERS = 10;     // cap so a giant payroll can't tank perf
 const SPEED = 2.4;
 const VACUUM_RANGE = 0.75;
+const SEP_RADIUS = 0.9;     // boids-lite: workers within this push apart
+const SEP_WEIGHT = 1.6;     // how hard separation steers vs. heading for the target
 
 const _wmat = curvedMaterial({ vertexColors: true });
 const _wc = new THREE.Color();
@@ -87,13 +89,48 @@ export function updateWorkers(dt, ctx) {
     while (workers.length < want) spawnWorker();
     while (workers.length > want) despawnWorker();
 
+    // --- Assign DISTINCT targets (#12): greedily hand each worker its nearest
+    // still-unclaimed drop, so they fan out instead of all chasing one item. ---
+    const drops = getDrops();
+    const claimed = new Array(drops.length).fill(false);
     for (const w of workers) {
-        const drop = getNearestDrop(w.x, w.z); // head for the nearest loose item, else amble
-        if (drop) { w.tx = drop.x; w.tz = drop.z; }
-        else { w.idle -= dt; if (w.idle <= 0) { w.tx = FARM_CX + (Math.random() * 2 - 1) * 7; w.tz = FARM_CZ + (Math.random() * 2 - 1) * 7; w.idle = 1 + Math.random() * 2; } }
+        let bi = -1, bd = Infinity;
+        for (let i = 0; i < drops.length; i++) {
+            if (claimed[i]) continue;
+            const dd = (drops[i].x - w.x) ** 2 + (drops[i].z - w.z) ** 2;
+            if (dd < bd) { bd = dd; bi = i; }
+        }
+        if (bi >= 0) { claimed[bi] = true; w.tx = drops[bi].x; w.tz = drops[bi].z; w.idle = 0; }
+        else { // nothing to grab — amble to a fresh wander point
+            w.idle -= dt;
+            if (w.idle <= 0) { w.tx = FARM_CX + (Math.random() * 2 - 1) * 7; w.tz = FARM_CZ + (Math.random() * 2 - 1) * 7; w.idle = 1 + Math.random() * 2; }
+        }
+    }
 
-        const dx = w.tx - w.x, dz = w.tz - w.z, d = Math.hypot(dx, dz);
-        if (d > 0.05) { const s = Math.min(d, SPEED * dt); w.x += (dx / d) * s; w.z += (dz / d) * s; w.grp.rotation.y = Math.atan2(dx, dz); }
+    // --- Move with boids-lite steering: arrive-at-target + separation from
+    // nearby workers (no cohesion — Trent wants them to spread, not flock). ---
+    for (const w of workers) {
+        let dx = w.tx - w.x, dz = w.tz - w.z;
+        const d = Math.hypot(dx, dz);
+        let vx = 0, vz = 0;
+        if (d > 0.001) { vx = dx / d; vz = dz / d; } // desired heading toward target
+
+        // separation: sum of pushes away from neighbours inside SEP_RADIUS
+        let sx = 0, sz = 0;
+        for (const o of workers) {
+            if (o === w) continue;
+            const ox = w.x - o.x, oz = w.z - o.z;
+            const od = Math.hypot(ox, oz);
+            if (od > 0.0001 && od < SEP_RADIUS) { const f = (SEP_RADIUS - od) / SEP_RADIUS; sx += (ox / od) * f; sz += (oz / od) * f; }
+        }
+        vx += sx * SEP_WEIGHT; vz += sz * SEP_WEIGHT;
+
+        const vlen = Math.hypot(vx, vz);
+        if (vlen > 0.0001) {
+            const step = Math.min(d > 0.05 ? SPEED * dt : vlen * SPEED * dt, SPEED * dt);
+            w.x += (vx / vlen) * step; w.z += (vz / vlen) * step;
+            w.grp.rotation.y = Math.atan2(vx, vz); // face actual travel direction
+        }
 
         const item = collectDropNear(w.x, w.z, VACUUM_RANGE); // suck it up
         if (item && ctx && ctx.addItem) { ctx.addItem(item, 1); if (ctx.refreshUI) ctx.refreshUI(); }

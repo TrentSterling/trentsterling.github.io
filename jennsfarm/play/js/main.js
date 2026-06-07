@@ -94,19 +94,28 @@ function walkableNeighbor(tx, tz) {
     return best;
 }
 
-// Send Jenn to a tile, routing around buildings/water/trees with A* so she
-// always gets there (no more dead-ending in the corner by the Market). Falls
-// back to a straight walk if no grid route exists.
+// Send Jenn to a tile. RESPONSIVENESS (#25): she steps off in a straight line
+// THIS frame, and we compute the A* route on the NEXT frame (resolvePendingRoute),
+// then upgrade to the routed path. The node search no longer blocks the click
+// frame, so there's zero perceptible lag between click and movement.
+let pendingRoute = null;
 function routeTo(tx, tz) {
+    moveTo(tx, tz);                 // commit instantly — walk straight toward the click
+    pendingRoute = { tx, tz };      // ...and refine into an obstacle-avoiding route next frame
+}
+
+// Run once per frame: turn the last click into a real A* route around obstacles.
+function resolvePendingRoute() {
+    if (!pendingRoute) return;
+    const { tx, tz } = pendingRoute;
+    pendingRoute = null;
     const p = getPlayerPos();
     const route = findPath(p.x, p.z, tx, tz);
     const last = route && route.length ? route[route.length - 1] : null;
     // Follow A* only if it actually reaches the goal (or a walkable neighbour of a
     // solid target). On a far/open click that hit the node budget it returns a
-    // partial path — in that case just walk straight there (open ground needs no
-    // routing). Fixes "she stops short / doesn't go where I click".
+    // partial path — in that case the straight walk we already started is fine.
     if (last && Math.abs(last.x - tx) + Math.abs(last.z - tz) <= 1) moveAlong(route);
-    else moveTo(tx, tz);
 }
 
 // --- Init ---
@@ -1496,6 +1505,7 @@ function gameLoop(now) {
     profBegin(); // per-phase frame profiler (#35) — see breakdown in the debug HUD (`)
     tickBuffs(dt); // count down any active meal buffs (#50)
     renderBuffHud(dt); // show them as pills top-right
+    resolvePendingRoute(); // upgrade last click's straight walk into an A* route (#25)
     updatePlayer(dt);
 
     // Footstep sounds
