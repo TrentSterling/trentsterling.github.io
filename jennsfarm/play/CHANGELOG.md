@@ -89,6 +89,7 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - **🐦 Crows are real birds now (#62):** added wings + tail to the model and gave them flight — they cruise at altitude with a wing-flap, swoop down to peck, and climb steeply when a skunk spooks them. A flock of ~12 wheels around the farm so skunks finally have something visible to chase.
 - **🏭 Factories are visible buildings now (#64):** the Winery / Creamery / Juicery (and new Perfumery) raise a real building in an "industry row" west of the farm when you own them — no more invisible upgrades. Each is one merged draw call and restores from your save.
 - **🌸 Perfumery — late-game tier (#63):** a new high-end factory (🪙3500) turning Roses → Perfume (🪙300). First of more late-game content to come.
+- **❄️ Snow + seasons beefed (#65):** Winter snow is now ~2.5× denser with varied flake sizes and wind drift, plus a soft **snow blanket** that eases onto the ground around you. Autumn drops more leaves too.
 
 ---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._

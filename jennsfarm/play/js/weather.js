@@ -1,25 +1,25 @@
 // js/weather.js — ambient seasonal weather that follows the player: snow in
-// Winter, drifting leaves in Autumn, clear skies in Spring/Summer (#42). One
-// InstancedMesh of falling particles parented around the camera so it's always
-// around you; particles recycle to the top when they reach the ground. Uses an
-// un-curved basic material so flakes fall straight in screen space (atmospheric,
-// not ground-hugging). The season→weather choice is pure + unit-tested.
+// Winter, drifting leaves in Autumn, clear skies in Spring/Summer (#42, beefed #65).
+// One InstancedMesh of falling particles around the player; particles recycle to
+// the top when they land. Winter also lays a soft snow blanket on the ground that
+// eases in/out. The season→weather choice is pure + unit-tested.
 
 import * as THREE from 'three';
 import { scene } from './renderer.js';
 import { registerSystem } from './registry.js';
 
-const SPREAD = 28; // particle box width around the player
-const TOP = 10;    // spawn / recycle height
+const SPREAD = 30; // particle box width around the player
+const TOP = 11;    // spawn / recycle height
 
-// Pure: which weather a season has (null = clear).
+// Pure: which weather a season has (null = clear). Counts beefed up for wifey (#65).
 export function seasonWeather(seasonName) {
-    if (seasonName === 'Winter') return { kind: 'snow', count: 95, fall: 1.3, size: 0.06 };
-    if (seasonName === 'Autumn') return { kind: 'leaves', count: 65, fall: 0.9, size: 0.09 };
+    if (seasonName === 'Winter') return { kind: 'snow', count: 240, fall: 1.4, size: 0.07, ground: true };
+    if (seasonName === 'Autumn') return { kind: 'leaves', count: 120, fall: 0.9, size: 0.09 };
     return null;
 }
 
 let mesh = null, currentKind = null, parts = [], cfg = null;
+let ground = null, groundOp = 0; // snow blanket on the ground + its eased opacity
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion();
 const _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _zAxis = new THREE.Vector3(0, 0, 1);
@@ -29,16 +29,31 @@ function newParticle(cx, cz) {
         x: cx + (Math.random() - 0.5) * SPREAD, y: Math.random() * TOP, z: cz + (Math.random() - 0.5) * SPREAD,
         dx: (Math.random() - 0.5) * 0.5, dz: (Math.random() - 0.5) * 0.5,
         spin: Math.random() * Math.PI, vspin: (Math.random() - 0.5) * 2.2,
+        sc: 0.55 + Math.random() * 1.1,        // flake-size variety → a sense of depth
+        sway: Math.random() * Math.PI * 2,     // per-flake wind phase
     };
+}
+
+// A soft white disc laid on the ground — reads as snow accumulation (#65).
+function ensureGround() {
+    if (ground) return;
+    const geo = new THREE.CircleGeometry(SPREAD * 0.62, 28);
+    geo.rotateX(-Math.PI / 2);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xf4f8ff, transparent: true, opacity: 0, depthWrite: false });
+    ground = new THREE.Mesh(geo, mat);
+    ground.frustumCulled = false;
+    ground.renderOrder = -1; // draw under props
+    scene.add(ground);
 }
 
 export function clearWeather() {
     if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); mesh.material.dispose(); }
-    mesh = null; currentKind = null; parts = []; cfg = null;
+    if (ground) { scene.remove(ground); ground.geometry.dispose(); ground.material.dispose(); }
+    mesh = null; currentKind = null; parts = []; cfg = null; ground = null; groundOp = 0;
 }
 
 function rebuild(w, cx = 0, cz = 0) {
-    clearWeather();
+    if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); mesh.material.dispose(); mesh = null; }
     cfg = w; currentKind = w.kind;
     const geo = w.kind === 'snow'
         ? new THREE.SphereGeometry(w.size, 5, 4)
@@ -62,15 +77,28 @@ function rebuild(w, cx = 0, cz = 0) {
 // Tick the weather for the current season, keeping particles around (playerPos).
 export function updateWeather(dt, seasonName, playerPos) {
     const w = seasonWeather(seasonName);
-    if (!w) { if (mesh) mesh.visible = false; return; }
     const px = playerPos ? playerPos.x : 0, pz = playerPos ? playerPos.z : 0;
+
+    // Ground snow blanket eases in during winter, out otherwise.
+    const wantGround = !!(w && w.ground);
+    if (wantGround || groundOp > 0.01) {
+        ensureGround();
+        groundOp += ((wantGround ? 0.5 : 0) - groundOp) * Math.min(1, dt * 0.8);
+        ground.material.opacity = groundOp;
+        ground.visible = groundOp > 0.01;
+        ground.position.set(px, 0.04, pz);
+    }
+
+    if (!w) { if (mesh) mesh.visible = false; return; }
     if (w.kind !== currentKind) rebuild(w, px, pz);
     mesh.visible = true;
     const leaves = cfg.kind === 'leaves';
     for (let i = 0; i < parts.length; i++) {
         const p = parts[i];
         p.y -= cfg.fall * dt;
-        p.x += p.dx * dt; p.z += p.dz * dt;
+        p.sway += dt * 1.5;
+        p.x += (p.dx + Math.sin(p.sway) * 0.35) * dt; // gentle wind drift
+        p.z += p.dz * dt;
         // World-anchored: flakes fall in place (don't track the camera) and recycle
         // near the player only once they land or drift out of the box around them.
         if (p.y < 0 || Math.abs(p.x - px) > SPREAD / 2 || Math.abs(p.z - pz) > SPREAD / 2) {
@@ -81,6 +109,7 @@ export function updateWeather(dt, seasonName, playerPos) {
         if (leaves) p.spin += p.vspin * dt;
         _p.set(p.x, p.y, p.z);
         _q.setFromAxisAngle(_zAxis, leaves ? p.spin : 0);
+        _s.set(p.sc, p.sc, p.sc);
         mesh.setMatrixAt(i, _m.compose(_p, _q, _s));
     }
     mesh.instanceMatrix.needsUpdate = true;
