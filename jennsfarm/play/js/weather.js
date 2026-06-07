@@ -35,11 +35,21 @@ function newParticle(cx, cz) {
 }
 
 // A soft white disc laid on the ground — reads as snow accumulation (#65).
+// Radial alpha fade (opaque centre → transparent rim) so there's NO hard circular
+// edge (that was the "white dome" artifact). Opacity is per-vertex; material.opacity
+// scales the whole thing for the ease in/out.
 function ensureGround() {
     if (ground) return;
-    const geo = new THREE.CircleGeometry(SPREAD * 0.62, 28);
+    const geo = new THREE.CircleGeometry(SPREAD * 0.5, 28);
     geo.rotateX(-Math.PI / 2);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xf4f8ff, transparent: true, opacity: 0, depthWrite: false });
+    const n = geo.attributes.position.count;          // index 0 = centre, rest = rim
+    const col = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) {
+        col[i * 4] = 0.96; col[i * 4 + 1] = 0.98; col[i * 4 + 2] = 1.0; // soft snow white
+        col[i * 4 + 3] = i === 0 ? 0.6 : 0.0;          // centre opaque, rim transparent
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 4));
+    const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, depthWrite: false });
     ground = new THREE.Mesh(geo, mat);
     ground.frustumCulled = false;
     ground.renderOrder = -1; // draw under props

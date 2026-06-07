@@ -67,10 +67,11 @@ let sunLight, ambientLight, hemiLight, moonLight;
 export function initRenderer(container) {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
-    // Linear fog - fades objects to sky color. Hides world edges cleanly.
-    scene.fog = new THREE.Fog(0x87ceeb, 12, 32);
+    // Linear fog - fades objects to sky color. Tight by design (#35): you only see
+    // ~16 tiles, which hides the chunk-load edge AND means far less to draw/cull.
+    scene.fog = new THREE.Fog(0x87ceeb, 8, 16);
 
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 60);
     camera.rotation.order = 'YXZ';
     camera.rotation.set(CAMERA_PITCH, 0, 0);
 

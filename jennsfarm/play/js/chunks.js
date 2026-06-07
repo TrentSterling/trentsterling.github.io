@@ -13,8 +13,11 @@ import { scene, curvedMaterial } from './renderer.js';
 import { terrainHeight, AMP } from './terrain.js';
 
 export const CHUNK = 16;          // tiles per chunk side
-const LOAD_RADIUS = 2;            // chunks kept loaded around the player (5x5)
-const UNLOAD_RADIUS = 3;          // recycle once a chunk is farther than this
+const LOAD_RADIUS = 1;            // chunks kept loaded around the player (3x3) — tight
+                                  // view distance = far fewer objects for Three.js to
+                                  // matrix-update + cull each frame. Paired with close
+                                  // fog so the edge is hidden, not popped (#35).
+const UNLOAD_RADIUS = 2;          // recycle once a chunk is farther than this
 const BUILD_BUDGET = 1;           // ONE chunk built per frame — each chunk is a heightmap
                                   // bake + several InstancedMesh uploads, so building 3 at
                                   // once was a ~10ms spike on boundary crossings (the
@@ -208,6 +211,11 @@ export function updateChunks(px, pz) {
         if (loaded.has(k)) continue;
         const group = buildChunk(bcx, bcz);
         scene.add(group);
+        // Chunk decor is STATIC after build — freeze matrices so Three.js stops
+        // recomputing them every frame (big CPU win on a static world, #35).
+        group.matrixAutoUpdate = false;
+        group.traverse(o => { o.matrixAutoUpdate = false; });
+        group.updateMatrixWorld(true);
         loaded.set(k, { group, cx: bcx, cz: bcz });
     }
 }
