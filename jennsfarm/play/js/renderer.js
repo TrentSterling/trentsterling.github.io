@@ -213,9 +213,12 @@ export function recenterCamera() { following = true; } // legacy alias
 export function focusCamera(x, z) { following = false; freeX = x; freeZ = z; cameraSnapped = false; } // POI jump (god-eye)
 
 // Zoom (scroll wheel): multiplies the follow distance + height. 1 = default.
-const ZOOM_MIN = 0.55, ZOOM_MAX = 3.2;
-const BASE_FAR = 26;     // view distance at zoom 1
-let zoom = 1;
+// ZOOM_MAX is capped low on purpose: far-plane = BASE_FAR*zoom, so a big max would
+// reveal (and RENDER) the whole always-on core forest at once (#35). 2.0 → far ~48,
+// about the size of the core farm — a useful overview without drawing the far wild.
+const ZOOM_MIN = 0.55, ZOOM_MAX = 2.0;
+const BASE_FAR = 24;     // view distance at zoom 1
+let zoom = 1, targetZoom = 1; // wheel sets targetZoom; updateCamera eases zoom toward it
 // Keep the fog band + far clip plane proportional to zoom so zooming out reveals
 // more without thickening the haze, and the fog only ever softens the far edge.
 function applyViewDistance() {
@@ -224,10 +227,7 @@ function applyViewDistance() {
     camera.far = far; camera.updateProjectionMatrix();
     if (scene && scene.fog) { scene.fog.near = far * 0.62; scene.fog.far = far * 0.97; }
 }
-export function zoomCamera(step) {
-    zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom + step));
-    applyViewDistance();
-}
+export function zoomCamera(step) { targetZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, targetZoom + step)); }
 export function getZoom() { return zoom; }
 
 export function setDebugCamera({ x, z, height, distance, pitch } = {}) {
@@ -238,7 +238,14 @@ export function setDebugCamera({ x, z, height, distance, pitch } = {}) {
     cameraSnapped = false; // re-snap to the new framing on the next frame
 }
 
+let curveX = 0, curveZ = 0, _curveInit = false;
 export function updateCamera(targetPos, dt, playerMoving) {
+    // Smoothly ease zoom toward the wheel target (no stepwise jerk), updating the
+    // fog/far only while it's actually changing.
+    if (Math.abs(zoom - targetZoom) > 0.0005) {
+        zoom += (targetZoom - zoom) * (1 - Math.exp(-14 * dt));
+        applyViewDistance();
+    }
     // While following, keep the free-cam focus glued to her so a later drag starts here.
     if (following && !debugTarget) { freeX = targetPos.x; freeZ = targetPos.z; }
     const fx = debugTarget ? debugTarget.x : freeX;
@@ -250,7 +257,7 @@ export function updateCamera(targetPos, dt, playerMoving) {
     const desiredZ = fz + dist;
 
     // First frame / re-lock: snap directly (no fly-in from world origin)
-    const smooth = cameraSnapped ? 1 - Math.exp(-4 * dt) : 1;
+    const smooth = cameraSnapped ? 1 - Math.exp(-6 * dt) : 1;
     cameraSnapped = true;
     camera.position.x += (desiredX - camera.position.x) * smooth;
     camera.position.y += (desiredY - camera.position.y) * smooth;
@@ -263,11 +270,14 @@ export function updateCamera(targetPos, dt, playerMoving) {
         shake *= Math.max(0, 1 - 12 * dt);
     } else shake = 0;
 
-    // Curvature origin = where the camera is ACTUALLY looking THIS frame (derived from
-    // the lerped camera position), NOT the desired focus. Binding it to the lerped
-    // position keeps the curve in lockstep with the camera so panning vertically no
-    // longer makes the ground heave/tilt while the camera eases toward its target.
-    curveUniforms.curveOrigin.value.set(camera.position.x, 0, camera.position.z - dist);
+    // Curvature origin = the FOCUS point, eased in lockstep with the camera. Because
+    // the focus doesn't move when zooming (only distance does), zoom no longer heaves
+    // the world; and easing toward (fx,fz) at the same rate as the camera means
+    // panning vertically no longer tilts the ground.
+    if (!_curveInit) { curveX = fx; curveZ = fz; _curveInit = true; }
+    curveX += (fx - curveX) * smooth;
+    curveZ += (fz - curveZ) * smooth;
+    curveUniforms.curveOrigin.value.set(curveX, 0, curveZ);
 }
 
 /**
