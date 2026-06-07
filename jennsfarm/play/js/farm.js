@@ -98,8 +98,13 @@ export const CROPS = {
     },
 };
 
-// Active crop meshes on the map
-const cropMeshes = {}; // key: "x,z" -> THREE.Group
+// Crops render as InstancedMeshes grouped by "cropId|stage" — a field of 300
+// carrots is ~1 draw, not 300 (#35). Crops are static once placed, so we only
+// rebuild when the planted set changes (plant/harvest/stage-up), never per frame.
+let _cropIM = {};            // "cropId|stage" -> InstancedMesh of every tile at that combo
+const _cropGeoCache = {};    // "cropId|stage" -> canonical merged geometry (built once)
+let _cropDirty = true;       // planted set changed -> rebuild the combo batches
+const _cropM4 = new THREE.Matrix4();
 
 function cropKey(x, z) { return `${x},${z}`; }
 
@@ -174,17 +179,45 @@ function mergeCropGroup(group) {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    return new THREE.Mesh(geo, _cropMat);
+    return geo;
 }
 
-// Dispose a crop mesh's unique geometry, but NEVER the shared crop material.
-function disposeCropMesh(m) {
-    if (!m) return;
-    scene.remove(m);
-    m.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material && c.material !== _cropMat) c.material.dispose(); });
+// Canonical merged geometry for one (cropId, stage), cached + reused by every tile.
+function cropGeoFor(cropId, stage) {
+    const k = cropId + '|' + stage;
+    if (!_cropGeoCache[k]) _cropGeoCache[k] = buildCropGeo(cropId, stage);
+    return _cropGeoCache[k];
 }
 
-function createCropMesh(cropId, stage) {
+// Rebuild the per-combo InstancedMeshes from current tile data. Cheap + only runs
+// when _cropDirty (plant/harvest/stage change), coalesced to once per frame.
+function rebuildCropIMs() {
+    for (const k in _cropIM) { scene.remove(_cropIM[k]); _cropIM[k].dispose(); }
+    _cropIM = {};
+    const byCombo = {};
+    forEachFarmTile((x, z, tile) => {
+        if (tile.type === TILE.PLANTED && tile.crop) {
+            const k = tile.crop + '|' + tile.cropStage;
+            (byCombo[k] || (byCombo[k] = [])).push([x, z]);
+        }
+    });
+    for (const k in byCombo) {
+        const sep = k.lastIndexOf('|');
+        const cropId = k.slice(0, sep), stage = +k.slice(sep + 1);
+        const geo = cropGeoFor(cropId, stage);
+        if (!geo) continue;
+        const list = byCombo[k];
+        const im = new THREE.InstancedMesh(geo, _cropMat, list.length);
+        list.forEach(([x, z], i) => { _cropM4.makeTranslation(x, 0.07, z); im.setMatrixAt(i, _cropM4); });
+        im.instanceMatrix.needsUpdate = true;
+        im.frustumCulled = false; // the farm is small + central; ~1 draw per combo
+        scene.add(im);
+        _cropIM[k] = im;
+    }
+    _cropDirty = false;
+}
+
+function buildCropGeo(cropId, stage) {
     const crop = CROPS[cropId];
     if (!crop) return null;
 
@@ -343,13 +376,7 @@ export function plantCrop(x, z, cropId) {
     tile.cropStage = 0;
     tile.cropTimer = 0;
 
-    // Create and place mesh
-    const mesh = createCropMesh(cropId, 0);
-    if (mesh) {
-        mesh.position.set(x, 0.07, z);
-        scene.add(mesh);
-        cropMeshes[cropKey(x, z)] = mesh;
-    }
+    _cropDirty = true; // new crop joins its combo batch on the next tick
     trackCrop(x, z);
     return true;
 }
@@ -361,21 +388,11 @@ export function harvestCrop(x, z) {
     const crop = CROPS[tile.crop];
     const result = { itemId: crop.harvestItem, qty: crop.harvestQty, watered: !!tile.watered };
 
-    // Remove current crop mesh
-    const key = cropKey(x, z);
-    if (cropMeshes[key]) { disposeCropMesh(cropMeshes[key]); delete cropMeshes[key]; }
-
     if (crop.regrows) {
         // Multi-harvest: drop back to a growing stage and keep the plant
         tile.cropStage = REGROW_STAGE;
         tile.cropTimer = 0;
         result.regrew = true;
-        const mesh = createCropMesh(tile.crop, tile.cropStage);
-        if (mesh) {
-            mesh.position.set(x, 0.07, z);
-            scene.add(mesh);
-            cropMeshes[key] = mesh;
-        }
     } else {
         // One-and-done: clear back to soil
         tile.type = TILE.SOIL;
@@ -383,12 +400,14 @@ export function harvestCrop(x, z) {
         tile.cropStage = 0;
         tile.cropTimer = 0;
     }
+    _cropDirty = true; // combo batches rebuild without/with the changed tile
 
     return result;
 }
 
 export function updateCrops(dt) {
     cropClock += dt;
+    if (_cropDirty) rebuildCropIMs(); // a crop was planted/harvested/grew — rebuild combo batches
     const growth = growthMult(); // a meal growth buff speeds every crop this tick (#50)
 
     // Process a batch of planted tiles round-robin; each catches up via clock-diff,
@@ -420,10 +439,7 @@ export function updateCrops(dt) {
             while (tile.cropStage < 3 && tile.cropTimer >= stageTime) { // multi-stage catch-up
                 tile.cropTimer -= stageTime;
                 tile.cropStage++;
-                const key = cropKey(e.x, e.z);
-                if (cropMeshes[key]) disposeCropMesh(cropMeshes[key]);
-                const mesh = createCropMesh(tile.crop, tile.cropStage);
-                if (mesh) { mesh.position.set(e.x, 0.07, e.z); scene.add(mesh); cropMeshes[key] = mesh; }
+                _cropDirty = true; // grew a stage -> the combo batches rebuild next tick
             }
         }
         cropCursor++;
@@ -432,27 +448,13 @@ export function updateCrops(dt) {
     // (crop sparkles are baked into the merged crop mesh now — no per-frame loop)
 }
 
-// Rebuild crop meshes from tile data (after load)
+// Rebuild crop sim state + instanced batches from tile data (after load).
 export function rebuildCropMeshes() {
-    // Clear existing
-    for (const key in cropMeshes) {
-        scene.remove(cropMeshes[key]);
-        cropMeshes[key].traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
-        delete cropMeshes[key];
-    }
-    // Recreate from tile data and re-register planted tiles in the sim queue
     cropList.length = 0;
     cropSet.clear();
     cropCursor = 0;
     forEachFarmTile((x, z, tile) => {
-        if (tile.type === TILE.PLANTED && tile.crop) {
-            const mesh = createCropMesh(tile.crop, tile.cropStage);
-            if (mesh) {
-                mesh.position.set(x, 0.07, z);
-                scene.add(mesh);
-                cropMeshes[cropKey(x, z)] = mesh;
-            }
-            trackCrop(x, z);
-        }
+        if (tile.type === TILE.PLANTED && tile.crop) trackCrop(x, z);
     });
+    _cropDirty = true; // rebuild the combo InstancedMeshes from the loaded tiles
 }
