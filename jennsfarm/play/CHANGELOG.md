@@ -108,4 +108,22 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - **🖼️ Throttled UI (#35):** factory/coop/bee production was rebuilding the bag/hotbar DOM many times a second; now coalesced to ~6×/sec — big browser-paint cut.
 
 ---
+
+## 🌟 Big session recap — June 2026
+
+A marathon pass. Highlights:
+
+**Performance (was 33–50ms spikes → now locked 60 FPS):** real frustum clipping, tight fog, sim-distance culling, allocation-free spatial hash, throttled UI, frozen static matrices, shared chunk materials. The debug HUD gained a frame-time **histogram + p50/p95/p99 + CPU/GPU/`js` split + bound verdict**.
+
+**The logistics loop (Alice-Greenfingers-ish):** 🧺 Wooden Crates → 👷 farmhand employees that **harvest crops & carry them to crates** (claiming distinct crops, no dogpiling) → 🏚️ **barn depot that now feeds factories** → 🏚️ **placeable barns** (+storage each).
+
+**Build mode:** 🔨 catalog (B), **real translucent model ghosts** (not boxes), `R` rotate, 12 decor props with a ✨beauty score that **draws more visitors**.
+
+**World & content:** 🐦 crows are real flying birds (skunks chase them), 🏭 factories are **visible buildings** + a 🌸 Perfumery tier, 🐉 Dragonfruit + 🎃 Golden Pumpkin crops, ❄️ beefier snow.
+
+**Camera & feel:** 🔍 wheel zoom, 🎥 unlocked god-eye camera, 📍 Follow / 🏡 Home / POI button dock, 😊 Jenn's mood reflects her heart.
+
+**▶ Next up:** task queue (click several plants → harvest in order), haulers (crate → barn), finite bag + cellar perk, move-mode for placed buildings, live entity-count stats, economy rebalance.
+
+---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._
