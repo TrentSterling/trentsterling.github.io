@@ -53,42 +53,14 @@ import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, g
 import { advanceCropsOffline } from './offline.js';
 import { initBuyers, updateBuyers } from './buyers.js';
 import { initQuests, questEvent, serializeQuests, loadQuests, setQuestName, completeSilently, getQuestIndex } from './quests.js';
+import { G, inventory, barnStorage, MAX_HEALTH, HEALTH_DRAIN, DAY_LENGTH, AFK_MS, PAN_SCALE, BARN_UPGRADE_COSTS } from './state.js';
 
 // --- Game State ---
+// Shared mutable state now lives on `G` (see state.js, #9 modularization keystone).
 
-const inventory = createInventory();
-const barnStorage = createInventory();
-let barnCapacity = 50;
-let barnLevel = 1;
 // Total depot capacity = the upgrade level + every placed barn (#71).
-function recalcBarnCapacity() { barnCapacity = 50 * barnLevel + getBarnCount() * BARN_CAP; }
-const BARN_UPGRADE_COSTS = [150, 300, 600, 1200];
-let coins = 100;
-let day = 1;
-let gameTime = 0;
-let playerName = 'Jenn'; // the farmer is Jenn (nameable later - task #2)
-let playerGender = 'girl';
-let health = 100;
-let season = getSeason(1);
-const MAX_HEALTH = 100;
-const HEALTH_DRAIN = 0.35;  // per second while actively playing (not AFK)
-let healthUiTimer = 0;
-let selectedSlot = 0;
-let pendingAction = null;
-let _uiDirty = true, _uiTimer = 0; // throttled UI flush state (#35) — declared early
-                                   // because refreshUI() is called during init (TDZ fix)
-let stepTimer = 0;
-const DAY_LENGTH = 300; // seconds per day
-
-// Idle autoplay (task #12): after the player is idle this long, an AI does
-// MAINTENANCE only (harvest/water/plant) - and only once onboarding is done.
-let lastInputAt = performance.now();
-let autoActive = false;
-let autoCheckTimer = 0;
-let namePromptOpen = false;
-const AFK_MS = 7000; // idle this long (post-onboarding) -> AI takes over
-const autoSkip = new Set(); // auto-farm tiles we couldn't reach this AFK session
-function markInput() { lastInputAt = performance.now(); autoSkip.clear(); }
+function recalcBarnCapacity() { G.barnCapacity = 50 * G.barnLevel + getBarnCount() * BARN_CAP; }
+function markInput() { G.lastInputAt = performance.now(); G.autoSkip.clear(); }
 
 // Nearest walkable tile next to a (possibly solid) target, so click-to-move on a
 // building/cottage walks Jenn to an adjacent reachable spot instead of into it.
@@ -108,17 +80,16 @@ function walkableNeighbor(tx, tz) {
 // THIS frame, and we compute the A* route on the NEXT frame (resolvePendingRoute),
 // then upgrade to the routed path. The node search no longer blocks the click
 // frame, so there's zero perceptible lag between click and movement.
-let pendingRoute = null;
 function routeTo(tx, tz) {
     moveTo(tx, tz);                 // commit instantly — walk straight toward the click
-    pendingRoute = { tx, tz };      // ...and refine into an obstacle-avoiding route next frame
+    G.pendingRoute = { tx, tz };      // ...and refine into an obstacle-avoiding route next frame
 }
 
 // Run once per frame: turn the last click into a real A* route around obstacles.
 function resolvePendingRoute() {
-    if (!pendingRoute) return;
-    const { tx, tz } = pendingRoute;
-    pendingRoute = null;
+    if (!G.pendingRoute) return;
+    const { tx, tz } = G.pendingRoute;
+    G.pendingRoute = null;
     const p = getPlayerPos();
     const route = findPath(p.x, p.z, tx, tz);
     const last = route && route.length ? route[route.length - 1] : null;
@@ -146,13 +117,13 @@ inventory.add('potato_seed', 6);
 // Try loading save
 const saved = loadGame();
 if (saved) {
-    coins = saved.coins ?? 100;
-    day = saved.day ?? 1;
-    gameTime = saved.gameTime ?? 0;
-    health = saved.health ?? 100;
+    G.coins = saved.coins ?? 100;
+    G.day = saved.day ?? 1;
+    G.gameTime = saved.gameTime ?? 0;
+    G.health = saved.health ?? 100;
     inventory.load(saved.inventory ?? {});
     if (saved.barnStorage) barnStorage.load(saved.barnStorage);
-    if (saved.barnLevel) barnLevel = saved.barnLevel; // capacity recalc'd after barns load
+    if (saved.barnLevel) G.barnLevel = saved.barnLevel; // capacity recalc'd after barns load
     setPlayerPos(saved.playerX ?? 24, saved.playerZ ?? 24);
     if (saved.farmLevel) setFarmLevel(saved.farmLevel);
     if (saved.market) loadMarket(saved.market);
@@ -183,8 +154,8 @@ if (saved) {
 
 // Dev/debug params: ?noon jumps to midday, ?money=N grants coins
 const _params = new URLSearchParams(location.search);
-if (_params.has('noon')) gameTime = DAY_LENGTH * 0.27;
-if (_params.has('money')) coins += parseInt(_params.get('money')) || 0;
+if (_params.has('noon')) G.gameTime = DAY_LENGTH * 0.27;
+if (_params.has('money')) G.coins += parseInt(_params.get('money')) || 0;
 
 // Debug/free camera for automated screenshots:
 //   ?camx=24&camz=24&camh=34&camd=2&campitch=-1.3
@@ -206,7 +177,7 @@ if (saved && saved.animals) loadAnimals(saved.animals);
 if (saved && saved.lastSaved) {
     const away = Math.min((Date.now() - saved.lastSaved) / 1000, 4 * 3600); // cap 4h
     if (away > 60) {
-        gameTime += away;
+        G.gameTime += away;
         const cp = advanceCropsOffline(away);
         rebuildCropMeshes();
         const prod = creditOfflineProduce(away);
@@ -225,7 +196,7 @@ if (saved && saved.lastSaved) {
         const sales = offlineBuyerSales(inventory, away); // roadside buyers came by
         if (sales.count) {
             const bonused = Math.round(sales.coins * (1 + getSellBonus()));
-            coins += bonused;
+            G.coins += bonused;
             addEarnings(bonused); // counts toward company value; no popup on load
             sales.coins = bonused;
         }
@@ -242,24 +213,24 @@ if (saved && saved.lastSaved) {
     }
 }
 
-if (saved && saved.playerName) playerName = saved.playerName;
-if (saved && saved.gender) { playerGender = saved.gender; setPlayerGender(saved.gender); }
-season = getSeason(day);
-setSeasonGrowth(effectiveGrowth(season.growth)); // greenhouse lifts the floor (#51)
-startFestival(season.name); // put up the current season's bunting (#52)
+if (saved && saved.playerName) G.playerName = saved.playerName;
+if (saved && saved.gender) { G.playerGender = saved.gender; setPlayerGender(saved.gender); }
+G.season = getSeason(G.day);
+setSeasonGrowth(effectiveGrowth(G.season.growth)); // greenhouse lifts the floor (#51)
+startFestival(G.season.name); // put up the current season's bunting (#52)
 initGrandpa();
 
 // Starting weeds: fresh games get an overgrown farm to clear; saves restore theirs
 if (!saved) {
     spawnInitialWeeds();
-    if (!_params.has('noon')) gameTime = DAY_LENGTH * 0.2; // open in bright morning, not 6am dark
+    if (!_params.has('noon')) G.gameTime = DAY_LENGTH * 0.2; // open in bright morning, not 6am dark
 }
 else if (saved.weeds) loadWeeds(saved.weeds);
 
 // Grandpa's intro chore chain
 function grantReward(r) {
     if (!r) return;
-    if (r.coins) coins += r.coins;
+    if (r.coins) G.coins += r.coins;
     if (r.seeds) for (const k in r.seeds) inventory.add(k, r.seeds[k]);
     if (r.items) for (const k in r.items) inventory.add(k, r.items[k]);
     if (r.coins) notify(`Grandpa paid you 🪙${r.coins}!`);
@@ -267,10 +238,10 @@ function grantReward(r) {
     triggerAutoSave();
 }
 initQuests({
-    name: playerName,
+    name: G.playerName,
     reward: grantReward,
     complete: () => {
-        coins += 100;
+        G.coins += 100;
         const p = getPlayerWorldPos();
         hearts(p.x, 1.0, p.z);
         coinBurst(p.x, p.z);
@@ -290,8 +261,8 @@ if (saved && getQuestIndex() === 0 && getWeedCount() === 0 && !serializeQuests()
 // First-time players name their farmer (defaults to Jenn). ?noname skips it (dev shots).
 if (!saved && !_params.has('noname')) {
     showNamePrompt((name, g) => {
-        playerName = name;
-        playerGender = g;
+        G.playerName = name;
+        G.playerGender = g;
         setPlayerGender(g);
         setQuestName(name);
         triggerAutoSave();
@@ -322,7 +293,7 @@ function showNamePrompt(onDone) {
         <button id="jf-go">Start farming 🌱</button>
       </div>`;
     document.body.appendChild(ov);
-    namePromptOpen = true;
+    G.namePromptOpen = true;
     let g = 'girl';
     ov.querySelectorAll('.gbtn').forEach(b => b.addEventListener('click', () => {
         g = b.dataset.g;
@@ -333,7 +304,7 @@ function showNamePrompt(onDone) {
     const go = () => {
         const v = (input.value || '').trim().slice(0, 14) || 'Jenn';
         if (ov.parentNode) document.body.removeChild(ov);
-        namePromptOpen = false;
+        G.namePromptOpen = false;
         markInput();
         onDone(v, g);
     };
@@ -384,12 +355,12 @@ initDebug(); // debug overlay (FPS + mouse/target/path) — toggle with backtick
 const hotbarSlots = getHotbarSlots();
 
 function getSelectedTool() {
-    return hotbarSlots[selectedSlot];
+    return hotbarSlots[G.selectedSlot];
 }
 
 function selectSlot(index) {
     if (index < 0 || index >= hotbarSlots.length) return;
-    selectedSlot = index;
+    G.selectedSlot = index;
     updateToolLabel(hotbarSlots[index].label);
     setHeldTool(hotbarSlots[index].id);
     refreshUI();
@@ -397,26 +368,24 @@ function selectSlot(index) {
 
 // Click handler
 // --- Drag-to-pan camera (decoupled from player; re-centers when she moves) ---
-let dragDown = false, dragMoved = false, dragLastX = 0, dragLastY = 0, dragStartX = 0, dragStartY = 0;
-const PAN_SCALE = 0.03; // screen px -> world units
 container.addEventListener('mousedown', (e) => {
     if (e.button !== 2) return; // RIGHT button drags the camera; left is for actions
     markInput();
-    dragDown = true; dragMoved = false;
-    dragStartX = dragLastX = e.clientX;
-    dragStartY = dragLastY = e.clientY;
+    G.dragDown = true; G.dragMoved = false;
+    G.dragStartX = G.dragLastX = e.clientX;
+    G.dragStartY = G.dragLastY = e.clientY;
 });
 window.addEventListener('mouseup', () => {
-    dragDown = false;
+    G.dragDown = false;
     container.style.cursor = '';
-    setTimeout(() => { dragMoved = false; }, 0); // clear after the click event fires
+    setTimeout(() => { G.dragMoved = false; }, 0); // clear after the click event fires
 });
 
 container.addEventListener('click', (e) => {
     markInput();
     if (e.button !== 0) return; // only the left button acts
     if (isOverlayOpen()) return;
-    if (fishing && fishing.state === 'bite') { hookFish(); return; } // reel it in!
+    if (G.fishing && G.fishing.state === 'bite') { hookFish(); return; } // reel it in!
 
     const hit = raycastGround(e);
     if (!hit) return;
@@ -442,7 +411,7 @@ container.addEventListener('click', (e) => {
         const pos = getPlayerPos();
         const wd = Math.abs(pos.x - tx) + Math.abs(pos.z - tz);
         if (wd <= 1.5) startCast();
-        else { const nb = walkableNeighbor(tx, tz); pendingAction = { x: tx, z: tz, tool: { id: 'fish' } }; routeTo(nb ? nb.x : tx, nb ? nb.z : tz); }
+        else { const nb = walkableNeighbor(tx, tz); G.pendingAction = { x: tx, z: tz, tool: { id: 'fish' } }; routeTo(nb ? nb.x : tx, nb ? nb.z : tz); }
         return;
     }
 
@@ -452,7 +421,7 @@ container.addEventListener('click', (e) => {
         const pp = getPlayerPos();
         const cd = Math.abs(pp.x - crate.x) + Math.abs(pp.z - crate.z);
         if (cd <= 1.4) openCrateAndCollect(crate);
-        else { pendingAction = { x: crate.x, z: crate.z, tool: { id: 'crate' } }; routeTo(crate.x, crate.z); }
+        else { G.pendingAction = { x: crate.x, z: crate.z, tool: { id: 'crate' } }; routeTo(crate.x, crate.z); }
         return;
     }
 
@@ -462,7 +431,7 @@ container.addEventListener('click', (e) => {
         const pp = getPlayerPos();
         const bd = Math.abs(pp.x - bin.x) + Math.abs(pp.z - bin.z);
         if (bd <= 1.6) collectBin(bin);
-        else { pendingAction = { x: bin.x, z: bin.z, tool: { id: 'bin' } }; routeTo(bin.x, bin.z); }
+        else { G.pendingAction = { x: bin.x, z: bin.z, tool: { id: 'bin' } }; routeTo(bin.x, bin.z); }
         return;
     }
 
@@ -471,7 +440,7 @@ container.addEventListener('click', (e) => {
         const pp = getPlayerPos(); const fp = getFountainPos();
         const fd = Math.abs(pp.x - fp.x) + Math.abs(pp.z - fp.z);
         if (fd <= 1.6) tossCoinAtFountain();
-        else { pendingAction = { x: fp.x, z: fp.z, tool: { id: 'fountain' } }; routeTo(fp.x, fp.z); }
+        else { G.pendingAction = { x: fp.x, z: fp.z, tool: { id: 'fountain' } }; routeTo(fp.x, fp.z); }
         return;
     }
 
@@ -485,7 +454,7 @@ container.addEventListener('click', (e) => {
     if (dist <= 1 && actionable) {
         performAction(tx, tz, tool);
     } else {
-        pendingAction = actionable ? { x: tx, z: tz, tool } : null;
+        G.pendingAction = actionable ? { x: tx, z: tz, tool } : null;
         // A* routes around buildings/water/trees and, for a solid target tile
         // (e.g. the Market), ends on a walkable neighbour so the action still
         // fires on arrival (dist<=1). No more getting stuck in the corner.
@@ -496,7 +465,7 @@ container.addEventListener('click', (e) => {
 // Right-click: TAP = quick-harvest, DRAG = pan camera (handled in mousemove)
 container.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    if (dragMoved) return;       // it was a camera pan, not a harvest tap
+    if (G.dragMoved) return;       // it was a camera pan, not a harvest tap
     if (isPlacing()) { cancelPlacement(); notify('Build cancelled.'); return; } // right-click exits build mode
     if (isOverlayOpen()) return;
 
@@ -533,14 +502,14 @@ container.addEventListener('mousemove', (e) => {
     markInput();
 
     // Drag-to-pan: hold RIGHT button and drag to move the camera off the player
-    if (dragDown && (e.buttons & 2)) {
-        if (!dragMoved && Math.abs(e.clientX - dragStartX) + Math.abs(e.clientY - dragStartY) > 6) {
-            dragMoved = true;
+    if (G.dragDown && (e.buttons & 2)) {
+        if (!G.dragMoved && Math.abs(e.clientX - G.dragStartX) + Math.abs(e.clientY - G.dragStartY) > 6) {
+            G.dragMoved = true;
             container.style.cursor = 'grabbing';
         }
-        if (dragMoved) {
-            const dx = e.clientX - dragLastX, dy = e.clientY - dragLastY;
-            dragLastX = e.clientX; dragLastY = e.clientY;
+        if (G.dragMoved) {
+            const dx = e.clientX - G.dragLastX, dy = e.clientY - G.dragLastY;
+            G.dragLastX = e.clientX; G.dragLastY = e.clientY;
             panCamera(-dx * PAN_SCALE, -dy * PAN_SCALE); // map-style: world follows the cursor
             hideHighlight();
             return;
@@ -570,7 +539,7 @@ container.addEventListener('mousemove', (e) => {
 // Keyboard
 document.addEventListener('keydown', (e) => {
     markInput();
-    if (namePromptOpen) return; // don't act on shortcuts while naming the farmer
+    if (G.namePromptOpen) return; // don't act on shortcuts while naming the farmer
     const num = parseInt(e.key);
     if (num >= 1 && num <= hotbarSlots.length) {
         selectSlot(num - 1);
@@ -626,15 +595,15 @@ if (craftBtn) craftBtn.addEventListener('click', toggleCraft);
 
 // --- Factories (auto-production) ---
 function openFactory() {
-    showFactory(coins, inventory, buildFactoryAction, hireEmployeeAction, barnStorage);
+    showFactory(G.coins, inventory, buildFactoryAction, hireEmployeeAction, barnStorage);
 }
 
 function buildFactoryAction(type) {
     const def = FACTORY_TYPES[type];
     if (!def) return;
-    if (coins < def.cost) { playDeny(); notify("Can't afford that factory!"); return; }
+    if (G.coins < def.cost) { playDeny(); notify("Can't afford that factory!"); return; }
     if (!buildFactory(type)) { notify('Already built!'); return; }
-    coins -= def.cost;
+    G.coins -= def.cost;
     playExpand();
     syncFactoryBuildings(); // raise its physical building in the industry row (#64)
     const p = getPlayerWorldPos(); coinBurst(p.x, p.z); addShake(0.08);
@@ -648,9 +617,9 @@ function hireEmployeeAction(type) {
     const fac = getFactories()[type];
     if (!fac) return;
     const cost = employeeCost(type, fac.employees);
-    if (coins < cost) { playDeny(); notify("Can't afford to hire!"); return; }
+    if (G.coins < cost) { playDeny(); notify("Can't afford to hire!"); return; }
     if (!hireEmployee(type)) { notify('Full crew!'); return; }
-    coins -= cost;
+    G.coins -= cost;
     playBuy();
     notify(`Hired a worker at the ${FACTORY_TYPES[type].name}! 👷 Faster production.`);
     refreshUI();
@@ -811,7 +780,7 @@ function performAction(tx, tz, tool) {
 function handleBuildingInteraction(tile) {
     if (tile.type === TILE.SHOP) {
         const barnCost = getNextBarnUpgradeCost();
-        showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, barnCost, buyAnimal);
+        showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, barnCost, buyAnimal);
     } else if (tile.type === TILE.MARKET) {
         showMarket(inventory, sellItem, getPrice, getTrend, sellAllCrops);
     } else if (tile.type === TILE.BARN) {
@@ -822,7 +791,7 @@ function handleBuildingInteraction(tile) {
 }
 
 function getNextBarnUpgradeCost() {
-    const idx = barnLevel - 1;
+    const idx = G.barnLevel - 1;
     return idx < BARN_UPGRADE_COSTS.length ? BARN_UPGRADE_COSTS[idx] : null;
 }
 
@@ -832,19 +801,19 @@ function buyBarnUpgrade() {
         notify('Barn is max level!');
         return;
     }
-    if (coins < cost) {
+    if (G.coins < cost) {
         playDeny();
         notify("Can't afford barn upgrade!");
         return;
     }
-    coins -= cost;
-    barnLevel++;
+    G.coins -= cost;
+    G.barnLevel++;
     recalcBarnCapacity();
     playExpand();
-    notify(`Barn upgraded! Capacity: ${barnCapacity}`);
+    notify(`Barn upgraded! Capacity: ${G.barnCapacity}`);
     refreshUI();
     const nextCost = getNextBarnUpgradeCost();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, nextCost, buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, nextCost, buyAnimal);
     triggerAutoSave();
 }
 
@@ -852,13 +821,13 @@ function buyBarnUpgrade() {
 function buyToolUpgrade(tool) {
     const up = nextUpgrade(tool);
     if (!up) return;
-    if (coins < up.cost) { playDeny(); notify("Can't afford that upgrade!"); return; }
-    coins -= up.cost;
+    if (G.coins < up.cost) { playDeny(); notify("Can't afford that upgrade!"); return; }
+    G.coins -= up.cost;
     upgradeTool(tool);
     playExpand();
     notify(`Upgraded to ${up.name}! Bigger work area.`);
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 // Where can a structure go? Open wild ground, grass, or a path — never on
@@ -873,16 +842,16 @@ function canPlaceStructure(x, z) {
 // Beehive: buy → enter build mode, click to place; bees make honey nearby (#44)
 function buyBeehive() {
     if (getHiveCount() >= 6) { playDeny(); notify('No room for more hives!'); return; }
-    if (coins < HIVE_COST) { playDeny(); notify("Can't afford a beehive!"); return; }
+    if (G.coins < HIVE_COST) { playDeny(); notify("Can't afford a beehive!"); return; }
     hideAllOverlays();
     beginPlacement({
         id: 'hive', name: 'Beehive', cost: HIVE_COST, footprint: 0.7,
         preview: () => { const g = new THREE.Group(); for (const [rt, rb, h, y] of [[0.22, 0.26, 0.16, 0.08], [0.18, 0.22, 0.14, 0.22], [0.12, 0.18, 0.12, 0.34]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 10)); m.position.y = y; g.add(m); } return g; },
-        afford: () => coins >= HIVE_COST && getHiveCount() < 6,
+        afford: () => G.coins >= HIVE_COST && getHiveCount() < 6,
         canPlace: canPlaceStructure,
         place: (x, z) => {
             if (!placeHive(x, z)) { playDeny(); return; }
-            coins -= HIVE_COST; playExpand();
+            G.coins -= HIVE_COST; playExpand();
             notify('Beehive placed! 🐝'); refreshUI(); triggerAutoSave();
         },
     });
@@ -891,16 +860,16 @@ function buyBeehive() {
 // Chicken coop: buy → build mode, click to place; it lays eggs on its own
 function buyCoop() {
     if (getCoopCount() >= 6) { playDeny(); notify('No room for more coops!'); return; }
-    if (coins < COOP_COST) { playDeny(); notify("Can't afford a coop!"); return; }
+    if (G.coins < COOP_COST) { playDeny(); notify("Can't afford a coop!"); return; }
     hideAllOverlays();
     beginPlacement({
         id: 'coop', name: 'Chicken Coop', cost: COOP_COST, footprint: 0.9,
         preview: () => { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.6)); b.position.y = 0.25; g.add(b); const r = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.35, 4)); r.position.y = 0.62; r.rotation.y = Math.PI / 4; g.add(r); return g; },
-        afford: () => coins >= COOP_COST && getCoopCount() < 6,
+        afford: () => G.coins >= COOP_COST && getCoopCount() < 6,
         canPlace: canPlaceStructure,
         place: (x, z) => {
             if (!placeCoop(x, z)) { playDeny(); return; }
-            coins -= COOP_COST; playExpand();
+            G.coins -= COOP_COST; playExpand();
             notify('Coop built! 🐔'); refreshUI(); triggerAutoSave();
         },
     });
@@ -908,15 +877,15 @@ function buyCoop() {
 }
 // Decor prop: buy → build mode, click to place (R rotates). Pure cosmetics (#36).
 function startDecorPlacement(d) {
-    if (coins < d.cost) { playDeny(); notify(`Can't afford ${d.name}!`); return; }
+    if (G.coins < d.cost) { playDeny(); notify(`Can't afford ${d.name}!`); return; }
     beginPlacement({
         id: d.id, name: d.name, cost: d.cost, footprint: d.footprint,
         preview: () => decorModel(d.id), // real translucent model ghost (#36)
-        afford: () => coins >= d.cost,
+        afford: () => G.coins >= d.cost,
         canPlace: canPlaceStructure,
         place: (x, z, rot) => {
             placeDecor(d.id, x, z, rot);
-            coins -= d.cost; playExpand();
+            G.coins -= d.cost; playExpand();
             notify(`${d.emoji} ${d.name} placed! ✨ Beauty ${beautyScore()}`); refreshUI(); triggerAutoSave();
         },
     });
@@ -925,14 +894,14 @@ function startDecorPlacement(d) {
 // Wooden Crate: a finite crop bin that harvester employees fill — click a full one to collect (#67)
 const CRATE_PRICE = 40;
 function startCratePlacement() {
-    if (coins < CRATE_PRICE) { playDeny(); notify("Can't afford a crate!"); return; }
+    if (G.coins < CRATE_PRICE) { playDeny(); notify("Can't afford a crate!"); return; }
     beginPlacement({
         id: 'crate', name: 'Wooden Crate', cost: CRATE_PRICE, footprint: 0.6,
         preview: crateModel, // real translucent crate ghost (#36)
-        afford: () => coins >= CRATE_PRICE,
+        afford: () => G.coins >= CRATE_PRICE,
         canPlace: canPlaceStructure,
         place: (x, z) => {
-            placeBin(x, z); coins -= CRATE_PRICE; playExpand();
+            placeBin(x, z); G.coins -= CRATE_PRICE; playExpand();
             notify(`🧺 Crate placed! Farmhands fill it — click a full one to collect.`); refreshUI(); triggerAutoSave();
         },
     });
@@ -941,15 +910,15 @@ function startCratePlacement() {
 // Barn: a placeable storage building — each one adds depot capacity (#71).
 const BARN_PRICE = 600;
 function startBarnPlacement() {
-    if (coins < BARN_PRICE) { playDeny(); notify("Can't afford a barn!"); return; }
+    if (G.coins < BARN_PRICE) { playDeny(); notify("Can't afford a barn!"); return; }
     beginPlacement({
         id: 'barn', name: 'Barn', cost: BARN_PRICE, footprint: 1.1,
         preview: barnModel,
-        afford: () => coins >= BARN_PRICE,
+        afford: () => G.coins >= BARN_PRICE,
         canPlace: canPlaceStructure,
         place: (x, z) => {
-            placeBarn(x, z); recalcBarnCapacity(); coins -= BARN_PRICE; playExpand();
-            notify(`🏚️ Barn built! +${BARN_CAP} storage (now ${barnCapacity}).`); refreshUI(); triggerAutoSave();
+            placeBarn(x, z); recalcBarnCapacity(); G.coins -= BARN_PRICE; playExpand();
+            notify(`🏚️ Barn built! +${BARN_CAP} storage (now ${G.barnCapacity}).`); refreshUI(); triggerAutoSave();
         },
     });
     notify('🏚️ Click to place your barn — ESC to cancel.');
@@ -967,32 +936,32 @@ function openBuild() {
         { section: `🌷 Decor  ·  ✨ Farm Beauty ${beautyScore()} (draws more visitors)` },
         ...DECOR_CATALOG.map(d => ({ ...d, note: `${d.note} · ✨${d.beauty}`, count: counts[d.id] || 0, start: () => startDecorPlacement(d) })),
     ];
-    showBuildMenu(coins, catalog, (entry) => { hideBuildMenu(); entry.start(); });
+    showBuildMenu(G.coins, catalog, (entry) => { hideBuildMenu(); entry.start(); });
 }
 // Wishing fountain: buy → place once; click it to toss a coin for a blessing (#47)
 function buyFountain() {
     if (hasFountain()) { notify('You already have a fountain!'); return; }
-    if (coins < FOUNTAIN_COST) { playDeny(); notify("Can't afford a fountain!"); return; }
+    if (G.coins < FOUNTAIN_COST) { playDeny(); notify("Can't afford a fountain!"); return; }
     buildFountain();
-    coins -= FOUNTAIN_COST;
+    G.coins -= FOUNTAIN_COST;
     playExpand();
     notify('Wishing fountain built! Walk up and toss a coin. ✨');
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 
 const WISH_SEEDS = ['carrot_seed', 'tomato_seed', 'strawberry_seed', 'grape_seed', 'tulip_seed', 'sunflower_seed'];
 const WISH_LINES = ['Make a wish, kiddo. ✨', "The old well's lucky, you know.", 'Your grandmother loved this fountain. ❤'];
 function tossCoinAtFountain() {
-    if (coins < TOSS_COST) { playDeny(); notify(`Need 🪙${TOSS_COST} to toss a coin.`); return; }
-    coins -= TOSS_COST;
+    if (G.coins < TOSS_COST) { playDeny(); notify(`Need 🪙${TOSS_COST} to toss a coin.`); return; }
+    G.coins -= TOSS_COST;
     const fp = getFountainPos();
     sparkle(fp.x, 0.7, fp.z, [0x9be8ff, 0xffffff, 0xffe066]);
     const kind = rollBlessing(Math.random());
     if (kind === 'coins') {
         const g = 25 + Math.floor(Math.random() * 55);
-        coins += g; coinBurst(fp.x, fp.z); notify(`✨ The well bubbles up 🪙${g}!`);
+        G.coins += g; coinBurst(fp.x, fp.z); notify(`✨ The well bubbles up 🪙${g}!`);
     } else if (kind === 'seeds') {
         const s = WISH_SEEDS[Math.floor(Math.random() * WISH_SEEDS.length)];
         const q = 2 + Math.floor(Math.random() * 3); inventory.add(s, q);
@@ -1016,8 +985,8 @@ function tossCoinAtFountain() {
 function buyPet(species) {
     const kind = species === 'cat' ? 'cat' : 'dog';
     if (hasPet()) { notify('You already have a pet!'); return; }
-    if (coins < PET_COST) { playDeny(); notify("Can't afford a pet!"); return; }
-    coins -= PET_COST;
+    if (G.coins < PET_COST) { playDeny(); notify("Can't afford a pet!"); return; }
+    G.coins -= PET_COST;
     const p = getPlayerPos();
     adoptPet(kind, p.x - 1, p.z + 1);
     playBuy();
@@ -1026,43 +995,43 @@ function buyPet(species) {
         ? 'You adopted a kitten! 🐈 It follows you and fetches drops.'
         : 'You adopted a puppy! 🐕 It follows you and fetches drops.');
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 // Food bowl: draws more visitor cats, faster (#54)
 function buyFoodBowl() {
     if (hasFoodBowl()) { notify('You already put a food bowl out!'); return; }
-    if (coins < FOOD_BOWL_COST) { playDeny(); notify("Can't afford a food bowl!"); return; }
+    if (G.coins < FOOD_BOWL_COST) { playDeny(); notify("Can't afford a food bowl!"); return; }
     placeFoodBowl();
-    coins -= FOOD_BOWL_COST;
+    G.coins -= FOOD_BOWL_COST;
     playExpand();
     notify('Food bowl out! 🥣 More cats will come visit.');
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 // Greenhouse: crops grow full-speed year-round (#51)
 function buyGreenhouse() {
     if (hasGreenhouse()) { notify('You already have a greenhouse!'); return; }
-    if (coins < GREENHOUSE_COST) { playDeny(); notify("Can't afford a greenhouse!"); return; }
+    if (G.coins < GREENHOUSE_COST) { playDeny(); notify("Can't afford a greenhouse!"); return; }
     buildGreenhouse();
-    coins -= GREENHOUSE_COST;
-    setSeasonGrowth(effectiveGrowth(season.growth)); // apply right away
+    G.coins -= GREENHOUSE_COST;
+    setSeasonGrowth(effectiveGrowth(G.season.growth)); // apply right away
     playExpand();
     notify('Greenhouse built! 🌿 Crops now grow full-speed all year.');
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 // Flytrap: carnivorous plant that snaps crows — never skunks (#58)
 function buyFlytrap() {
-    if (coins < FLYTRAP_COST) { playDeny(); notify("Can't afford a flytrap!"); return; }
+    if (G.coins < FLYTRAP_COST) { playDeny(); notify("Can't afford a flytrap!"); return; }
     if (!buyFlytrapPlacement()) { playDeny(); notify('No room for more flytraps!'); return; }
-    coins -= FLYTRAP_COST;
+    G.coins -= FLYTRAP_COST;
     playExpand();
     notify('Flytrap planted! 🪤 It snaps up crows (never skunks).');
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 setShopHandlers({ onUpgrade: buyToolUpgrade, onBuyHive: buyBeehive, onBuyFountain: buyFountain, onBuyPet: buyPet, onBuyFoodBowl: buyFoodBowl, onBuyGreenhouse: buyGreenhouse, onBuyFlytrap: buyFlytrap, onBuyCoop: buyCoop });
@@ -1132,36 +1101,35 @@ function doChop(tx, tz) {
 }
 
 // --- Fishing (#49): cast at the pond → wait for a bite → click to reel in ---
-let fishing = null; // { state: 'cast'|'bite', timer }
 
 function startCast() {
-    if (fishing) return;
-    fishing = { state: 'cast', timer: 1.5 + Math.random() * 1.8 };
+    if (G.fishing) return;
+    G.fishing = { state: 'cast', timer: 1.5 + Math.random() * 1.8 };
     playWater();
     notify('🎣 Casting...');
 }
 
 function updateFishing(dt) {
-    if (!fishing) return;
-    fishing.timer -= dt;
-    if (fishing.timer > 0) return;
-    if (fishing.state === 'cast') {
-        fishing.state = 'bite';
-        fishing.timer = 1.3; // window to react
+    if (!G.fishing) return;
+    G.fishing.timer -= dt;
+    if (G.fishing.timer > 0) return;
+    if (G.fishing.state === 'cast') {
+        G.fishing.state = 'bite';
+        G.fishing.timer = 1.3; // window to react
         notify('❗ A bite! Click to reel it in!');
         addShake(0.05);
     } else {
-        fishing = null; // missed the window
+        G.fishing = null; // missed the window
         notify('🎣 ...it got away.');
     }
 }
 
 function hookFish() {
-    if (!fishing || fishing.state !== 'bite') return;
-    const fish = pickFish(season.name, Math.random());
+    if (!G.fishing || G.fishing.state !== 'bite') return;
+    const fish = pickFish(G.season.name, Math.random());
     const weight = rollFishSize(fish, Math.random());
     const isRecord = tryFishRecord(fish, weight);
-    fishing = null;
+    G.fishing = null;
     inventory.add(fish, 1);
     recordStat('fish');
     playHarvest();
@@ -1213,7 +1181,7 @@ function openCrateAndCollect(crate) {
     pop(getPlayerGroup(), 0.22);
     playExpand();
     const parts = [];
-    if (res.contents.coins) { coins += res.contents.coins; parts.push(`🪙${res.contents.coins}`); }
+    if (res.contents.coins) { G.coins += res.contents.coins; parts.push(`🪙${res.contents.coins}`); }
     for (const id in res.contents.items) {
         inventory.add(id, res.contents.items[id]);
         parts.push(`${res.contents.items[id]} ${ITEMS[id] ? ITEMS[id].name : id}`);
@@ -1262,7 +1230,7 @@ function findMaintenanceTask() {
     // 2. Water a dry crop (maintenance)
     let water = null;
     forEachFarmTile((x, z, t) => {
-        if (water || autoSkip.has(x + ',' + z)) return;
+        if (water || G.autoSkip.has(x + ',' + z)) return;
         if (t.type === TILE.PLANTED && t.cropStage < 3 && !t.watered) water = { x, z, tool: { id: 'water' } };
     });
     if (water) return water;
@@ -1270,7 +1238,7 @@ function findMaintenanceTask() {
     // 3. Pull a weed (tidying — keep the farm clear while idle)
     let weed = null;
     forEachFarmTile((x, z, t) => {
-        if (weed || autoSkip.has(x + ',' + z)) return;
+        if (weed || G.autoSkip.has(x + ',' + z)) return;
         if (hasWeedAt(x, z)) weed = { x, z, tool: { id: 'hand' } };
     });
     if (weed) return weed;
@@ -1284,30 +1252,27 @@ function findMaintenanceTask() {
     return null;
 }
 
-let autoBadgeEl = null;
 function setAutoBadge(on) {
-    if (!autoBadgeEl) {
-        autoBadgeEl = document.createElement('div');
-        autoBadgeEl.id = 'auto-badge'; // styled via style.css (unified design system)
-        autoBadgeEl.textContent = '🤖 Auto-farming…';
-        document.body.appendChild(autoBadgeEl);
+    if (!G.autoBadgeEl) {
+        G.autoBadgeEl = document.createElement('div');
+        G.autoBadgeEl.id = 'auto-badge'; // styled via style.css (unified design system)
+        G.autoBadgeEl.textContent = '🤖 Auto-farming…';
+        document.body.appendChild(G.autoBadgeEl);
     }
-    autoBadgeEl.style.opacity = on ? '1' : '0';
+    G.autoBadgeEl.style.opacity = on ? '1' : '0';
 }
 
 // Active meal buffs shown as small pills (icon + remaining time), top-right under
 // the AFK badge. Throttled to ~4Hz so the countdown ticks without per-frame churn. (#50)
-let buffBarEl = null;
-let buffHudTimer = 0;
 function renderBuffHud(dt) {
-    buffHudTimer -= dt;
-    if (buffHudTimer > 0) return;
-    buffHudTimer = 0.25;
-    if (!buffBarEl) { buffBarEl = document.createElement('div'); buffBarEl.id = 'buff-bar'; document.body.appendChild(buffBarEl); }
+    G.buffHudTimer -= dt;
+    if (G.buffHudTimer > 0) return;
+    G.buffHudTimer = 0.25;
+    if (!G.buffBarEl) { G.buffBarEl = document.createElement('div'); G.buffBarEl.id = 'buff-bar'; document.body.appendChild(G.buffBarEl); }
     const buffs = activeBuffs();
-    if (!buffs.length) { buffBarEl.style.display = 'none'; buffBarEl.innerHTML = ''; return; }
-    buffBarEl.style.display = 'flex';
-    buffBarEl.innerHTML = buffs.map(b => `<div class="buff-pill">${b.icon}<span>${fmtBuffTime(b.remaining)}</span></div>`).join('');
+    if (!buffs.length) { G.buffBarEl.style.display = 'none'; G.buffBarEl.innerHTML = ''; return; }
+    G.buffBarEl.style.display = 'flex';
+    G.buffBarEl.innerHTML = buffs.map(b => `<div class="buff-pill">${b.icon}<span>${fmtBuffTime(b.remaining)}</span></div>`).join('');
 }
 
 function placeSprinkler(tx, tz, tile) {
@@ -1339,7 +1304,7 @@ function eatItem(id) {
     const heal = healValue(id);
     if (heal <= 0) { notify("Can't eat that!"); return; }
     inventory.remove(id, 1);
-    health = Math.min(MAX_HEALTH, health + heal);
+    G.health = Math.min(MAX_HEALTH, G.health + heal);
     const p = getPlayerWorldPos();
     hearts(p.x, 1.0, p.z);
     playStore();
@@ -1374,7 +1339,7 @@ function buyerPurchase(wx, wz) {
         if (ITEMS[id].type !== 'crop' || inventory.count(id) <= 0) continue;
         inventory.remove(id, 1);
         const price = Math.round(getPrice(id) * (1 + getSellBonus()));
-        coins += price;
+        G.coins += price;
         recordEarnings(price);
         recordSale(id, 1); // selling still nudges the market price down
         playSell();
@@ -1389,17 +1354,17 @@ function buyerPurchase(wx, wz) {
 
 function buyItem(itemId) {
     const item = ITEMS[itemId];
-    if (!item || coins < item.buyPrice) {
+    if (!item || G.coins < item.buyPrice) {
         playDeny();
         notify("Can't afford that!");
         return;
     }
-    coins -= item.buyPrice;
+    G.coins -= item.buyPrice;
     inventory.add(itemId, 1);
     playBuy();
     notify(`Bought ${item.name}!`);
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 
@@ -1409,34 +1374,34 @@ function buyExpansion() {
         notify('Farm is max size!');
         return;
     }
-    if (coins < cost) {
+    if (G.coins < cost) {
         playDeny();
         notify("Can't afford expansion!");
         return;
     }
-    coins -= cost;
+    G.coins -= cost;
     expandFarm();
     playExpand();
     const level = getFarmLevel();
     notify(`Farm expanded to level ${level}!`);
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 
 function buyAnimal(species) {
     const def = ANIMALS[species];
-    if (!def || coins < def.cost) {
+    if (!def || G.coins < def.cost) {
         playDeny();
         notify("Can't afford that!");
         return;
     }
-    coins -= def.cost;
+    G.coins -= def.cost;
     buyAnimalEntity(species);
     playBuy();
     notify(`Bought a ${def.name}!`);
     refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
+    showShop(G.coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
 
@@ -1446,7 +1411,7 @@ function sellItem(itemId) {
     const qty = inventory.count(itemId);
     inventory.remove(itemId, qty);
     const earned = Math.round(qty * getPrice(itemId) * (1 + getSellBonus()));
-    coins += earned;
+    G.coins += earned;
     recordEarnings(earned);
     recordStat('sold', qty);
     recordSale(itemId, qty);   // flooding the market lowers future price
@@ -1466,7 +1431,7 @@ function sellAllCrops() {
         if (qty <= 0) continue;
         inventory.remove(id, qty);
         const earned = Math.round(qty * getPrice(id) * (1 + getSellBonus()));
-        coins += earned; total += earned; count += qty;
+        G.coins += earned; total += earned; count += qty;
         recordSale(id, qty); // flooding still tanks future prices
     }
     if (count > 0) {
@@ -1486,15 +1451,15 @@ function sellAllCrops() {
 // --- Barn ---
 
 function openBarn() {
-    showBarn(barnStorage, barnCapacity, inventory, barnDeposit, barnWithdraw, barnDepositAll);
+    showBarn(barnStorage, G.barnCapacity, inventory, barnDeposit, barnWithdraw, barnDepositAll);
 }
 
 // --- Home (cottage) ---
 
 function openHome() {
-    const letter = isClaimed(day) ? null : makeLetter(day);
+    const letter = isClaimed(G.day) ? null : makeLetter(G.day);
     if (letter && letter.kind === 'request') letter.canDeliver = canFulfill(letter, inventory);
-    showHome(playerName, sleepAtHome, letter, () => claimMail(letter), allStats());
+    showHome(G.playerName, sleepAtHome, letter, () => claimMail(letter), allStats());
 }
 
 // Collect Grandpa's daily letter: a gift, or fulfil a delivery request.
@@ -1507,8 +1472,8 @@ function claimMail(letter) {
     }
     const reward = claimLetter(letter, inventory); // consumes the goods for a request
     if (reward <= 0) return;
-    coins += reward;
-    markClaimed(day);
+    G.coins += reward;
+    markClaimed(G.day);
     playBuy();
     const p = getPlayerWorldPos();
     coinBurst(p.x, p.z); hearts(p.x, 1.0, p.z);
@@ -1522,10 +1487,10 @@ function claimMail(letter) {
 // you rest (reusing the offline helpers). The loop's new-day check ticks the
 // market/season as the day rolls over.
 function sleepAtHome() {
-    const target = nextMorning(gameTime, DAY_LENGTH);
-    const skipped = target - gameTime;
-    gameTime = target;
-    health = MAX_HEALTH;
+    const target = nextMorning(G.gameTime, DAY_LENGTH);
+    const skipped = target - G.gameTime;
+    G.gameTime = target;
+    G.health = MAX_HEALTH;
     const cp = advanceCropsOffline(skipped);
     rebuildCropMeshes();
     const prod = creditOfflineProduce(skipped);
@@ -1545,13 +1510,13 @@ function sleepAtHome() {
 
 function barnDeposit(itemId) {
     const totalStored = Object.values(barnStorage.getAll()).reduce((s, v) => s + v, 0);
-    if (totalStored >= barnCapacity) {
+    if (totalStored >= G.barnCapacity) {
         playDeny();
         notify('Barn is full!');
         return;
     }
     const available = inventory.count(itemId);
-    const space = barnCapacity - totalStored;
+    const space = G.barnCapacity - totalStored;
     const qty = Math.min(available, space);
     if (qty <= 0) return;
     inventory.remove(itemId, qty);
@@ -1583,7 +1548,7 @@ function barnDepositAll() {
     for (const [id] of crops) {
         const available = inventory.count(id);
         if (available <= 0) continue;
-        const space = barnCapacity - totalStored;
+        const space = G.barnCapacity - totalStored;
         if (space <= 0) break;
         const qty = Math.min(available, space);
         inventory.remove(id, qty);
@@ -1605,7 +1570,7 @@ function barnDepositAll() {
 // --- UI Refresh ---
 
 function getDayProgress() {
-    return (gameTime % DAY_LENGTH) / DAY_LENGTH;
+    return (G.gameTime % DAY_LENGTH) / DAY_LENGTH;
 }
 
 function getTimeString(progress) {
@@ -1619,34 +1584,33 @@ function getTimeString(progress) {
 
 function doRefreshUI() {
     const progress = getDayProgress();
-    updateHUD(coins, day, getTimeString(progress), season);
-    updateHotbar(selectedSlot, inventory, selectSlot);
+    updateHUD(G.coins, G.day, getTimeString(progress), G.season);
+    updateHotbar(G.selectedSlot, inventory, selectSlot);
     updateBag(inventory, eatItem);
-    updateHealth(health, MAX_HEALTH);
+    updateHealth(G.health, MAX_HEALTH);
 }
 // Throttled (#35): production (factories/coops/bees) fires refreshUI many times a
 // second; rebuilding the bag/hotbar DOM each time was a big browser-paint cost.
 // Coalesce to a dirty flag flushed ~6×/sec in the game loop — imperceptible lag.
 // (_uiDirty / _uiTimer are declared near the top — refreshUI runs during init.)
-function refreshUI() { _uiDirty = true; }
+function refreshUI() { G._uiDirty = true; }
 
 // --- Save ---
 
-let saveTimer = null;
 function triggerAutoSave() {
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
+    if (G.saveTimer) clearTimeout(G.saveTimer);
+    G.saveTimer = setTimeout(() => {
         const pos = getPlayerPos();
         saveGame({
             version: 4,
-            coins,
-            day,
-            gameTime,
-            playerName,
-            gender: playerGender,
-            health,
+            coins: G.coins,
+            day: G.day,
+            gameTime: G.gameTime,
+            playerName: G.playerName,
+            gender: G.playerGender,
+            health: G.health,
             farmLevel: getFarmLevel(),
-            barnLevel,
+            barnLevel: G.barnLevel,
             playerX: pos.x,
             playerZ: pos.z,
             inventory: inventory.serialize(),
@@ -1682,19 +1646,17 @@ function triggerAutoSave() {
 
 // --- Game Loop ---
 
-let lastTime = performance.now();
 // Reused per-frame scratch to avoid GC churn in the hot loop (#35)
-let _sysCtx = null;
 const _grandpaCtx = { coins: 0, day: 0, name: '', wood: 0, crops: 0 };
 const _camTmp = new THREE.Vector3();
 
 function gameLoop(now) {
     requestAnimationFrame(gameLoop);
 
-    const frameMs = now - lastTime;
+    const frameMs = now - G.lastTime;
     const dt = Math.min(frameMs / 1000, 0.1);
-    lastTime = now;
-    gameTime += dt;
+    G.lastTime = now;
+    G.gameTime += dt;
 
     profBegin(); // per-phase frame profiler (#35) — see breakdown in the debug HUD (`)
     tickBuffs(dt); // count down any active meal buffs (#50)
@@ -1704,44 +1666,44 @@ function gameLoop(now) {
 
     // Footstep sounds
     if (isMoving()) {
-        stepTimer += dt;
-        if (stepTimer > 0.35) {
+        G.stepTimer += dt;
+        if (G.stepTimer > 0.35) {
             playWalk();
-            stepTimer = 0;
+            G.stepTimer = 0;
         }
     } else {
-        stepTimer = 0;
+        G.stepTimer = 0;
     }
 
-    if (pendingAction && !isMoving()) {
+    if (G.pendingAction && !isMoving()) {
         const pos = getPlayerPos();
-        const dist = Math.abs(pos.x - pendingAction.x) + Math.abs(pos.z - pendingAction.z);
+        const dist = Math.abs(pos.x - G.pendingAction.x) + Math.abs(pos.z - G.pendingAction.z);
         if (dist <= 1) {
-            performAction(pendingAction.x, pendingAction.z, pendingAction.tool);
-        } else if (pendingAction.auto) {
+            performAction(G.pendingAction.x, G.pendingAction.z, G.pendingAction.tool);
+        } else if (G.pendingAction.auto) {
             // auto-farm couldn't reach this tile — skip it for the rest of this AFK session
-            autoSkip.add(pendingAction.x + ',' + pendingAction.z);
-            if (autoSkip.size > 40) autoSkip.clear();
+            G.autoSkip.add(G.pendingAction.x + ',' + G.pendingAction.z);
+            if (G.autoSkip.size > 40) G.autoSkip.clear();
         }
-        pendingAction = null;
+        G.pendingAction = null;
     }
 
     // Idle autoplay: once onboarding is done, an idle player's farm tends itself
-    autoCheckTimer -= dt;
-    const idle = (performance.now() - lastInputAt) > AFK_MS;
+    G.autoCheckTimer -= dt;
+    const idle = (performance.now() - G.lastInputAt) > AFK_MS;
     const onboardingDone = serializeQuests().done;
-    const wantAuto = idle && onboardingDone && !namePromptOpen && !isOverlayOpen();
-    if (wantAuto && !isMoving() && !pendingAction && autoCheckTimer <= 0) {
-        autoCheckTimer = 1.0; // scan at most once a second
+    const wantAuto = idle && onboardingDone && !G.namePromptOpen && !isOverlayOpen();
+    if (wantAuto && !isMoving() && !G.pendingAction && G.autoCheckTimer <= 0) {
+        G.autoCheckTimer = 1.0; // scan at most once a second
         const task = findMaintenanceTask();
-        if (task) { task.auto = true; pendingAction = task; moveTo(task.x, task.z); }
+        if (task) { task.auto = true; G.pendingAction = task; moveTo(task.x, task.z); }
     }
-    if (wantAuto !== autoActive) { autoActive = wantAuto; setAutoBadge(autoActive); }
+    if (wantAuto !== G.autoActive) { G.autoActive = wantAuto; setAutoBadge(G.autoActive); }
 
     // Health gently drains during active play; pauses while AFK so idle stays safe
-    if (!autoActive && health > 0) health = Math.max(0, health - HEALTH_DRAIN * dt);
-    healthUiTimer -= dt;
-    if (healthUiTimer <= 0) { healthUiTimer = 0.25; updateHealth(health, MAX_HEALTH); setPlayerMood(health / MAX_HEALTH); }
+    if (!G.autoActive && G.health > 0) G.health = Math.max(0, G.health - HEALTH_DRAIN * dt);
+    G.healthUiTimer -= dt;
+    if (G.healthUiTimer <= 0) { G.healthUiTimer = 0.25; updateHealth(G.health, MAX_HEALTH); setPlayerMood(G.health / MAX_HEALTH); }
     profMark('player');
 
     updateCrops(dt);
@@ -1767,7 +1729,7 @@ function gameLoop(now) {
     profMark('chunks');
     updateAnimals(dt, ppos, onCollectProduce, getPetPos()); // pet ticks via the registry
     profMark('animals');
-    _grandpaCtx.coins = coins; _grandpaCtx.day = day; _grandpaCtx.name = playerName;
+    _grandpaCtx.coins = G.coins; _grandpaCtx.day = G.day; _grandpaCtx.name = G.playerName;
     _grandpaCtx.wood = inventory.count('wood');
     _grandpaCtx.crops = Object.entries(ITEMS).reduce((s, [id, v]) => v.type === 'crop' ? s + inventory.count(id) : s, 0);
     updateGrandpa(dt, _grandpaCtx);
@@ -1783,35 +1745,35 @@ function gameLoop(now) {
     // tick generically via the registry, using this shared world API (ctx). The ctx
     // object + its closures are created ONCE and mutated each frame — no per-frame
     // allocation (was 9 objects/closures/frame → GC churn, #35).
-    if (!_sysCtx) _sysCtx = {
-        dt, gameTime, season, playerPos: ppos, isNight: false,
+    if (!G._sysCtx) G._sysCtx = {
+        dt, gameTime: G.gameTime, season: G.season, playerPos: ppos, isNight: false,
         addItem: (id, q) => inventory.add(id, q),
-        gainCoins: (n) => { coins += n; },
+        gainCoins: (n) => { G.coins += n; },
         getNearestDrop, refreshUI, notify, sparkle, playStore,
     };
-    _sysCtx.dt = dt; _sysCtx.gameTime = gameTime; _sysCtx.season = season;
-    _sysCtx.playerPos = ppos; _sysCtx.isNight = isNightTime(dayProgress);
-    updateSystems(dt, _sysCtx);
+    G._sysCtx.dt = dt; G._sysCtx.gameTime = G.gameTime; G._sysCtx.season = G.season;
+    G._sysCtx.playerPos = ppos; G._sysCtx.isNight = isNightTime(dayProgress);
+    updateSystems(dt, G._sysCtx);
     profMark('systems');
 
-    const newDay = Math.floor(gameTime / DAY_LENGTH) + 1;
-    if (newDay > day) {
-        day = newDay;
+    const newDay = Math.floor(G.gameTime / DAY_LENGTH) + 1;
+    if (newDay > G.day) {
+        G.day = newDay;
         dailyTick();          // market demand drifts, prices recover
-        const ns = getSeason(day);
-        if (ns.index !== season.index) {
-            season = ns;
+        const ns = getSeason(G.day);
+        if (ns.index !== G.season.index) {
+            G.season = ns;
             setSeasonGrowth(effectiveGrowth(ns.growth)); // greenhouse keeps it full-speed (#51)
             const fest = startFestival(ns.name); // season opens with a festival (#52)
             if (fest) {
-                coins += fest.gift;
+                G.coins += fest.gift;
                 const fp = getPlayerWorldPos(); coinBurst(fp.x, fp.z); hearts(fp.x, 1.0, fp.z);
                 notify(`${fest.emoji} ${fest.name}! Grandpa gifts 🪙${fest.gift}`);
             } else {
                 notify(`${ns.emoji} ${ns.name} has arrived!`);
             }
         } else {
-            notify(`Day ${day} begins!`);
+            notify(`Day ${G.day} begins!`);
         }
         playNewDay();
         refreshUI();
@@ -1819,8 +1781,8 @@ function gameLoop(now) {
     }
 
     // Flush the throttled UI (#35): rebuild HUD/bag/hotbar DOM at most ~6×/sec
-    _uiTimer -= dt;
-    if (_uiDirty && _uiTimer <= 0) { doRefreshUI(); _uiDirty = false; _uiTimer = 0.15; }
+    G._uiTimer -= dt;
+    if (G._uiDirty && G._uiTimer <= 0) { doRefreshUI(); G._uiDirty = false; G._uiTimer = 0.15; }
 
     // Debug overlay: show the move target + path
     setPlayerTarget(getTarget());
