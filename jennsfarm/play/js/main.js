@@ -43,7 +43,9 @@ import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals,
 import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } from './juice.js';
 import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
 import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
-import { isPlacing, placingName, beginPlacement, moveGhost, confirmPlace, cancelPlacement } from './placement.js';
+import { isPlacing, placingName, beginPlacement, moveGhost, confirmPlace, cancelPlacement, rotatePlacement } from './placement.js';
+import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, countByType } from './decor.js';
+import { showBuildMenu, hideBuildMenu } from './buildmenu.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount, growWeeds, clearWeedsInRadius } from './weeds.js';
 import { advanceCropsOffline } from './offline.js';
 import { initBuyers, updateBuyers } from './buyers.js';
@@ -158,6 +160,7 @@ if (saved) {
     if (saved.mail) loadMail(saved.mail);
     if (saved.hives) loadHives(saved.hives);
     if (saved.coops) loadCoops(saved.coops);
+    loadDecor(saved.decor); // build-mode props (safe with no data → clears)
     if (saved.fountain) loadFountain(saved.fountain);
     if (saved.pet) loadPet(saved.pet);
     if (saved.visitors) loadVisitors(saved.visitors);
@@ -552,6 +555,12 @@ document.addEventListener('keydown', (e) => {
         if (el && !el.classList.contains('hidden')) hideFactory();
         else openFactory();
     }
+    if ((e.key === 'r' || e.key === 'R') && isPlacing()) { rotatePlacement(); return; } // spin the ghost
+    if (e.key === 'b' || e.key === 'B') {
+        const el = document.getElementById('build-overlay');
+        if (el && !el.classList.contains('hidden')) el.classList.add('hidden');
+        else openBuild();
+    }
     if (e.key === '`' || e.code === 'Backquote') toggleDebug(); // debug overlay
 });
 
@@ -617,6 +626,9 @@ function hireEmployeeAction(type) {
 
 const factoryBtn = document.getElementById('factory-btn');
 if (factoryBtn) factoryBtn.addEventListener('click', openFactory);
+
+const buildBtn = document.getElementById('build-btn');
+if (buildBtn) buildBtn.addEventListener('click', openBuild);
 
 const resetBtn = document.getElementById('reset-btn');
 if (resetBtn) resetBtn.addEventListener('click', () => {
@@ -825,6 +837,34 @@ function buyCoop() {
         },
     });
     notify('🐔 Click to place your coop — ESC to cancel.');
+}
+// Decor prop: buy → build mode, click to place (R rotates). Pure cosmetics (#36).
+function startDecorPlacement(d) {
+    if (coins < d.cost) { playDeny(); notify(`Can't afford ${d.name}!`); return; }
+    beginPlacement({
+        id: d.id, name: d.name, cost: d.cost, footprint: d.footprint,
+        afford: () => coins >= d.cost,
+        canPlace: canPlaceStructure,
+        place: (x, z, rot) => {
+            placeDecor(d.id, x, z, rot);
+            coins -= d.cost; playExpand();
+            notify(`${d.emoji} ${d.name} placed!`); refreshUI(); triggerAutoSave();
+        },
+    });
+    notify(`${d.emoji} Click to place — R rotates, ESC cancels.`);
+}
+// Open the Sims-style Build catalog: structures + cosmetic decor in one panel.
+function openBuild() {
+    hideAllOverlays();
+    const counts = countByType();
+    const catalog = [
+        { section: '🏗️ Structures' },
+        { id: 'hive', emoji: '🐝', name: 'Beehive', cost: HIVE_COST, note: 'makes honey', max: 6, count: getHiveCount(), start: buyBeehive },
+        { id: 'coop', emoji: '🐔', name: 'Chicken Coop', cost: COOP_COST, note: 'lays eggs', max: 6, count: getCoopCount(), start: buyCoop },
+        { section: '🌷 Decor' },
+        ...DECOR_CATALOG.map(d => ({ ...d, count: counts[d.id] || 0, start: () => startDecorPlacement(d) })),
+    ];
+    showBuildMenu(coins, catalog, (entry) => { hideBuildMenu(); entry.start(); });
 }
 // Wishing fountain: buy → place once; click it to toss a coin for a blessing (#47)
 function buyFountain() {
@@ -1517,6 +1557,7 @@ function triggerAutoSave() {
             mail: serializeMail(),
             hives: serializeHives(),
             coops: serializeCoops(),
+            decor: serializeDecor(),
             fountain: serializeFountain(),
             pet: serializePet(),
             visitors: serializeVisitors(),
@@ -1607,6 +1648,7 @@ function gameLoop(now) {
     const ppos = getPlayerWorldPos();
     updateChunks(ppos.x, ppos.z); // stream infinite terrain around Jenn
     updateOverlays(); // rebuild instanced tile overlays if a tile changed type
+    updateDecor();    // rebuild instanced build-mode props if one was placed/removed
     profMark('chunks');
     updateAnimals(dt, ppos, onCollectProduce, getPetPos()); // pet ticks via the registry
     profMark('animals');

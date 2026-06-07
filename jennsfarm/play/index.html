@@ -66,6 +66,9 @@
     <!-- Tool name display -->
     <div id="tool-label">Walk</div>
 
+    <!-- Build catalog button -->
+    <button id="build-btn" title="Build (B)">🔨</button>
+
     <!-- Workshop button -->
     <button id="craft-btn" title="Workshop (C)">⚗️</button>
 
@@ -120,6 +123,16 @@
             <p style="font-size:13px;color:#bda;margin-bottom:10px;">Brew potions and cook hearty meals from your crops, fish, honey &amp; produce.</p>
             <div id="craft-items"></div>
             <button class="close-btn" onclick="document.getElementById('craft-overlay').classList.add('hidden')">Close</button>
+        </div>
+    </div>
+
+    <!-- Build catalog overlay -->
+    <div id="build-overlay" class="overlay hidden">
+        <div class="overlay-panel">
+            <h2>🔨 Build</h2>
+            <p style="font-size:13px;color:#bda;margin-bottom:10px;">Place structures &amp; decor around your farm. Click an item, then click the ground — <b>R</b> rotates, <b>ESC</b> / right-click cancels.</p>
+            <div id="build-items"></div>
+            <button class="close-btn" onclick="document.getElementById('build-overlay').classList.add('hidden')">Close</button>
         </div>
     </div>
 

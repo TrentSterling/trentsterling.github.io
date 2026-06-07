@@ -50,6 +50,7 @@ import { ambientCritters, updateFireflies, clearFireflies } from '../js/fireflie
 import { makeLetter, canFulfill, claimLetter, isClaimed, markClaimed, loadMail } from '../js/mailbox.js';
 import { placeHive, updateBees, creditOfflineHoney, getHiveCount, loadHives } from '../js/bees.js';
 import { placeCoop, updateCoops, creditOfflineEggs, getCoopCount, loadCoops } from '../js/coop.js';
+import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, getDecorCount } from '../js/decor.js';
 import { desiredWorkers, getWorkerCount, updateWorkers, clearWorkers } from '../js/workers.js';
 import { rollBlessing, BLESSINGS } from '../js/fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, serializePet, loadPet, getPetName } from '../js/pets.js';
@@ -441,6 +442,26 @@ check('a sprinkler auto-waters the tiles around it', () => {
     const nb = getTile(s.x + 1, s.z);
     if (nb) assert(nb.watered, 'neighbor tile not watered by sprinkler');
     return 'sprinkler keeps its 3x3 wet';
+});
+
+// ---------- BUILD CATALOG / DECOR ----------
+
+check('build catalog: every decor type places, instances + round-trips (#36)', () => {
+    ensureWorld();
+    assert(DECOR_CATALOG.length >= 10, 'expected a full decor catalog');
+    for (const d of DECOR_CATALOG) {
+        assert(d.cost > 0, `${d.id} has no price`);
+        assert(d.name && d.emoji, `${d.id} missing label`);
+    }
+    loadDecor(null);                                   // start clean
+    for (const d of DECOR_CATALOG) placeDecor(d.id, 24, 24, 0); // one of every type
+    assert(getDecorCount() === DECOR_CATALOG.length, 'not all decor placed');
+    updateDecor();                                     // merges + builds every type's InstancedMesh
+    const saved = serializeDecor();
+    loadDecor(saved); updateDecor();
+    assert(getDecorCount() === saved.length, 'decor did not survive a save round-trip');
+    loadDecor(null); updateDecor();                    // leave the scene clean for later tests
+    return `catalog builds all ${DECOR_CATALOG.length} props`;
 });
 
 // ---------- ROAD BUYERS ----------
