@@ -29,6 +29,8 @@ export const ANIMALS = {
 
 let animals = [];   // {species, kind, grp, x, z, tx, tz, idle, prodT, speed, flee}
 let drops = [];     // {item, grp, x, z, baseY, t}
+const SIM_RADIUS = 24;          // critters beyond this from the player freeze (#35)
+const SIM_R2 = SIM_RADIUS * SIM_RADIUS;
 const MAX_DROPS = 24;   // loose eggs/milk on the ground are capped — they were piling up forever (#35 + clutter)
 const MAX_PER_CELL = 6; // …and no more than this many in any one grid cell
 
@@ -346,11 +348,20 @@ export function updateAnimals(dt, playerPos, onCollect, petPos) {
 
     if (_animDirty) rebuildAnimalIMs(); // an animal was added/cleared — rebuild the per-species batches
 
-    // Rebuild the spatial index for this frame's nearest-queries (cheap, O(n))
+    // Simulation distance (#35): only critters near the player think/move. Distant
+    // wildlife freezes in place — it's beyond the fog anyway — so we don't pay AI,
+    // movement, matrix uploads or spatial-hash inserts for the whole far population.
+    const px = playerPos ? playerPos.x : 0, pz = playerPos ? playerPos.z : 0;
+
+    // Rebuild the spatial index — only NEAR animals (cheap queries, no far GC).
     animalHash.clear();
-    for (const a of animals) animalHash.insert(a, a.x, a.z);
+    for (const a of animals) {
+        if ((a.x - px) ** 2 + (a.z - pz) ** 2 <= SIM_R2) animalHash.insert(a, a.x, a.z);
+    }
 
     for (const a of animals) {
+        // Freeze distant ambient wildlife; livestock + Grandpa always tick (produce/quests).
+        if (a.kind === 'wildlife' && (a.x - px) ** 2 + (a.z - pz) ** 2 > SIM_R2) continue;
         // --- Behaviour: choose target ---
         // Jenn's presence comes first: skittish critters scatter, curious ones approach.
         let reacted = false;

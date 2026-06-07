@@ -1517,13 +1517,18 @@ function getTimeString(progress) {
     return `${h12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 }
 
-function refreshUI() {
+function doRefreshUI() {
     const progress = getDayProgress();
     updateHUD(coins, day, getTimeString(progress), season);
     updateHotbar(selectedSlot, inventory, selectSlot);
     updateBag(inventory, eatItem);
     updateHealth(health, MAX_HEALTH);
 }
+// Throttled (#35): production (factories/coops/bees) fires refreshUI many times a
+// second; rebuilding the bag/hotbar DOM each time was a big browser-paint cost.
+// Coalesce to a dirty flag flushed ~6×/sec in the game loop — imperceptible lag.
+let _uiDirty = true, _uiTimer = 0;
+function refreshUI() { _uiDirty = true; }
 
 // --- Save ---
 
@@ -1709,6 +1714,10 @@ function gameLoop(now) {
         refreshUI();
         triggerAutoSave();
     }
+
+    // Flush the throttled UI (#35): rebuild HUD/bag/hotbar DOM at most ~6×/sec
+    _uiTimer -= dt;
+    if (_uiDirty && _uiTimer <= 0) { doRefreshUI(); _uiDirty = false; _uiTimer = 0.15; }
 
     // Debug overlay: show the move target + path
     setPlayerTarget(getTarget());

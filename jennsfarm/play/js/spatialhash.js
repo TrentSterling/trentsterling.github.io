@@ -10,7 +10,9 @@
 
 export function createSpatialHash(cellSize = 6) {
     const cells = new Map();
-    const key = (cx, cz) => cx + ',' + cz;
+    // NUMERIC key (no per-insert/per-query string allocation → no GC churn, #35).
+    // Packs two ±32k cell coords into one integer; masking handles negatives.
+    const key = (cx, cz) => (cx & 0xffff) * 65536 + (cz & 0xffff);
     const cellOf = (v) => Math.floor(v / cellSize);
 
     return {
