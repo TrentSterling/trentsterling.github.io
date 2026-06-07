@@ -32,6 +32,7 @@ import { buyFlytrapPlacement, getFlytrapCount, FLYTRAP_COST, serializeFlytraps, 
 import { festivalFor, startFestival } from './festivals.js';
 import { RECIPES } from './craft.js';
 import { FACTORY_TYPES, buildFactory, hireEmployee, employeeCost, getFactories, updateFactories, creditOfflineFactories, serializeFactories, loadFactories } from './factories.js';
+import { syncFactoryBuildings } from './factorybuildings.js';
 import { addEarnings, getSellBonus, getRank, getRankIndex, serializeCorp, loadCorp } from './corp.js';
 import { updateChunks } from './chunks.js';
 import { CRATE_KINDS, updateCrates, crateAt, openCrateAt, creditOfflineCrates, serializeCrates, loadCrates } from './crates.js';
@@ -154,6 +155,7 @@ if (saved) {
     if (saved.trees) loadTrees(saved.trees);
     if (saved.sprinklers) loadSprinklers(saved.sprinklers);
     if (saved.factories) loadFactories(saved.factories);
+    syncFactoryBuildings(); // show buildings for any factories the save owns (#64)
     if (saved.corp) loadCorp(saved.corp);
     if (saved.crates) loadCrates(saved.crates);
     if (saved.equipment) loadEquipment(saved.equipment);
@@ -603,6 +605,7 @@ function buildFactoryAction(type) {
     if (!buildFactory(type)) { notify('Already built!'); return; }
     coins -= def.cost;
     playExpand();
+    syncFactoryBuildings(); // raise its physical building in the industry row (#64)
     const p = getPlayerWorldPos(); coinBurst(p.x, p.z); addShake(0.08);
     notify(`Built the ${def.name}! It now turns your ${ITEMS[def.input].name} into ${ITEMS[def.output].name}.`);
     refreshUI();
