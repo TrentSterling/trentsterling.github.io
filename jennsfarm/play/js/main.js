@@ -1698,13 +1698,15 @@ function gameLoop(now) {
         triggerAutoSave();
     }
 
-    // Debug overlay: show the move target + path, refresh FPS
+    // Debug overlay: show the move target + path
     setPlayerTarget(getTarget());
     setDebugPath(getPath());
-    tickDebug(frameMs);
 
     render();
     profMark('render');
+    // CPU work = whole-frame JS time (start `now` → here). Compared against the
+    // GPU timer + rAF frame time, this reveals CPU- vs GPU- vs vsync-bound (#35).
+    tickDebug(frameMs, performance.now() - now);
 }
 
 requestAnimationFrame(gameLoop);

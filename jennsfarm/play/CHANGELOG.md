@@ -83,6 +83,8 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - **Sims-style build mode (#36):** buying a beehive/coop opens placement — a green/red ghost follows the cursor, click to place (re-arms for rapid building), ESC / right-click cancels. No more random auto-placement.
 - **🔨 Build catalog (#36):** a dedicated Build panel (button + `B` key) listing structures **and 12 new cosmetic decor props** — hay bale, flower bed, signpost, bench, gnome, lamp post, topiary, bird bath, picnic table, stone well, statue, windmill. `R` rotates while placing. Every prop **type is one InstancedMesh** (a hundred of one = a single draw) and decor is saved with your farm.
 - **✨ Farm Beauty (#54):** decor now *does something* — each prop adds beauty, and a prettier farm **draws more visitors, faster, and they linger longer** (cap scales 4 → up to 14). Beauty shows in the Build panel and on every placement.
+- **📊 Perf HUD overhaul (#35):** frame-time **histogram**, p50/p95/p99/max, **CPU work ms vs real GPU ms** (timer-query), tris/geo/tex counts, a CPU/GPU/vsync-**bound verdict**, and a `no-cull` count — so spikes the EMA hid are finally visible.
+- **🌲 Trees are soft obstacles (#25):** A* now routes *through* a couple trees (small cost penalty) instead of taking a giant detour, and Jenn brushes straight through them — fences/buildings/water stay hard blocks.
 
 ---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._

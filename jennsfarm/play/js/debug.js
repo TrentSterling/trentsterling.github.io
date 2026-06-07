@@ -8,12 +8,15 @@
 // show through terrain. Pure-ish; the suite just checks it doesn't throw.
 
 import * as THREE from 'three';
-import { scene, renderer } from './renderer.js';
+import { scene, renderer, getGpuMs } from './renderer.js';
 
 let on = true; // default on while we're actively debugging (backtick toggles)
 let hud = null;
 let mouseCube = null, targetCube = null, pathLine = null;
 let frames = 0, accum = 0, fps = 0, worstMs = 0;
+let cpuEMA = 0;                       // smoothed CPU work per frame (ms)
+const SAMPLES = 180;                  // ~3s of frame times for the histogram
+const frameLog = [];                  // ring buffer of recent frame times (ms)
 
 export function isDebugOn() { return on; }
 
@@ -86,27 +89,60 @@ export function profMark(label) {
 }
 export function getProfile() { return prof; }
 
-// Feed the raw frame time (ms); refreshes the FPS readout twice a second.
-export function tickDebug(frameMs) {
+// Frame-time histogram buckets (ms). 16.6=vsync@60, 33=30fps, 50=20fps.
+const HB = [8, 12, 16, 20, 33, 50, Infinity];
+const HL = ['<8', '<12', '<16', '<20', '<33', '<50', '50+'];
+function histogram(s) {
+    const c = new Array(HB.length).fill(0);
+    for (const v of s) for (let i = 0; i < HB.length; i++) if (v < HB[i]) { c[i]++; break; }
+    const max = Math.max(1, ...c), W = 10;
+    return HL.map((l, i) => `${l.padStart(3)} ${'█'.repeat(Math.round(c[i] / max * W)).padEnd(W)} ${c[i]}`).join('\n');
+}
+function pctile(sorted, p) { return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))]; }
+
+// Feed the raw frame time + the CPU work time this frame (ms). Refreshes 2x/sec.
+export function tickDebug(frameMs, cpuMs = 0) {
     frames++; accum += frameMs;
-    if (frameMs > worstMs) worstMs = frameMs; // track the worst (stutter) frame in the window
-    if (accum >= 500) {
-        fps = Math.round(frames / (accum / 1000));
-        frames = 0; accum = 0;
-        const spike = worstMs; worstMs = 0;
-        if (on && hud) {
-            const rows = Object.entries(prof)
-                .sort((a, b) => b[1] - a[1])
-                .map(([k, v]) => `${k.padEnd(9)}${v.toFixed(2)}`)
-                .join('\n');
-            const r = renderer && renderer.info ? renderer.info.render : null;
-            const draws = r ? `\ndraws ${r.calls}\ntris ${(r.triangles / 1000).toFixed(0)}k` : '';
-            // Audit: how many instanced batches vs plain meshes are in the scene?
-            // (plain meshes = the un-instanced draw spam we want to hunt down)
-            let inst = 0, plain = 0;
-            if (scene) scene.traverse(o => { if (o.isInstancedMesh) inst++; else if (o.isMesh) plain++; });
-            const aud = `\ninstMesh ${inst}\nplainMesh ${plain}\nworst ${spike.toFixed(1)}ms`;
-            hud.textContent = `FPS ${fps}   ${(1000 / Math.max(fps, 1)).toFixed(1)}ms\n${rows}${draws}${aud}`;
-        }
-    }
+    if (frameMs > worstMs) worstMs = frameMs;        // worst (stutter) frame this window
+    cpuEMA = cpuEMA * 0.9 + cpuMs * 0.1;
+    frameLog.push(frameMs);
+    if (frameLog.length > SAMPLES) frameLog.shift();
+    if (accum < 500) return;
+
+    fps = Math.round(frames / (accum / 1000));
+    frames = 0; accum = 0;
+    const spike = worstMs; worstMs = 0;
+    if (!on || !hud) return;
+
+    const sorted = [...frameLog].sort((a, b) => a - b);
+    const p50 = pctile(sorted, 0.50), p95 = pctile(sorted, 0.95), p99 = pctile(sorted, 0.99);
+    const gpu = getGpuMs();                            // -1 if timer-query unavailable
+    const gpuStr = gpu < 0 ? 'n/a' : gpu.toFixed(1);
+
+    // Who's the bottleneck? CPU work, GPU work, or vsync rounding a small overage up.
+    let bound = 'ok';
+    if (cpuEMA > 16) bound = 'CPU-bound';
+    else if (gpu > 16) bound = 'GPU-bound';
+    else if (p95 > 20) bound = (gpu > cpuEMA ? 'GPU/vsync' : 'CPU/vsync');
+
+    const r = renderer && renderer.info ? renderer.info : null;
+    const rr = r ? r.render : null;
+    const mem = r ? r.memory : null;
+    let inst = 0, plain = 0, nocull = 0;
+    if (scene) scene.traverse(o => {
+        if (o.isInstancedMesh) { inst++; if (o.frustumCulled === false) nocull++; }
+        else if (o.isMesh) { plain++; if (o.frustumCulled === false) nocull++; }
+    });
+    const rows = Object.entries(prof).sort((a, b) => b[1] - a[1])
+        .map(([k, v]) => `${k.padEnd(8)}${v.toFixed(2)}`).join('\n');
+
+    hud.textContent =
+        `FPS ${fps}   frame ${(1000 / Math.max(fps, 1)).toFixed(1)}ms\n` +
+        `cpu ${cpuEMA.toFixed(1)}  gpu ${gpuStr}  [${bound}]\n` +
+        `p50 ${p50.toFixed(1)} p95 ${p95.toFixed(1)} p99 ${p99.toFixed(1)} max ${spike.toFixed(0)}\n` +
+        `── frame ms (${frameLog.length}f) ──\n${histogram(frameLog)}\n` +
+        `── phases ms ──\n${rows}\n` +
+        (rr ? `draws ${rr.calls}  tris ${(rr.triangles / 1000).toFixed(0)}k\n` : '') +
+        (mem ? `geo ${mem.geometries}  tex ${mem.textures}\n` : '') +
+        `inst ${inst}  plain ${plain}  no-cull ${nocull}`;
 }
