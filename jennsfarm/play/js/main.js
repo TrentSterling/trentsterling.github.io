@@ -22,8 +22,8 @@ import './cloudshadows.js'; // self-registers drifting cloud shadows (#43) — m
 import './workers.js';      // self-registers the employee "vacuum dudes" that tidy loose drops
 import { placeFoodBowl, hasFoodBowl, FOOD_BOWL_COST, serializeVisitors, loadVisitors } from './visitors.js'; // self-registers visitor cats (#54)
 import { updateSystems } from './registry.js';
-import { buyHivePlacement, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
-import { buyCoopPlacement, creditOfflineEggs, getCoopCount, COOP_COST, serializeCoops, loadCoops } from './coop.js';
+import { placeHive, updateBees, creditOfflineHoney, getHiveCount, HIVE_COST, serializeHives, loadHives } from './bees.js';
+import { placeCoop, creditOfflineEggs, getCoopCount, COOP_COST, serializeCoops, loadCoops } from './coop.js';
 import { rollBlessing, hasFountain, getFountainPos, fountainAt, buildFountain, updateFountain, FOUNTAIN_COST, TOSS_COST, serializeFountain, loadFountain } from './fountain.js';
 import { hasPet, getPetPos, adoptPet, updatePet, PET_COST, serializePet, loadPet } from './pets.js';
 import { pickFish, rollFishSize, tryFishRecord, serializeFishRecords, loadFishRecords } from './fishing.js';
@@ -43,6 +43,7 @@ import { initAnimals, updateAnimals, buyAnimalEntity, ANIMALS, serializeAnimals,
 import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } from './juice.js';
 import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
 import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
+import { isPlacing, placingName, beginPlacement, moveGhost, confirmPlace, cancelPlacement } from './placement.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount, growWeeds, clearWeedsInRadius } from './weeds.js';
 import { advanceCropsOffline } from './offline.js';
 import { initBuyers, updateBuyers } from './buyers.js';
@@ -401,6 +402,13 @@ container.addEventListener('click', (e) => {
     // just guard against a degenerate horizon hit.
     if (!Number.isFinite(tx) || !Number.isFinite(tz)) return;
 
+    // Build mode (Sims-style): a left-click drops the structure on this tile (#36)
+    if (isPlacing()) {
+        const r = confirmPlace(tx, tz);
+        if (r === 'invalid') playDeny();
+        return;
+    }
+
     const tile = getTile(tx, tz);
 
     // Pond water → go fishing (cast if you're at the edge, else walk over first)
@@ -453,6 +461,7 @@ container.addEventListener('click', (e) => {
 container.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     if (dragMoved) return;       // it was a camera pan, not a harvest tap
+    if (isPlacing()) { cancelPlacement(); notify('Build cancelled.'); return; } // right-click exits build mode
     if (isOverlayOpen()) return;
 
     const hit = raycastGround(e);
@@ -504,6 +513,14 @@ container.addEventListener('mousemove', (e) => {
 
     if (isOverlayOpen()) { hideHighlight(); return; }
 
+    // Build mode: slide the placement ghost to the hovered tile (#36)
+    if (isPlacing()) {
+        const ph = raycastGround(e);
+        if (ph && Number.isFinite(ph.x)) moveGhost(ph.x, ph.z);
+        hideHighlight();
+        return;
+    }
+
     const hit = raycastGround(e);
     if (hit) setMouseHit(hit.worldX, hit.worldZ); // debug: where the cursor actually lands
     if (hit && hit.x >= 0 && hit.x < WORLD_SIZE && hit.z >= 0 && hit.z < WORLD_SIZE) {
@@ -524,6 +541,7 @@ document.addEventListener('keydown', (e) => {
         return;
     }
     if (e.key === 'Escape') {
+        if (isPlacing()) { cancelPlacement(); notify('Build cancelled.'); return; }
         hideAllOverlays(); // one call closes every menu — see overlays.js (#56)
     }
     if (e.key === 'c' || e.key === 'C') {
@@ -765,27 +783,48 @@ function buyToolUpgrade(tool) {
     showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
     triggerAutoSave();
 }
-// Beehive: buy → auto-place near the farm; bees make honey over time (#44)
-function buyBeehive() {
-    if (coins < HIVE_COST) { playDeny(); notify("Can't afford a beehive!"); return; }
-    if (!buyHivePlacement()) { playDeny(); notify('No room for more hives!'); return; }
-    coins -= HIVE_COST;
-    playExpand();
-    notify('Beehive placed! 🐝 Bees will make honey nearby.');
-    refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
-    triggerAutoSave();
+// Where can a structure go? Open wild ground, grass, or a path — never on
+// buildings/water/soil-with-crops (Sims-style validity, #36).
+function canPlaceStructure(x, z) {
+    if (isSolidTile(x, z)) return false;
+    const t = getTile(x, z);
+    if (!t) return true; // open wild ground
+    return t.type === TILE.GRASS || t.type === TILE.PATH;
 }
-// Chicken coop: buy → auto-place; it lays eggs on its own so you don't chase hens
+
+// Beehive: buy → enter build mode, click to place; bees make honey nearby (#44)
+function buyBeehive() {
+    if (getHiveCount() >= 6) { playDeny(); notify('No room for more hives!'); return; }
+    if (coins < HIVE_COST) { playDeny(); notify("Can't afford a beehive!"); return; }
+    hideAllOverlays();
+    beginPlacement({
+        id: 'hive', name: 'Beehive', cost: HIVE_COST, footprint: 0.7,
+        afford: () => coins >= HIVE_COST && getHiveCount() < 6,
+        canPlace: canPlaceStructure,
+        place: (x, z) => {
+            if (!placeHive(x, z)) { playDeny(); return; }
+            coins -= HIVE_COST; playExpand();
+            notify('Beehive placed! 🐝'); refreshUI(); triggerAutoSave();
+        },
+    });
+    notify('🐝 Click to place your beehive — ESC to cancel.');
+}
+// Chicken coop: buy → build mode, click to place; it lays eggs on its own
 function buyCoop() {
+    if (getCoopCount() >= 6) { playDeny(); notify('No room for more coops!'); return; }
     if (coins < COOP_COST) { playDeny(); notify("Can't afford a coop!"); return; }
-    if (!buyCoopPlacement()) { playDeny(); notify('No room for more coops!'); return; }
-    coins -= COOP_COST;
-    playExpand();
-    notify('Chicken coop built! 🐔 It lays eggs on its own.');
-    refreshUI();
-    showShop(coins, inventory, buyItem, buyExpansion, buyBarnUpgrade, getNextBarnUpgradeCost(), buyAnimal);
-    triggerAutoSave();
+    hideAllOverlays();
+    beginPlacement({
+        id: 'coop', name: 'Chicken Coop', cost: COOP_COST, footprint: 0.9,
+        afford: () => coins >= COOP_COST && getCoopCount() < 6,
+        canPlace: canPlaceStructure,
+        place: (x, z) => {
+            if (!placeCoop(x, z)) { playDeny(); return; }
+            coins -= COOP_COST; playExpand();
+            notify('Coop built! 🐔'); refreshUI(); triggerAutoSave();
+        },
+    });
+    notify('🐔 Click to place your coop — ESC to cancel.');
 }
 // Wishing fountain: buy → place once; click it to toss a coin for a blessing (#47)
 function buyFountain() {
