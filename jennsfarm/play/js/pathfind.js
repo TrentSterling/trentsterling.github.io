@@ -12,13 +12,19 @@ import { isBlockingTreeAt } from './trees.js';
 const MAX_NODES = 8000;     // expansion budget (bounds cost in the open world)
 const H_WEIGHT = 1.3;       // weighted A*: greedier toward the goal = far fewer nodes
 const SQRT2 = 1.41421356;
+const TREE_COST = 4;        // trees are SOFT obstacles: passable, but each one costs
+                            // ~4 extra tiles. So Jenn brushes through a couple trees
+                            // instead of taking a huge detour, yet still prefers a
+                            // clear path when one's nearly as short (#25).
 
 const DIRS = [
     [1, 0], [-1, 0], [0, 1], [0, -1],
     [1, 1], [1, -1], [-1, 1], [-1, -1],
 ];
 
-function defaultWalkable(x, z) { return !isSolidTile(x, z) && !isBlockingTreeAt(x, z); }
+// Walkable = not a hard solid (building/water). Trees are NOT hard-blocked here;
+// they're handled as a movement-cost penalty below so routes can pass through them.
+function defaultWalkable(x, z) { return !isSolidTile(x, z); }
 
 // Octile distance — admissible heuristic for 8-connected movement.
 function heur(x, z, gx, gz) {
@@ -120,7 +126,8 @@ export function findPath(sx, sz, gx, gz, walkable = defaultWalkable) {
                 continue; // diagonal can't slip past a fence corner
             }
             const nk = key(nx, nz);
-            const ng = cg + ((dx !== 0 && dz !== 0) ? SQRT2 : 1);
+            // base step + a soft penalty for stepping into a tree tile (#25)
+            const ng = cg + ((dx !== 0 && dz !== 0) ? SQRT2 : 1) + (isBlockingTreeAt(nx, nz) ? TREE_COST : 0);
             if (ng < (gScore.has(nk) ? gScore.get(nk) : Infinity)) {
                 gScore.set(nk, ng);
                 came.set(nk, ck);

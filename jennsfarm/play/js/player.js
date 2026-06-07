@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { isSolidTile, fenceBlocks } from './world.js';
-import { isBlockingTreeAt } from './trees.js';
 import { speedMult } from './buffs.js'; // a meal speed buff makes Jenn walk faster (#50)
 
-function blocked(x, z) { return isSolidTile(x, z) || isBlockingTreeAt(x, z) || fenceBlocks(x, z); }
+// Hard blockers only: buildings/water + the fence. Trees are soft now — Jenn
+// brushes straight through them (A* just prefers to route around when cheap) (#25).
+function blocked(x, z) { return isSolidTile(x, z) || fenceBlocks(x, z); }
 
 let playerGroup;
 let heldGroup; // tool shown in Jenn's hand, swaps with the selected tool
