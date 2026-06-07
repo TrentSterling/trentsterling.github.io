@@ -7,6 +7,12 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { mergeGroupGeo, mergedMat } from './meshmerge.js';
+import { terrainHeight } from './terrain.js';
+
+// The hand-built core (0..48) is flat ground; everything beyond is procedural
+// heightmap. Props sit on whichever applies so they never float or sink (#36).
+const inCore = (x, z) => x >= 0 && x < 48 && z >= 0 && z < 48;
+const groundY = (x, z) => inCore(x, z) ? 0.02 : terrainHeight(x, z) + 0.02;
 
 // --- tiny geometry helpers ---
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
@@ -153,7 +159,7 @@ function rebuildDecorIMs() {
         if (_ims[id]) { scene.remove(_ims[id]); _ims[id].dispose(); }
         const im = new THREE.InstancedMesh(geoFor(id), mergedMat, list.length);
         list.forEach((d, i) => {
-            _p.set(d.x, 0.02, d.z); _q.setFromAxisAngle(_YUP, d.rot || 0);
+            _p.set(d.x, groundY(d.x, d.z), d.z); _q.setFromAxisAngle(_YUP, d.rot || 0);
             im.setMatrixAt(i, _m4.compose(_p, _q, _s));
         });
         im.instanceMatrix.needsUpdate = true;
