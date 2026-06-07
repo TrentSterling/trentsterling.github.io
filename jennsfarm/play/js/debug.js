@@ -13,7 +13,7 @@ import { scene, renderer } from './renderer.js';
 let on = true; // default on while we're actively debugging (backtick toggles)
 let hud = null;
 let mouseCube = null, targetCube = null, pathLine = null;
-let frames = 0, accum = 0, fps = 0;
+let frames = 0, accum = 0, fps = 0, worstMs = 0;
 
 export function isDebugOn() { return on; }
 
@@ -89,9 +89,11 @@ export function getProfile() { return prof; }
 // Feed the raw frame time (ms); refreshes the FPS readout twice a second.
 export function tickDebug(frameMs) {
     frames++; accum += frameMs;
+    if (frameMs > worstMs) worstMs = frameMs; // track the worst (stutter) frame in the window
     if (accum >= 500) {
         fps = Math.round(frames / (accum / 1000));
         frames = 0; accum = 0;
+        const spike = worstMs; worstMs = 0;
         if (on && hud) {
             const rows = Object.entries(prof)
                 .sort((a, b) => b[1] - a[1])
@@ -99,7 +101,12 @@ export function tickDebug(frameMs) {
                 .join('\n');
             const r = renderer && renderer.info ? renderer.info.render : null;
             const draws = r ? `\ndraws ${r.calls}\ntris ${(r.triangles / 1000).toFixed(0)}k` : '';
-            hud.textContent = `FPS ${fps}   ${(1000 / Math.max(fps, 1)).toFixed(1)}ms\n${rows}${draws}`;
+            // Audit: how many instanced batches vs plain meshes are in the scene?
+            // (plain meshes = the un-instanced draw spam we want to hunt down)
+            let inst = 0, plain = 0;
+            if (scene) scene.traverse(o => { if (o.isInstancedMesh) inst++; else if (o.isMesh) plain++; });
+            const aud = `\ninstMesh ${inst}\nplainMesh ${plain}\nworst ${spike.toFixed(1)}ms`;
+            hud.textContent = `FPS ${fps}   ${(1000 / Math.max(fps, 1)).toFixed(1)}ms\n${rows}${draws}${aud}`;
         }
     }
 }
