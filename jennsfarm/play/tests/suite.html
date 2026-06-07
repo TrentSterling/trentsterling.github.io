@@ -144,11 +144,12 @@ check('goat milk sells for more than cow milk', () =>
         `goat ${ITEMS.goat_milk.sellPrice} !> cow ${ITEMS.cow_milk.sellPrice}`)
     || `goat ${ITEMS.goat_milk.sellPrice} > cow ${ITEMS.cow_milk.sellPrice}`);
 
-check('square watermelon is the priciest raw crop', () => {
+check('golden pumpkin is the priciest raw crop (late-game jackpot #63)', () => {
     const raw = Object.entries(ITEMS).filter(([, v]) => v.type === 'crop' && !v.crafted);
     const top = raw.sort((a, b) => b[1].sellPrice - a[1].sellPrice)[0][0];
-    assert(top === 'square_watermelon', `priciest raw crop is "${top}"`);
-    return `top raw = square_watermelon (${ITEMS.square_watermelon.sellPrice})`;
+    assert(top === 'golden_pumpkin', `priciest raw crop is "${top}"`);
+    assert(ITEMS.square_watermelon.sellPrice === 300, 'square watermelon still 300');
+    return `top raw = golden_pumpkin (${ITEMS.golden_pumpkin.sellPrice}) > square_watermelon (300)`;
 });
 
 check('crafted goods are worth more than their inputs', () => {

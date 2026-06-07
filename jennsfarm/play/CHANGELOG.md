@@ -90,6 +90,7 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - **🏭 Factories are visible buildings now (#64):** the Winery / Creamery / Juicery (and new Perfumery) raise a real building in an "industry row" west of the farm when you own them — no more invisible upgrades. Each is one merged draw call and restores from your save.
 - **🌸 Perfumery — late-game tier (#63):** a new high-end factory (🪙3500) turning Roses → Perfume (🪙300). First of more late-game content to come.
 - **❄️ Snow + seasons beefed (#65):** Winter snow is now ~2.5× denser with varied flake sizes and wind drift, plus a soft **snow blanket** that eases onto the ground around you. Autumn drops more leaves too.
+- **🐉 Premium late-game crops (#63):** **Dragonfruit** (slow-growing, re-fruiting, 🪙130×2) and the **Golden Pumpkin** (150s grow, 🪙400 — the new priciest raw crop) give big farms a real money goal. Buy seeds in the shop, plant from the hotbar.
 
 ---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._

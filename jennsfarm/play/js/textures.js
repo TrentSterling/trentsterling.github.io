@@ -328,7 +328,9 @@ export function createToolIcon(toolId) {
                 'sunflower_seed': '#e8c44a',
                 'rose_seed': '#d6788a',
                 'square_watermelon_seed': '#3a8a4a',
-                'grape_seed': '#9b6fd6'
+                'grape_seed': '#9b6fd6',
+                'dragonfruit_seed': '#e0356f',
+                'golden_pumpkin_seed': '#e0a81b'
             };
             const cropColors = {
                 'carrot_seed': '#ff7733',

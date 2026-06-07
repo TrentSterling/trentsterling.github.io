@@ -93,6 +93,8 @@ const HOTBAR_SLOTS = [
     { id: 'rose_seed',   label: 'Rose Seeds' },
     { id: 'square_watermelon_seed', label: 'Square Melon Seeds' },
     { id: 'grape_seed',  label: 'Grape Vine' },
+    { id: 'dragonfruit_seed', label: 'Dragonfruit' },
+    { id: 'golden_pumpkin_seed', label: 'Golden Pumpkin' },
 ];
 
 export function getHotbarSlots() { return HOTBAR_SLOTS; }
