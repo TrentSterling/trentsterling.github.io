@@ -95,7 +95,11 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - **🧊 Static-world matrices (#35):** streamed chunk decor freezes its matrices after build (`matrixAutoUpdate=false`), so Three.js stops recomputing thousands of static transforms every frame.
 - **🩹 Snow-dome fix:** the winter ground-snow now fades out radially (no more giant white dome at the horizon).
 - **♻️ Less GC churn (#35):** the per-frame system/grandpa context objects + camera vector are now reused instead of re-allocated every frame, and static buildings freeze their matrices. Cuts the browser/GC overhead that was pushing frames over 16ms.
-- **🔬 HUD `cpu` vs `js` split:** now shows actual game-loop work (`js`) separately from total frame CPU (`cpu`) + a sharper bound verdict (GAME-JS / browser-GC / GPU / vsync-edge) so we can pinpoint the bottleneck.
+- **🔬 HUD `cpu` vs `js` split:** now shows actual game-loop work (`js`) separately from total frame CPU (`cpu`) + a sharper bound verdict (GAME-JS / browser-GC / GPU / vsync-edge) so we can pinpoint the bottleneck. Confirmed: `js` ~5ms (game is fast), the rest is browser GC/paint — so:
+- **✂️ Real frustum clip (#35):** camera far-plane pulled to 22 (just past the fog) so the GPU actually discards the far world instead of drawing 16–60m of fog-hidden geometry.
+- **🛰️ Simulation distance (#35):** wildlife beyond 24 tiles freezes — no AI, movement, matrix uploads or spatial-hash inserts for the far population (livestock + Grandpa always tick). Entities no longer "active from way too far."
+- **♻️ Allocation-free spatial hash (#35/#40):** numeric cell keys instead of string keys — kills hundreds-to-thousands of string allocations per frame (the main GC churn behind the 33ms spikes).
+- **🖼️ Throttled UI (#35):** factory/coop/bee production was rebuilding the bag/hotbar DOM many times a second; now coalesced to ~6×/sec — big browser-paint cut.
 
 ---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._
