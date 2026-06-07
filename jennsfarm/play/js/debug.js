@@ -9,6 +9,16 @@
 
 import * as THREE from 'three';
 import { scene, renderer, getGpuMs } from './renderer.js';
+// Live entity counts for the HUD (#76). Dev-tool reads of gameplay getters — these
+// modules never import debug.js, so it stays acyclic.
+import { getAnimalCount, getSpeciesCount } from './animals.js';
+import { getWorkerCount } from './workers.js';
+import { getVisitorCount } from './visitors.js';
+import { getBinCount } from './bins.js';
+import { getDecorCount } from './decor.js';
+import { getBarnCount } from './barns.js';
+import { getHiveCount } from './bees.js';
+import { getCoopCount } from './coop.js';
 
 let on = true; // default on while we're actively debugging (backtick toggles)
 let hud = null;
@@ -141,6 +151,16 @@ export function tickDebug(frameMs, cpuMs = 0) {
     const rows = Object.entries(prof).sort((a, b) => b[1] - a[1])
         .map(([k, v]) => `${k.padEnd(8)}${v.toFixed(2)}`).join('\n');
 
+    // Live entity census (#76) — what's actually spawned in the world right now.
+    let ent = '';
+    try {
+        ent = `── entities ──\n` +
+            `animals ${getAnimalCount()} (skunk ${getSpeciesCount('skunk')} crow ${getSpeciesCount('crow')})\n` +
+            `workers ${getWorkerCount()}  visitors ${getVisitorCount()}\n` +
+            `crates ${getBinCount()}  barns ${getBarnCount()}  hives ${getHiveCount()}  coops ${getCoopCount()}\n` +
+            `decor ${getDecorCount()}\n`;
+    } catch (_) { ent = ''; }
+
     hud.textContent =
         `FPS ${fps}   frame ${(1000 / Math.max(fps, 1)).toFixed(1)}ms\n` +
         `cpu ${cpuEMA.toFixed(1)}  js ${js.toFixed(1)}  gpu ${gpuStr}\n` +
@@ -150,5 +170,6 @@ export function tickDebug(frameMs, cpuMs = 0) {
         `── phases ms ──\n${rows}\n` +
         (rr ? `draws ${rr.calls}  tris ${(rr.triangles / 1000).toFixed(0)}k\n` : '') +
         (mem ? `geo ${mem.geometries}  tex ${mem.textures}  prog ${r.programs ? r.programs.length : '?'}\n` : '') +
-        `inst ${inst}  plain ${plain}  no-cull ${nocull}`;
+        `inst ${inst}  plain ${plain}  no-cull ${nocull}\n` +
+        ent;
 }
