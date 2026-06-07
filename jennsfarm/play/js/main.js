@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
-import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile } from './world.js';
+import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile, updateOverlays } from './world.js';
 import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender, getTarget, getPath } from './player.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDebugPath, tickDebug, profBegin, profMark } from './debug.js';
 import { findPath } from './pathfind.js';
@@ -1557,6 +1557,7 @@ function gameLoop(now) {
 
     const ppos = getPlayerWorldPos();
     updateChunks(ppos.x, ppos.z); // stream infinite terrain around Jenn
+    updateOverlays(); // rebuild instanced tile overlays if a tile changed type
     profMark('chunks');
     updateAnimals(dt, ppos, onCollectProduce, getPetPos()); // pet ticks via the registry
     profMark('animals');

@@ -40,7 +40,13 @@ export const TILE = {
 
 // Sparse tile storage - only farm area + special tiles
 const farmTiles = new Map();
-const overlayMeshes = new Map();
+// Tile overlays (soil/path/water/building pads) render as ONE InstancedMesh per
+// type — a big tilled farm was hundreds of individual tile meshes (#35). Rebuilt
+// only when a tile changes type (till/build), coalesced to once per frame.
+let _overlayIM = {};       // type -> InstancedMesh of all tiles of that type
+const _overlayMat = {};    // type -> shared material (cached)
+let _overlayDirty = true;
+const _ovM4 = new THREE.Matrix4();
 
 function tileKey(x, z) { return `${x},${z}`; }
 
@@ -98,25 +104,39 @@ function createGroundPlane() {
 
 // --- Tile overlays (only non-grass farm tiles) ---
 
-function createOverlay(x, z, type) {
-    const key = tileKey(x, z);
-    removeOverlay(key);
-    if (type === TILE.GRASS) return; // grass = no overlay, ground shows through
+// A tile changed type — the batched per-type InstancedMeshes rebuild next frame
+// (reads farmTiles, the source of truth). Both create + remove just flag dirty.
+function createOverlay(x, z, type) { _overlayDirty = true; }
+function removeOverlay(key) { _overlayDirty = true; }
 
-    const mesh = new THREE.Mesh(sharedTileGeo, materialForTile(type));
-    mesh.position.set(x, 0, z);
-    scene.add(mesh);
-    overlayMeshes.set(key, mesh);
+function overlayMat(type) {
+    if (!_overlayMat[type]) _overlayMat[type] = materialForTile(type);
+    return _overlayMat[type];
 }
 
-function removeOverlay(key) {
-    if (overlayMeshes.has(key)) {
-        const mesh = overlayMeshes.get(key);
-        scene.remove(mesh);
-        mesh.material.dispose();
-        overlayMeshes.delete(key);
+function rebuildOverlayIMs() {
+    for (const t in _overlayIM) { scene.remove(_overlayIM[t]); _overlayIM[t].dispose(); }
+    _overlayIM = {};
+    const byType = {};
+    for (const [key, tile] of farmTiles) {
+        if (tile.type === TILE.GRASS) continue;
+        const t = tile.type === TILE.PLANTED ? TILE.SOIL : tile.type; // planted ground shows soil
+        const i = key.indexOf(',');
+        (byType[t] || (byType[t] = [])).push([+key.slice(0, i), +key.slice(i + 1)]);
     }
+    for (const t in byType) {
+        const list = byType[t];
+        const im = new THREE.InstancedMesh(sharedTileGeo, overlayMat(t), list.length);
+        list.forEach(([x, z], k) => { _ovM4.makeTranslation(x, 0, z); im.setMatrixAt(k, _ovM4); });
+        im.instanceMatrix.needsUpdate = true;
+        scene.add(im);
+        _overlayIM[t] = im;
+    }
+    _overlayDirty = false;
 }
+
+// Call once per frame from the game loop; rebuilds only when a tile changed type.
+export function updateOverlays() { if (_overlayDirty) rebuildOverlayIMs(); }
 
 // --- Farm tile management ---
 
