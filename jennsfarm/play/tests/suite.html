@@ -495,6 +495,18 @@ check('factories: perfumery is a profitable late-game tier + buildings render (#
     return `perfumery ${inCost}→${outVal}; all ${Object.keys(FACTORY_TYPES).length} factory buildings render`;
 });
 
+check('factories pull inputs from the barn depot, not just the bag (#68)', () => {
+    loadFactories({});
+    buildFactory('winery');                            // 3 grape → 1 wine, every 16s
+    const bag = createInventory();                     // bag is empty…
+    const barn = createInventory(); barn.add('grape', 6); // …grapes live only in the barn
+    updateFactories(20, bag, barn);                    // ~one batch
+    assert(bag.count('wine') >= 1, 'winery should make wine from BARN grapes');
+    assert(barn.count('grape') <= 3, `barn grapes not consumed (left ${barn.count('grape')})`);
+    loadFactories({});
+    return 'factory consumed barn grapes → wine';
+});
+
 check('wooden crates: fill, cap at 50, collect + round-trip (#67)', () => {
     ensureWorld();
     loadBins(null);

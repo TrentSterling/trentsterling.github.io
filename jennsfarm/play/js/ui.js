@@ -497,7 +497,7 @@ export function hideCraft() {
 
 // --- Factories (auto-production) ---
 
-export function showFactory(coins, inventory, onBuild, onHire) {
+export function showFactory(coins, inventory, onBuild, onHire, barn) {
     factoryItems.innerHTML = '';
 
     // Corporate-rank banner: your company value + the climb to Shampoo Corp (corp.js)
@@ -540,7 +540,7 @@ export function showFactory(coins, inventory, onBuild, onHire) {
             const eCost = employeeCost(type, fac.employees);
             const maxed = fac.employees >= def.maxEmployees;
             const afford = coins >= eCost;
-            const stock = inventory.count(def.input);
+            const stock = inventory.count(def.input) + (barn ? barn.count(def.input) : 0); // bag + barn depot (#68)
             div.className = 'craft-row' + ((maxed || afford) ? '' : ' cant');
             div.innerHTML = `
                 <div class="item-info">

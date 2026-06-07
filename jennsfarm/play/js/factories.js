@@ -59,7 +59,19 @@ export function hireEmployee(type) {
 
 // Per-frame tick: convert inputs → outputs as time accrues. Returns a map of
 // { outputId: qtyProduced } for this tick (usually empty; non-empty ~every Ns).
-export function updateFactories(dt, inventory) {
+// Factories draw inputs from the BAG first, then the BARN depot (#68) — so stored
+// goods finally feed production (the barn has a point now). `barn` is optional.
+function factoryAvail(inventory, barn, id) {
+    return inventory.count(id) + (barn ? barn.count(id) : 0);
+}
+function factoryTake(inventory, barn, id, n) {
+    const fromBag = Math.min(n, inventory.count(id));
+    if (fromBag) inventory.remove(id, fromBag);
+    let rem = n - fromBag;
+    if (rem > 0 && barn) { const fromBarn = Math.min(rem, barn.count(id)); if (fromBarn) barn.remove(id, fromBarn); rem -= fromBarn; }
+}
+
+export function updateFactories(dt, inventory, barn) {
     const produced = {};
     for (const type in owned) {
         const f = owned[type];
@@ -67,8 +79,8 @@ export function updateFactories(dt, inventory) {
         f.timer -= dt * speed(type, f.employees);
         let guard = 0;
         while (f.timer <= 0 && guard++ < 100) {
-            if (inventory.has(def.input, def.inCount)) {
-                inventory.remove(def.input, def.inCount);
+            if (factoryAvail(inventory, barn, def.input) >= def.inCount) {
+                factoryTake(inventory, barn, def.input, def.inCount);
                 inventory.add(def.output, 1);
                 produced[def.output] = (produced[def.output] || 0) + 1;
                 f.timer += def.every;
@@ -83,16 +95,16 @@ export function updateFactories(dt, inventory) {
 
 // While the player is away each factory runs on whatever inputs are in the bag,
 // limited by both elapsed time and available inputs, and hard-capped.
-export function creditOfflineFactories(seconds, inventory) {
+export function creditOfflineFactories(seconds, inventory, barn) {
     const produced = {};
     for (const type in owned) {
         const f = owned[type];
         const def = FACTORY_TYPES[type];
         const byTime = Math.floor((seconds * speed(type, f.employees)) / def.every);
-        const byInput = Math.floor(inventory.count(def.input) / def.inCount);
+        const byInput = Math.floor(factoryAvail(inventory, barn, def.input) / def.inCount);
         const n = Math.min(byTime, byInput, OFFLINE_CAP);
         if (n > 0) {
-            inventory.remove(def.input, n * def.inCount);
+            factoryTake(inventory, barn, def.input, n * def.inCount);
             inventory.add(def.output, n);
             produced[def.output] = n;
         }

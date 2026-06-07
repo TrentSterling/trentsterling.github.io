@@ -210,7 +210,7 @@ if (saved && saved.lastSaved) {
         for (const k in prod) { inventory.add(k, prod[k]); pcount += prod[k]; }
         const fruit = creditOfflineFruit(away);
         if (fruit) { inventory.add('apple', fruit); }
-        const facProd = creditOfflineFactories(away, inventory); // factories ran on stored goods
+        const facProd = creditOfflineFactories(away, inventory, barnStorage); // factories ran on bag + barn goods
         let facCount = 0;
         for (const k in facProd) facCount += facProd[k];
         const crateCount = creditOfflineCrates(away); // delivery trucks left crates by the road
@@ -622,7 +622,7 @@ if (craftBtn) craftBtn.addEventListener('click', toggleCraft);
 
 // --- Factories (auto-production) ---
 function openFactory() {
-    showFactory(coins, inventory, buildFactoryAction, hireEmployeeAction);
+    showFactory(coins, inventory, buildFactoryAction, hireEmployeeAction, barnStorage);
 }
 
 function buildFactoryAction(type) {
@@ -1701,7 +1701,7 @@ function gameLoop(now) {
     updateJuice(dt);
 
     // Factories quietly convert raw goods (grapes, milk) into products over time
-    const made = updateFactories(dt, inventory);
+    const made = updateFactories(dt, inventory, barnStorage);
     if (Object.keys(made).length) refreshUI();
 
     updateFishing(dt); // bees, fountain, crates + pet now tick via the registry (updateSystems)
