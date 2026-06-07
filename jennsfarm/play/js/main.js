@@ -1576,6 +1576,10 @@ function triggerAutoSave() {
 // --- Game Loop ---
 
 let lastTime = performance.now();
+// Reused per-frame scratch to avoid GC churn in the hot loop (#35)
+let _sysCtx = null;
+const _grandpaCtx = { coins: 0, day: 0, name: '', wood: 0, crops: 0 };
+const _camTmp = new THREE.Vector3();
 
 function gameLoop(now) {
     requestAnimationFrame(gameLoop);
@@ -1655,12 +1659,12 @@ function gameLoop(now) {
     profMark('chunks');
     updateAnimals(dt, ppos, onCollectProduce, getPetPos()); // pet ticks via the registry
     profMark('animals');
-    updateGrandpa(dt, {
-        coins, day, name: playerName,
-        wood: inventory.count('wood'),
-        crops: Object.entries(ITEMS).reduce((s, [id, v]) => v.type === 'crop' ? s + inventory.count(id) : s, 0),
-    });
-    updateCamera(new THREE.Vector3(ppos.x, 0, ppos.z), dt, isMoving());
+    _grandpaCtx.coins = coins; _grandpaCtx.day = day; _grandpaCtx.name = playerName;
+    _grandpaCtx.wood = inventory.count('wood');
+    _grandpaCtx.crops = Object.entries(ITEMS).reduce((s, [id, v]) => v.type === 'crop' ? s + inventory.count(id) : s, 0);
+    updateGrandpa(dt, _grandpaCtx);
+    _camTmp.set(ppos.x, 0, ppos.z);
+    updateCamera(_camTmp, dt, isMoving());
     profMark('misc');
 
     // Day/night cycle
@@ -1668,13 +1672,18 @@ function gameLoop(now) {
     updateDayNight(dayProgress);
     updateAmbient(isNightTime(dayProgress));
     // Registered systems (weather, fireflies, bees, fountain, crates, pet, …)
-    // tick generically via the registry, using this shared world API (ctx).
-    updateSystems(dt, {
-        dt, gameTime, season, playerPos: ppos, isNight: isNightTime(dayProgress),
+    // tick generically via the registry, using this shared world API (ctx). The ctx
+    // object + its closures are created ONCE and mutated each frame — no per-frame
+    // allocation (was 9 objects/closures/frame → GC churn, #35).
+    if (!_sysCtx) _sysCtx = {
+        dt, gameTime, season, playerPos: ppos, isNight: false,
         addItem: (id, q) => inventory.add(id, q),
         gainCoins: (n) => { coins += n; },
         getNearestDrop, refreshUI, notify, sparkle, playStore,
-    });
+    };
+    _sysCtx.dt = dt; _sysCtx.gameTime = gameTime; _sysCtx.season = season;
+    _sysCtx.playerPos = ppos; _sysCtx.isNight = isNightTime(dayProgress);
+    updateSystems(dt, _sysCtx);
     profMark('systems');
 
     const newDay = Math.floor(gameTime / DAY_LENGTH) + 1;

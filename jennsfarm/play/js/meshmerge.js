@@ -51,3 +51,11 @@ export function mergedMesh(fn) {
     fn(g);
     return new THREE.Mesh(mergeGroupGeo(g), mergedMat);
 }
+
+// Mark an object's transform as static: position it once, then Three.js stops
+// recomputing its matrix every frame (#35). Call AFTER setting position/rotation.
+export function freezeStatic(obj) {
+    obj.matrixAutoUpdate = false;
+    obj.updateMatrix(); // bakes local transform + flags matrixWorld for one update
+    return obj;
+}

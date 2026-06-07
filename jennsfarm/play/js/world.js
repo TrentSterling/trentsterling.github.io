@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { scene, curvedMaterial, applyCurvature } from './renderer.js';
 import { createGrassTexture, createSoilTexture, createPathTexture, createWaterTexture, createBuildingTexture, createBarnTexture } from './textures.js';
 import { addTree, removeTreesInside } from './trees.js';
-import { mergedMesh } from './meshmerge.js';
+import { mergedMesh, freezeStatic } from './meshmerge.js';
 
 export const WORLD_SIZE = 48;
 const FARM_CX = 24;
@@ -227,7 +227,7 @@ function addCottage(x, z) {
         part(new THREE.BoxGeometry(0.22, 0.16, 0.14), 0x4a6b8a, 0.72, 0.52, 0.5);         // mailbox
         part(new THREE.BoxGeometry(0.02, 0.1, 0.08), 0xd64545, 0.84, 0.56, 0.5);          // flag
     });
-    m.position.set(x, 0, z); scene.add(m);
+    m.position.set(x, 0, z); freezeStatic(m); scene.add(m);
 }
 
 function setSpecialTile(x, z, type) {
@@ -250,7 +250,7 @@ function addBuildingModel(x, z, color) {
         const roof = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.5, 4, 1), curvedMaterial({ color: 0x8b6914 }));
         roof.position.y = 1.15; roof.rotation.y = Math.PI / 4; g.add(roof);
     });
-    m.position.set(x, 0, z); scene.add(m);
+    m.position.set(x, 0, z); freezeStatic(m); scene.add(m);
 }
 
 function addBarnModel(x, z) {
@@ -263,7 +263,7 @@ function addBarnModel(x, z) {
         const door = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.02, 1, 1, 1), curvedMaterial({ color: 0x5C2E0E }));
         door.position.set(0, 0.35, 0.56); g.add(door);
     });
-    m.position.set(x, 0, z); scene.add(m);
+    m.position.set(x, 0, z); freezeStatic(m); scene.add(m);
 }
 
 // --- Wild terrain decorations ---
