@@ -7,39 +7,51 @@ import { scene, curvedMaterial } from './renderer.js';
 import { getTile } from './world.js';
 import { waterTile } from './farm.js';
 import { sparkle } from './juice.js';
+import { mergeGroupGeo, mergedMat } from './meshmerge.js';
 
 const RANGE = 1;          // waters a (2*RANGE+1) square around itself -> 3x3
 const TICK = 0.6;         // seconds between watering passes
 const DROPLET_EVERY = 1.6; // seconds between visual droplet puffs
 
-const sprinklers = []; // { x, z, grp, head, dropT }
+const sprinklers = []; // { x, z, dropT }
 let tickT = 0;
 
-function buildMesh() {
+// All sprinklers are identical, so the whole farm's worth renders as ONE
+// InstancedMesh (#35) — was ~6 meshes each. Rebuilt only when one is placed.
+let _sprGeo = null, _sprIM = null, _sprDirty = false;
+const _sM4 = new THREE.Matrix4();
+
+function sprinklerGeo() {
+    if (_sprGeo) return _sprGeo;
     const g = new THREE.Group();
     const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.5, 6), curvedMaterial({ color: 0x6b7886 }));
-    post.position.y = 0.25;
-    g.add(post);
+    post.position.y = 0.25; g.add(post);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), curvedMaterial({ color: 0x3f8fd0 }));
-    head.position.y = 0.52;
-    g.add(head);
-    // little arms
+    head.position.y = 0.52; g.add(head);
     for (const a of [0, Math.PI / 2, Math.PI, 1.5 * Math.PI]) {
         const arm = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.02), curvedMaterial({ color: 0x9fb0bf }));
-        arm.position.set(Math.cos(a) * 0.1, 0.52, Math.sin(a) * 0.1);
-        arm.rotation.y = a;
-        g.add(arm);
+        arm.position.set(Math.cos(a) * 0.1, 0.52, Math.sin(a) * 0.1); arm.rotation.y = a; g.add(arm);
     }
-    return { g, head };
+    _sprGeo = mergeGroupGeo(g);
+    return _sprGeo;
+}
+
+function rebuildSprinklerIM() {
+    if (_sprIM) { scene.remove(_sprIM); _sprIM.dispose(); _sprIM = null; }
+    _sprDirty = false;
+    if (!sprinklers.length) return;
+    const im = new THREE.InstancedMesh(sprinklerGeo(), mergedMat, sprinklers.length);
+    sprinklers.forEach((s, i) => { _sM4.makeTranslation(s.x, 0.02, s.z); im.setMatrixAt(i, _sM4); });
+    im.instanceMatrix.needsUpdate = true;
+    im.frustumCulled = false;
+    scene.add(im);
+    _sprIM = im;
 }
 
 export function addSprinkler(x, z) {
-    const { g, head } = buildMesh();
-    g.position.set(x, 0.02, z);
-    scene.add(g);
-    sprinklers.push({ x, z, grp: g, head, dropT: Math.random() * DROPLET_EVERY });
-    // water immediately so it feels responsive
-    waterArea(x, z);
+    sprinklers.push({ x, z, dropT: Math.random() * DROPLET_EVERY });
+    _sprDirty = true;
+    waterArea(x, z); // water immediately so it feels responsive
 }
 
 function waterArea(x, z) {
@@ -51,14 +63,13 @@ function waterArea(x, z) {
 }
 
 export function updateSprinklers(dt) {
+    if (_sprDirty) rebuildSprinklerIM();
     tickT += dt;
     const doWater = tickT >= TICK;
     if (doWater) tickT = 0;
 
-    const now = performance.now() * 0.004;
     for (const s of sprinklers) {
         if (doWater) waterArea(s.x, s.z);
-        s.head.rotation.y = now;                 // spin the head
         s.dropT -= dt;
         if (s.dropT <= 0) {
             s.dropT = DROPLET_EVERY;

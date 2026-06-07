@@ -74,5 +74,12 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 - Adoptable **cat** pet — "owned cats" now reachable (#48)
 - **Farm ledger (#18):** lifetime counters + 🏅 milestone celebrations + planted/watered/sold
 
+## Perf + movement pass (#35, #25, #12)
+- **Instance/merge everything:** sprinklers → 1 InstancedMesh; cottage / shops / market / barn each bake into 1 draw
+- **Instant click-to-move:** Jenn steps off the same frame; A* route resolves the next frame (no input lag)
+- **Real fence collision:** the rails are now a solid wall — player & A* respect them, routing through the gate
+- **Crossroads gates:** N/S/E/W openings at the farm's centre on each edge
+- **Smarter farmhands:** workers claim DISTINCT drops + boids-lite separation steering (no more dogpiling one egg)
+
 ---
 _For planned work see [BACKLOG.md](BACKLOG.md); for the categorized status see [ROADMAP.md](ROADMAP.md)._

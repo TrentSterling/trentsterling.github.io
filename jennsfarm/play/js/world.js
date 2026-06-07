@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { scene, curvedMaterial, applyCurvature } from './renderer.js';
 import { createGrassTexture, createSoilTexture, createPathTexture, createWaterTexture, createBuildingTexture, createBarnTexture } from './textures.js';
 import { addTree, removeTreesInside } from './trees.js';
+import { mergedMesh } from './meshmerge.js';
 
 export const WORLD_SIZE = 48;
 const FARM_CX = 24;
@@ -211,28 +212,22 @@ function addPathsAndBuildings() {
 
 function addCottage(x, z) {
     setSpecialTile(x, z, TILE.HOUSE); // solid + wood floor under the model
-    // Walls
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.85, 1.05, 2, 2, 2), curvedMaterial({ color: 0xe8dcc0 }));
-    wall.position.set(x, 0.5, z); scene.add(wall);
-    // Pitched roof (4-sided cone), warm red
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.62, 4, 1), curvedMaterial({ color: 0xb04a3a }));
-    roof.position.set(x, 1.25, z); roof.rotation.y = Math.PI / 4; scene.add(roof);
-    // Door (faces south, toward the farm)
-    const door = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.04), curvedMaterial({ color: 0x6e4423 }));
-    door.position.set(x, 0.3, z + 0.54); scene.add(door);
-    // Window
-    const win = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.26, 0.04), curvedMaterial({ color: 0x9fdcec }));
-    win.position.set(x + 0.3, 0.56, z + 0.54); scene.add(win);
-    // Chimney
-    const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.42, 0.16), curvedMaterial({ color: 0x8a6a4a }));
-    chimney.position.set(x - 0.32, 1.18, z - 0.18); scene.add(chimney);
-    // Grandpa's mailbox by the door (daily letters — collected via the Home panel)
-    const mbPost = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 5), curvedMaterial({ color: 0x6e4423 }));
-    mbPost.position.set(x + 0.72, 0.25, z + 0.5); scene.add(mbPost);
-    const mbBox = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.14), curvedMaterial({ color: 0x4a6b8a }));
-    mbBox.position.set(x + 0.72, 0.52, z + 0.5); scene.add(mbBox);
-    const mbFlag = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.1, 0.08), curvedMaterial({ color: 0xd64545 }));
-    mbFlag.position.set(x + 0.84, 0.56, z + 0.5); scene.add(mbFlag);
+    // Whole cottage (walls/roof/door/window/chimney/mailbox) bakes into ONE draw (#35).
+    const m = mergedMesh(g => {
+        const part = (geo, color, px, py, pz, ry) => {
+            const mesh = new THREE.Mesh(geo, curvedMaterial({ color }));
+            mesh.position.set(px, py, pz); if (ry) mesh.rotation.y = ry; g.add(mesh);
+        };
+        part(new THREE.BoxGeometry(1.05, 0.85, 1.05, 2, 2, 2), 0xe8dcc0, 0, 0.5, 0);      // walls
+        part(new THREE.ConeGeometry(0.95, 0.62, 4, 1), 0xb04a3a, 0, 1.25, 0, Math.PI / 4); // roof
+        part(new THREE.BoxGeometry(0.3, 0.5, 0.04), 0x6e4423, 0, 0.3, 0.54);              // door
+        part(new THREE.BoxGeometry(0.26, 0.26, 0.04), 0x9fdcec, 0.3, 0.56, 0.54);         // window
+        part(new THREE.BoxGeometry(0.16, 0.42, 0.16), 0x8a6a4a, -0.32, 1.18, -0.18);      // chimney
+        part(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 5), 0x6e4423, 0.72, 0.25, 0.5);  // mailbox post
+        part(new THREE.BoxGeometry(0.22, 0.16, 0.14), 0x4a6b8a, 0.72, 0.52, 0.5);         // mailbox
+        part(new THREE.BoxGeometry(0.02, 0.1, 0.08), 0xd64545, 0.84, 0.56, 0.5);          // flag
+    });
+    m.position.set(x, 0, z); scene.add(m);
 }
 
 function setSpecialTile(x, z, type) {
@@ -248,42 +243,27 @@ function setSpecialTile(x, z, type) {
 }
 
 function addBuildingModel(x, z, color) {
-    const geo = new THREE.BoxGeometry(0.9, 0.8, 0.9, 2, 2, 2);
-    const mat = curvedMaterial({ color });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(x, 0.5, z);
-    scene.add(mesh);
-
-    const roofGeo = new THREE.ConeGeometry(0.7, 0.5, 4, 1);
-    const roofMat = curvedMaterial({ color: 0x8b6914 });
-    const roof = new THREE.Mesh(roofGeo, roofMat);
-    roof.position.set(x, 1.15, z);
-    roof.rotation.y = Math.PI / 4;
-    scene.add(roof);
+    // Shop/market: body + roof baked into ONE draw (#35).
+    const m = mergedMesh(g => {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.8, 0.9, 2, 2, 2), curvedMaterial({ color }));
+        body.position.y = 0.5; g.add(body);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.5, 4, 1), curvedMaterial({ color: 0x8b6914 }));
+        roof.position.y = 1.15; roof.rotation.y = Math.PI / 4; g.add(roof);
+    });
+    m.position.set(x, 0, z); scene.add(m);
 }
 
 function addBarnModel(x, z) {
-    // Barn body - wider than other buildings
-    const bodyGeo = new THREE.BoxGeometry(1.1, 1.0, 1.1, 2, 2, 2);
-    const bodyMat = curvedMaterial({ color: 0x8B3A2B });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.set(x, 0.6, z);
-    scene.add(body);
-
-    // Barn roof - steep triangle (cone with 4 sides)
-    const roofGeo = new THREE.ConeGeometry(0.9, 0.6, 4, 1);
-    const roofMat = curvedMaterial({ color: 0x6B4226 });
-    const roof = new THREE.Mesh(roofGeo, roofMat);
-    roof.position.set(x, 1.4, z);
-    roof.rotation.y = Math.PI / 4;
-    scene.add(roof);
-
-    // Barn door
-    const doorGeo = new THREE.BoxGeometry(0.3, 0.5, 0.02, 1, 1, 1);
-    const doorMat = curvedMaterial({ color: 0x5C2E0E });
-    const door = new THREE.Mesh(doorGeo, doorMat);
-    door.position.set(x, 0.35, z + 0.56);
-    scene.add(door);
+    // Barn: body + roof + door baked into ONE draw (#35).
+    const m = mergedMesh(g => {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.0, 1.1, 2, 2, 2), curvedMaterial({ color: 0x8B3A2B }));
+        body.position.y = 0.6; g.add(body);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.9, 0.6, 4, 1), curvedMaterial({ color: 0x6B4226 }));
+        roof.position.y = 1.4; roof.rotation.y = Math.PI / 4; g.add(roof);
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.02, 1, 1, 1), curvedMaterial({ color: 0x5C2E0E }));
+        door.position.set(0, 0.35, 0.56); g.add(door);
+    });
+    m.position.set(x, 0, z); scene.add(m);
 }
 
 // --- Wild terrain decorations ---
@@ -418,6 +398,34 @@ function addRock(x, z) {
 
 const borderMeshes = [];
 
+// Live fence geometry (set by updateFarmBorder) so collision + A* know where the
+// rails actually are. The fence is a thin wall on the farm perimeter with one
+// gate opening on the east edge (#21/#25).
+const fence = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, gateHalf: 1.5, gateX: FARM_CX, gateZ: FARM_CZ, active: false };
+const FENCE_BAND = 0.18; // half-thickness of the collision wall
+
+// Is world point (x,z) standing on a fence rail (and NOT in a gate gap)?
+// Each of the four edges has a gate opening at its centre — a crossroads (#25).
+// Used as a continuous barrier for the player and (via the edge midpoint) by A*.
+export function fenceBlocks(x, z) {
+    if (!fence.active) return false;
+    const { minX, maxX, minZ, maxZ, gateHalf, gateX, gateZ } = fence;
+    const b = FENCE_BAND;
+    const inGateX = Math.abs(x - gateX) <= gateHalf; // within the N/S gate opening
+    const inGateZ = Math.abs(z - gateZ) <= gateHalf; // within the W/E gate opening
+    // North / South rails (constant Z), only across the farm's X span
+    if (x >= minX - b && x <= maxX + b && !inGateX) {
+        if (Math.abs(z - minZ) < b) return true;
+        if (Math.abs(z - maxZ) < b) return true;
+    }
+    // West / East rails (constant X), only across the farm's Z span
+    if (z >= minZ - b && z <= maxZ + b && !inGateZ) {
+        if (Math.abs(x - minX) < b) return true;
+        if (Math.abs(x - maxX) < b) return true;
+    }
+    return false;
+}
+
 function updateFarmBorder() {
     // Remove old fence
     for (const m of borderMeshes) {
@@ -431,6 +439,9 @@ function updateFarmBorder() {
     const maxX = FARM_CX + hs - 0.5;
     const minZ = FARM_CZ - hs - 0.5;
     const maxZ = FARM_CZ + hs - 0.5;
+    // Publish the live bounds for collision + pathfinding (#25)
+    fence.minX = minX; fence.maxX = maxX; fence.minZ = minZ; fence.maxZ = maxZ;
+    fence.gateHalf = 1.5; fence.gateX = FARM_CX; fence.gateZ = FARM_CZ; fence.active = true;
 
     const postGeo = new THREE.CylinderGeometry(0.04, 0.06, 0.6, 5);
     const railGeo = new THREE.BoxGeometry(1, 0.04, 0.04, 2, 1, 1); // 1-tile wide rail segment
@@ -440,38 +451,48 @@ function updateFarmBorder() {
     const SPACING = 2;
     const _posts = [], _rails = []; // collected, then batched into 2 InstancedMeshes (#35)
 
-    // Build fence along each edge: posts every 2 tiles, rails connecting them
-    // Top edge (minZ) and bottom edge (maxZ)
+    // Each edge has a gate opening at its centre — a crossroads (N/S/E/W exits, #25).
+    const gateHalf = 1.5;
+    const inGateX = (xx) => Math.abs(xx - FARM_CX) <= gateHalf; // gap on the N/S edges
+    const inGateZ = (zz) => Math.abs(zz - FARM_CZ) <= gateHalf; // gap on the W/E edges
+
+    // Posts: top (minZ) + bottom (maxZ) edges run along X — skip the centre gate
     for (let x = minX; x <= maxX + 0.01; x += SPACING) {
+        if (inGateX(x)) continue;
         addPost(x, minZ);
         addPost(x, maxZ);
     }
-    // Left edge full; the right (east) edge — facing the shops/road — has a gate
-    const gateHalf = 1.5;
-    const inGate = (zz) => Math.abs(zz - FARM_CZ) <= gateHalf;
+    // Posts: left (minX) + right (maxX) edges run along Z — skip the centre gate
     for (let z = minZ; z <= maxZ + 0.01; z += SPACING) {
+        if (inGateZ(z)) continue;
         addPost(minX, z);
-        if (!inGate(z)) addPost(maxX, z);
+        addPost(maxX, z);
     }
 
-    // Horizontal rails along top and bottom edges
+    // Rails along top + bottom edges (gap at the gate)
     for (let x = minX; x < maxX - 0.01; x += 1) {
-        addRail(x + 0.5, minZ, 0);    // top edge
-        addRail(x + 0.5, maxZ, 0);    // bottom edge
+        if (inGateX(x + 0.5)) continue;
+        addRail(x + 0.5, minZ, 0);
+        addRail(x + 0.5, maxZ, 0);
     }
-    // Horizontal rails along left and right edges (rotated 90 degrees)
+    // Rails along left + right edges (rotated 90°, gap at the gate)
     for (let z = minZ; z < maxZ - 0.01; z += 1) {
-        addRail(minX, z + 0.5, Math.PI / 2);  // left edge
-        if (!inGate(z + 0.5)) addRail(maxX, z + 0.5, Math.PI / 2); // right edge (gap at gate)
+        if (inGateZ(z + 0.5)) continue;
+        addRail(minX, z + 0.5, Math.PI / 2);
+        addRail(maxX, z + 0.5, Math.PI / 2);
     }
 
-    // Gate: two tall posts + a lintel across the east opening
-    addGatePost(maxX, FARM_CZ - gateHalf);
-    addGatePost(maxX, FARM_CZ + gateHalf);
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, gateHalf * 2 + 0.25, 1, 1, 2), railMat);
-    lintel.position.set(maxX, 0.92, FARM_CZ);
-    scene.add(lintel);
-    borderMeshes.push(lintel);
+    // Four gates: tall posts + a lintel across each cardinal opening
+    const gw = gateHalf * 2 + 0.25;
+    const lintelGeoX = new THREE.BoxGeometry(gw, 0.09, 0.07, 2, 1, 1); // spans along X (N/S gates)
+    const lintelGeoZ = new THREE.BoxGeometry(0.07, 0.09, gw, 1, 1, 2); // spans along Z (W/E gates)
+    const addLintel = (geo, px, pz) => { const l = new THREE.Mesh(geo, railMat); l.position.set(px, 0.92, pz); scene.add(l); borderMeshes.push(l); };
+    // North + South (along X)
+    addGatePost(FARM_CX - gateHalf, minZ); addGatePost(FARM_CX + gateHalf, minZ); addLintel(lintelGeoX, FARM_CX, minZ);
+    addGatePost(FARM_CX - gateHalf, maxZ); addGatePost(FARM_CX + gateHalf, maxZ); addLintel(lintelGeoX, FARM_CX, maxZ);
+    // West + East (along Z)
+    addGatePost(minX, FARM_CZ - gateHalf); addGatePost(minX, FARM_CZ + gateHalf); addLintel(lintelGeoZ, minX, FARM_CZ);
+    addGatePost(maxX, FARM_CZ - gateHalf); addGatePost(maxX, FARM_CZ + gateHalf); addLintel(lintelGeoZ, maxX, FARM_CZ);
 
     // Batch all posts + rails into one InstancedMesh each. These were hundreds of
     // separate meshes — a big chunk of the draw calls on a big farm (#35). ~2 draws now.

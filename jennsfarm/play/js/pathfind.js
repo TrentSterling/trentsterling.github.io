@@ -6,7 +6,7 @@
 // infinite world; if the goal can't be fully reached it returns the path to the
 // closest tile reached (always makes progress toward where you clicked).
 
-import { isSolidTile } from './world.js';
+import { isSolidTile, fenceBlocks } from './world.js';
 import { isBlockingTreeAt } from './trees.js';
 
 const MAX_NODES = 8000;     // expansion budget (bounds cost in the open world)
@@ -112,6 +112,13 @@ export function findPath(sx, sz, gx, gz, walkable = defaultWalkable) {
             const nx = cur.x + dx, nz = cur.z + dz;
             if (!walkable(nx, nz)) continue;
             if (dx !== 0 && dz !== 0 && (!walkable(cur.x + dx, cur.z) || !walkable(cur.x, cur.z + dz))) continue; // no corner cut
+            // Fence barrier: a rail sits on the tile EDGE, so test the edge crossing,
+            // not the tile centre. This forces routes through the gate (#25).
+            if (dx === 0 || dz === 0) {
+                if (fenceBlocks((cur.x + nx) / 2, (cur.z + nz) / 2)) continue;
+            } else if (fenceBlocks(cur.x + dx / 2, cur.z) || fenceBlocks(cur.x, cur.z + dz / 2)) {
+                continue; // diagonal can't slip past a fence corner
+            }
             const nk = key(nx, nz);
             const ng = cg + ((dx !== 0 && dz !== 0) ? SQRT2 : 1);
             if (ng < (gScore.has(nk) ? gScore.get(nk) : Infinity)) {

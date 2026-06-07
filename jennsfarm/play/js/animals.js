@@ -491,6 +491,12 @@ export function getLivestock() {
     return animals.filter(a => a.kind === 'livestock').map(a => ({ species: a.species, x: a.x, z: a.z, fed: a.fed }));
 }
 
+// Lightweight snapshot of all loose drops (positions only) — workers use this to
+// claim DISTINCT targets so they spread out instead of dogpiling one item (#12).
+export function getDrops() {
+    return drops.map(d => ({ x: d.x, z: d.z }));
+}
+
 export function getNearestDrop(x, z) {
     let best = null, bd = Infinity;
     for (const d of drops) {
