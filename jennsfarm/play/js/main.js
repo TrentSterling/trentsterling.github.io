@@ -47,6 +47,7 @@ import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } f
 import { isPlacing, placingName, beginPlacement, moveGhost, confirmPlace, cancelPlacement, rotatePlacement } from './placement.js';
 import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, countByType, beautyScore, decorModel } from './decor.js';
 import { placeBin, updateBins, serializeBins, loadBins, getBinCount, nearestFullishBin, emptyBin, CRATE_CAP, crateModel } from './bins.js';
+import { placeBarn, getBarnCount, serializeBarns, loadBarns, barnModel, BARN_CAP } from './barns.js';
 import { showBuildMenu, hideBuildMenu } from './buildmenu.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount, growWeeds, clearWeedsInRadius } from './weeds.js';
 import { advanceCropsOffline } from './offline.js';
@@ -59,6 +60,8 @@ const inventory = createInventory();
 const barnStorage = createInventory();
 let barnCapacity = 50;
 let barnLevel = 1;
+// Total depot capacity = the upgrade level + every placed barn (#71).
+function recalcBarnCapacity() { barnCapacity = 50 * barnLevel + getBarnCount() * BARN_CAP; }
 const BARN_UPGRADE_COSTS = [150, 300, 600, 1200];
 let coins = 100;
 let day = 1;
@@ -149,7 +152,7 @@ if (saved) {
     health = saved.health ?? 100;
     inventory.load(saved.inventory ?? {});
     if (saved.barnStorage) barnStorage.load(saved.barnStorage);
-    if (saved.barnLevel) { barnLevel = saved.barnLevel; barnCapacity = 50 * barnLevel; }
+    if (saved.barnLevel) barnLevel = saved.barnLevel; // capacity recalc'd after barns load
     setPlayerPos(saved.playerX ?? 24, saved.playerZ ?? 24);
     if (saved.farmLevel) setFarmLevel(saved.farmLevel);
     if (saved.market) loadMarket(saved.market);
@@ -167,6 +170,7 @@ if (saved) {
     if (saved.coops) loadCoops(saved.coops);
     loadDecor(saved.decor); // build-mode props (safe with no data → clears)
     loadBins(saved.bins);   // wooden crates + contents (safe with no data → clears)
+    loadBarns(saved.barns); recalcBarnCapacity(); // placed barns + their storage (#71)
     if (saved.fountain) loadFountain(saved.fountain);
     if (saved.pet) loadPet(saved.pet);
     if (saved.visitors) loadVisitors(saved.visitors);
@@ -809,7 +813,7 @@ function buyBarnUpgrade() {
     }
     coins -= cost;
     barnLevel++;
-    barnCapacity = 50 * barnLevel;
+    recalcBarnCapacity();
     playExpand();
     notify(`Barn upgraded! Capacity: ${barnCapacity}`);
     refreshUI();
@@ -908,12 +912,29 @@ function startCratePlacement() {
     });
     notify('🧺 Click to place your crate — ESC to cancel.');
 }
+// Barn: a placeable storage building — each one adds depot capacity (#71).
+const BARN_PRICE = 600;
+function startBarnPlacement() {
+    if (coins < BARN_PRICE) { playDeny(); notify("Can't afford a barn!"); return; }
+    beginPlacement({
+        id: 'barn', name: 'Barn', cost: BARN_PRICE, footprint: 1.1,
+        preview: barnModel,
+        afford: () => coins >= BARN_PRICE,
+        canPlace: canPlaceStructure,
+        place: (x, z) => {
+            placeBarn(x, z); recalcBarnCapacity(); coins -= BARN_PRICE; playExpand();
+            notify(`🏚️ Barn built! +${BARN_CAP} storage (now ${barnCapacity}).`); refreshUI(); triggerAutoSave();
+        },
+    });
+    notify('🏚️ Click to place your barn — ESC to cancel.');
+}
 // Open the Sims-style Build catalog: structures + cosmetic decor in one panel.
 function openBuild() {
     hideAllOverlays();
     const counts = countByType();
     const catalog = [
         { section: '🏗️ Structures' },
+        { id: 'barn', emoji: '🏚️', name: 'Barn', cost: BARN_PRICE, note: `+${BARN_CAP} storage`, count: getBarnCount(), start: startBarnPlacement },
         { id: 'crate', emoji: '🧺', name: 'Wooden Crate', cost: CRATE_PRICE, note: `holds ${CRATE_CAP} crops · farmhands fill it`, count: getBinCount(), start: startCratePlacement },
         { id: 'hive', emoji: '🐝', name: 'Beehive', cost: HIVE_COST, note: 'makes honey', max: 6, count: getHiveCount(), start: buyBeehive },
         { id: 'coop', emoji: '🐔', name: 'Chicken Coop', cost: COOP_COST, note: 'lays eggs', max: 6, count: getCoopCount(), start: buyCoop },
@@ -1620,6 +1641,7 @@ function triggerAutoSave() {
             coops: serializeCoops(),
             decor: serializeDecor(),
             bins: serializeBins(),
+            barns: serializeBarns(),
             fountain: serializeFountain(),
             pet: serializePet(),
             visitors: serializeVisitors(),
