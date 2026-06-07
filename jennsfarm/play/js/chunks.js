@@ -49,8 +49,8 @@ export function desiredChunks(px, pz, radius = LOAD_RADIUS) {
 // --- Shared resources (created once, reused by every chunk) ---
 // Ground geometry is per-chunk now (each carries its own heightmap + vertex
 // colours); the material and all decor geometries are shared.
-let groundMat, trunkGeo, trunkMat, leafGeo, grassGeo, rockGeo, rockMat;
-let SHARED_GEO = [];
+let groundMat, trunkGeo, trunkMat, leafGeo, leafMat, grassGeo, grassMat, rockGeo, rockMat;
+let SHARED_GEO = [], SHARED_MAT = [];
 function ensureGeo() {
     if (groundMat) return;
     groundMat = curvedMaterial({ vertexColors: true });        // colour comes from the heightmap
@@ -60,7 +60,13 @@ function ensureGeo() {
     grassGeo = new THREE.ConeGeometry(0.05, 0.26, 4);
     rockGeo = new THREE.DodecahedronGeometry(0.22, 0);
     rockMat = curvedMaterial({ color: 0x8f8f8f });
+    // SHARED leaf + grass materials (per-instance colour comes from instanceColor).
+    // Previously each chunk made its OWN leaf/grass material — wandering churned
+    // materials and triggered shader-program recompiles (50ms hitches) (#35).
+    leafMat = curvedMaterial({ color: 0xffffff });
+    grassMat = curvedMaterial({ color: 0xffffff });
     SHARED_GEO = [trunkGeo, leafGeo, grassGeo, rockGeo];
+    SHARED_MAT = [groundMat, trunkMat, rockMat, leafMat, grassMat];
 }
 
 // A per-chunk ground plane displaced by the heightmap, vertex-painted grass→drier
@@ -138,7 +144,7 @@ function buildChunk(cx, cz) {
             _p.set(t.x, terrainHeight(t.x, t.z) + 0.35 * t.s, t.z); _q.identity(); _s.set(t.s, t.s, t.s);
             mesh.setMatrixAt(i, _m.compose(_p, _q, _s));
         }));
-        group.add(instanced(leafGeo, curvedMaterial({ color: 0xffffff }), trees, (t, i, mesh) => {
+        group.add(instanced(leafGeo, leafMat, trees, (t, i, mesh) => {
             _p.set(t.x, terrainHeight(t.x, t.z) + 0.9 * t.s, t.z); _q.identity(); _s.set(t.s, t.s, t.s);
             mesh.setMatrixAt(i, _m.compose(_p, _q, _s));
             const g = 0.32 + t.c * 0.28;
@@ -146,7 +152,7 @@ function buildChunk(cx, cz) {
         }));
     }
     if (grass.length) {
-        group.add(instanced(grassGeo, curvedMaterial({ color: 0xffffff }), grass, (g, i, mesh) => {
+        group.add(instanced(grassGeo, grassMat, grass, (g, i, mesh) => {
             _p.set(g.x, terrainHeight(g.x, g.z) + 0.13 * g.s, g.z); _q.setFromAxisAngle(_YUP, g.rot); _s.set(g.s, g.s, g.s);
             mesh.setMatrixAt(i, _m.compose(_p, _q, _s));
             const lvl = 0.6 + g.shade * 0.45;
@@ -166,8 +172,9 @@ function disposeGroup(group) {
     group.children.forEach(c => {
         // per-chunk ground geo is unique → dispose; shared decor geos are kept
         if (c.geometry && !SHARED_GEO.includes(c.geometry)) c.geometry.dispose();
-        // leaf/grass materials are per-chunk (instanceColor variants); ground/trunk/rock are shared
-        if (c.material && c.material !== groundMat && c.material !== trunkMat && c.material !== rockMat) c.material.dispose();
+        // all decor materials are shared now → never dispose them (only the unique
+        // per-chunk instanceColor buffer goes, which dispose() on the mesh handles)
+        if (c.material && !SHARED_MAT.includes(c.material)) c.material.dispose();
     });
 }
 

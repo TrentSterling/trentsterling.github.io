@@ -143,6 +143,6 @@ export function tickDebug(frameMs, cpuMs = 0) {
         `── frame ms (${frameLog.length}f) ──\n${histogram(frameLog)}\n` +
         `── phases ms ──\n${rows}\n` +
         (rr ? `draws ${rr.calls}  tris ${(rr.triangles / 1000).toFixed(0)}k\n` : '') +
-        (mem ? `geo ${mem.geometries}  tex ${mem.textures}\n` : '') +
+        (mem ? `geo ${mem.geometries}  tex ${mem.textures}  prog ${r.programs ? r.programs.length : '?'}\n` : '') +
         `inst ${inst}  plain ${plain}  no-cull ${nocull}`;
 }
