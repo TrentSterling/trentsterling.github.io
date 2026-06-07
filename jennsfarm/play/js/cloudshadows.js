@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { scene, applyCurvature } from './renderer.js';
 import { registerSystem } from './registry.js';
 
-const SIZE = 72;
+const SIZE = 40; // sized for the tight view; was 72 and the far-clip cut it into a band (#43 fix)
 let mesh = null, tex = null;
 
 function makeCloudTexture() {
@@ -34,9 +34,19 @@ function makeCloudTexture() {
 function ensure() {
     if (mesh) return;
     tex = makeCloudTexture();
-    const geo = new THREE.PlaneGeometry(SIZE, SIZE, 8, 8);
+    const geo = new THREE.PlaneGeometry(SIZE, SIZE, 12, 12);
     geo.rotateX(-Math.PI / 2);
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.5, depthWrite: false });
+    // Radial alpha fade → the plane is fully transparent (alpha 0) well before its
+    // edge, so it never shows a hard band where the camera far-clip / fog cut it (#43 fix).
+    const pos = geo.attributes.position, n = pos.count, col = new Float32Array(n * 4);
+    const fade = SIZE * 0.4; // alpha reaches 0 by here (~16, inside the fog-out distance)
+    for (let i = 0; i < n; i++) {
+        const d = Math.hypot(pos.getX(i), pos.getZ(i));
+        col[i * 4] = 1; col[i * 4 + 1] = 1; col[i * 4 + 2] = 1;
+        col[i * 4 + 3] = Math.max(0, 1 - d / fade);
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 4));
+    const mat = new THREE.MeshBasicMaterial({ map: tex, vertexColors: true, transparent: true, opacity: 0.5, depthWrite: false });
     applyCurvature(mat); // hug the rolling world (curve origin = framed point)
     mesh = new THREE.Mesh(geo, mat);
     mesh.position.y = 0.1;
