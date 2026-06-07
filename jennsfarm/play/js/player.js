@@ -7,6 +7,10 @@ import { speedMult } from './buffs.js'; // a meal speed buff makes Jenn walk fas
 // brushes straight through them (A* just prefers to route around when cheap) (#25).
 function blocked(x, z) { return isSolidTile(x, z) || fenceBlocks(x, z); }
 
+// Mood 0..1 from health: happy (1) = lively bounce + upright; tired (0) = sluggish + sagged.
+let mood = 1;
+export function setPlayerMood(h) { mood = Math.max(0, Math.min(1, h)); }
+
 let playerGroup;
 let heldGroup; // tool shown in Jenn's hand, swaps with the selected tool
 let targetX = 24, targetZ = 24;
@@ -199,8 +203,15 @@ export function updatePlayer(dt) {
 
     playerGroup.position.x = currentX;
     playerGroup.position.z = currentZ;
-    // Bob while moving, settle when stopped
-    playerGroup.position.y = 0.07 + (moving ? Math.sin(performance.now() * 0.01) * 0.03 : 0);
+    // Bob reflects mood (#75): happy = bigger step bounce + lively idle breathing;
+    // tired (low heart) = sluggish + a slight sag.
+    const t2 = performance.now();
+    const base = 0.07 - (1 - mood) * 0.025;             // tired sags a touch
+    const stepAmp = 0.014 + mood * 0.03;                // happy bounces higher when walking
+    const idleAmp = 0.003 + mood * 0.018;               // happy breathes/bobs at rest; tired nearly still
+    playerGroup.position.y = base + (moving
+        ? Math.abs(Math.sin(t2 * 0.01)) * stepAmp
+        : Math.sin(t2 * 0.004) * idleAmp);
 }
 
 export function getPlayerPos() {

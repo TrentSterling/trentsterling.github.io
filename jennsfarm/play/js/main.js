@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera } from './renderer.js';
+import { initRenderer, updateCamera, raycastGround, render, scene, updateDayNight, isNightTime, setDebugCamera, addShake, panCamera, zoomCamera, followPlayer, focusCamera, isCameraFollowing } from './renderer.js';
 import { createWorld, getTile, setTileType, initHighlight, showHighlight, hideHighlight, TILE, WORLD_SIZE, isInFarm, serializeWorld, loadWorld, expandFarm, getFarmLevel, getNextExpansionCost, setFarmLevel, forEachFarmTile, isSolidTile, updateOverlays } from './world.js';
-import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender, getTarget, getPath } from './player.js';
+import { createPlayer, moveTo, moveAlong, updatePlayer, getPlayerPos, getPlayerWorldPos, isMoving, setPlayerPos, getPlayerGroup, setHeldTool, setPlayerGender, getTarget, getPath, setPlayerMood } from './player.js';
 import { initDebug, toggleDebug, setMouseHit, setPlayerTarget, setPath as setDebugPath, tickDebug, profBegin, profMark } from './debug.js';
 import { findPath } from './pathfind.js';
 import { plantCrop, harvestCrop, updateCrops, CROPS, rebuildCropMeshes, waterTile, setSeasonGrowth } from './farm.js';
@@ -671,6 +671,32 @@ if (resetBtn) resetBtn.addEventListener('click', () => {
         location.reload();
     }
 });
+
+// --- Camera controls: scroll-wheel zoom + a dock of Follow / Home / POI buttons (#72-74) ---
+container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomCamera(e.deltaY > 0 ? 0.2 : -0.2); // wheel down = zoom out, up = zoom in
+}, { passive: false });
+
+// Home = Jenn walks to the farm centre and the camera re-locks onto her.
+function goHome() { followPlayer(); routeTo(24, 24); }
+
+const camDock = document.createElement('div');
+camDock.style.cssText = 'position:fixed;right:10px;top:120px;z-index:60;display:flex;flex-direction:column;gap:6px';
+function camBtn(label, title, onClick) {
+    const b = document.createElement('button');
+    b.textContent = label; b.title = title;
+    b.style.cssText = 'width:46px;height:46px;font-size:22px;line-height:1;border-radius:12px;border:2px solid #5a4326;background:rgba(38,28,16,0.88);color:#fff;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.4)';
+    b.addEventListener('click', onClick);
+    camDock.appendChild(b); return b;
+}
+const followBtn = camBtn('📍', 'Follow Jenn (re-lock the camera)', () => followPlayer());
+camBtn('🏡', 'Go Home (farm centre)', goHome);
+camBtn('🌾', 'View the farm', () => focusCamera(24, 24));
+camBtn('🛒', 'View the market/road', () => focusCamera(33, 24));
+document.body.appendChild(camDock);
+// Pulse the Follow button while the camera is unlocked, inviting a click to re-lock.
+setInterval(() => { followBtn.style.boxShadow = isCameraFollowing() ? '0 2px 6px rgba(0,0,0,0.4)' : '0 0 0 3px #ffd24a'; }, 300);
 
 // --- Actions ---
 
@@ -1715,7 +1741,7 @@ function gameLoop(now) {
     // Health gently drains during active play; pauses while AFK so idle stays safe
     if (!autoActive && health > 0) health = Math.max(0, health - HEALTH_DRAIN * dt);
     healthUiTimer -= dt;
-    if (healthUiTimer <= 0) { healthUiTimer = 0.25; updateHealth(health, MAX_HEALTH); }
+    if (healthUiTimer <= 0) { healthUiTimer = 0.25; updateHealth(health, MAX_HEALTH); setPlayerMood(health / MAX_HEALTH); }
     profMark('player');
 
     updateCrops(dt);
