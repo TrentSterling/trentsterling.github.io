@@ -15,7 +15,11 @@ import { terrainHeight, AMP } from './terrain.js';
 export const CHUNK = 16;          // tiles per chunk side
 const LOAD_RADIUS = 2;            // chunks kept loaded around the player (5x5)
 const UNLOAD_RADIUS = 3;          // recycle once a chunk is farther than this
-const BUILD_BUDGET = 3;           // chunks built per frame (spread to avoid hitches)
+const BUILD_BUDGET = 1;           // ONE chunk built per frame — each chunk is a heightmap
+                                  // bake + several InstancedMesh uploads, so building 3 at
+                                  // once was a ~10ms spike on boundary crossings (the
+                                  // movement "stutter" the EMA profiler hid). 1/frame keeps
+                                  // it smooth; LOAD_RADIUS gives plenty of lead time (#35).
 const CORE_MIN = 0, CORE_MAX = 48; // original world box — skip decor here (core owns it)
 const GROUND_Y = -0.05;           // just under the core plane (-0.02) so they never z-fight
 
