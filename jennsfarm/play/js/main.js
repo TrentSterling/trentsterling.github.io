@@ -71,6 +71,8 @@ const HEALTH_DRAIN = 0.35;  // per second while actively playing (not AFK)
 let healthUiTimer = 0;
 let selectedSlot = 0;
 let pendingAction = null;
+let _uiDirty = true, _uiTimer = 0; // throttled UI flush state (#35) — declared early
+                                   // because refreshUI() is called during init (TDZ fix)
 let stepTimer = 0;
 const DAY_LENGTH = 300; // seconds per day
 
@@ -1527,7 +1529,7 @@ function doRefreshUI() {
 // Throttled (#35): production (factories/coops/bees) fires refreshUI many times a
 // second; rebuilding the bag/hotbar DOM each time was a big browser-paint cost.
 // Coalesce to a dirty flag flushed ~6×/sec in the game loop — imperceptible lag.
-let _uiDirty = true, _uiTimer = 0;
+// (_uiDirty / _uiTimer are declared near the top — refreshUI runs during init.)
 function refreshUI() { _uiDirty = true; }
 
 // --- Save ---
