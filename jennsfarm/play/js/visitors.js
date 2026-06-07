@@ -7,10 +7,12 @@
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
 import { registerSystem } from './registry.js';
+import { beautyScore } from './decor.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
 const MAX_VISITORS = 4;
 const MAX_WITH_BOWL = 7;
+const ABS_MAX = 14;          // hard ceiling so a gorgeous farm still can't tank perf
 const SPAWN_EVERY = 45;       // base seconds between arrivals
 const CAT_COLORS = [0x9a9a9a, 0xd6913a, 0x2a2a2a, 0xe8e2d6]; // grey / ginger / black / cream
 export const FOOD_BOWL_COST = 120;
@@ -135,23 +137,36 @@ function wanderTarget() {
     return { x: FARM_CX + (Math.random() * 2 - 1) * 9, z: FARM_CZ + (Math.random() * 2 - 1) * 9 };
 }
 
+// Current visitor cap: base (bowl raises it) + a bonus from farm beauty, capped.
+export function visitorCap() {
+    const base = foodBowl ? MAX_WITH_BOWL : MAX_VISITORS;
+    return Math.min(base + Math.floor(beautyScore() / 6), ABS_MAX);
+}
+
+// Seconds between arrivals: bowl shortens it, beauty shortens it further (floor 6s).
+function spawnInterval() {
+    const base = foodBowl ? 12 : SPAWN_EVERY;
+    return Math.max(6, base - beautyScore() * 0.6);
+}
+
 export function spawnVisitor() {
-    if (visitors.length >= MAX_WITH_BOWL) return null;
+    if (visitors.length >= ABS_MAX) return null;
     const ang = Math.random() * Math.PI * 2, r = 18; // arrive from the edge
     const x = FARM_CX + Math.cos(ang) * r, z = FARM_CZ + Math.sin(ang) * r;
     const species = pickVisitorSpecies();
     const grp = buildVisitor(species);
     grp.position.set(x, 0.02, z);
     const t = wanderTarget();
-    const ttl = foodBowl ? 80 + Math.random() * 60 : 30 + Math.random() * 45; // critters linger at the bowl
+    // critters linger at the bowl; a prettier farm makes everyone stay longer
+    const ttl = (foodBowl ? 80 + Math.random() * 60 : 30 + Math.random() * 45) + Math.min(beautyScore(), 40);
     const v = { grp, species, x, z, tx: t.x, tz: t.z, ttl, bob: Math.random() * 6 };
     visitors.push(v);
     return v;
 }
 
 export function updateVisitors(dt) {
-    const every = foodBowl ? 12 : SPAWN_EVERY;       // food out → cats arrive faster
-    const cap = foodBowl ? MAX_WITH_BOWL : MAX_VISITORS; // …and more of them
+    const every = spawnInterval();   // food + beauty → arrive faster
+    const cap = visitorCap();        // food + beauty → more of them
     timer -= dt;
     if (timer <= 0) { timer = every + Math.random() * (every * 0.5); if (visitors.length < cap) spawnVisitor(); }
     for (let i = visitors.length - 1; i >= 0; i--) {

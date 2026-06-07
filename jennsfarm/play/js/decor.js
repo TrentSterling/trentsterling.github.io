@@ -109,20 +109,21 @@ const BUILD = {
     },
 };
 
-// Catalog metadata (id → display + price). Order = catalog order (cheap → fancy).
+// Catalog metadata (id → display + price + beauty). Order = catalog order (cheap
+// → fancy). `beauty` feeds the farm's charm score, which attracts more visitors (#54).
 export const DECOR_TYPES = {
-    haybale:   { name: 'Hay Bale',     emoji: '🌾', cost: 30,  footprint: 0.6, note: 'rustic charm' },
-    flowerbed: { name: 'Flower Bed',   emoji: '🌷', cost: 45,  footprint: 0.8, note: 'a splash of colour' },
-    signpost:  { name: 'Signpost',     emoji: '🪧', cost: 50,  footprint: 0.5, note: 'mark the way' },
-    bench:     { name: 'Garden Bench', emoji: '🪑', cost: 65,  footprint: 0.9, note: 'a place to rest' },
-    gnome:     { name: 'Garden Gnome', emoji: '🧙', cost: 75,  footprint: 0.4, note: 'keeps you company' },
-    lamp:      { name: 'Lamp Post',    emoji: '🏮', cost: 95,  footprint: 0.5, note: 'warm glow' },
-    topiary:   { name: 'Topiary',      emoji: '🌳', cost: 110, footprint: 0.6, note: 'tidy hedge' },
-    birdbath:  { name: 'Bird Bath',    emoji: '🐦', cost: 125, footprint: 0.6, note: 'invites birds' },
-    picnic:    { name: 'Picnic Table', emoji: '🧺', cost: 140, footprint: 1.0, note: 'family gathering' },
-    well:      { name: 'Stone Well',   emoji: '🪣', cost: 185, footprint: 0.9, note: 'old-world cosy' },
-    statue:    { name: 'Statue',       emoji: '🗿', cost: 220, footprint: 0.7, note: 'grand centrepiece' },
-    windmill:  { name: 'Windmill',     emoji: '🌬️', cost: 420, footprint: 1.0, note: 'landmark for the estate' },
+    haybale:   { name: 'Hay Bale',     emoji: '🌾', cost: 30,  footprint: 0.6, beauty: 1, note: 'rustic charm' },
+    flowerbed: { name: 'Flower Bed',   emoji: '🌷', cost: 45,  footprint: 0.8, beauty: 4, note: 'a splash of colour' },
+    signpost:  { name: 'Signpost',     emoji: '🪧', cost: 50,  footprint: 0.5, beauty: 1, note: 'mark the way' },
+    bench:     { name: 'Garden Bench', emoji: '🪑', cost: 65,  footprint: 0.9, beauty: 2, note: 'a place to rest' },
+    gnome:     { name: 'Garden Gnome', emoji: '🧙', cost: 75,  footprint: 0.4, beauty: 3, note: 'keeps you company' },
+    lamp:      { name: 'Lamp Post',    emoji: '🏮', cost: 95,  footprint: 0.5, beauty: 3, note: 'warm glow' },
+    topiary:   { name: 'Topiary',      emoji: '🌳', cost: 110, footprint: 0.6, beauty: 4, note: 'tidy hedge' },
+    birdbath:  { name: 'Bird Bath',    emoji: '🐦', cost: 125, footprint: 0.6, beauty: 5, note: 'invites birds' },
+    picnic:    { name: 'Picnic Table', emoji: '🧺', cost: 140, footprint: 1.0, beauty: 3, note: 'family gathering' },
+    well:      { name: 'Stone Well',   emoji: '🪣', cost: 185, footprint: 0.9, beauty: 5, note: 'old-world cosy' },
+    statue:    { name: 'Statue',       emoji: '🗿', cost: 220, footprint: 0.7, beauty: 7, note: 'grand centrepiece' },
+    windmill:  { name: 'Windmill',     emoji: '🌬️', cost: 420, footprint: 1.0, beauty: 8, note: 'landmark for the estate' },
 };
 
 // Catalog array for the build menu UI.
@@ -194,6 +195,15 @@ export function removeDecorNear(x, z, range = 0.6) {
 export function updateDecor() { if (_dirty) rebuildDecorIMs(); }
 
 export function getDecorCount() { return placed.length; }
+
+// Total "charm" of the farm = sum of every placed prop's beauty. Visitors are
+// drawn to a prettier farm — more of them, arriving faster (#54).
+export function beautyScore() {
+    let s = 0;
+    for (const d of placed) s += (DECOR_TYPES[d.id] && DECOR_TYPES[d.id].beauty) || 0;
+    return s;
+}
+
 export function countByType() {
     const c = {};
     for (const d of placed) c[d.id] = (c[d.id] || 0) + 1;
