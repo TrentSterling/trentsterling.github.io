@@ -109,6 +109,11 @@ Each line shipped to https://tront.xyz/jennsfarm with the QA suite green.
 
 ---
 
+## Camera + task queue pass
+- **📋 Task queue (#70):** click several plants/tiles in a row and Jenn does each **in order** (cap 10), with an on-screen **icon per queued task** (the active one glows gold). A plain move-click interrupts and clears the queue.
+- **🌫️ Fog overhaul:** much lighter (clear up close, only softens the far edge) and **scales with zoom** — zooming out now reveals more *without* getting hazier (the far-clip scales too, so no hard cut).
+- **🎥 Camera tilt fix:** the world-curve origin now tracks the camera's actual (eased) position instead of snapping to the target, so panning vertically no longer makes the ground heave/tilt.
+
 ## 🌟 Big session recap — June 2026
 
 A marathon pass. Highlights:

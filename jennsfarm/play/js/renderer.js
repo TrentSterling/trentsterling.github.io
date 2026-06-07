@@ -67,14 +67,12 @@ let sunLight, ambientLight, hemiLight, moonLight;
 export function initRenderer(container) {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
-    // Linear fog - fades objects to sky color. Tight by design (#35): you only see
-    // ~16 tiles, which hides the chunk-load edge AND means far less to draw/cull.
-    scene.fog = new THREE.Fog(0x87ceeb, 8, 18);
-
-    // Far clip plane sits just past the fog-out distance so the frustum ACTUALLY
-    // discards everything the fog already hides (no more drawing 16–60m of invisible
-    // world). This is where the real culling win comes from, not the fog itself (#35).
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 22);
+    // Light linear fog that only softens the FAR edge (clear up close). Both the fog
+    // band AND the far clip plane scale with zoom (applyViewDistance) so zooming out
+    // shows farther WITHOUT getting hazier, and the clip always sits just past the fog.
+    scene.fog = new THREE.Fog(0x87ceeb, 16, 25);
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 26);
+    applyViewDistance();
     camera.rotation.order = 'YXZ';
     camera.rotation.set(CAMERA_PITCH, 0, 0);
 
@@ -216,8 +214,20 @@ export function focusCamera(x, z) { following = false; freeX = x; freeZ = z; cam
 
 // Zoom (scroll wheel): multiplies the follow distance + height. 1 = default.
 const ZOOM_MIN = 0.55, ZOOM_MAX = 3.2;
+const BASE_FAR = 26;     // view distance at zoom 1
 let zoom = 1;
-export function zoomCamera(step) { zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom + step)); }
+// Keep the fog band + far clip plane proportional to zoom so zooming out reveals
+// more without thickening the haze, and the fog only ever softens the far edge.
+function applyViewDistance() {
+    if (!camera) return;
+    const far = BASE_FAR * zoom;
+    camera.far = far; camera.updateProjectionMatrix();
+    if (scene && scene.fog) { scene.fog.near = far * 0.62; scene.fog.far = far * 0.97; }
+}
+export function zoomCamera(step) {
+    zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom + step));
+    applyViewDistance();
+}
 export function getZoom() { return zoom; }
 
 export function setDebugCamera({ x, z, height, distance, pitch } = {}) {
@@ -253,8 +263,11 @@ export function updateCamera(targetPos, dt, playerMoving) {
         shake *= Math.max(0, 1 - 12 * dt);
     } else shake = 0;
 
-    // Curvature origin = framed point (ground near it is flat)
-    curveUniforms.curveOrigin.value.set(fx, 0, fz);
+    // Curvature origin = where the camera is ACTUALLY looking THIS frame (derived from
+    // the lerped camera position), NOT the desired focus. Binding it to the lerped
+    // position keeps the curve in lockstep with the camera so panning vertically no
+    // longer makes the ground heave/tilt while the camera eases toward its target.
+    curveUniforms.curveOrigin.value.set(camera.position.x, 0, camera.position.z - dist);
 }
 
 /**
