@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { scene, curvedMaterial } from './renderer.js';
-import { mergedMesh } from './meshmerge.js';
+import { mergedMesh, freezeStatic } from './meshmerge.js';
 import { getFactories } from './factories.js';
 
 const FARM_CX = 24, FARM_CZ = 24;
@@ -70,6 +70,7 @@ export function syncFactoryBuildings() {
         if (owned[type] && !placed[type] && SPOTS[type]) {
             const m = mergedMesh(BUILD[type]);
             m.position.set(SPOTS[type].x, 0, SPOTS[type].z);
+            freezeStatic(m); // a building never moves — stop per-frame matrix work (#35)
             scene.add(m);
             placed[type] = m;
         }

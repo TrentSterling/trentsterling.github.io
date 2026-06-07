@@ -118,12 +118,17 @@ export function tickDebug(frameMs, cpuMs = 0) {
     const p50 = pctile(sorted, 0.50), p95 = pctile(sorted, 0.95), p99 = pctile(sorted, 0.99);
     const gpu = getGpuMs();                            // -1 if timer-query unavailable
     const gpuStr = gpu < 0 ? 'n/a' : gpu.toFixed(1);
+    // js = actual game work this frame (sum of profiled phases). If cpu (measured
+    // from the vsync timestamp) is much higher than js, the gap is BROWSER overhead
+    // — GC pauses, DOM/paint, canvas composite — not our game loop.
+    let js = 0; for (const k in prof) js += prof[k];
 
-    // Who's the bottleneck? CPU work, GPU work, or vsync rounding a small overage up.
+    // Who's the bottleneck?
     let bound = 'ok';
-    if (cpuEMA > 16) bound = 'CPU-bound';
+    if (js > 14) bound = 'GAME-JS';                    // our code is the cost
     else if (gpu > 16) bound = 'GPU-bound';
-    else if (p95 > 20) bound = (gpu > cpuEMA ? 'GPU/vsync' : 'CPU/vsync');
+    else if (cpuEMA > 16) bound = 'browser/GC';        // cpu high but js low → not us
+    else if (p95 > 20) bound = 'vsync-edge';
 
     const r = renderer && renderer.info ? renderer.info : null;
     const rr = r ? r.render : null;
@@ -138,7 +143,8 @@ export function tickDebug(frameMs, cpuMs = 0) {
 
     hud.textContent =
         `FPS ${fps}   frame ${(1000 / Math.max(fps, 1)).toFixed(1)}ms\n` +
-        `cpu ${cpuEMA.toFixed(1)}  gpu ${gpuStr}  [${bound}]\n` +
+        `cpu ${cpuEMA.toFixed(1)}  js ${js.toFixed(1)}  gpu ${gpuStr}\n` +
+        `[${bound}]\n` +
         `p50 ${p50.toFixed(1)} p95 ${p95.toFixed(1)} p99 ${p99.toFixed(1)} max ${spike.toFixed(0)}\n` +
         `── frame ms (${frameLog.length}f) ──\n${histogram(frameLog)}\n` +
         `── phases ms ──\n${rows}\n` +
