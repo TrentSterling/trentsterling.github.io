@@ -311,6 +311,47 @@ export function raycastGround(event) {
     };
 }
 
+// --- Real GPU frame time (EXT_disjoint_timer_query_webgl2) ---
+// The profiler only sees CPU work; GPU runs async, so a GPU-bound frame looks
+// "fast" on the CPU yet vsync still penalises it to 33/50ms. This probe times the
+// actual GPU work via an async timer query (one in flight; EMA-smoothed). Returns
+// -1 when the extension is unavailable (then we can't measure GPU directly).
+let _gl = null, _tqExt = null, _tq = null, _tqBusy = false, _gpuMs = -1, _gpuTried = false;
+function initGpuTimer() {
+    _gpuTried = true;
+    try {
+        _gl = renderer.getContext();
+        _tqExt = _gl.getExtension('EXT_disjoint_timer_query_webgl2') || null;
+        if (_tqExt) _gpuMs = 0;
+    } catch (_) { _tqExt = null; }
+}
+export function getGpuMs() { return _gpuMs; }
+
 export function render() {
-    renderer.render(scene, camera);
+    if (!_gpuTried) initGpuTimer();
+    if (!_tqExt) { renderer.render(scene, camera); return; }
+    try {
+        // Read back the previous query if it's ready (results lag a frame or two).
+        if (_tqBusy) {
+            const disjoint = _gl.getParameter(_tqExt.GPU_DISJOINT_EXT);
+            if (disjoint) { _tqBusy = false; }
+            else if (_gl.getQueryParameter(_tq, _gl.QUERY_RESULT_AVAILABLE)) {
+                const ns = _gl.getQueryParameter(_tq, _gl.QUERY_RESULT);
+                _gpuMs = _gpuMs * 0.8 + (ns / 1e6) * 0.2; // ns → ms, EMA
+                _tqBusy = false;
+            }
+        }
+        if (!_tqBusy) {
+            if (!_tq) _tq = _gl.createQuery();
+            _gl.beginQuery(_tqExt.TIME_ELAPSED_EXT, _tq);
+            renderer.render(scene, camera);
+            _gl.endQuery(_tqExt.TIME_ELAPSED_EXT);
+            _tqBusy = true;
+        } else {
+            renderer.render(scene, camera); // a query is still pending; just draw
+        }
+    } catch (_) {
+        _tqExt = null; _gpuMs = -1;          // any GL hiccup → disable the probe
+        renderer.render(scene, camera);
+    }
 }
