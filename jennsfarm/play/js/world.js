@@ -293,6 +293,7 @@ const _YAXIS = new THREE.Vector3(0, 1, 0);
 function generateDecorations() {
     const grass = [];   // { x, z, rot, scale, shade }
     const flowers = []; // { x, z, color }
+    const rocks = [];   // { x, z, size, gv, ox, oz, rx, ry } — instanced like grass (#35)
     const FLOWER_COLORS = [0xf9e04b, 0xf6f2e8, 0xe88bc4, 0xff8844, 0x8fb8ff];
 
     for (let z = 0; z < WORLD_SIZE; z++) {
@@ -304,7 +305,18 @@ function generateDecorations() {
             const n2 = noise(x * 1.3, z * 1.3, 99);
 
             if (n > 0.80) { addTree(x, z); continue; } // lush wild again (instanced = ~free); farm auto-clears its own
-            if (n > 0.72 && n2 > 0.5) { addRock(x, z); continue; }
+            if (n > 0.72 && n2 > 0.5) { // collect rock data — built as ONE InstancedMesh below
+                rocks.push({
+                    x, z,
+                    size: 0.12 + noise(x, z, 60) * 0.18,
+                    gv: 100 + Math.floor(noise(x, z, 61) * 60),
+                    ox: (noise(x, z, 62) - 0.5) * 0.4,
+                    oz: (noise(x, z, 63) - 0.5) * 0.4,
+                    rx: noise(x, z, 64) * 1.5,
+                    ry: noise(x, z, 65) * 2,
+                });
+                continue;
+            }
 
             // Scattered grass tufts (dense, but instanced → ~free)
             const blades = n2 > 0.45 ? 3 : (n2 > 0.2 ? 2 : 1);
@@ -330,14 +342,30 @@ function generateDecorations() {
             }
         }
     }
-    buildInstancedDecor(grass, flowers);
+    buildInstancedDecor(grass, flowers, rocks);
 }
 
 // Thousands of grass tufts + flowers as TWO InstancedMeshes (one draw call each),
 // with per-instance color. The curvature shader already handles USE_INSTANCING.
-function buildInstancedDecor(grass, flowers) {
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion();
+function buildInstancedDecor(grass, flowers, rocks) {
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
     const p = new THREE.Vector3(), s = new THREE.Vector3(), col = new THREE.Color();
+
+    if (rocks && rocks.length) {
+        const mesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), curvedMaterial({ color: 0xffffff }), rocks.length);
+        rocks.forEach((r, i) => {
+            p.set(r.x + r.ox, r.size * 0.4, r.z + r.oz);
+            e.set(r.rx, r.ry, 0); q.setFromEuler(e);
+            s.set(r.size, r.size, r.size);
+            mesh.setMatrixAt(i, m.compose(p, q, s));
+            const g = r.gv / 255;
+            mesh.setColorAt(i, col.setRGB(g, g, g));
+        });
+        mesh.instanceMatrix.needsUpdate = true;
+        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+    }
 
     if (grass.length) {
         const mesh = new THREE.InstancedMesh(new THREE.ConeGeometry(0.05, 0.24, 4), curvedMaterial({ color: 0xffffff }), grass.length);
