@@ -104,6 +104,9 @@ export function emptyBin(bin) {
 export function getBinCount() { return bins.length; }
 export function getBins() { return bins; }
 
+// A fresh crate mesh for the build-mode ghost preview (#36).
+export function crateModel() { return new THREE.Mesh(boxGeo(), mergedMat); }
+
 export function serializeBins() { return bins.map(b => ({ x: b.x, z: b.z, items: b.items, total: b.total })); }
 export function loadBins(data) {
     if (_boxIM) { scene.remove(_boxIM); _boxIM.dispose(); _boxIM = null; }

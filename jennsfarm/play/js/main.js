@@ -45,8 +45,8 @@ import { woodBurst, chip, coinBurst, puff, sparkle, hearts, pop, updateJuice } f
 import { initGrandpa, updateGrandpa, grandpaSayText } from './grandpa.js';
 import { addSprinkler, updateSprinklers, serializeSprinklers, loadSprinklers } from './sprinklers.js';
 import { isPlacing, placingName, beginPlacement, moveGhost, confirmPlace, cancelPlacement, rotatePlacement } from './placement.js';
-import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, countByType, beautyScore } from './decor.js';
-import { placeBin, updateBins, serializeBins, loadBins, getBinCount, nearestFullishBin, emptyBin, CRATE_CAP } from './bins.js';
+import { DECOR_CATALOG, placeDecor, updateDecor, serializeDecor, loadDecor, countByType, beautyScore, decorModel } from './decor.js';
+import { placeBin, updateBins, serializeBins, loadBins, getBinCount, nearestFullishBin, emptyBin, CRATE_CAP, crateModel } from './bins.js';
 import { showBuildMenu, hideBuildMenu } from './buildmenu.js';
 import { spawnInitialWeeds, clearWeedAt, hasWeedAt, serializeWeeds, loadWeeds, getWeedCount, growWeeds, clearWeedsInRadius } from './weeds.js';
 import { advanceCropsOffline } from './offline.js';
@@ -847,6 +847,7 @@ function buyBeehive() {
     hideAllOverlays();
     beginPlacement({
         id: 'hive', name: 'Beehive', cost: HIVE_COST, footprint: 0.7,
+        preview: () => { const g = new THREE.Group(); for (const [rt, rb, h, y] of [[0.22, 0.26, 0.16, 0.08], [0.18, 0.22, 0.14, 0.22], [0.12, 0.18, 0.12, 0.34]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 10)); m.position.y = y; g.add(m); } return g; },
         afford: () => coins >= HIVE_COST && getHiveCount() < 6,
         canPlace: canPlaceStructure,
         place: (x, z) => {
@@ -864,6 +865,7 @@ function buyCoop() {
     hideAllOverlays();
     beginPlacement({
         id: 'coop', name: 'Chicken Coop', cost: COOP_COST, footprint: 0.9,
+        preview: () => { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.6)); b.position.y = 0.25; g.add(b); const r = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.35, 4)); r.position.y = 0.62; r.rotation.y = Math.PI / 4; g.add(r); return g; },
         afford: () => coins >= COOP_COST && getCoopCount() < 6,
         canPlace: canPlaceStructure,
         place: (x, z) => {
@@ -879,6 +881,7 @@ function startDecorPlacement(d) {
     if (coins < d.cost) { playDeny(); notify(`Can't afford ${d.name}!`); return; }
     beginPlacement({
         id: d.id, name: d.name, cost: d.cost, footprint: d.footprint,
+        preview: () => decorModel(d.id), // real translucent model ghost (#36)
         afford: () => coins >= d.cost,
         canPlace: canPlaceStructure,
         place: (x, z, rot) => {
@@ -895,6 +898,7 @@ function startCratePlacement() {
     if (coins < CRATE_PRICE) { playDeny(); notify("Can't afford a crate!"); return; }
     beginPlacement({
         id: 'crate', name: 'Wooden Crate', cost: CRATE_PRICE, footprint: 0.6,
+        preview: crateModel, // real translucent crate ghost (#36)
         afford: () => coins >= CRATE_PRICE,
         canPlace: canPlaceStructure,
         place: (x, z) => {
