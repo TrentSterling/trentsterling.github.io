@@ -96,6 +96,20 @@ export const CROPS = {
         regrows: true, // vines keep fruiting
         colors: ['#8b6914', '#4a8c3f', '#3a7a2f', '#7a3f9a'],
     },
+    // --- Late-game premium crops (#63): slow to grow, but lucrative ---
+    dragonfruit: {
+        name: 'Dragonfruit', kind: 'exotic',
+        growTime: 110, stages: 4,
+        seedItem: 'dragonfruit_seed', harvestItem: 'dragonfruit', harvestQty: 2,
+        regrows: true, // a cactus that keeps fruiting
+        colors: ['#8b6914', '#4a8c3f', '#3f7a4f', '#e0356f'],
+    },
+    golden_pumpkin: {
+        name: 'Golden Pumpkin', kind: 'gourd',
+        growTime: 150, stages: 4,
+        seedItem: 'golden_pumpkin_seed', harvestItem: 'golden_pumpkin', harvestQty: 1,
+        colors: ['#8b6914', '#4a8c3f', '#6a8a2f', '#f2b81b'],
+    },
 };
 
 // Crops render as InstancedMeshes grouped by "cropId|stage" — a field of 300

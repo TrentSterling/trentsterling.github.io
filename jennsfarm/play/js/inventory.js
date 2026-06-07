@@ -18,6 +18,9 @@ export const ITEMS = {
     rose_seed:              { name: 'Rose Seeds',       type: 'seed', cropId: 'rose',              buyPrice: 50,  icon: 'rose_seed' },
     square_watermelon_seed: { name: 'Square Melon Seeds', type: 'seed', cropId: 'square_watermelon', buyPrice: 130, icon: 'square_watermelon_seed' },
     grape_seed:             { name: 'Grape Vine',         type: 'seed', cropId: 'grape',             buyPrice: 45,  icon: 'grape_seed' },
+    // --- Late-game premium seeds (#63) ---
+    dragonfruit_seed:       { name: 'Dragonfruit Cutting', type: 'seed', cropId: 'dragonfruit',     buyPrice: 110, icon: 'dragonfruit_seed' },
+    golden_pumpkin_seed:    { name: 'Golden Pumpkin Seeds', type: 'seed', cropId: 'golden_pumpkin', buyPrice: 180, icon: 'golden_pumpkin_seed' },
 
     // --- New crops (harvested) ---
     strawberry:        { name: 'Strawberry',        type: 'crop', sellPrice: 18,  icon: 'strawberry' },
@@ -28,6 +31,8 @@ export const ITEMS = {
     rose:              { name: 'Rose',              type: 'crop', sellPrice: 95,  icon: 'rose' },
     square_watermelon: { name: 'Square Watermelon', type: 'crop', sellPrice: 300, icon: 'square_watermelon' },
     grape:             { name: 'Grapes',            type: 'crop', sellPrice: 55,  icon: 'grape' },
+    dragonfruit:       { name: 'Dragonfruit',       type: 'crop', sellPrice: 130, icon: 'dragonfruit' },        // late-game (#63)
+    golden_pumpkin:    { name: 'Golden Pumpkin',    type: 'crop', sellPrice: 400, icon: 'golden_pumpkin' },     // late-game jackpot (#63)
 
     // --- Materials (gathered, sellable; reuses the 'crop' sellable bucket) ---
     wood: { name: 'Wood', type: 'crop', sellPrice: 14, icon: 'wood' },
