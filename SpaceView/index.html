@@ -17,13 +17,13 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://tront.xyz/SpaceView/">
     <meta property="og:title" content="SpaceView - Disk Space Visualizer">
-    <meta property="og:description" content="Modern SpaceMonger clone built in Rust + egui. 5 view modes, duplicate detection, extension filtering, live scanning. 3.6 MB binary.">
+    <meta property="og:description" content="Modern SpaceMonger clone built in Rust + egui. 5 view modes, duplicate detection, extension filtering, live scanning. Single 7 MB binary.">
     <meta property="og:image" content="https://tront.xyz/blog/assets/img/blog/spaceview-og.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="SpaceView - Disk Space Visualizer">
-    <meta name="twitter:description" content="Modern SpaceMonger clone built in Rust + egui. 5 view modes, duplicate detection, extension filtering, live scanning. 3.6 MB binary.">
+    <meta name="twitter:description" content="Modern SpaceMonger clone built in Rust + egui. 5 view modes, duplicate detection, extension filtering, live scanning. Single 7 MB binary.">
     <meta name="twitter:image" content="https://tront.xyz/blog/assets/img/blog/spaceview-og.png">
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"SpaceView","description":"Fast disk space visualizer built in Rust with squarified treemaps and smooth camera.","url":"https://tront.xyz/SpaceView/","applicationCategory":"UtilitiesApplication","operatingSystem":"Windows","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz"}}</script>
     <link rel="icon" href="/favicon.png" type="image/png">
@@ -163,7 +163,7 @@
             <h1>SpaceView</h1>
             <p class="subtitle">See where your disk space went. A modern SpaceMonger clone built in Rust + egui - fast, tiny, and actually useful.</p>
             <div class="hero-links">
-                <a href="https://github.com/TrentSterling/SpaceView/releases" class="btn btn-primary">Download <span class="version-badge">v0.11.0</span></a>
+                <a href="https://github.com/TrentSterling/SpaceView/releases" class="btn btn-primary">Download <span class="version-badge">v0.12.0</span></a>
                 <a href="https://github.com/TrentSterling/SpaceView" class="btn btn-secondary" target="_blank">GitHub</a>
                 <a href="/blog/posts/spaceview/" class="btn btn-secondary" target="_blank">Blog Post</a>
             </div>
@@ -197,7 +197,7 @@
                 <div class="feature-card">
                     <span class="feature-icon accent-cyan">LOD</span>
                     <h3>Lazy LOD</h3>
-                    <p>Only expands nodes that are large enough on screen. Prunes detail you can't see. Stays smooth even on multi-terabyte drives.</p>
+                    <p>Only expands nodes that are large enough on screen, prunes detail you can't see, caps memory with a global node budget. Layouts compute once and cache. Stays smooth even on multi-terabyte drives.</p>
                 </div>
                 <div class="feature-card">
                     <span class="feature-icon accent-indigo">5000x</span>
@@ -215,9 +215,9 @@
                     <p>Clickable breadcrumb trail shows exactly where you are in the directory tree. Jump back to any parent with one click.</p>
                 </div>
                 <div class="feature-card">
-                    <span class="feature-icon accent-cyan">3.6</span>
+                    <span class="feature-icon accent-cyan">7</span>
                     <h3>Tiny Binary</h3>
-                    <p>The whole thing compiles down to a 3.6 MB binary. About 2,500 lines of Rust. No installer, no runtime, just run it.</p>
+                    <p>The whole thing compiles down to a 7 MB binary. About 5,000 lines of Rust. No installer, no runtime, just run it.</p>
                 </div>
             </div>
         </section>
@@ -233,7 +233,7 @@
                 </div>
                 <div class="how-card">
                     <h3>Lazy Level of Detail</h3>
-                    <p>Instead of rendering every file on every frame, SpaceView only expands tree nodes when they're large enough on screen to matter. When you zoom in, deeper nodes expand. When you zoom out, they prune back. This keeps the render budget constant regardless of how many files are on disk - the treemap adapts to whatever you're actually looking at.</p>
+                    <p>Instead of rendering every file on every frame, SpaceView only expands tree nodes when they're large enough on screen to matter. When you zoom in, deeper nodes expand. When you zoom out, they prune back. Each folder's layout is computed once and cached, and the whole treemap draws as a single batched mesh - the render budget stays constant regardless of how many files are on disk.</p>
                 </div>
             </div>
         </section>
@@ -254,12 +254,12 @@
                     <p>Immediate mode GUI. Redraws every frame, no retained widget state to manage.</p>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">~2.5K</span>
+                    <span class="stat-value">~5K</span>
                     <h3>Lines of Code</h3>
-                    <p>Entire app in about 2,500 lines across 6 source files.</p>
+                    <p>Entire app in about 5,000 lines across 7 source files.</p>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-value">3.6 MB</span>
+                    <span class="stat-value">7 MB</span>
                     <h3>Binary Size</h3>
                     <p>No installer, no runtime dependencies. Just a single executable.</p>
                 </div>
@@ -270,7 +270,7 @@
             <h2>Download SpaceView</h2>
             <p>Grab the latest release from GitHub. Windows binary, no install needed - just unzip and run.</p>
             <div class="hero-links">
-                <a href="https://github.com/TrentSterling/SpaceView/releases" class="btn btn-primary">Download v0.11.0</a>
+                <a href="https://github.com/TrentSterling/SpaceView/releases" class="btn btn-primary">Download v0.12.0</a>
                 <a href="https://github.com/TrentSterling/SpaceView" class="btn btn-secondary" target="_blank">View Source</a>
             </div>
         </section>
