@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Case-router: GitHub Pages paths are case-sensitive, so /spaceview/ would
-         404 while /SpaceView/ works. Fix the first path segment's casing against
-         the canonical folder list and redirect instantly, preserving the rest of
-         the path, query, and hash. Runs before anything renders.
-         Regenerate ROUTES after adding a project folder:  ls -d */  in repo root. -->
+    <!-- Case-router: GitHub Pages paths are case-sensitive, so /SpaceView/ (old
+         links in the wild) 404s now that the canonical path is /spaceview/.
+         Fix the first path segment's casing against the canonical route list and
+         redirect instantly, preserving the rest of the path, query, and hash.
+         Runs before anything renders. ROUTES = site folders + repo-Pages project
+         mounts; regenerate after adding a project:  ls -d */  in repo root. -->
     <script>
         (function () {
-            var ROUTES = ["SpaceView", "assets", "audiobounce", "blog", "calm",
+            var ROUTES = ["spaceview", "assets", "audiobounce", "blog", "calm",
                 "colony", "device-history", "discord", "games", "img", "jennsfarm",
                 "lofigen", "megabunk", "notesdash", "powershellmanager",
                 "runtimecsg", "snapscan", "toaster", "trontcloud"];
