@@ -89,6 +89,18 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://tront.xyz/tronteq/</loc>
+    <lastmod>2026-07-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://tront.xyz/trontsnap/</loc>
+    <lastmod>2026-07-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://tront.xyz/games/md/</loc>
     <lastmod>2026-02-23</lastmod>
     <changefreq>monthly</changefreq>
