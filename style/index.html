@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<!--
+  TRONT STYLE GUIDE  ::  tront.xyz/style/
+  Living reference for the shared component language.
+
+  Not linked from any nav. Nothing on the live site changes because of this
+  page; it loads only the two NEW files (assets/css/tront-system.css and
+  assets/js/tront-system.js) and leaves tront-themes.css / tront-theme.js alone.
+
+  Rule: if two components disagree, THIS page is where it becomes obvious.
+-->
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRONT Style Guide</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/tront-system.css">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--t-body);line-height:1.6;padding-bottom:var(--t-8)}
+
+  /* guide chrome only; not part of the system */
+  /* guide surfaces use the SYSTEM fill, not raw --panel: reaching for --panel
+     directly is exactly how a surface silently opts out of frost */
+  .g-head{padding:var(--t-6) var(--t-4) var(--t-5);border-bottom:1px solid var(--line-subtle);
+          background:var(--panel-fill,var(--panel));backdrop-filter:blur(var(--panel-blur,0px))}
+  .g-sec{padding:var(--t-7) 0;border-bottom:1px solid var(--line-subtle)}
+  .g-sec:last-child{border-bottom:0}
+  .g-row{display:flex;flex-wrap:wrap;gap:var(--t-3);align-items:center}
+  /* guide chrome uses the same scale steps, not new in-between sizes */
+  .g-note{font-size:1rem;color:var(--muted);max-width:72ch;margin-top:var(--t-2)}
+  .g-label{font-family:var(--t-display);font-size:.8rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:var(--t-2);display:block}
+
+  .g-controls{display:flex;flex-wrap:wrap;gap:var(--t-3);align-items:center;margin-top:var(--t-4)}
+  .g-swatches{display:flex;flex-wrap:wrap;gap:6px}
+  .g-swatches button{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);cursor:pointer;padding:0}
+  .g-swatches button:hover{border-color:var(--text);transform:scale(1.1)}
+  input[type=color]{width:44px;height:32px;padding:2px;border:1px solid var(--line);background:var(--elem);border-radius:6px;cursor:pointer}
+
+  /* the 12 step ladder */
+  .g-scale{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;border:1px solid var(--line);border-radius:var(--t-radius);overflow:hidden}
+  .g-step{padding:var(--t-4) 4px;text-align:center;font-family:var(--t-display);font-size:.8rem}
+  @media(max-width:820px){.g-scale{grid-template-columns:repeat(4,1fr)}}
+
+  .g-audit{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:var(--t-2);font-family:var(--t-display);font-size:.8rem}
+  .g-audit div{display:flex;justify-content:space-between;gap:var(--t-2);padding:var(--t-2) var(--t-3);background:var(--elem);border-radius:6px}
+  .g-audit b{font-weight:700}
+  .pass{color:var(--ok)} .fail{color:var(--danger)}
+
+  /* the before/after comparison */
+  .g-vs{display:grid;grid-template-columns:1fr 1fr;gap:var(--t-4)}
+  @media(max-width:760px){.g-vs{grid-template-columns:1fr}}
+  .g-vs > div{padding:var(--t-5);border-radius:var(--t-radius);border:1px solid var(--line-subtle);
+              background:var(--panel-fill,var(--panel));backdrop-filter:blur(var(--panel-blur,0px));
+              color:var(--text)}
+  .g-vs .bad{border-color:var(--danger)}
+  .g-vs .good{border-color:var(--ok)}
+  /* inside a panel the ground is the panel again, so panel-matched inks return */
+  .g-vs > div .t-small{color:var(--muted)}
+
+  /* the two REAL buttons, copied verbatim from the live pages */
+  .live-join{display:inline-block;text-decoration:none;font-family:var(--t-display);font-size:1.1rem;font-weight:700;
+    color:#fff;padding:.8rem 2rem;border-radius:8px;
+    background-image:linear-gradient(90deg,var(--legacy-purple),var(--legacy-teal));
+    text-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .live-cta{display:inline-block;text-decoration:none;font-family:var(--t-display);font-size:1.1rem;font-weight:700;
+    color:#111;padding:1rem 2.5rem;border-radius:8px;
+    background-image:linear-gradient(90deg,var(--legacy-purple),var(--legacy-orange),var(--legacy-teal),var(--legacy-pink),var(--legacy-purple));
+    background-size:400% 100%}
+  :root{--legacy-purple:#c874e8;--legacy-teal:#2ee6d7;--legacy-orange:#ff8b3d;--legacy-pink:#ff79c6}
+</style>
+</head>
+<body>
+
+<div class="t-wash"></div>
+
+<nav class="t-nav t-nav--hub">
+  <div class="t-nav__links">
+    <a class="t-nav__link" href="/">Home</a>
+    <a class="t-nav__link" href="/games/">Games</a>
+    <a class="t-nav__link" href="/blog/">Blog</a>
+    <a class="t-nav__link" href="/discord/">Discord</a>
+    <a class="t-nav__link" href="/style/" aria-current="page">Style</a>
+  </div>
+</nav>
+
+<header class="g-head">
+  <div class="t-wrap">
+    <span class="t-kicker">// tront design system</span>
+    <h1 class="t-h1">Style guide</h1>
+    <p class="t-body g-note">
+      Every component on this page draws its colour from one engine. Change the seed and
+      watch all of it move together and stay readable. That is the whole promise: a theme
+      cannot break a component, because no component names a colour.
+    </p>
+
+    <div class="g-controls">
+      <div class="g-swatches" id="swatches"></div>
+      <input type="color" id="seed" value="#56ccff" aria-label="Seed colour">
+      <button class="t-btn t-btn--secondary t-btn--sm" id="rand">Random</button>
+      <button class="t-btn t-btn--secondary t-btn--sm" id="mode">Light</button>
+      <select id="fontpair" class="t-mono" aria-label="Type pairing"></select>
+      <button class="t-btn t-btn--secondary t-btn--sm" id="fontroll">Roll type</button>
+      <span class="t-mono" id="readout" style="color:var(--muted)"></span>
+    </div>
+  </div>
+</header>
+
+<main class="t-wrap">
+
+  <!-- ============ 1. THE BUG ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// exhibit a</span>
+    <h2 class="t-h2">The same button, twice, plus the bug</h2>
+    <p class="t-body g-note">
+      "Join the Discord" is one action. It currently exists as two different buttons with
+      opposite text colours. Both hardcode their text against a gradient, so neither knows
+      when the theme moves. <b>Pick the Cyan preset above</b> and watch the left one go
+      unreadable while the right one does not.
+    </p>
+
+    <div class="g-vs" style="margin-top:var(--t-5)">
+      <div class="bad">
+        <span class="g-label">Live now: /games .join-button</span>
+        <a href="https://tront.xyz/discord/" class="live-join">Join The Discord</a>
+        <p class="t-small" style="margin-top:var(--t-4)">
+          <code>color:#fff</code> over a gradient ending in the theme's teal.
+          Contrast against the gradient's light end:
+          <b id="lc-bad">-</b>
+        </p>
+      </div>
+      <div class="good">
+        <span class="g-label">System: .t-btn--primary</span>
+        <a href="https://tront.xyz/discord/" class="t-btn t-btn--primary t-btn--lg">Join the Discord</a>
+        <p class="t-small" style="margin-top:var(--t-4)">
+          Label chosen by APCA against the actual fill.
+          Contrast: <b id="lc-good">-</b>
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--t-5)">
+      <span class="g-label">Also live: /discord .cta-button (same action, opposite ink)</span>
+      <a href="https://tront.xyz/discord/" class="live-cta">Join the Discord</a>
+    </div>
+  </section>
+
+  <!-- ============ 1b. GRADIENT v2 ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// gradient v2, ported from the egui fleet</span>
+    <h2 class="t-h2">Pegs, harmony, direction, intensity, frost</h2>
+    <p class="t-body g-note">
+      The same knobs as TrontEQ, SpaceView and Boxel, running as CSS. Pegs are derived from the
+      accent by harmony rule so the stops can never clash, slot one is always the accent, and a
+      single peg gets an auto partner so one colour still makes a sweep rather than a flat fill.
+    </p>
+
+    <div class="g-controls">
+      <label class="t-mono"><input type="checkbox" id="gon" checked> gradient</label>
+      <label class="t-mono">pegs
+        <input type="range" id="gp" min="1" max="4" step="1" value="3">
+        <b id="gp-v">3</b>
+      </label>
+      <label class="t-mono">angle
+        <input type="range" id="ga" min="0" max="360" step="5" value="135">
+        <b id="ga-v">135</b>
+      </label>
+      <label class="t-mono">intensity
+        <input type="range" id="gi" min="0" max="1" step=".01" value=".45">
+        <b id="gi-v">.45</b>
+      </label>
+      <label class="t-mono">frost
+        <input type="range" id="gf" min="0" max="1" step=".01" value=".85">
+        <b id="gf-v">.85</b>
+      </label>
+    </div>
+
+    <div class="g-controls">
+      <select id="gh" class="t-mono"></select>
+      <select id="gpre" class="t-mono"></select>
+      <button class="t-btn t-btn--secondary t-btn--sm" id="groll">Roll gradient</button>
+    </div>
+
+    <div id="ramp" style="height:56px;border-radius:var(--t-radius);border:1px solid var(--line);margin-top:var(--t-4)"></div>
+    <div class="g-row" style="margin-top:var(--t-3)" id="pegrow"></div>
+
+    <div class="g-vs" style="margin-top:var(--t-5)">
+      <div>
+        <span class="g-label">Gradient button, stops from the engine</span>
+        <a href="https://tront.xyz/discord/" class="t-btn t-btn--wash t-btn--lg">Join the Discord</a>
+        <p class="t-small" style="margin-top:var(--t-4)">
+          Label picked against the ramp's worst point, not one end.
+          Worst point on this ramp: <b id="lc-wash">-</b>
+        </p>
+      </div>
+      <div>
+        <span class="g-label">Two grounds (task #20)</span>
+        <p class="t-small">
+          Text lands on one of two surfaces, and each needs its own measurement.
+        </p>
+        <p class="t-small" style="margin-top:var(--t-2)">
+          In a panel, vs the frosted panel: <b id="lc-frost">-</b><br>
+          On the page, vs the wash's worst point: <b id="lc-wash-ground">-</b>
+        </p>
+        <p class="t-small" style="margin-top:var(--t-2)">
+          Push intensity to 1.0 and the page ground stops being <code>--bg</code> and becomes
+          the ramp. Page-level ink is now walked against that, which is why the kickers stay
+          readable on a rolled theme.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. SCALE ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// foundation</span>
+    <h2 class="t-h2">Twelve steps, one job each</h2>
+    <p class="t-body g-note">
+      The seed supplies hue and chroma character. Lightness comes from a fixed ladder the
+      system owns, which is what makes the guarantee hold for any colour you throw at it.
+    </p>
+    <div class="g-scale" id="scale" style="margin-top:var(--t-4)"></div>
+    <div class="g-audit" id="audit" style="margin-top:var(--t-4)"></div>
+    <p class="t-small" style="margin-top:var(--t-3)">
+      Lc is APCA contrast. Body text targets 75 and above, captions 60 and above.
+      These numbers are measured live from the rendered colours, not asserted.
+    </p>
+  </section>
+
+  <!-- ============ 3. BUTTONS ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// components</span>
+    <h2 class="t-h2">Buttons</h2>
+    <p class="t-body g-note">One shape, one family, one rhythm. Variants change weight, never geometry.</p>
+    <div class="g-row" style="margin-top:var(--t-4)">
+      <button class="t-btn t-btn--primary">Primary</button>
+      <button class="t-btn t-btn--secondary">Secondary</button>
+      <button class="t-btn t-btn--ghost">Ghost</button>
+      <button class="t-btn t-btn--primary" disabled>Disabled</button>
+    </div>
+    <div class="g-row" style="margin-top:var(--t-3)">
+      <button class="t-btn t-btn--primary t-btn--sm">Small</button>
+      <button class="t-btn t-btn--primary">Default</button>
+      <button class="t-btn t-btn--primary t-btn--lg">Large</button>
+    </div>
+  </section>
+
+  <!-- ============ 4. CARDS ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// the games page dna</span>
+    <h2 class="t-h2">Every project keeps its own colour</h2>
+    <p class="t-body g-note">
+      This is the part of the site you already like, made into a rule. Each card carries a hue;
+      the border, the year and the tag are derived from it and checked against the current
+      ground. Twenty-two hand-picked colours across 87 projects, none of which can go
+      unreadable when the theme changes.
+    </p>
+    <div class="t-grid" id="cards" style="margin-top:var(--t-4)"></div>
+  </section>
+
+  <!-- ============ 5. FILTERS + TAGS ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// components</span>
+    <h2 class="t-h2">Filters and tags</h2>
+    <div class="g-row" id="filters" style="margin-top:var(--t-4)"></div>
+    <div class="g-row" style="margin-top:var(--t-4)">
+      <span class="t-tag">Tool</span><span class="t-tag">VR</span><span class="t-tag">Mod</span>
+      <span class="t-tag">Prototype</span><span class="t-tag">Game Jam</span><span class="t-tag">Flash Game</span>
+    </div>
+  </section>
+
+  <!-- ============ 6. NAV VARIANTS ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// components</span>
+    <h2 class="t-h2">Three navs, one registry</h2>
+    <p class="t-body g-note">
+      All generated from one list of links. The main site renamed <code>/grid/</code> to
+      <code>/games/</code> for SEO, and both satellites still say "Grid" because each keeps
+      its own copy. Rename it in the registry and every page follows, including the ones you
+      will never open again.
+    </p>
+
+    <div style="margin-top:var(--t-4)">
+      <span class="g-label">Hub: home, games, blog, discord</span>
+      <nav data-tront-nav="hub" data-active="Games"
+           style="position:static;border-radius:var(--t-radius);border:1px solid var(--line-subtle)"></nav>
+    </div>
+
+    <div style="margin-top:var(--t-4)">
+      <span class="g-label">Satellite: punk.tront.xyz, monke.tront.xyz</span>
+      <nav data-tront-nav="satellite" data-site="monkeportals"
+           style="position:static;border-radius:var(--t-radius);border:1px solid var(--line-subtle)"></nav>
+    </div>
+
+    <div style="margin-top:var(--t-4)">
+      <span class="g-label">Product: eos-native, spaceview, snapscan, boxel</span>
+      <nav class="t-nav t-nav--product" style="position:static;border-radius:var(--t-radius);border:1px solid var(--line-subtle)">
+        <a class="t-nav__mark" href="/"><span aria-hidden="true">&#9664;</span> tront.xyz</a>
+        <div class="t-nav__links">
+          <a class="t-nav__link" href="#">Features</a>
+          <a class="t-nav__link" href="#">Platforms</a>
+          <a class="t-nav__link" href="#" aria-current="page">Docs</a>
+        </div>
+      </nav>
+    </div>
+
+    <p class="t-small" style="margin-top:var(--t-4)">
+      Open "More" on either of the first two. That sideways jump between projects is the
+      thing a copy-pasted navbar can never offer, and it is free once the registry exists.
+    </p>
+  </section>
+
+  <!-- ============ 7. TYPE ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// foundation</span>
+    <h2 class="t-h2">Type</h2>
+    <p class="t-h1" style="margin-top:var(--t-4)">Display, Fira Code</p>
+    <p class="t-h2">Section heading</p>
+    <p class="t-h3">Subheading</p>
+    <p class="t-body">Body copy in Inter, capped at 68 characters so lines stay readable. This is the measure real publications use, and it is why the current home page feels like a wall.</p>
+    <p class="t-small">Small print and captions, at the muted step, guaranteed to clear Lc 60.</p>
+  </section>
+
+  <!-- ============ 8. SEMANTIC ============ -->
+  <section class="g-sec">
+    <span class="t-kicker">// foundation</span>
+    <h2 class="t-h2">Semantic colours</h2>
+    <p class="t-body g-note">
+      Danger, warning and success keep their meaning but not their washout. A hardcoded
+      literal is the one value a tonal ladder never sees, so these get walked onto the
+      current ground on every theme change.
+    </p>
+    <div class="g-row" style="margin-top:var(--t-4)">
+      <span class="t-mono t-ok">success: shipped</span>
+      <span class="t-mono t-warn">warning: needs a pass</span>
+      <span class="t-mono t-danger">danger: broken</span>
+    </div>
+  </section>
+
+</main>
+
+<script src="/assets/js/tront-system.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // the 22 hues actually used across the 87 cards on /games/
+  var HUES = ['#00E0FF','#00dd00','#2ee6d7','#39FF14','#4361ee','#4682B4','#4CAF50',
+              '#4ade80','#58a6ff','#5AD1FF','#6abf4b','#88c98a','#F0B232','#F23F43',
+              '#FFD700','#bfdcae','#c874e8','#d4a033','#f2a6c0','#ff79c6'];
+
+  var PRESETS = ['#56ccff','#c874e8','#2ee6d7','#ff8b3d','#39FF14','#F23F43',
+                 '#FFD700','#ff79c6','#4361ee','#88c98a','#d4a033','#8be0ff'];
+
+  var CARDS = [
+    ['TrontEQ', '2026', '#39FF14', 'Tool', 'Zero-latency system-wide EQ for Windows. A custom audio driver inside the Windows audio engine, driven by a Rust GUI.'],
+    ['TrontSnap', '2026', '#00E0FF', 'Tool', 'Screenshot tool and screen recorder in one portable exe. Global hotkeys, instant gallery, drag a shot straight into Discord.'],
+    ['SpaceView', '2026', '#F0B232', 'Tool', 'Disk treemap in the SpaceMonger tradition. Cached layouts and one batched mesh, so a full drive draws without the memory ratchet.'],
+    ['MonkePortals', 'wip', '#c874e8', 'VR', 'Multiplayer VR portals on Quest. Rooms are carved out of solid voxel instead of stacked from it.'],
+    ['EOS-Native', 'v2.61', '#4361ee', 'Netcode', 'Peer-to-peer transport, voice, lobbies and host migration on Epic Online Services, across seven platforms.'],
+    ['critters', '2026', '#ff79c6', 'Web', 'Creature sandbox built from signed distance fields with a blended shell, so bodies grow as one surface.'],
+    ['Campfire', 'v1.4', '#2ee6d7', 'Web', 'A peer-to-peer third place with no server and no account. Entity sync, expression, and a reason to come back.'],
+    ['Colony', '2026', '#F23F43', 'Game', 'Dwarf colony idle game. Craft the World meets Cookie Clicker, in one HTML file.']
+  ];
+
+  var FILTERS = ['All','VR','Game Jam','Tool','Prototype','Mod','Game','Flash Game'];
+
+  var seedHex = '#56ccff', dark = true;
+
+  // ---- build once
+  var sw = document.getElementById('swatches');
+  PRESETS.forEach(function (p) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.style.background = p; b.title = p;
+    b.onclick = function () { seedHex = p; document.getElementById('seed').value = p; theme(); };
+    sw.appendChild(b);
+  });
+
+  document.getElementById('cards').innerHTML = CARDS.map(function (c) {
+    return '<a class="t-card" href="#" data-hue="' + c[2] + '">' +
+      '<div class="t-card__body">' +
+        '<div class="t-card__title">' + c[0] + ' <span class="yr">(' + c[1] + ')</span></div>' +
+        '<div class="t-card__text">' + c[4] + '</div>' +
+        '<div class="t-card__foot"><span class="t-tag">' + c[3] + '</span></div>' +
+      '</div></a>';
+  }).join('');
+
+  document.getElementById('filters').innerHTML = FILTERS.map(function (f, i) {
+    return '<button class="t-filter" aria-pressed="' + (i === 0) + '">' + f + '</button>';
+  }).join('');
+
+  document.querySelectorAll('.t-filter').forEach(function (b) {
+    b.onclick = function () {
+      document.querySelectorAll('.t-filter').forEach(function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+    };
+  });
+
+  // ---- TYPE LAB
+  //
+  // None of these body faces are on the overused list (Inter, Roboto, Fraunces,
+  // Geist, Plus Jakarta Sans, Space Grotesk). "Current" is included only as the
+  // baseline to compare against. Fonts load on demand so the page stays light.
+  var PAIRS = [
+    ['Current (baseline)', "'Fira Code'", "'Inter'",              'Fira+Code:wght@500;700|Inter:wght@400;500;700'],
+    ['House (egui font)',  "'Rajdhani'",  "'Public Sans'",        'Rajdhani:wght@500;600;700|Public+Sans:wght@400;600;700'],
+    ['Terminal',           "'Azeret Mono'", "'Hanken Grotesk'",   'Azeret+Mono:wght@500;700|Hanken+Grotesk:wght@400;600;700'],
+    ['Wide Mono',          "'Martian Mono'", "'Archivo'",         'Martian+Mono:wght@500;700|Archivo:wght@400;600;700'],
+    ['Industrial',         "'Chakra Petch'", "'Figtree'",         'Chakra+Petch:wght@500;600;700|Figtree:wght@400;600;700'],
+    ['Editorial',          "'Bricolage Grotesque'", "'Sora'",     'Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800|Sora:wght@400;600'],
+    ['Heavy',              "'Archivo Black'", "'Archivo'",        'Archivo+Black|Archivo:wght@400;600;700'],
+    ['Signal',             "'Chivo Mono'", "'Schibsted Grotesk'", 'Chivo+Mono:wght@500;700|Schibsted+Grotesk:wght@400;600;700'],
+    ['Soft Tech',          "'Unbounded'", "'Onest'",              'Unbounded:wght@500;700|Onest:wght@400;600;700'],
+    ['Console',            "'Victor Mono'", "'Manrope'",          'Victor+Mono:wght@500;700|Manrope:wght@400;600;700'],
+    ['Display Mono',       "'Sometype Mono'", "'Familjen Grotesk'",'Sometype+Mono:wght@500;700|Familjen+Grotesk:wght@400;600;700']
+  ];
+
+  var fontLink = document.createElement('link');
+  fontLink.rel = 'stylesheet';
+  document.head.appendChild(fontLink);
+
+  var fp = document.getElementById('fontpair');
+  fp.innerHTML = PAIRS.map(function (p, i) {
+    return '<option value="' + i + '">' + p[0] + '</option>';
+  }).join('');
+
+  function applyPair(i) {
+    var p = PAIRS[i];
+    fontLink.href = 'https://fonts.googleapis.com/css2?family=' +
+      p[3].split('|').join('&family=') + '&display=swap';
+    document.documentElement.style.setProperty('--t-display', p[1] + ', ui-monospace, monospace');
+    document.documentElement.style.setProperty('--t-body', p[2] + ', ui-sans-serif, system-ui, sans-serif');
+    fp.value = i;
+  }
+
+  fp.onchange = function () { applyPair(+fp.value); };
+  document.getElementById('fontroll').onclick = function () {
+    applyPair(1 + Math.floor(Math.random() * (PAIRS.length - 1)));  // skip baseline
+  };
+
+  // ---- gradient controls
+  var G = {
+    p: document.getElementById('gp'), a: document.getElementById('ga'),
+    i: document.getElementById('gi'), f: document.getElementById('gf'),
+    h: document.getElementById('gh'), pre: document.getElementById('gpre')
+  };
+
+  G.h.innerHTML = Tront.HARMONY_RULES.map(function (r, i) {
+    return '<option value="' + i + '">' + r + '</option>';
+  }).join('');
+
+  G.pre.innerHTML = '<option value="-1">Harmony (from accent)</option>' +
+    '<option value="-2">Custom pegs</option>' +
+    Tront.GRADIENT_PRESETS.map(function (p, i) {
+      return '<option value="' + i + '">' + p[0] + '</option>';
+    }).join('');
+
+  function readGradient() {
+    Tront.setGradient({
+      enabled: document.getElementById('gon').checked,
+      pegs: +G.p.value, angle: +G.a.value,
+      intensity: +G.i.value, harmony: +G.h.value, preset: +G.pre.value
+    });
+    // frost is per-mode, matching the fleet
+    Tront.setGradient(dark ? { frostDark: +G.f.value } : { frostLight: +G.f.value });
+    document.getElementById('gp-v').textContent = G.p.value;
+    document.getElementById('ga-v').textContent = G.a.value;
+    document.getElementById('gi-v').textContent = (+G.i.value).toFixed(2);
+    document.getElementById('gf-v').textContent = (+G.f.value).toFixed(2);
+  }
+
+  [G.p, G.a, G.i, G.f, G.h, G.pre, document.getElementById('gon')].forEach(function (el) {
+    el.oninput = function () { readGradient(); theme(); };
+    el.onchange = function () { readGradient(); theme(); };
+  });
+
+  document.getElementById('groll').onclick = function () {
+    G.p.value = 1 + Math.floor(Math.random() * 4);
+    G.a.value = Math.floor(Math.random() * 72) * 5;
+    G.h.value = Math.floor(Math.random() * Tront.HARMONY_RULES.length);
+    G.pre.value = Math.random() < 0.45
+      ? Math.floor(Math.random() * Tront.GRADIENT_PRESETS.length) : -1;
+    G.i.value = (0.25 + Math.random() * 0.6).toFixed(2);
+    readGradient(); theme();
+  };
+
+  // ---- theme
+  function theme() {
+    var sc = Tront.applyTheme(seedHex, dark);
+    Tront.applyGradient(sc);
+    var st = sc.steps;
+
+    // gradient readouts
+    var pegs = Tront.gradientPegs(sc);
+    document.getElementById('ramp').style.backgroundImage =
+      getComputedStyle(document.documentElement).getPropertyValue('--wash');
+    document.getElementById('pegrow').innerHTML = pegs.map(function (p) {
+      return '<span class="t-tag" style="--item-ink:' + Tront.toHex(p) +
+             ';--item-line:' + Tront.toHex(p) + '">' + Tront.toHex(p) + '</span>';
+    }).join('');
+
+    var cs = getComputedStyle(document.documentElement);
+    var washLc = parseFloat(cs.getPropertyValue('--btn-wash-worst-lc'));
+    var onWash = Tront.hexToRgb(cs.getPropertyValue('--on-btn-wash').trim());
+    var wEl = document.getElementById('lc-wash');
+    wEl.textContent = 'Lc ' + washLc.toFixed(1) + (washLc >= 60 ? ' (passes)' : ' (fails)');
+    wEl.className = washLc >= 60 ? 'pass' : 'fail';
+
+    // the honest frost measurement: text against what is ACTUALLY behind it
+    var frosted = Tront.hexToRgb(cs.getPropertyValue('--panel-frosted').trim());
+    var fLc = frosted ? Tront.apcaAbs(st[11], frosted) : 0;
+    var fEl = document.getElementById('lc-frost');
+    fEl.textContent = 'Lc ' + fLc.toFixed(1) + (fLc >= 75 ? ' (passes)' : ' (FAILS)');
+    fEl.className = fLc >= 75 ? 'pass' : 'fail';
+
+    // the second ground: page-level ink against the wash's worst point
+    var wg = Tront.hexToRgb(cs.getPropertyValue('--ground-wash').trim());
+    var tw = Tront.hexToRgb(cs.getPropertyValue('--text-wash').trim());
+    var wgLc = (wg && tw) ? Tront.apcaAbs(tw, wg) : 0;
+    var wgEl = document.getElementById('lc-wash-ground');
+    wgEl.textContent = 'Lc ' + wgLc.toFixed(1) + (wgLc >= 75 ? ' (passes)' : ' (at ceiling)');
+    wgEl.className = wgLc >= 75 ? 'pass' : 'fail';
+
+    document.getElementById('mode').textContent = dark ? 'Light' : 'Dark';
+    document.getElementById('readout').textContent = seedHex + ' / ' + (dark ? 'dark' : 'light');
+
+    // per-item hues: the games page DNA
+    document.querySelectorAll('[data-hue]').forEach(function (el) {
+      Tront.applyItemHue(el, el.dataset.hue, sc);
+    });
+
+    // the ladder
+    document.getElementById('scale').innerHTML = st.map(function (s, i) {
+      var hex = Tront.toHex(s);
+      var ink = Tront.apcaAbs(st[11], s) >= Tront.apcaAbs(st[0], s) ? st[11] : st[0];
+      return '<div class="g-step" style="background:' + hex + ';color:' + Tront.toHex(ink) + '">' +
+             (i + 1) + '<br>' + hex + '</div>';
+    }).join('');
+
+    // measured, not asserted
+    document.getElementById('audit').innerHTML = Tront.audit(sc).map(function (r) {
+      var floor = /muted|ink|label/.test(r.label) ? 60 : 75;
+      return '<div><span>' + r.label + '</span><b class="' + (r.lc >= floor ? 'pass' : 'fail') +
+             '">Lc ' + r.lc.toFixed(1) + '</b></div>';
+    }).join('');
+
+    // the exhibit: measure the legacy button's white text against the LIGHT end of
+    // its own gradient, which is where it actually fails
+    var legacyEnd = Tront.hexToRgb(
+      getComputedStyle(document.documentElement).getPropertyValue('--legacy-teal').trim()) || [46,230,215];
+    var badLc = Tront.apcaAbs([255,255,255], legacyEnd);
+    var goodLc = Tront.apcaAbs(Tront.hexToRgb(
+      getComputedStyle(document.documentElement).getPropertyValue('--on-solid').trim()), st[8]);
+
+    var bad = document.getElementById('lc-bad');
+    bad.textContent = 'Lc ' + badLc.toFixed(1) + (badLc < 60 ? ' (fails)' : '');
+    bad.className = badLc >= 60 ? 'pass' : 'fail';
+
+    var good = document.getElementById('lc-good');
+    good.textContent = 'Lc ' + goodLc.toFixed(1) + (goodLc >= 60 ? ' (passes)' : '');
+    good.className = goodLc >= 60 ? 'pass' : 'fail';
+  }
+
+  document.getElementById('seed').oninput = function (e) { seedHex = e.target.value; theme(); };
+  document.getElementById('mode').onclick = function () {
+    dark = !dark;
+    // frost is stored per mode, so the slider follows the mode
+    G.f.value = dark ? Tront.gradCfg.frostDark : Tront.gradCfg.frostLight;
+    readGradient(); theme();
+  };
+  document.getElementById('rand').onclick = function () {
+    seedHex = '#' + [0,0,0].map(function () {
+      return Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
+    }).join('');
+    document.getElementById('seed').value = seedHex;
+    theme();
+  };
+
+  Tront.mountNav();      // every [data-tront-nav] on the page
+  readGradient();
+  theme();
+})();
+</script>
+</body>
+</html>
