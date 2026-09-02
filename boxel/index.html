@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Boxel: the open-source Blender of blocky</title>
+<meta name="description" content="Boxel is the open-source boxel editor. Voxel++, where every cube face wears its own material. Model, generate, rig, light, and export straight into Unity or Godot. Free, MIT/Apache, runs on a decade-old laptop." />
+<link rel="icon" href="img/favicon.ico" />
+<link rel="apple-touch-icon" href="img/logo_one_256.png" />
+<meta name="twitter:image" content="img/og.jpg" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Boxel: the open-source Blender of blocky" />
+<meta property="og:description" content="The boxel editor. Voxel++, where every cube face wears its own material. Model, generate, rig, render, export. Free, MIT/Apache. No cloud, no subscriptions." />
+<meta property="og:image" content="img/og.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="theme-color" content="#0a0a2e" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#f6f5ef" media="(prefers-color-scheme: light)" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Boxel",
+  "applicationCategory": "DesignApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "description": "The open-source boxel editor. Voxel++, where every cube face wears its own material. Model, generate, rig, light, and export into Unity or Godot.",
+  "license": "https://spdx.org/licenses/MIT.html",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Trent Sterling", "url": "https://tront.xyz" }
+}
+</script>
+<style>
+  /* ============================================================
+     PIXEL TERMINAL art direction.
+     Thesis: the hard offset shadow IS the extruded candy SIDE of
+     a boxel. Card face = white/light front, solid offset shadow =
+     candy side. White-front / candy-side, applied to the whole UI.
+     Zero webfonts (system mono = display), CSS-only grid + cubes.
+     live3d reads --red/--yellow/--green/--blue: keep them intact.
+     ============================================================ */
+  :root{
+    --bg:#0a0a2e; --bg2:#0d0d38; --panel:#12124a; --chip:#0a0a2e;
+    --red:#ff5a5f; --yellow:#ffe84a; --blue:#4a90ff; --green:#50e390;
+    --text:#f2f1ea; --muted:#a5a7c7; --stroke:#26265e; --radius:0;
+    --cta-ink:#151530;
+    /* type: mono chrome / sans prose is the whole retro-terminal move */
+    --display:ui-monospace,'Cascadia Code','JetBrains Mono','SF Mono',Consolas,'Liberation Mono',monospace;
+    --body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    /* blocky primitives */
+    --edge:2px; --ink:#05050f; --face:#12124a; --drop-x:7px; --drop-y:7px;
+    --grid-line:rgba(74,144,255,.07);
+    --candy:var(--blue);   /* per-section owner colour, reassigned below */
+  }
+  [data-theme="light"]{
+    --bg:#f6f5ef; --bg2:#efeee6; --panel:#ffffff; --chip:#0a0a2e;
+    --red:#d94046; --yellow:#f4c916; --blue:#2b6fe0; --green:#1fa45b;
+    --text:#1a1b3a; --muted:#5d5f80; --stroke:#dedcd0;
+    --cta-ink:#151530;
+    --ink:#1a1b3a; --face:#ffffff;
+    --grid-line:rgba(26,27,58,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    *{transition:none !important;animation:none !important}
+  }
+  body{
+    font-family:var(--body);
+    background:var(--bg);color:var(--text);line-height:1.55;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+    transition:background .25s,color .25s;
+  }
+  /* voxel grid fabric, 100% CSS, brighter up top and masked out down the page */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background-image:
+      linear-gradient(var(--grid-line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+    background-size:32px 32px;
+    -webkit-mask-image:linear-gradient(180deg,#000 0,#000 60vh,transparent 120vh);
+            mask-image:linear-gradient(180deg,#000,transparent 120vh);
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  @keyframes blink{50%{opacity:0}}
+
+  /* mono display voice: headings, chrome, numbers, tags. body stays sans */
+  h1,h2,h3,.eyebrow,.idx,.stat .n,.btn,.logo,.chip,.kbd,nav,.bar,.tag,.mono{
+    font-family:var(--display);
+  }
+
+  /* pure-CSS iso boxel: white FRONT face + dark/light candy SIDE faces */
+  .boxel{width:1em;aspect-ratio:1;display:inline-block;vertical-align:-.15em;flex:0 0 auto;
+    background:conic-gradient(from -30deg,
+      #ffffff 0 120deg,
+      color-mix(in srgb,var(--candy) 55%,#000) 0 240deg,
+      var(--candy) 0 360deg);
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);}
+
+  /* block ruler: chunky stepped candy dashes, replaces the timid hairline */
+  .pixel-rule{height:8px;border:0;margin:0;image-rendering:pixelated;
+    background:repeating-linear-gradient(90deg,
+      var(--red) 0 24px,var(--yellow) 24px 48px,var(--green) 48px 72px,var(--blue) 72px 96px);}
+  .rainbow{height:8px;border:0;image-rendering:pixelated;
+    background:repeating-linear-gradient(90deg,
+      var(--red) 0 24px,var(--yellow) 24px 48px,var(--green) 48px 72px,var(--blue) 72px 96px);}
+  .rb-text{background:linear-gradient(92deg,var(--red),var(--yellow) 34%,var(--green) 67%,var(--blue));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* nav = terminal bar: mono uppercase, flat translucent ink, candy underline */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);
+    background:color-mix(in srgb,var(--bg) 82%,transparent);border-bottom:var(--edge) solid var(--candy)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:.14em;
+    font-size:1.02rem;text-transform:uppercase}
+  .logo::after{content:"_";color:var(--yellow);animation:blink 1s steps(1) infinite}
+  .logo img{width:30px;height:30px;image-rendering:pixelated;border-radius:0;
+    border:2px solid var(--ink);background:var(--face)}
+  .nav-links{display:flex;gap:22px;align-items:center}
+  .nav-links a{color:var(--muted);font-size:.8rem;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;transition:color .2s}
+  .nav-links a:hover{color:var(--text)}
+
+  /* buttons: solid fill / flat face, 2px ink border, hard candy or ink SIDE,
+     press-in on hover (no blurred SaaS glow) */
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:11px 20px;border-radius:0;
+    font-weight:800;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;
+    border:var(--edge) solid var(--ink);cursor:pointer;
+    transition:transform .08s steps(2),box-shadow .08s steps(2)}
+  .btn-primary{background:var(--yellow);color:var(--ink);box-shadow:6px 6px 0 0 var(--ink)}
+  .btn-primary:hover{transform:translate(3px,3px);box-shadow:3px 3px 0 0 var(--ink)}
+  .btn-ghost{background:var(--face);color:var(--text);box-shadow:5px 5px 0 0 var(--candy)}
+  .btn-ghost:hover{transform:translate(3px,3px);box-shadow:2px 2px 0 0 var(--candy)}
+  #themeToggle{background:var(--face);border:var(--edge) solid var(--ink);border-radius:0;
+    padding:6px 10px;cursor:pointer;font-size:1rem;line-height:1;color:var(--text);
+    box-shadow:3px 3px 0 0 var(--candy);transition:transform .08s steps(2),box-shadow .08s steps(2)}
+  #themeToggle:hover{transform:translate(2px,2px);box-shadow:1px 1px 0 0 var(--candy)}
+
+  /* hero + final CTA stay centred: deliberate bookends */
+  header.hero{padding:64px 0 44px;text-align:center}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:0;
+    margin-bottom:24px;background:var(--face);border:var(--edge) solid var(--ink);
+    font:800 .72rem/1 var(--display);letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);box-shadow:4px 4px 0 0 var(--blue)}
+  .badge .dot{width:8px;height:8px;border-radius:0;background:var(--green)}
+  .hero-wordmark{width:min(460px,88%);height:auto;margin:0 auto 22px;display:block}
+  .proof{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:44px;flex-wrap:wrap}
+  .proof img{width:96px;height:96px;border-radius:0;border:var(--edge) solid var(--ink);
+    box-shadow:5px 5px 0 0 var(--red);flex:0 0 auto;object-fit:cover;background:var(--face)}
+  .proof p{color:var(--muted);font-size:.92rem;max-width:320px;text-align:left;font-family:var(--body)}
+  .proof b{color:var(--text)}
+  @media(max-width:540px){.proof{flex-direction:column;text-align:center}.proof p{text-align:center}}
+  h1{font-size:clamp(2.4rem,5.8vw,4.4rem);line-height:1.02;font-weight:800;
+    letter-spacing:0;text-transform:uppercase}
+  .sub{max-width:660px;margin:22px auto 0;color:var(--muted);
+    font-size:clamp(1.02rem,2.2vw,1.22rem);font-family:var(--body)}
+  .sub b{color:var(--text)}
+  .cta{display:flex;gap:16px;justify-content:center;margin-top:34px;flex-wrap:wrap}
+  .cta .btn{padding:14px 26px;font-size:.9rem}
+
+  /* hero screenshot: candy border + ink SIDE, plus a block-ruler seam */
+  .shot{margin:54px auto 0;max-width:980px;position:relative}
+  .shot img{width:100%;display:block;border-radius:0;border:var(--edge) solid var(--yellow);
+    box-shadow:var(--drop-x) var(--drop-y) 0 0 var(--ink)}
+  .shot::after{content:"";position:absolute;left:0;right:0;bottom:-18px;height:8px;image-rendering:pixelated;
+    background:repeating-linear-gradient(90deg,var(--red) 0 24px,var(--yellow) 24px 48px,var(--green) 48px 72px,var(--blue) 72px 96px)}
+
+  /* === live 3D viewer: lazy three.js embed. Poster <img> shows until the
+     scene loads, then the canvas fades in. Transparent alpha renderer.
+     Function untouched: only border-radius drops to 0 to match. */
+  .live3d{position:relative;touch-action:none;cursor:grab;border-radius:0;overflow:hidden}
+  .live3d:active{cursor:grabbing}
+  .live3d-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;
+    filter:drop-shadow(0 22px 34px rgba(10,10,46,.35));transition:opacity .5s ease}
+  .live3d-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;
+    transition:opacity .6s ease}
+  .live3d.is-live .live3d-canvas{opacity:1}
+  .live3d.is-live .live3d-poster{opacity:0;pointer-events:none}
+  .live3d.is-loading .live3d-poster{animation:live3dPulse 1.4s ease-in-out infinite}
+  @keyframes live3dPulse{0%,100%{opacity:1}50%{opacity:.55}}
+  .live3d-badge{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);white-space:nowrap;
+    padding:5px 12px;border-radius:0;font-size:.72rem;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;font-family:var(--display);
+    background:color-mix(in srgb,var(--panel) 82%,transparent);border:2px solid var(--ink);
+    color:var(--muted);opacity:0;transition:opacity .25s;pointer-events:none}
+  .live3d.is-live:hover .live3d-badge,.live3d.is-live:focus-within .live3d-badge{opacity:1}
+
+  .hero-live3d{margin:46px auto 0;max-width:340px}
+  .hero-live3d .live3d{aspect-ratio:4/3;
+    background:radial-gradient(60% 60% at 50% 55%,color-mix(in srgb,var(--blue) 12%,transparent),transparent 70%)}
+  .hero-live3d-cap{margin-top:16px;color:var(--muted);font-size:.88rem;font-family:var(--body)}
+  .hero-live3d-cap b{color:var(--text)}
+
+  /* === 8-bit SCOREBOARD: one dark arcade panel, asymmetric candy-ruled cells,
+     replaces the row of identical floating tiles === */
+  .stats{position:relative;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 1.2fr;
+    gap:0;margin-top:64px;background:#05050f;border:var(--edge) solid var(--yellow);
+    box-shadow:8px 8px 0 0 var(--ink)}
+  [data-theme="light"] .stats{background:#101024}   /* arcade panels stay dark in light mode */
+  .stats::before{content:"";position:absolute;top:-2px;left:-2px;width:8px;height:8px;background:var(--red)}
+  .stat{padding:22px 18px;text-align:left;border:0;
+    border-left:2px solid color-mix(in srgb,var(--yellow) 35%,transparent);background:none}
+  .stat:first-child{border-left:0}
+  .stat .n{font:800 clamp(2rem,5.5vw,3.2rem)/1 var(--display);
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;color:var(--red)}
+  .stat:nth-child(1) .n{color:var(--red)}
+  .stat:nth-child(2) .n{color:var(--yellow)}
+  .stat:nth-child(3) .n{color:var(--green)}
+  .stat:nth-child(4) .n{color:var(--blue)}
+  .stat:nth-child(5) .n{color:var(--red)}
+  .stat:nth-child(6) .n{color:var(--green)}
+  .stat:last-child .n::after{content:"_";animation:blink 1s steps(1) infinite}
+  .stat .l{color:#a5a7c7;font-size:.7rem;margin-top:8px;text-transform:uppercase;
+    letter-spacing:.06em;line-height:1.3;font-family:var(--body)}
+
+  /* === section rhythm: numbered terminal spine, flush-left headers === */
+  section{padding:96px 0}
+  section#why{--candy:var(--blue)}
+  section#what{--candy:var(--red)}
+  section#features{--candy:var(--yellow)}
+  section#depth{--candy:var(--red)}
+  section#box{--candy:var(--green)}
+  section#who{--candy:var(--yellow)}
+  section#start{--candy:var(--blue)}
+  section#gallery{--candy:var(--blue)}
+  section#get{--candy:var(--yellow)}
+
+  .idx{display:flex;align-items:center;gap:10px;font-weight:800;font-size:.78rem;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--candy);margin-bottom:14px}
+  .idx::before{content:"";width:16px;height:16px;flex:0 0 16px;
+    background:conic-gradient(from -30deg,#fff 0 120deg,
+      color-mix(in srgb,var(--candy) 55%,#000) 0 240deg,var(--candy) 0 360deg);
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+  .eyebrow{display:inline-block;background:var(--candy);color:var(--ink);
+    padding:5px 12px;border:var(--edge) solid var(--ink);font-weight:800;
+    letter-spacing:.12em;text-transform:uppercase;font-size:.74rem;text-align:left;
+    box-shadow:3px 3px 0 0 var(--ink)}
+  .eyebrow::before{content:"[ "}
+  .eyebrow::after{content:" ]"}
+  h2{font-size:clamp(1.9rem,4.5vw,2.7rem);font-weight:800;text-align:left;margin-top:16px;
+    letter-spacing:.01em;text-transform:uppercase;max-width:none}
+  .lead{color:var(--muted);text-align:left;max-width:64ch;margin:18px 0 0;
+    font-size:1.08rem;font-family:var(--body)}
+
+  /* what's a boxel */
+  .boxsplain{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;margin-top:50px}
+  .boxsplain img{width:100%;border-radius:0;border:var(--edge) solid var(--ink);box-shadow:6px 6px 0 0 var(--candy)}
+  .boxsplain .big{font-size:1.45rem;font-weight:750;line-height:1.35;font-family:var(--body)}
+  .boxsplain .big em{color:var(--red);font-style:normal}
+  .boxsplain p.body{color:var(--muted);margin-top:16px;font-size:1rem;font-family:var(--body)}
+  .voxel-vs-boxel{display:flex;align-items:center;gap:14px;margin:18px 0;padding:12px 16px;
+    border-radius:0;background:var(--face);border:var(--edge) solid var(--ink);box-shadow:4px 4px 0 0 var(--candy)}
+  .voxel-vs-boxel img{width:52px;height:52px;border-radius:0;flex:0 0 auto;
+    border:2px solid var(--ink);image-rendering:pixelated;background:var(--face)}
+  .voxel-vs-boxel span{font-size:.86rem;color:var(--muted);font-family:var(--body)}
+
+  /* four differentiator pillars: spec-sheet panels with candy title bars */
+  .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:50px}
+  .pillar{padding:0;border-radius:0;background:var(--face);border:var(--edge) solid var(--ink);
+    box-shadow:var(--drop-x) var(--drop-y) 0 0 var(--candy);overflow:hidden;
+    transition:transform .08s steps(2),box-shadow .08s steps(2)}
+  .pillar:hover{transform:translate(3px,3px);box-shadow:4px 4px 0 0 var(--candy)}
+  .pillar:nth-child(4n+1){--candy:var(--red)}
+  .pillar:nth-child(4n+2){--candy:var(--yellow)}
+  .pillar:nth-child(4n+3){--candy:var(--green)}
+  .pillar:nth-child(4n+4){--candy:var(--blue)}
+  .pillar .tag{display:flex;align-items:center;gap:8px;font-weight:800;font-size:.7rem;letter-spacing:.1em;
+    text-transform:uppercase;padding:7px 14px;border-radius:0;margin-bottom:0;
+    background:var(--candy);color:var(--ink);border-bottom:var(--edge) solid var(--ink)}
+  .pillar .tag::before{content:"";width:9px;height:9px;flex:0 0 9px;background:var(--face);border:2px solid var(--ink)}
+  .pillar h3{font-size:1.02rem;font-weight:700;margin:16px 22px 8px;text-transform:uppercase}
+  .pillar p{color:var(--muted);font-size:.9rem;margin:0 22px 22px;font-family:var(--body)}
+
+  /* feature spec-sheet panels: DOS-window title bar, sprite-slot art, candy SIDE */
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:54px}
+  .card{position:relative;padding:22px;border-radius:0;background:var(--face);
+    border:var(--edge) solid var(--ink);box-shadow:var(--drop-x) var(--drop-y) 0 0 var(--candy);
+    overflow:hidden;transition:transform .08s steps(2),box-shadow .08s steps(2)}
+  .card:hover{transform:translate(3px,3px);box-shadow:4px 4px 0 0 var(--candy)}
+  .features .card:nth-child(4n+1){--candy:var(--red)}
+  .features .card:nth-child(4n+2){--candy:var(--yellow)}
+  .features .card:nth-child(4n+3){--candy:var(--green)}
+  .features .card:nth-child(4n+4){--candy:var(--blue)}
+  .card>.bar{display:flex;align-items:center;gap:8px;margin:-22px -22px 18px;
+    background:var(--candy);color:var(--ink);padding:7px 12px;
+    font:800 .72rem/1 var(--display);letter-spacing:.1em;text-transform:uppercase;
+    border-bottom:var(--edge) solid var(--ink)}
+  .card>.bar::before{content:"";width:10px;height:10px;flex:0 0 10px;background:var(--face);border:2px solid var(--ink)}
+  .card .duder{width:96px;height:96px;border-radius:0;margin-bottom:16px;
+    border:2px solid var(--candy);background:var(--ink)}
+  .card h3{font-size:1.1rem;font-weight:700;margin-bottom:9px;text-transform:uppercase}
+  .card p{color:var(--muted);font-size:.94rem;font-family:var(--body)}
+
+  /* dense chip walls: hard mono tags, no fill, no pill */
+  .chipgroup{margin-top:38px}
+  .chipgroup:first-child{margin-top:50px}
+  .chipgroup h3{font-size:1rem;font-weight:700;margin-bottom:14px;text-transform:uppercase;
+    position:relative;padding-left:24px}
+  .chipgroup h3::before{content:"";position:absolute;left:0;top:2px;width:14px;height:14px;
+    background:conic-gradient(from -30deg,#fff 0 120deg,
+      color-mix(in srgb,var(--candy) 55%,#000) 0 240deg,var(--candy) 0 360deg);
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+  .chipgroup h3 span{display:block;color:var(--muted);font-weight:500;font-size:.83rem;
+    margin-top:3px;text-transform:none;letter-spacing:0;font-family:var(--body)}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{padding:6px 12px;border-radius:0;background:transparent;border:var(--edge) solid var(--ink);
+    font-size:.8rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text)}
+
+  /* also-in-the-box bullets: iso-cube ticks */
+  .gifbullets{display:grid;grid-template-columns:1fr 1fr;gap:10px 34px;margin-top:50px;
+    max-width:940px;margin-left:auto;margin-right:auto}
+  .gifbullets li{list-style:none;display:flex;align-items:center;gap:14px;padding:8px 10px;
+    border-radius:0;transition:background .2s}
+  .gifbullets li::before{content:"";width:12px;height:12px;flex:0 0 12px;
+    background:conic-gradient(from -30deg,#fff 0 120deg,
+      color-mix(in srgb,var(--candy) 55%,#000) 0 240deg,var(--candy) 0 360deg);
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+  .gifbullets li:hover{background:color-mix(in srgb,var(--candy) 8%,transparent)}
+  .gifbullets img{width:52px;height:52px;border-radius:0;flex:0 0 52px;
+    border:var(--edge) solid var(--ink);background:var(--face)}
+  .gifbullets span{font-size:.95rem;color:var(--muted);font-family:var(--body)}
+  .gifbullets b{color:var(--text)}
+
+  /* gallery: alpha models float on the page bg, drop-shadow + caption only */
+  .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:48px 24px;margin-top:54px}
+  .gal{display:flex;flex-direction:column;align-items:center;text-align:center}
+  .gal img{width:100%;max-width:300px;height:auto;display:block;
+    filter:drop-shadow(0 22px 34px rgba(10,10,46,.35));transition:transform .35s}
+  .gal .live3d{width:100%;max-width:300px;aspect-ratio:4/3;transition:transform .35s;background:none;overflow:visible}
+  .gal:hover img,.gal:hover .live3d{transform:translateY(-8px) scale(1.03)}
+  .gal .cap{margin-top:16px}
+  .gal .cap b{display:block;font-size:.98rem;color:var(--text);text-transform:uppercase;font-family:var(--display)}
+  .gal .cap span{color:var(--muted);font-size:.83rem;font-family:var(--body)}
+
+  /* who it's for */
+  .usecases{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:50px;
+    max-width:940px;margin-left:auto;margin-right:auto}
+  .usecase{display:flex;gap:16px;padding:22px;border-radius:0;background:var(--face);
+    border:var(--edge) solid var(--ink);box-shadow:5px 5px 0 0 var(--candy);
+    transition:transform .08s steps(2),box-shadow .08s steps(2)}
+  .usecase:hover{transform:translate(3px,3px);box-shadow:2px 2px 0 0 var(--candy)}
+  .usecase .bar{flex:0 0 8px;border-radius:0;background:var(--candy)}
+  .usecase:nth-child(5n+1){--candy:var(--red)}
+  .usecase:nth-child(5n+2){--candy:var(--yellow)}
+  .usecase:nth-child(5n+3){--candy:var(--green)}
+  .usecase:nth-child(5n+4){--candy:var(--blue)}
+  .usecase:nth-child(5n+5){--candy:var(--red)}
+  .usecase h3{font-size:1.02rem;font-weight:700;margin-bottom:6px;text-transform:uppercase;font-family:var(--display)}
+  .usecase p{color:var(--muted);font-size:.9rem;font-family:var(--body)}
+  @media(min-width:861px){.usecases .usecase:last-child{grid-column:1 / -1;max-width:calc(50% - 8px);margin:0 auto}}
+
+  /* quick start */
+  .steps{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:50px;
+    max-width:940px;margin-left:auto;margin-right:auto}
+  .step{display:flex;gap:18px;align-items:flex-start;padding:24px;border-radius:0;
+    background:var(--face);border:var(--edge) solid var(--ink);box-shadow:6px 6px 0 0 var(--candy);
+    transition:transform .08s steps(2),box-shadow .08s steps(2)}
+  .step:hover{transform:translate(3px,3px);box-shadow:3px 3px 0 0 var(--candy)}
+  .step .n{flex:0 0 44px;width:44px;height:44px;border-radius:0;display:grid;place-items:center;
+    font-weight:800;font-size:1.3rem;color:var(--ink);border:2px solid var(--ink);font-family:var(--display)}
+  .n-red{background:var(--red)} .n-yellow{background:var(--yellow)}
+  .n-green{background:var(--green)} .n-blue{background:var(--blue)}
+  .step h3{font-size:1.08rem;font-weight:700;margin-bottom:6px;text-transform:uppercase;font-family:var(--display)}
+  .step p{color:var(--muted);font-size:.93rem;font-family:var(--body)}
+  .kbd{font-family:var(--display);font-size:.85em;color:var(--yellow);
+    background:var(--ink);border:2px solid var(--ink);
+    border-radius:0;padding:2px 7px;white-space:nowrap}
+
+  /* legacy story block (unused in markup): keep blocky-safe, no gradients */
+  .story{border:var(--edge) solid var(--ink);border-radius:0;padding:44px 46px;
+    background:var(--face);position:relative;overflow:hidden;box-shadow:8px 8px 0 0 var(--candy);
+    display:grid;grid-template-columns:1.05fr .95fr;gap:16px 40px;align-items:center}
+  .story .eyebrow,.story h2{grid-column:1 / -1}
+  .story h2{text-align:left;margin-top:8px;font-size:clamp(1.5rem,3vw,2rem)}
+  .story p{color:var(--muted);margin-top:16px;max-width:70ch;font-family:var(--body)}
+  .story a{color:var(--blue);font-weight:600}
+  .story .crowd{margin-top:26px;border-radius:0;border:2px solid var(--ink);
+    max-width:560px;width:100%;display:block;background:var(--chip)}
+
+  /* final CTA: full solid candy block, ink text, ink SIDE, corner pixels */
+  .band{position:relative;margin:0 auto;max-width:1120px;border-radius:0;padding:56px 32px;text-align:center;
+    background:var(--yellow);border:var(--edge) solid var(--ink);color:var(--ink);box-shadow:8px 8px 0 0 var(--ink)}
+  .band::before,.band::after{content:"";position:absolute;width:10px;height:10px;background:var(--ink)}
+  .band::before{top:-2px;left:-2px}
+  .band::after{bottom:-2px;right:-2px}
+  .band h2{margin-top:0;color:var(--ink)}
+  .band .eyebrow{background:var(--ink);color:var(--yellow);box-shadow:3px 3px 0 0 rgba(0,0,0,.35)}
+  .band .lead{color:var(--ink);opacity:.85;text-align:center;margin:18px auto 0;max-width:660px}
+  .band .btn-primary{background:var(--ink);color:var(--yellow);box-shadow:6px 6px 0 0 rgba(0,0,0,.35)}
+  .band .btn-primary:hover{transform:translate(3px,3px);box-shadow:3px 3px 0 0 rgba(0,0,0,.35)}
+  .band .btn-ghost{background:transparent;color:var(--ink);border-color:var(--ink);box-shadow:5px 5px 0 0 rgba(0,0,0,.3)}
+  .band .btn-ghost:hover{transform:translate(3px,3px);box-shadow:2px 2px 0 0 rgba(0,0,0,.3)}
+  .mono{font-family:var(--display);background:var(--ink);border:2px solid var(--ink);
+    padding:12px 18px;border-radius:0;display:inline-block;margin-top:22px;color:var(--green);font-size:.92rem}
+
+  footer{border-top:var(--edge) solid var(--candy);padding:40px 0;margin-top:40px}
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;gap:16px;color:var(--muted);font-size:.88rem;font-family:var(--body)}
+  footer a{color:var(--text)}
+  footer .logo img{width:26px;height:26px;border-radius:0;border:2px solid var(--ink);
+    background:var(--face);image-rendering:pixelated}
+
+  @media(max-width:860px){
+    .features,.gallery,.pillars{grid-template-columns:1fr 1fr}
+    .boxsplain,.gifbullets,.steps,.story,.usecases{grid-template-columns:1fr}
+    .nav-links a:not(.btn){display:none}
+    .stats{grid-template-columns:1fr 1fr 1fr}
+  }
+  @media(max-width:560px){
+    .features,.gallery,.pillars{grid-template-columns:1fr}
+    .stats{grid-template-columns:1fr 1fr}
+    .stat{border-left:0;border-top:2px solid color-mix(in srgb,var(--yellow) 30%,transparent)}
+    .stat:nth-child(1),.stat:nth-child(2){border-top:0}
+  }
+  /* asymmetric brick offset on features (desktop only), preserved through hover */
+  @media(min-width:861px){
+    .features .card:nth-child(3n+2){transform:translateY(24px)}
+    .features .card:nth-child(3n+2):hover{transform:translate(3px,24px)}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="logo" href="#"><img src="img/logo_mark.webp" alt="The Boxel mark: a 2x2x2 boxel cube, every corner three colors" /> BOXEL</a>
+    <div class="nav-links">
+      <a href="#why">Why</a>
+      <a href="#what">What</a>
+      <a href="#features">Features</a>
+      <a href="#start">Quick start</a>
+      <a href="#gallery">Gallery</a>
+      <button id="themeToggle" title="Light / dark" aria-label="Toggle light or dark theme">🌙</button>
+      <a class="btn btn-ghost" href="https://tront.xyz/discord/" target="_blank" rel="noopener">Discord</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <img class="hero-wordmark" src="img/wordmark.webp" width="460" height="182" decoding="async"
+      alt="BOXEL, spelled out in its own blocks: white face forward, candy-colored sides" />
+    <span class="badge"><span class="dot"></span> Open source · Rust · MIT / Apache-2.0 · runs on a potato</span>
+    <h1>The open-source<br><span class="rb-text">Blender of blocky</span></h1>
+    <p class="sub">Boxel edits <b>boxels</b>: voxels, upgraded, so <b>every cube face can wear its
+      own material</b>, white up front, candy scramble on the sides. Built for indie devs,
+      pixel artists going 3D, and anyone who bounced off Blender's UV unwrap or hit MagicaVoxel's
+      one-color-per-cube ceiling. Model it, generate it, rig it, light it, ship it into Unity or Godot.
+      Light enough to hold 60fps on a decade-old laptop, so it'll run fine on yours.
+      No cloud, no subscriptions, nothing leaves your machine.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://tront.xyz/discord/" target="_blank" rel="noopener">Get early access</a>
+      <a class="btn btn-ghost" href="#gallery">See the gallery</a>
+    </div>
+
+    <div class="hero-live3d">
+      <div class="live3d" data-model="dragon" role="img"
+        aria-label="Live 3D dragon model exported from Boxel. Drag to rotate it.">
+        <img class="live3d-poster" src="img/gal_dragon.webp" width="720" height="540" decoding="async"
+          alt="Red voxel dragon, floating with transparent background" />
+        <canvas class="live3d-canvas" aria-hidden="true"></canvas>
+        <span class="live3d-badge">drag to orbit</span>
+      </div>
+      <p class="hero-live3d-cap">Not a screenshot. <b>That's a live glTF export</b>, rendered right
+        here in your browser, the same file that drops straight into Unity or Godot.</p>
+    </div>
+
+    <div class="proof">
+      <img src="img/b_turntable.png" width="104" height="104" loading="lazy"
+        alt="A single boxel-built letter B spinning, showing white front face and candy side faces" />
+      <img src="img/wordmark_anim.webp" width="104" height="104" loading="lazy"
+        alt="The BOXEL wordmark building itself out of falling, bouncing cubes" />
+      <p><b>Yeah, the logo's boxels too.</b> Every letter up there is the same six-face cube, just
+        stretched into type. Watch the whole word build itself.</p>
+    </div>
+
+    <div class="shot">
+      <img src="img/editor_ui.webp" width="1366" height="733" fetchpriority="high" decoding="async" alt="The Boxel editor: tool rail, a red voxel dragon in the viewport with the ViewCube corner gizmo, hierarchy and inspector panels" />
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="n">2.8M+</div><div class="l">voxels per world, culled &amp; streamed</div></div>
+      <div class="stat"><div class="n">60 fps</div><div class="l">on 2014 laptop silicon</div></div>
+      <div class="stat"><div class="n">022</div><div class="l">one-click procedural generators</div></div>
+      <div class="stat"><div class="n">073</div><div class="l">free starter models in the library</div></div>
+      <div class="stat"><div class="n">008</div><div class="l">dynamic point lights, live in the viewport</div></div>
+      <div class="stat"><div class="n">000</div><div class="l">bytes phoned home</div></div>
+    </div>
+  </div>
+</header>
+
+<hr class="pixel-rule" />
+
+<section id="why" style="padding-bottom:36px">
+  <div class="wrap">
+    <span class="idx">01 / WHY</span>
+    <p class="eyebrow c-blue">Why boxel</p>
+    <h2>Built different on purpose</h2>
+    <p class="lead">Not "another voxel tool." Four bets almost nobody else in this space is
+      making, stacked into one editor.</p>
+    <div class="pillars">
+      <div class="pillar"><span class="tag">Voxel++</span>
+        <h3>Real per-face materials</h3>
+        <p>Grass on top, dirt on the sides, chrome on one face and matte everywhere else,
+          all on the same grid a flat voxel tool uses. Per-face overrides are sparse, so a
+          one-color boxel still costs exactly what a voxel costs.</p></div>
+      <div class="pillar"><span class="tag">Scriptable</span>
+        <h3>An agent can drive it</h3>
+        <p>A loopback HTTP server opens the moment the app does. Every edit, camera move,
+          and screenshot is one call, so a script, or an AI agent, can build something,
+          look at what it actually made, and fix its own mistakes.</p></div>
+      <div class="pillar"><span class="tag">Potato-friendly</span>
+        <h3>Runs where nothing else bothers</h3>
+        <p>2.8M voxels, culled and streamed, holding 60fps on a 2014 AMD APU: the kind of
+          chip every "runs great" tool quietly assumes you don't have. A school laptop or a
+          Steam Deck on battery is home turf here, not an edge case.</p></div>
+      <div class="pillar"><span class="tag">Yours</span>
+        <h3>Actually open source</h3>
+        <p>MIT or Apache-2.0, your choice. No account, no cloud round-trip, no subscription
+          tier. Clone it, build it, it's yours, and nothing you make ever leaves your
+          machine unless you ship it.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="what" style="padding-bottom:36px">
+  <div class="wrap">
+    <span class="idx">02 / WHAT</span>
+    <p class="eyebrow c-red">What's a boxel?</p>
+    <h2>Same grid. Six times the surface.</h2>
+    <div class="boxsplain">
+      <div style="text-align:center"><img src="img/spin_2x2.webp" style="width:min(300px,76%)"
+        alt="A 2x2x2 cluster of eight boxels spinning: every corner where cubes meet shows exactly three clean colors, no repeats" />
+        <p style="color:var(--muted);font-size:.85rem;margin-top:10px">One cube, six materials, white face forward, candy scramble everywhere else. Scale it up and every shared corner still reads three clean colors. That's not luck, that's the whole pitch.</p>
+        <img src="img/duders/grass_block.webp" loading="lazy" style="width:min(210px,58%);margin-top:18px"
+        alt="A block with grass-painted top faces and dirt sides, spinning" />
+        <p style="color:var(--muted);font-size:.85rem;margin-top:10px">Minecraft's grass block is secretly a boxel: grass tops, dirt sides, same cubes.</p></div>
+      <div>
+        <p class="body" style="margin-top:0;margin-bottom:14px">Never touched voxels? A <b style="color:var(--text)">voxel is a 3D pixel</b>.
+          one colored cube on a grid. Stack a few thousand and you get Minecraft. Every model
+          on this page is just cubes.</p>
+        <p class="big">A voxel is one cube, one color. A <em>boxel</em> is one cube whose six faces
+          each wear their own material: <em>one</em> white face for the read, a candy-colored
+          scramble on the rest.</p>
+        <div class="voxel-vs-boxel">
+          <img src="img/logo_one.webp" width="52" height="52" loading="lazy"
+            alt="The single-boxel mark: one cube, six different colored faces" />
+          <span>One cube, six faces, six materials. That's the whole pitch, distilled into a logo.</span>
+        </div>
+        <p class="body">Grass on top, dirt on the sides, no split cubes. Per-face overrides are
+          sparse, so a one-color boxel costs exactly what a voxel costs. You only pay for the
+          faces you paint. Import your MagicaVoxel art, then do the face and rect tricks flat
+          voxels can't. Metal, glass, emissive: all on one cube.
+          <b style="color:var(--text)">Voxel++, basically.</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="padding-top:44px">
+  <div class="wrap">
+    <span class="idx">03 / FEATURES</span>
+    <p class="eyebrow c-yellow">Everything in one tool</p>
+    <h2>Model, generate, rig, render</h2>
+    <p class="lead">One tool for the whole pipeline, so nothing has to round-trip through three
+      other apps just to end up modeled, generated, rigged, lit, and exported.</p>
+
+    <div class="features">
+      <div class="card">
+        <div class="bar">Build</div>
+        <img class="duder" src="img/duders/owl.webp" alt="spinning voxel owl" loading="lazy" />
+        <h3>Modeless editing</h3>
+        <p>Left-drag builds, right-drag orbits. That's the whole tutorial.
+          Extrude, paint faces, sculpt, mirror, flood-fill. Undo on all of it.</p>
+      </div>
+      <div class="card">
+        <div class="bar">Generate</div>
+        <img class="duder" src="img/duders/fox.webp" alt="spinning voxel fox" loading="lazy" />
+        <h3>Procedural + worlds</h3>
+        <p>Terrain, caves, dungeons, mazes, forests, gyroid lattices, knots. One click each.
+          Worlds stream in chunks and hold millions of voxels without a hiccup.</p>
+      </div>
+      <div class="card">
+        <div class="bar">Render</div>
+        <img class="duder" src="img/duders/penguin.webp" alt="spinning voxel penguin" loading="lazy" />
+        <h3>A real HDR render stack</h3>
+        <p>Linear HDR, bloom in the right order, one ACES tonemap at the end. Emission glows
+          in color instead of clipping to white. (We learned that one the hard way.)</p>
+      </div>
+      <div class="card">
+        <div class="bar">Export</div>
+        <img class="duder" src="img/duders/frog.webp" alt="spinning voxel frog" loading="lazy" />
+        <h3>Game-engine export</h3>
+        <p>glTF / GLB with albedo, baked normal and emissive maps, so they drop into Unity or Godot
+          and it just blooms. Plus .vox, OBJ, STL, sprite sheets and GIF turntables.</p>
+      </div>
+      <div class="card">
+        <div class="bar">Animate</div>
+        <img class="duder" style="width:140px;height:140px" src="img/duders/rig_walk.webp" alt="voxel humanoid rig walking" loading="lazy" />
+        <h3>Animation timeline</h3>
+        <p>Keyframes plus procedural rigs. One click drops a jointed humanoid; pick Walk and it
+          walks. This one's doing it right now. Bakes to glTF animation channels.</p>
+      </div>
+      <div class="card">
+        <div class="bar">Script</div>
+        <img class="duder" src="img/duders/rabbit.webp" alt="spinning voxel rabbit" loading="lazy" />
+        <h3>Agent-drivable</h3>
+        <p>Every edit, camera move and screenshot is a loopback HTTP call. Script it, or point
+          an agent at it, and it can build, look at what it made, and fix its own mistakes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="depth" style="padding-top:0">
+  <div class="wrap">
+    <span class="idx">04 / DEPTH</span>
+    <p class="eyebrow c-red">How deep it goes</p>
+    <h2>More tool than the screenshots let on</h2>
+    <p class="lead">Every entry below is a shipped feature, not a roadmap wish. One click drops
+      a whole matrix, and everything stays editable after the fact.</p>
+
+    <div class="chipgroup">
+      <h3>Procedural generators <span>one click, whole matrix, re-roll until it's right</span></h3>
+      <div class="chips">
+        <span class="chip">Terrain</span><span class="chip">Dungeons</span><span class="chip">Caves</span>
+        <span class="chip">Mazes</span><span class="chip">Forests</span>
+        <span class="chip">Deciduous &amp; conifer trees</span><span class="chip">Pipe tangles</span>
+        <span class="chip">Crystal clusters</span><span class="chip">TPMS lattices</span>
+        <span class="chip">Nautilus shells</span><span class="chip">Wave Function Collapse networks</span>
+        <span class="chip">Menger sponge</span><span class="chip">Voronoi cells</span>
+        <span class="chip">Helix / DNA spirals</span><span class="chip">Torus knots</span>
+        <span class="chip">Metaball clouds</span><span class="chip">Cellular-automata caves</span>
+        <span class="chip">Text-to-voxel</span>
+      </div>
+    </div>
+
+    <div class="chipgroup">
+      <h3>Non-destructive shape primitives <span>add, subtract, or intersect; every shape stays editable, move it, resize it, recolor it, or delete it later</span></h3>
+      <div class="chips">
+        <span class="chip">Box</span><span class="chip">Rounded box</span><span class="chip">Sphere</span>
+        <span class="chip">Capsule</span><span class="chip">Dome</span><span class="chip">Diamond</span>
+        <span class="chip">Cylinder</span><span class="chip">Cone</span><span class="chip">Pyramid</span>
+        <span class="chip">Wedge</span><span class="chip">Torus</span><span class="chip">Tube</span>
+        <span class="chip">Triangular prism</span><span class="chip">Hex prism</span><span class="chip">Star</span>
+      </div>
+    </div>
+
+    <div class="chipgroup">
+      <h3>Non-destructive modifier stack <span>reorder, tweak live, or bake when you're happy</span></h3>
+      <div class="chips">
+        <span class="chip">Noise</span><span class="chip">HSV adjust</span><span class="chip">Levels</span>
+        <span class="chip">Dither</span><span class="chip">Mirror</span><span class="chip">Shell</span>
+        <span class="chip">Twist</span><span class="chip">Taper</span><span class="chip">Wave</span>
+        <span class="chip">Shear</span><span class="chip">Array</span><span class="chip">Radial array</span>
+        <span class="chip">Displace</span><span class="chip">Infill lattice</span>
+      </div>
+    </div>
+
+    <div class="chipgroup">
+      <h3>Formats in, formats out <span>no lock-in either direction</span></h3>
+      <div class="chips">
+        <span class="chip">In: .vox, .qb, .bbmodel</span>
+        <span class="chip">In: OBJ / STL / PLY meshes</span>
+        <span class="chip">In: PNG heightmap</span>
+        <span class="chip">Out: glTF / GLB with animation</span>
+        <span class="chip">Out: .vox (round-trips)</span>
+        <span class="chip">Out: OBJ / STL</span>
+        <span class="chip">Out: JSON interchange</span>
+        <span class="chip">Out: turntable sheet &amp; GIF</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="box" style="padding-top:0">
+  <div class="wrap">
+    <span class="idx">05 / IN THE BOX</span>
+    <p class="eyebrow c-green">Also in the box</p>
+    <h2>The stuff you'd otherwise find in week three</h2>
+    <ul class="gifbullets">
+      <li><img src="img/duders/duck.webp" alt="voxel duck" loading="lazy" /><span><b>MagicaVoxel .vox</b> import and export. Bring your old art, leave anytime</span></li>
+      <li><img src="img/duders/bear.webp" alt="voxel bear" loading="lazy" /><span><b>Palette moods</b>: warm, cool, vibrant, mono, comp recolors in one hit</span></li>
+      <li><img src="img/duders/octopus.webp" alt="voxel octopus" loading="lazy" /><span><b>Non-destructive CSG</b>: union, carve, intersect live shapes, then change your mind</span></li>
+      <li><img src="img/duders/crab.webp" alt="voxel crab" loading="lazy" /><span><b>Selection wand</b> with fuzz, grow/shrink, hue-band matching</span></li>
+      <li><img src="img/duders/whale.webp" alt="voxel whale" loading="lazy" /><span><b>Voxelize any mesh</b>: OBJ / STL in, solid or shell, vertex colors kept</span></li>
+      <li><img src="img/duders/bee.webp" alt="voxel bee" loading="lazy" /><span><b>HDRI lighting</b>: drop in an environment map, get real reflections</span></li>
+      <li><img src="img/duders/snowman_hat.webp" alt="voxel snowman" loading="lazy" /><span><b>Form-shade &amp; cavity AO</b> bakes: tonal depth without touching your palette</span></li>
+      <li><img src="img/duders/strawberry.webp" alt="voxel strawberry" loading="lazy" /><span><b>Prompt-to-voxel</b> with a local model. No metered API, no cloud round-trip</span></li>
+      <li><img src="img/duders/boxel_one.webp" alt="spinning six-color boxel" loading="lazy" /><span><b>Turntable exports</b>: sheets and GIFs, like every critter on this page</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="who" style="padding-top:0">
+  <div class="wrap">
+    <span class="idx">06 / WHO</span>
+    <p class="eyebrow c-yellow">Who it's for</p>
+    <h2>Built for the people who'd rather be making things</h2>
+    <div class="usecases">
+      <div class="usecase"><span class="bar"></span>
+        <div><h3>Indie gamedevs</h3>
+        <p>Export glTF/GLB with baked albedo, normal, and emissive maps. Drop it in Unity or
+          Godot and it just blooms, no manual material setup.</p></div></div>
+      <div class="usecase"><span class="bar"></span>
+        <div><h3>Pixel artists going 3D</h3>
+        <p>Import your MagicaVoxel <span style="font-family:monospace">.vox</span> straight in.
+          Same cube grid you already think in, now with six faces instead of one color.</p></div></div>
+      <div class="usecase"><span class="bar"></span>
+        <div><h3>Anyone who bounced off Blender</h3>
+        <p>Left-drag builds, right-drag orbits. No UV unwrapping, no node graphs, no
+          forty-minute onboarding video before your first cube.</p></div></div>
+      <div class="usecase"><span class="bar"></span>
+        <div><h3>Old hardware, tight budgets</h3>
+        <p>A decade-old laptop holds 60fps in a 2.8M-voxel world. No RTX card required, no
+          subscription tier gatekeeping the good export formats.</p></div></div>
+      <div class="usecase"><span class="bar"></span>
+        <div><h3>Builders who'd rather prompt than click</h3>
+        <p>Point an agent at the HTTP control API and it can build, screenshot itself, and
+          self-correct. Prompt-to-voxel runs on a local model, no metered API.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="start" style="padding-top:0">
+  <div class="wrap">
+    <span class="idx">07 / QUICK START</span>
+    <p class="eyebrow c-blue">Quick start</p>
+    <h2>Zero to blocky in 60 seconds</h2>
+    <div class="steps">
+      <div class="step"><span class="n n-red">1</span>
+        <div><h3>Run it</h3>
+        <p><span class="kbd">cargo run --release -p boxel</span>. A Rust workspace, builds
+          local, no installer, no account.</p></div></div>
+      <div class="step"><span class="n n-yellow">2</span>
+        <div><h3>Build</h3>
+        <p><span class="kbd">Left-drag</span> places cubes. <span class="kbd">Right-drag</span> orbits.
+          <span class="kbd">Scroll</span> zooms, <span class="kbd">F</span> frames your model,
+          hold <span class="kbd">RMB</span> + <span class="kbd">WASD</span> to fly. That's the tutorial.</p></div></div>
+      <div class="step"><span class="n n-green">3</span>
+        <div><h3>Paint &amp; cheat</h3>
+        <p>Pick a color, <b>Paint</b> does faces, <b>Fill</b> does regions. Or skip to the
+          <b>Generate</b> tab and one-click a terrain, tree, or dungeon to mess with.</p></div></div>
+      <div class="step"><span class="n n-blue">4</span>
+        <div><h3>Ship it</h3>
+        <p><b>Export → glTF</b> and drop it in Unity or Godot with materials intact.
+          Or .vox, OBJ, STL, a sprite sheet, a spinning GIF like the critters above.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="gallery" style="padding-top:0">
+  <div class="wrap">
+    <span class="idx">08 / GALLERY</span>
+    <p class="eyebrow c-blue">Made in Boxel</p>
+    <h2>From a single cube to a whole world</h2>
+    <p class="lead">Modeled, lit, and exported in-app. Each one ships with its editable
+      <span style="font-family:monospace">.boxel</span> file, so you can open it up and mess
+      with it yourself.</p>
+    <div class="gallery">
+      <div class="gal"><img src="img/gal_dragon.webp" width="720" height="540" alt="Red voxel dragon, floating with transparent background" loading="lazy" />
+        <div class="cap"><b>Dragon</b><span>prompt-to-voxel</span></div></div>
+      <div class="gal">
+        <div class="live3d" data-model="mushroom_cottage" role="img"
+          aria-label="Live 3D mushroom cottage model exported from Boxel. Drag to rotate it.">
+          <img class="live3d-poster" src="img/gal_mushroom_cottage.webp" width="600" height="480" loading="lazy"
+            alt="Mushroom cottage, floating with transparent background" />
+          <canvas class="live3d-canvas" aria-hidden="true"></canvas>
+          <span class="live3d-badge">drag to orbit</span>
+        </div>
+        <div class="cap"><b>Mushroom cottage</b><span>primitives + non-destructive edits &middot; live, drag it</span></div></div>
+      <div class="gal"><img src="img/gal_tree_isle.webp" width="720" height="540" alt="Floating tree island, transparent background" loading="lazy" />
+        <div class="cap"><b>Tree isle</b><span>generated terrain + tree, composed scene</span></div></div>
+      <div class="gal"><img src="img/gal_gold_torus.webp" width="720" height="540" alt="Gold metallic voxel torus, floating with transparent background" loading="lazy" />
+        <div class="cap"><b>Gold torus</b><span>PBR metal primitive, warm sky reflections</span></div></div>
+      <div class="gal"><img src="img/gal_highlands.webp" width="720" height="540" alt="Moody midnight highlands terrain, floating with transparent background" loading="lazy" />
+        <div class="cap"><b>Midnight highlands</b><span>generated terrain, moonlight sky</span></div></div>
+      <div class="gal">
+        <div class="live3d" data-model="lighthouse" role="img"
+          aria-label="Live 3D lighthouse model exported from Boxel. Drag to rotate it.">
+          <img class="live3d-poster" src="img/gal_lighthouse.webp" width="720" height="540" loading="lazy"
+            alt="Voxel lighthouse, floating with transparent background" />
+          <canvas class="live3d-canvas" aria-hidden="true"></canvas>
+          <span class="live3d-badge">drag to orbit</span>
+        </div>
+        <div class="cap"><b>Lighthouse</b><span>prompt-to-voxel &middot; live, drag it</span></div></div>
+    </div>
+  </div>
+</section>
+
+<hr class="pixel-rule" />
+
+<section id="get" style="padding-top:0">
+  <div class="wrap">
+    <div class="band">
+      <p class="eyebrow c-yellow">Get it</p>
+      <h2>Downloads are coming soon</h2>
+      <p class="lead">The repo is still private while Boxel is rough around the edges.
+        Downloads land with the first public release. Early builds and the dev log
+        show up in the Discord first.</p>
+      <div class="cta" style="margin-top:30px">
+        <a class="btn btn-primary" href="https://tront.xyz/discord/" target="_blank" rel="noopener">Join the Discord</a>
+        <a class="btn btn-ghost" href="https://tront.xyz" target="_blank" rel="noopener">More from tront</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rainbow"></div>
+<footer>
+  <div class="wrap">
+    <a class="logo" href="#"><img src="img/logo_mark.webp" alt="Boxel mark" /> BOXEL</a>
+    <div>Built by <a href="https://tront.xyz" target="_blank" rel="noopener">Trent Sterling</a> ·
+      the open-source boxel editor · voxel++ · runs 100% local</div>
+  </div>
+</footer>
+
+<script>
+  // Theme: default dark; honor saved choice, else OS preference.
+  const root = document.documentElement, btn = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('boxel-theme');
+  const initial = saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  const apply = t => { root.dataset.theme = t; btn.textContent = t === 'light' ? '☀️' : '🌙'; };
+  apply(initial);
+  btn.onclick = () => { const t = root.dataset.theme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('boxel-theme', t); apply(t); };
+</script>
+<script src="js/live3d.js" defer></script>
+</body>
+</html>
