@@ -1,6 +1,6 @@
 # tront.xyz
 
-Portfolio website for Trent Sterling - game developer since 2009.
+Portfolio website for Trent Sterling (Tront), contract Network Programmer and Unity Generalist on Project Demigod; game developer since 2009.
 
 Live site: [tront.xyz](https://tront.xyz)
 
