@@ -2,4 +2,5 @@ User-agent: *
 Allow: /
 
 Sitemap: https://tront.xyz/sitemap.xml
+Sitemap: https://tront.xyz/sitemap-pages.xml
 Sitemap: https://tront.xyz/blog/sitemap.xml
