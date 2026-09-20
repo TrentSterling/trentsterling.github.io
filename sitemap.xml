@@ -2,4 +2,5 @@
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap><loc>https://tront.xyz/sitemap-pages.xml</loc></sitemap>
   <sitemap><loc>https://tront.xyz/blog/sitemap.xml</loc></sitemap>
+  <sitemap><loc>https://tront.xyz/tutorials/sitemap.xml</loc></sitemap>
 </sitemapindex>
