@@ -9,9 +9,9 @@
   const clock = document.querySelector('#frog-clock');
   const status = document.querySelector('#frog-status');
   const views = [...document.querySelectorAll('[data-frog-view]')];
-  const posters = { pose: 'img/froggy.webp', front: 'img/froggy-front.webp', back: 'img/froggy-back.webp' };
+  const posters = { pose: 'img/froggy-neutral-v2.webp', front: 'img/froggy-front-v2.webp', back: 'img/froggy-back-v2.webp' };
   const descriptions = {
-    pose: 'Froggy, a green boxel knight in silver armor, waving with one hand and holding a sword in the other.',
+    pose: 'Froggy, a green boxel knight with silver armor, a red cape and a sword at his side.',
     front: 'Froggy from the front: gold-rimmed eyes, a blue painted crest, and a red embroidered tabard.',
     back: 'Froggy from behind: spotted green skin and a sculpted red cape with folded panels.',
   };
@@ -32,7 +32,7 @@
   }
   async function ready() {
     if (manifest) return;
-    if (!loading) loading = fetch('img/froggy/animation.json').then(response => {
+    if (!loading) loading = fetch('img/froggy/hello-v2/animation.json').then(response => {
       if (!response.ok) throw new Error('Animation unavailable');
       return response.json();
     }).then(async value => {
@@ -53,7 +53,7 @@
     ++drawRequest;
     playing = false;
     cancelAnimationFrame(raf);
-    play.textContent = 'Say hello';
+    play.textContent = 'Play greeting';
     play.setAttribute('aria-pressed', 'false');
   }
   async function draw(value) {
@@ -78,12 +78,14 @@
     stop();
     canvas.hidden = true;
     poster.hidden = false;
-    status.textContent = 'The animation could not load. Try Say hello again.';
+    status.textContent = 'The animation could not load. Try Play greeting again.';
   }
   async function tick(now) {
     if (!playing) return;
     try {
-      await draw(Math.floor((now - started) / 1000 * 24) % 96);
+      const elapsed = (now - started) / 1000;
+      await draw(Math.min(95, Math.floor(elapsed * 24)));
+      if (elapsed >= 4) { stop(); play.textContent = 'Replay greeting'; return; }
       if (playing) raf = requestAnimationFrame(tick);
     } catch { fail(); }
   }
@@ -95,6 +97,8 @@
     try {
       await ready();
       if (request !== action) return;
+      if (frame >= 95) frame = 0;
+      document.querySelector('.frog-timeline').hidden = false;
       await draw(frame);
       if (request !== action) return;
       views.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.frogView === 'pose')));
@@ -122,6 +126,9 @@
   views.forEach(button => button.addEventListener('click', () => {
     stop();
     ++drawRequest;
+    frame = 0;
+    scrub.value = '0';
+    document.querySelector('.frog-timeline').hidden = true;
     const view = button.dataset.frogView;
     poster.src = posters[view];
     poster.alt = descriptions[view];

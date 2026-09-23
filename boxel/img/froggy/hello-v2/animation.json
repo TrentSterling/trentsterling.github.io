@@ -1,0 +1,21 @@
+{
+  "fps": 24,
+  "frames": 96,
+  "size": 600,
+  "columns": 4,
+  "rows": 2,
+  "sheets": [
+    "img/froggy/hello-v2/sheet_01.webp",
+    "img/froggy/hello-v2/sheet_02.webp",
+    "img/froggy/hello-v2/sheet_03.webp",
+    "img/froggy/hello-v2/sheet_04.webp",
+    "img/froggy/hello-v2/sheet_05.webp",
+    "img/froggy/hello-v2/sheet_06.webp",
+    "img/froggy/hello-v2/sheet_07.webp",
+    "img/froggy/hello-v2/sheet_08.webp",
+    "img/froggy/hello-v2/sheet_09.webp",
+    "img/froggy/hello-v2/sheet_10.webp",
+    "img/froggy/hello-v2/sheet_11.webp",
+    "img/froggy/hello-v2/sheet_12.webp"
+  ]
+}

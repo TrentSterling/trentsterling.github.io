@@ -54,18 +54,6 @@
   wordmark.addEventListener('pointerleave', resetLetters);
   reducedMotion.addEventListener('change', resetLetters);
 
-  const models = {
-    pose: ['img/froggy-neutral.webp', 'Froggy, a green boxel knight with silver armor, a red cape and a sword at his side.'],
-    front: ['img/froggy-front.webp', 'Froggy from the front, with his painted eyes, blue crest and red tabard.'],
-    back: ['img/froggy-back.webp', 'Froggy from behind, with his sculpted red cape and green skin.'],
-  };
-  const views = [...document.querySelectorAll('[data-frog-view]')];
-  views.forEach(button => button.addEventListener('click', () => {
-    const [src, alt] = models[button.dataset.frogView];
-    const image = document.querySelector('#hero-model');
-    image.src = src; image.alt = alt;
-    views.forEach(view => view.setAttribute('aria-pressed', String(view === button)));
-  }));
   const boxelViews = {
     front: ['img/brand/one-front.png', 'One boxel, viewed from the front: white, blue and red face materials.'],
     back: ['img/brand/one-back.png', 'The same boxel from behind, showing its other face materials.'],

@@ -75,16 +75,27 @@ p{text-wrap:pretty}
 .face-tabs button[aria-pressed=true],.frog-views button[aria-pressed=true]{background:var(--surface);color:var(--text);border-color:var(--muted)}
 .face-playground figcaption{text-align:center;font-size:14px;color:var(--muted);margin-top:24px}
 .frog-views{margin-top:18px;justify-content:flex-start}
+.frog-controls{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:18px}
+.frog-controls .frog-views{margin:0}
+#frog-play{background:transparent;color:var(--text);border:1px solid var(--muted);border-radius:4px;min-height:38px;padding:7px 16px;font-size:14px}
+#frog-play[aria-pressed=true]{background:var(--surface)}
+#frog-status{font-size:12px;line-height:1.5;color:var(--muted);margin-top:8px}
+#frog-status:empty{display:none}
+.frog-timeline{display:flex;gap:16px;align-items:center;margin-top:12px}
+.frog-timeline[hidden]{display:none}
+#frog-time{flex:1;min-width:0;accent-color:var(--green)}
+#frog-clock{font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .gallery-layout{display:grid;grid-template-columns:1.18fr 1fr;gap:76px 60px;align-items:start}
 .artwork-image{background:var(--surface);border-radius:4px;overflow:hidden}
 .artwork img{width:100%;height:100%;object-fit:contain;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
 .artwork a:hover img{transform:scale(1.025)}
-.artwork.cottage .artwork-image{aspect-ratio:1.25;background:#eef0f2}
-.artwork.cottage img{object-fit:cover}
+.artwork.cottage .artwork-image{aspect-ratio:1.6;background:#c3b5c1}
+.artwork.cottage img{object-fit:contain}
 .artwork.arcade{margin-top:115px}
 .artwork.arcade .artwork-image{aspect-ratio:1}
 .artwork.rooftop .artwork-image{aspect-ratio:1.1}
-.artwork.pal .artwork-image{aspect-ratio:1.18}
+.artwork.twist .artwork-image{aspect-ratio:1.18}
 .artwork figcaption{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-top:22px}
 .artwork figcaption p{font-size:14px;color:var(--muted);margin-top:7px}
 .artwork figcaption>span{font-size:12px;color:var(--muted);white-space:nowrap;padding-top:4px}
@@ -162,8 +173,8 @@ h2{font-size:40px}
 .face-playground{min-height:430px}
 .gallery-layout{grid-template-columns:1fr;gap:38px}
 .artwork.arcade{margin-top:0}
-.artwork.cottage .artwork-image{aspect-ratio:1.25}
-.artwork.arcade .artwork-image,.artwork.pal .artwork-image,.artwork.rooftop .artwork-image{aspect-ratio:1.2}
+.artwork.cottage .artwork-image{aspect-ratio:1.6}
+.artwork.arcade .artwork-image,.artwork.twist .artwork-image,.artwork.rooftop .artwork-image{aspect-ratio:1.2}
 .artwork figcaption{display:flex;padding-top:17px}
 .artwork figcaption>span{margin-top:0;font-size:10px}
 h3{font-size:21px}
