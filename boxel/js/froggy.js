@@ -9,11 +9,11 @@
   const clock = document.querySelector('#frog-clock');
   const status = document.querySelector('#frog-status');
   const views = [...document.querySelectorAll('[data-frog-view]')];
-  const posters = { pose: 'img/froggy-neutral-v2.webp', front: 'img/froggy-front-v2.webp', back: 'img/froggy-back-v2.webp' };
+  const posters = { pose: 'img/froggy-neutral-v3.webp', front: 'img/froggy-front-v3.webp', back: 'img/froggy-back-v3.webp' };
   const descriptions = {
     pose: 'Froggy, a green boxel knight with silver armor, a red cape and a sword at his side.',
     front: 'Froggy from the front: gold-rimmed eyes, a blue painted crest, and a red embroidered tabard.',
-    back: 'Froggy from behind: spotted green skin and a sculpted red cape with folded panels.',
+    back: 'Froggy from behind: spotted green skin and a red cape with a broad center fold.',
   };
   // Keep view navigation usable while an animation is withdrawn for art review.
   if (play.hidden) {
@@ -42,7 +42,7 @@
   }
   async function ready() {
     if (manifest) return;
-    if (!loading) loading = fetch('img/froggy/hello-v2/animation.json').then(response => {
+    if (!loading) loading = fetch('img/froggy/hello-v3/animation.json').then(response => {
       if (!response.ok) throw new Error('Animation unavailable');
       return response.json();
     }).then(async value => {
