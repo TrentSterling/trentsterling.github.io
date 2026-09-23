@@ -59,8 +59,8 @@
       this.raf = null;
       this.dragging = false;
       this.lastPointer = null;
-      // stagger starting angles so the hero + gallery models don't spin in lockstep
-      this.yaw = Math.random() * Math.PI * 2;
+      // A deliberate first view makes the model readable before interaction.
+      this.yaw = -0.45;
       this.pitch = -0.15;
       this.autoSpin = !prefersReducedMotion;
     }
