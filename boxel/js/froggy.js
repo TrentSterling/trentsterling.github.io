@@ -9,7 +9,7 @@
   const clock = document.querySelector('#frog-clock');
   const status = document.querySelector('#frog-status');
   const views = [...document.querySelectorAll('[data-frog-view]')];
-  const posters = { pose: 'img/froggy-neutral-v3.webp', front: 'img/froggy-front-v3.webp', back: 'img/froggy-back-v3.webp' };
+  const posters = { pose: 'img/froggy-neutral-v4.webp', front: 'img/froggy-front-v4.webp', back: 'img/froggy-back-v4.webp' };
   const descriptions = {
     pose: 'Froggy, a green boxel knight with silver armor, a red cape and a sword at his side.',
     front: 'Froggy from the front: gold-rimmed eyes, a blue painted crest, and a red embroidered tabard.',
@@ -42,7 +42,7 @@
   }
   async function ready() {
     if (manifest) return;
-    if (!loading) loading = fetch('img/froggy/hello-v3/animation.json').then(response => {
+    if (!loading) loading = fetch('img/froggy/hello-v4/animation.json').then(response => {
       if (!response.ok) throw new Error('Animation unavailable');
       return response.json();
     }).then(async value => {

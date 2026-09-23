@@ -54,16 +54,4 @@
   wordmark.addEventListener('pointerleave', resetLetters);
   reducedMotion.addEventListener('change', resetLetters);
 
-  const boxelViews = {
-    front: ['img/brand/one-front.png', 'One boxel, viewed from the front: white, blue and red face materials.'],
-    back: ['img/brand/one-back.png', 'The same boxel from behind, showing its other face materials.'],
-    below: ['img/brand/one-below.png', 'The same boxel from underneath, showing the bottom face material.'],
-  };
-  const faceButtons = [...document.querySelectorAll('[data-boxel-view]')];
-  faceButtons.forEach(button => button.addEventListener('click', () => {
-    const [src, alt] = boxelViews[button.dataset.boxelView];
-    const image = document.querySelector('#face-model');
-    image.src = src; image.alt = alt;
-    faceButtons.forEach(view => view.setAttribute('aria-pressed', String(view === button)));
-  }));
 })();
