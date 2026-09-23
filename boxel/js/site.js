@@ -31,26 +31,51 @@
   reducedMotion.addEventListener('change', () => {
     if (reducedMotion.matches) wordmark.classList.remove('bouncing');
   });
-  const playground = document.querySelector('.face-playground');
-  const tabs = [...playground.querySelectorAll('[data-face]')];
-  const swatches = [...playground.querySelectorAll('[data-color]')];
-  const colors = { front: '#f36a67', top: '#eee9dc', right: '#729cf2' };
-  let selected = 'front';
-  function updateSwatches() {
-    for (const swatch of swatches) swatch.setAttribute('aria-pressed', String(swatch.dataset.color === colors[selected]));
-  }
-  tabs.forEach(tab => tab.addEventListener('click', () => {
-    selected = tab.dataset.face;
-    tabs.forEach(item => item.setAttribute('aria-pressed', String(item === tab)));
-    playground.querySelector('.paint-status').textContent = `${tab.textContent} face selected. Pick a color.`;
-    updateSwatches();
+  // Restore the interaction used by the original museum brand page. Every
+  // letter is the authored Boxel render; only its page position is animated.
+  const letters = [...wordmark.querySelectorAll('img')];
+  let settle;
+  const resetLetters = () => letters.forEach(letter => letter.style.transform = '');
+  wordmark.addEventListener('pointermove', event => {
+    if (reducedMotion.matches || event.pointerType === 'touch') return;
+    wordmark.classList.remove('bouncing');
+    const rect = wordmark.getBoundingClientRect();
+    letters.forEach((letter, index) => {
+      const x = rect.left + rect.width * (index + .5) / letters.length;
+      const y = rect.top + rect.height / 2;
+      const dx = x - event.clientX, dy = y - event.clientY;
+      const distance = Math.hypot(dx, dy) || 1;
+      const push = Math.max(0, 140 - distance) / 140;
+      letter.style.transform = `translate(${dx / distance * push * 35}px,${dy / distance * push * 26}px) rotate(${(index % 2 ? 1 : -1) * push * 10}deg)`;
+    });
+    clearTimeout(settle);
+    settle = setTimeout(resetLetters, 450);
+  });
+  wordmark.addEventListener('pointerleave', resetLetters);
+  reducedMotion.addEventListener('change', resetLetters);
+
+  const models = {
+    pose: ['img/froggy-neutral.webp', 'Froggy, a green boxel knight with silver armor, a red cape and a sword at his side.'],
+    front: ['img/froggy-front.webp', 'Froggy from the front, with his painted eyes, blue crest and red tabard.'],
+    back: ['img/froggy-back.webp', 'Froggy from behind, with his sculpted red cape and green skin.'],
+  };
+  const views = [...document.querySelectorAll('[data-frog-view]')];
+  views.forEach(button => button.addEventListener('click', () => {
+    const [src, alt] = models[button.dataset.frogView];
+    const image = document.querySelector('#hero-model');
+    image.src = src; image.alt = alt;
+    views.forEach(view => view.setAttribute('aria-pressed', String(view === button)));
   }));
-  swatches.forEach(swatch => swatch.addEventListener('click', () => {
-    colors[selected] = swatch.dataset.color;
-    playground.style.setProperty(`--${selected}`, colors[selected]);
-    const faceName = selected === 'right' ? 'Side' : selected[0].toUpperCase() + selected.slice(1);
-    playground.querySelector('.paint-status').textContent = `${faceName} painted ${swatch.dataset.name.toLowerCase()}. The other faces stay as they are.`;
-    updateSwatches();
+  const boxelViews = {
+    front: ['img/brand/one-front.png', 'One boxel, viewed from the front: white, blue and red face materials.'],
+    back: ['img/brand/one-back.png', 'The same boxel from behind, showing its other face materials.'],
+    below: ['img/brand/one-below.png', 'The same boxel from underneath, showing the bottom face material.'],
+  };
+  const faceButtons = [...document.querySelectorAll('[data-boxel-view]')];
+  faceButtons.forEach(button => button.addEventListener('click', () => {
+    const [src, alt] = boxelViews[button.dataset.boxelView];
+    const image = document.querySelector('#face-model');
+    image.src = src; image.alt = alt;
+    faceButtons.forEach(view => view.setAttribute('aria-pressed', String(view === button)));
   }));
-  updateSwatches();
 })();
