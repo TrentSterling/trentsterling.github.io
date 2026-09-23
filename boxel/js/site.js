@@ -6,7 +6,7 @@
     root.dataset.theme = value;
     theme.textContent = value === 'dark' ? 'Light mode' : 'Dark mode';
     theme.setAttribute('aria-label', `Switch to ${value === 'dark' ? 'light' : 'dark'} mode`);
-    document.querySelector('meta[name="theme-color"]').content = value === 'dark' ? '#151719' : '#f5f2ea';
+    document.querySelector('meta[name="theme-color"]').content = value === 'dark' ? '#0a0a2e' : '#f6f5ef';
   };
   applyTheme(root.dataset.theme);
   theme.addEventListener('click', () => {
