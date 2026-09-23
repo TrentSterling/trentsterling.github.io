@@ -206,7 +206,7 @@ h3{font-size:21px}
 .model-shelf a:hover img,.model-shelf a:focus-visible img{transform:translateY(-5px)}
 #art-viewer{width:min(740px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:20px 26px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--text);margin:auto;overflow:auto}
 #art-viewer::backdrop{background:rgb(0 0 0 / .78)}
-#art-viewer img{width:100%;height:min(65dvh,600px);object-fit:contain;display:block}
+#art-viewer img{width:100%;height:min(65dvh,600px,calc(100vw - 84px));object-fit:contain;display:block}
 .art-viewer-toolbar,.art-viewer-nav{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .art-viewer-toolbar p{font-size:20px;font-weight:650}
 #art-viewer button{background:var(--surface);color:var(--text);border:1px solid var(--muted);padding:10px 16px;border-radius:4px;font:inherit;cursor:pointer}
