@@ -15,6 +15,16 @@
     front: 'Froggy from the front: gold-rimmed eyes, a blue painted crest, and a red embroidered tabard.',
     back: 'Froggy from behind: spotted green skin and a sculpted red cape with folded panels.',
   };
+  // Keep view navigation usable while an animation is withdrawn for art review.
+  if (play.hidden) {
+    views.forEach(button => button.addEventListener('click', () => {
+      const view = button.dataset.frogView;
+      poster.src = posters[view];
+      poster.alt = descriptions[view];
+      views.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    }));
+    return;
+  }
   let manifest, encodedSheets, loading, playing = false, frame = 0, raf = 0, started = 0, drawRequest = 0, action = 0;
   const sheets = new Map();
   async function sheet(index) {
