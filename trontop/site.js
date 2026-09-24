@@ -19,7 +19,7 @@ document.querySelectorAll('[data-preview]').forEach(button => button.addEventLis
     if (request !== previewRequest) return;
     const hero = document.querySelector('#hero-image');
     hero.src = image.src;
-    hero.alt = `Trontop Overview in the ${button.textContent} theme, rendered with demo data`;
+    hero.alt = `Trontop Overview in the ${button.textContent} theme, showing real telemetry from Trent's PC`;
     hero.closest('a').href = image.src;
     document.querySelector('#active-theme').textContent = button.textContent;
     document.querySelectorAll('[data-preview]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
