@@ -13,7 +13,7 @@ document.querySelectorAll('[data-preview]').forEach(button => button.addEventLis
   const request = ++previewRequest;
   const slug = button.dataset.preview;
   const image = new Image();
-  image.src = `media/${slug}-workspace.png`;
+  image.src = `media/${slug}-workspace.png?v=20261001`;
   try {
     await image.decode();
     if (request !== previewRequest) return;
