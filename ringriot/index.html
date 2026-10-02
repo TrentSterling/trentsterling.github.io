@@ -148720,7 +148720,8 @@ class GPUInk{
  weaponIcon(x,y,size,weapon,color=PAL.bronze){const z=size,ink=UI.ink;if(weapon===0){
  this.rect(x-z*.32,y-z*.30,z*.64,z*.52,color,1,z*.07);this.poly([[x-z*.32,y-z*.30],[x+z*.32,y-z*.30],[x+z*.24,y-z*.17],[x-z*.25,y-z*.17]],UI.light);this.frame(x-z*.32,y-z*.30,z*.64,z*.52,ink,1,z*.07,z*.035);this.rect(x-z*.37,y+z*.15,z*.74,z*.12,UI.teal,1,z*.03);for(let k=-1;k<=1;k++)this.line(x+k*z*.18,y-z*.20,x+k*z*.18,y+z*.04,z*.035,ink);
  }else if(weapon===1){this.ellipse(x,y,z*.38,z*.28,ink,true);this.ellipse(x,y-z*.035,z*.34,z*.235,color,true);this.ellipse(x,y-z*.035,z*.24,z*.15,UI.teal,true);this.ellipse(x,y-z*.035,z*.34,z*.235,UI.light,false,z*.028);this.diamond(x,y-z*.035,z*.085,UI.light,true);this.line(x-z*.25,y-z*.15,x-z*.12,y-z*.22,z*.038,UI.light);
- }else{this.poly([[x-z*.34,y-z*.28],[x-z*.24,y-z*.33],[x,y+z*.15],[x+z*.24,y-z*.33],[x+z*.34,y-z*.28],[x+z*.07,y+z*.24],[x+z*.07,y+z*.36],[x-z*.07,y+z*.36],[x-z*.07,y+z*.24]],color);this.line(x-z*.24,y-z*.31,x+z*.24,y-z*.31,z*.045,ink);this.rect(x-z*.13,y-z*.13,z*.26,z*.16,UI.teal,1,z*.035);this.ellipse(x,y-z*.09,z*.075,z*.065,UI.light,true);this.line(x-z*.29,y-z*.24,x-z*.05,y+z*.17,z*.035,UI.light);}}
+ }else{// Explicit convex facets keep the fork open with the UI's triangle fan.
+ this.poly([[x-z*.34,y-z*.28],[x-z*.24,y-z*.33],[x+z*.05,y+z*.18],[x-z*.05,y+z*.24]],color);this.poly([[x+z*.24,y-z*.33],[x+z*.34,y-z*.28],[x+z*.05,y+z*.24],[x-z*.05,y+z*.18]],color);this.rect(x-z*.07,y+z*.16,z*.14,z*.20,color);this.line(x-z*.24,y-z*.31,x+z*.24,y-z*.31,z*.045,ink);this.rect(x-z*.13,y-z*.13,z*.26,z*.16,UI.teal,1,z*.035);this.ellipse(x,y-z*.09,z*.075,z*.065,UI.light,true);this.line(x-z*.29,y-z*.24,x-z*.05,y+z*.17,z*.035,UI.light);}}
  emblem(x,y,size,id){
  const z=size,ink=UI.ink,gold=UI.gold,teal=UI.teal,light=UI.light;
  this.ellipse(x+1,y+2,z*.47,z*.47,UI.edge,true);this.ellipse(x,y,z*.47,z*.47,light,true);this.ellipse(x,y,z*.41,z*.41,UI.paper,true);this.ellipse(x,y,z*.47,z*.47,gold,false,Math.max(1,z*.022));
@@ -148737,9 +148738,9 @@ class GPUInk{
  case 'fan_out':for(let k=-2;k<=2;k++){line(0,.26,k*.12,-.08,.03,teal);circle(k*.12,-.22,.045);}break;
  case 'close_pack':circle(0,0,.155,gold);circle(-.04,-.05,.07,light);for(let k=-1;k<=1;k++){arrow(k*.25,-.30,k*.13,-.16);arrow(k*.25,.30,k*.13,.16);}break;
  case 'forward_surge':this.weaponIcon(x-z*.14,y,z*.42,0);arrow(-.02,0,.32,0);line(-.32,-.15,-.18,-.15,.035,gold);line(-.32,.15,-.18,.15,.035,gold);break;
- case 'safe_landing':this.poly([[x-z*.12,y-z*.25],[x+z*.02,y-z*.25],[x+z*.02,y+z*.02],[x+z*.23,y+z*.12],[x+z*.23,y+z*.20],[x-z*.18,y+z*.20]],ink);line(-.28,.31,.28,.31,.045,teal);line(-.28,.13,-.22,.22,.035,gold);line(.30,.13,.25,.22,.035,gold);break;
+ case 'safe_landing':this.rect(x-z*.12,y-z*.25,z*.14,z*.42,ink);this.poly([[x+z*.02,y+z*.03],[x+z*.23,y+z*.12],[x+z*.23,y+z*.20],[x-z*.18,y+z*.20],[x-z*.18,y+z*.11]],ink);line(-.28,.31,.28,.31,.045,teal);line(-.28,.13,-.22,.22,.035,gold);line(.30,.13,.25,.22,.035,gold);break;
  case 'rolling_thunder':circle(.05,-.04,.23,ink);circle(.05,-.04,.19,UI.edge);line(-.10,-.21,.20,.12,.03,light);line(.20,-.21,-.10,.12,.03,light);line(-.33,.09,-.23,.09,.04,teal);line(-.33,.19,-.11,.19,.04,teal);line(-.23,.30,.28,.30,.04,ink);break;
- case 'crowd_pulse':for(let k=-1;k<=1;k++){circle(k*.21,-.17,.055,ink);line(k*.21,-.06,k*.21-.065,.02,.04,ink);line(k*.21,-.06,k*.21+.065,.02,.04,ink);}this.poly([[x+z*.035,y+z*.04],[x-z*.13,y+z*.20],[x-z*.025,y+z*.20],[x-z*.08,y+z*.34],[x+z*.14,y+z*.14],[x+z*.025,y+z*.14]],teal);break;
+ case 'crowd_pulse':for(let k=-1;k<=1;k++){circle(k*.21,-.17,.055,ink);line(k*.21,-.06,k*.21-.065,.02,.04,ink);line(k*.21,-.06,k*.21+.065,.02,.04,ink);}this.poly([[x+z*.035,y+z*.04],[x-z*.13,y+z*.20],[x+z*.025,y+z*.20]],teal);this.poly([[x-z*.08,y+z*.34],[x+z*.14,y+z*.14],[x-z*.025,y+z*.14]],teal);break;
  case 'rest':line(-.12,0,.12,0,.11,teal);line(0,-.12,0,.12,.11,teal);break;
  case 'victory':this.poly([[x-z*.17,y-z*.22],[x+z*.17,y-z*.22],[x+z*.13,y+z*.02],[x,y+z*.13],[x-z*.13,y+z*.02]],gold);line(0,.10,0,.25,.06,ink);line(-.15,.27,.15,.27,.06,ink);for(const side of[-1,1]){line(side*.18,-.18,side*.29,-.15,.03);line(side*.29,-.15,side*.25,.04,.03);line(side*.25,.04,side*.14,.09,.03);}break;
  default:this.weaponIcon(x,y,z*.72,0);

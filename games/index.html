@@ -63,6 +63,18 @@
         .nav-link.home-link{padding-left:.5rem}
         .nav-link:hover ~ .home-link .logo-image,.home-link:hover .logo-image{animation:spin-once .8s cubic-bezier(.16,1,.3,1)}
         .nav-link.active{color:#fff;background-color:var(--accent-purple);border-color:var(--accent-purple)}
+        @media(max-width:480px){
+            #magic-navbar-container{gap:.4rem;padding:0 .5rem}
+            #magic-navbar-container .nav-link{padding:0 .7rem;font-size:.9rem;flex-shrink:0}
+            #magic-navbar-container .home-link{padding-left:.4rem}
+            #magic-navbar-container .logo-image{height:1.6rem;width:1.6rem;margin-right:.4rem}
+            #magic-navbar-container #tront-theme-btn{padding:0 .5rem}
+        }
+        @media(max-width:380px){
+            #magic-navbar-container{gap:.25rem;padding:0 .4rem}
+            #magic-navbar-container .nav-link{padding:0 .45rem;font-size:.85rem}
+            #magic-navbar-container .logo-image{height:1.4rem;width:1.4rem;margin-right:.3rem}
+        }
         .main-container{max-width:min(100rem,96vw);width:100%;margin:0 auto;padding:0 1rem}
         .main-header{display:flex;flex-direction:column;align-items:center;padding:2rem 1rem;text-align:center;margin-bottom:2rem}
         .main-header img.logo{width:7.5rem;height:7.5rem;border-radius:50%;border:3px solid rgba(255,255,255,.3);margin-bottom:1.5rem;box-shadow:0 0 25px rgba(138,43,226,.4)}
@@ -100,10 +112,10 @@
         .status-dot.online{background-color:var(--status-online)}
         .status-dot.idle{background-color:var(--status-idle)}
         .status-dot.dnd{background-color:var(--status-dnd)}
-        .avatar-wrapper .tooltip{visibility:hidden;opacity:0;position:absolute;bottom:115%;left:50%;transform:translateX(-50%);background-color:var(--widget-bg-color);color:var(--text-color);padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border-color);font-size:.85rem;white-space:pre;text-align:left;z-index:100;pointer-events:none;transition:opacity .2s ease,transform .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+        .avatar-wrapper .tooltip{display:none;visibility:hidden;opacity:0;position:absolute;bottom:115%;left:50%;transform:translateX(-50%);background-color:var(--widget-bg-color);color:var(--text-color);padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border-color);font-size:.85rem;white-space:pre-wrap;width:max-content;max-width:min(220px,calc(100vw - 24px));overflow-wrap:anywhere;text-align:left;z-index:100;pointer-events:none;transition:opacity .2s ease,transform .2s ease;box-shadow:0 4px 20px rgba(0,0,0,.3)}
         .avatar-wrapper .tooltip strong{color:#fff;display:block;margin-bottom:.25rem;font-weight:700}
         .avatar-wrapper .tooltip .status-text{color:var(--text-muted)}
-        .avatar-wrapper:hover .tooltip{visibility:visible;opacity:1;transform:translateX(-50%) translateY(-5px)}
+        .avatar-wrapper:hover .tooltip{display:block;visibility:visible;opacity:1;transform:translateX(-50%) translateY(-5px)}
         .join-button{display:inline-block;text-decoration:none;font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:#fff;padding:.8rem 2rem;border-radius:8px;margin-top:1.5rem;background-image:linear-gradient(90deg,var(--accent-purple),var(--accent-teal));transition:box-shadow .3s ease;text-shadow:0 1px 3px rgba(0,0,0,.4)}
         .join-button:hover{box-shadow:0 6px 20px rgba(0,0,0,.3)}
         footer{text-align:center;padding:4rem 1rem 3rem;color:var(--text-muted);font-size:.9rem;margin-top:2rem;border-top:1px solid #30363d}
@@ -326,6 +338,19 @@
                     </ul>
                 `;
                 widgetContainer.innerHTML = widgetHTML;
+                const placeTooltip = (wrapper) => {
+                    const tooltip = wrapper.querySelector('.tooltip');
+                    const origin = wrapper.getBoundingClientRect();
+                    const half = tooltip.getBoundingClientRect().width / 2;
+                    const center = Math.max(half + 12, Math.min(window.innerWidth - half - 12, origin.left + origin.width / 2));
+                    tooltip.style.left = (center - origin.left) + 'px';
+                };
+                widgetContainer.querySelectorAll('.avatar-wrapper').forEach(wrapper => {
+                    wrapper.addEventListener('mouseenter', () => placeTooltip(wrapper));
+                });
+                window.addEventListener('resize', () => {
+                    widgetContainer.querySelectorAll('.avatar-wrapper:hover').forEach(placeTooltip);
+                });
             };
 
             fetchWidgetData();
