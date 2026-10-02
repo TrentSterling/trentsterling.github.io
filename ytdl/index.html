@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YTDL | Tront YouTube Downloader</title>
+  <meta name="description" content="Save YouTube videos, MP3 audio, or both. Tront's compact Rust downloader comes as one portable Windows EXE with its download tools bundled.">
+  <link rel="canonical" href="https://tront.xyz/ytdl/">
+  <link rel="icon" href="media/app.ico">
+  <meta name="theme-color" content="#14131b">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tront.xyz/ytdl/">
+  <meta property="og:title" content="YTDL | A link in. A file out.">
+  <meta property="og:description" content="Video, MP3, or both. A compact, colorful Windows downloader in one portable EXE.">
+  <meta property="og:image" content="https://tront.xyz/ytdl/media/video.png">
+  <meta property="og:image:width" content="660">
+  <meta property="og:image:height" content="330">
+  <meta property="og:image:alt" content="Tront YouTube Downloader's compact interface, showing example video download data.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://tront.xyz/ytdl/media/video.png">
+  <link rel="preload" href="media/Rajdhani-SemiBold-latin.ttf" as="font" type="font/ttf" crossorigin>
+  <script>try { document.documentElement.dataset.mode = localStorage.getItem('ytdl-page-mode') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'); } catch {}</script>
+  <link rel="stylesheet" href="style.css">
+  <script src="site.js" defer></script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Tront YouTube Downloader","alternateName":"YTDL","url":"https://tront.xyz/ytdl/","description":"A compact portable Windows downloader for YouTube videos and MP3 audio.","applicationCategory":"MultimediaApplication","operatingSystem":"Windows x64","softwareVersion":"0.2.0","author":{"@type":"Person","name":"Trent Sterling","url":"https://tront.xyz/"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"screenshot":"https://tront.xyz/ytdl/media/video.png","downloadUrl":"https://github.com/TrentSterling/trentsterling.github.io/releases/download/ytdl-v0.2.0/youtube-downloader.exe"}</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap site-header">
+  <a class="brand" href="/" aria-label="Tront / YTDL home"><img src="media/app.ico" alt="" width="30" height="30"><span>TRONT <span class="brand-divider">/</span> YTDL</span></a>
+  <nav aria-label="Page navigation"><a href="#inside">The app</a><a href="#download">Download details</a><a href="/games/">More tools</a></nav>
+  <button class="mode-button" id="mode" type="button">Light page</button>
+</header>
+<main id="main">
+  <section class="hero wrap" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow">YouTube Downloader for Windows</p>
+      <h1 id="hero-title">A link in.<br><span>A file out.</span></h1>
+      <p class="lede">Save videos, audio-only MP3s, or both. A compact portable app with its download tools already bundled.</p>
+      <a class="button primary" href="https://github.com/TrentSterling/trentsterling.github.io/releases/download/ytdl-v0.2.0/youtube-downloader.exe">Download EXE <span aria-hidden="true">↓</span></a>
+    </div>
+    <div class="preview">
+      <div class="preview-switch" role="group" aria-label="Choose an app screenshot">
+        <button type="button" data-preview="video" aria-pressed="true">Video</button>
+        <button type="button" data-preview="theme" aria-pressed="false">Appearance</button>
+        <button type="button" data-preview="light" aria-pressed="false">Light</button>
+      </div>
+      <a class="shot-link" href="media/video.png" data-zoom><img id="hero-image" src="media/video.png" width="660" height="330" fetchpriority="high" alt="Tront YouTube Downloader's compact window, showing example video download data"></a>
+      <p class="caption">Actual app captures with example download data. Open a screenshot for a closer look.</p>
+      <p id="preview-status" class="sr-only" role="status"></p>
+    </div>
+  </section>
+
+  <section id="inside" class="wrap capabilities" aria-labelledby="inside-title">
+    <div class="section-intro"><h2 id="inside-title">Keep what you came for.</h2><p>Paste a link. Fetch the video. Pick a quality and a folder.</p></div>
+    <dl class="feature-list">
+      <div><dt>Video, with audio.</dt><dd>Take the best available quality, or choose a resolution from the video’s formats.</dd></div>
+      <div><dt>Just the MP3. Or both.</dt><dd>Download audio on its own, or save an extra MP3 alongside your video.</dd></div>
+      <div><dt>Your folder. Your files.</dt><dd>See progress, speed, and time left. Open the finished download’s folder from the app.</dd></div>
+      <div><dt>One portable EXE.</dt><dd>Run it without installing Python or setting up FFmpeg. Its tools come with it.</dd></div>
+    </dl>
+  </section>
+
+  <section class="wrap appearance" aria-labelledby="appearance-title">
+    <a class="shot-link" href="media/theme.png" data-zoom><img src="media/theme.png" width="660" height="330" loading="lazy" alt="The integrated theme view with dark and light modes, palette presets, color pickers, and gradient sliders"></a>
+    <div><h2 id="appearance-title">Small window.<br>Your colors.</h2><p>Start with a palette, then change the colors, gradient, or light mode. Download progress stays visible while you make it yours.</p><p class="detail">Custom title bar. Compact controls. A preview that earns its space.</p></div>
+  </section>
+
+  <section class="wrap download" id="download" aria-labelledby="download-title">
+    <div><h2 id="download-title">Download. Run. Paste a link.</h2><p>Version 0.2.0 for Windows x64. One EXE, 108.7 MiB. No installer.</p><p class="detail">The build is unsigned. A SHA-256 checksum is provided with the release.</p><div class="release-links"><a href="https://github.com/TrentSterling/trentsterling.github.io/releases/tag/ytdl-v0.2.0">Release notes</a><a href="https://github.com/TrentSterling/trentsterling.github.io/releases/download/ytdl-v0.2.0/SHA256SUMS.txt">SHA-256 checksum</a><a href="media/THIRD_PARTY_NOTICES.txt">Third-party notices</a></div></div>
+    <div class="faq">
+      <details><summary>Where do my preferences live?</summary><p>Settings are saved beside the EXE in <code>youtube-downloader.portable.json</code>. Keep that optional file with the app to carry your settings.</p></details>
+      <details><summary>Can it use my browser login?</summary><p>Choose Chrome, Edge, or Firefox under Browser authentication in the Theme view to use cookies from your signed-in browser.</p></details>
+      <details><summary>What powers the downloads?</summary><p>The desktop app uses Rust and egui. yt-dlp handles extraction, with QuickJS-NG and FFmpeg bundled as separate tools. Their credits, licenses, and source links are in the <a href="media/THIRD_PARTY_NOTICES.txt">third-party notices</a>.</p></details>
+    </div>
+  </section>
+</main>
+<footer class="wrap"><a class="brand" href="/">Made by Tront.</a><div><a href="/games/">Games &amp; tools</a><a href="/discord/">Discord</a><a href="/">Trent Sterling</a></div></footer>
+<dialog id="lightbox" aria-label="Full-size app screenshot"><button id="close-lightbox" type="button" autofocus>Close</button><img id="lightbox-image" alt=""></dialog>
+</body>
+</html>

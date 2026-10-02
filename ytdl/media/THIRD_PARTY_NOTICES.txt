@@ -1,0 +1,25 @@
+Tront YouTube Downloader embeds these separate, unmodified command-line tools:
+
+yt-dlp 2026.08.19: https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19
+Source: https://github.com/yt-dlp/yt-dlp/tree/2026.08.19
+Core yt-dlp code: Unlicense. Official Windows binary includes its Python runtime,
+EJS scripts and third-party libraries under their respective upstream licenses.
+Upstream license details: https://github.com/yt-dlp/yt-dlp/blob/2026.08.19/LICENSE
+
+QuickJS-NG 0.17.0: https://github.com/quickjs-ng/quickjs/releases/tag/v0.17.0
+Source/license: https://github.com/quickjs-ng/quickjs/tree/v0.17.0
+MIT license. Copyright Fabrice Bellard, Charlie Gordon, and QuickJS-NG contributors.
+
+FFmpeg and ffprobe 9.0.2, Gyan essentials build: GPL version 3.
+Binary origin: https://www.gyan.dev/ffmpeg/builds/
+Build archive: https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip
+FFmpeg source revision: https://github.com/FFmpeg/FFmpeg/commit/946fcce07b
+Build configuration and dependency information: https://www.gyan.dev/ffmpeg/builds/
+These programs are executed as separate processes; they are not linked into the Rust UI.
+The original FFmpeg build LICENSE is retained in runtime-assets after preparation.
+
+Rajdhani SemiBold: Copyright (c) 2014, Indian Type Foundry.
+SIL Open Font License 1.1; full license included in assets/fonts/OFL.txt.
+
+Rust UI libraries retain their upstream licenses. Cargo.lock records exact versions.
+No third-party runtime binary is altered. No paid asset code is included.
