@@ -1,0 +1,10 @@
+.image-container .bg-image{display:block}
+.image-container[id]{scroll-margin-top:5rem}
+.gameplay-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:0;transition:opacity .18s ease}
+.preview-playing .gameplay-preview{opacity:1}
+.preview-controls{display:flex;justify-content:flex-end;margin:-.75rem 0 1rem}
+.preview-toggle{font:500 .85rem var(--font-body);color:var(--text-color);background:var(--item-bg);border:1px solid var(--border-color);border-radius:6px;padding:.5rem .8rem;cursor:pointer}
+.preview-toggle:hover{border-color:var(--text-muted)}
+.preview-toggle:focus-visible,.item:focus-visible{outline:2px solid var(--text-color);outline-offset:3px}
+.preview-toggle:disabled{cursor:default;color:var(--text-muted)}
+@media(prefers-reduced-motion:reduce){.gameplay-preview{transition:none}}

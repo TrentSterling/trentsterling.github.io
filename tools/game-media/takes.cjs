@@ -1,0 +1,59 @@
+// Local photography takes. Uses the shipping games and page-scoped controls only.
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'C:/trontstack/tmp/card-refresh/tools/node_modules/playwright');
+const {createServer,root}=require('./server.cjs');
+const {specs,record,recordDOM}=require('./capture.cjs');
+const {localBuilds}=require('./local-builds.cjs');
+const takes={};
+// Only the ignored public copy gets an inspection handle; original projects stay untouched.
+const craft=path.join(root,'.local/sources/craftmine/play');
+const craftHTML=fs.readFileSync(path.join(craft,'index.html'),'utf8');
+fs.writeFileSync(path.join(craft,'portfolio.html'),craftHTML.replace("() => new Game()","() => { window.__galleryGame = new Game(); }"));
+for(const mode of ['travel','rockets'])takes['craftmine-'+mode]={game:'craftmine',url:'/capture/craftmine/play/portfolio.html',source:path.join(craft,'portfolio.html'),seconds:12,
+ setup:async p=>{await specs.craftmine.setup(p);await p.evaluate(mode=>{const g=__galleryGame,p=g.player;let y=100;while(y>0&&!g.world.isSolid(24,y,24))y--;p.position.set(24,y+7,24);p.velocity.set(0,0,0);p.creativeMode=true;p.flying=true;p.yaw=.8;p.pitch=-.35;p.hotbarIndex=5;},mode);await p.waitForTimeout(1800);},
+ action:async p=>{if(mode==='travel'){await p.keyboard.down('KeyW');await p.waitForTimeout(2600);await p.keyboard.up('KeyW');for(let i=0;i<45;i++){await p.evaluate(()=>__galleryGame.player.yaw+=.009);await p.waitForTimeout(100);}}else{for(let i=0;i<6;i++){await p.evaluate(()=>__galleryGame.shootWeapon('ROCKET_LAUNCHER'));await p.waitForTimeout(1000);}}},
+ telemetry:()=>({position:__galleryGame.player.position.toArray(),collision:__galleryGame.player.checkCollisionAt(...__galleryGame.player.position.toArray()),flying:__galleryGame.player.flying,particles:__galleryGame.projectileSystem.particles.length})};
+for(const experiment of ['tank','chimney','bridge'])takes['breakmass-'+experiment]={game:'breakmass',seconds:24,
+ setup:async p=>{await p.evaluate(experiment=>{BREAKMASS.focusExperiment(experiment);BREAKMASS_UI.close();},experiment);await p.mouse.move(640,360);await p.waitForTimeout(900);await p.evaluate(()=>{const hit=BREAKMASS.targetAtPointer();if(!hit)throw Error('No target in frame');window.__shotTarget=hit.point;BREAKMASS.aimAt([hit.point[0],Math.max(3,hit.point[1]*.55),hit.point[2]],38);});await p.waitForTimeout(1200);},
+ action:async p=>{await p.waitForTimeout(350);await p.evaluate(()=>BREAKMASS.fireRocket());await p.waitForTimeout(1500);await p.evaluate(()=>BREAKMASS.bombRain());await p.waitForTimeout(6000);await p.evaluate(()=>BREAKMASS.fireRocket());},
+ telemetry:()=>({stats:BREAKMASS.stats,camera:BREAKMASS.cameraState,target:window.__shotTarget,rocket:BREAKMASS.rocketDiagnostics})};
+for(const cave of [-1,0,2])takes['buttloads2-'+(cave<0?'surface':cave)]={game:'buttloads2',seconds:14,
+ setup:async p=>{await specs.buttloads2.setup(p);await p.evaluate(cave=>{const b=__buttloads;if(cave>=0){const c=b.world.caverns.networks[cave].chamber;let found=false;for(let z=c.z+1.5;z>=c.z-1&&!found;z-=.5)for(let y=c.y;y>c.y-3;y-=.25)if(!b.player.blocked(c.x,y,z)){b.player.teleport(c.x,y,z);found=true;break;}b.player.yaw=0;b.player.pitch=-.15;}else b.player.pitch=-.65;b.economy.state.expedition.supplies.bombs=12;b.economy.state.expedition.supplies.lights=12;b.deploy('lamp');},cave);await p.waitForTimeout(800);},
+ action:async p=>{await p.evaluate(()=>__buttloads.input.fire=true);await p.waitForTimeout(2400);await p.evaluate(()=>{__buttloads.input.fire=false;__buttloads.deploy('bomb');});await p.waitForTimeout(4000);for(let i=0;i<40;i++){await p.evaluate(()=>{__buttloads.player.yaw+=.012;__buttloads.input.fire=true;});await p.waitForTimeout(120);}await p.evaluate(()=>__buttloads.input.fire=false);},
+ telemetry:()=>({player:__buttloads.player.position,bombs:__buttloads.economy.state.expedition.supplies.bombs,revision:__buttloads.world.revision,pickups:__buttloads.audit.pickups})};
+for(const mode of ['combat','flight'])takes['tunnelrat-'+mode]={game:'tunnelrat',seconds:16,
+ setup:async p=>{await p.evaluate(async mode=>{const T=await import('three');window.__photoThree=T;TR.debug.god();TR.debug.teleport(mode==='combat'?'reactor':'key');const ship=TR.ship;if(mode==='flight'){const g=TR.graph,edge=g.edges.filter(e=>!e.locked&&e.style==='built').sort((a,b)=>{const length=e=>g.nodes.find(n=>n.id===e.a).pos.distanceTo(g.nodes.find(n=>n.id===e.b).pos);return length(b)-length(a);})[0]||g.edges.find(e=>!e.locked);const a=g.nodes.find(n=>n.id===edge.a),b=g.nodes.find(n=>n.id===edge.b);ship.object3d.position.copy(a.pos).lerp(b.pos,.2);ship.velocity.set(0,0,0);window.__flightTarget=b.pos.clone();ship.object3d.quaternion.setFromRotationMatrix(new T.Matrix4().lookAt(ship.object3d.position,b.pos,new T.Vector3(0,1,0)));}},mode);await p.waitForTimeout(1000);},
+ action:async p=>{await p.mouse.move(640,360);await p.mouse.down();for(let i=0;i<150;i++){const forward=await p.evaluate(mode=>{const T=__photoThree,s=TR.ship,pos=s.object3d.position;let target;if(mode==='flight')target=window.__flightTarget;else target=TR.enemies.list().filter(e=>e.alive).sort((a,b)=>a.pos.distanceTo(pos)-b.pos.distanceTo(pos))[0]?.pos;if(!target)return false;const q=new T.Quaternion().setFromRotationMatrix(new T.Matrix4().lookAt(pos,target,new T.Vector3(0,1,0)));s.object3d.quaternion.slerp(q,.16);return pos.distanceTo(target)>(mode==='flight'?4:10);},mode);if(forward)await p.keyboard.down('KeyW');else await p.keyboard.up('KeyW');await p.waitForTimeout(90);}await p.keyboard.up('KeyW');await p.mouse.up();},
+ telemetry:()=>({phase:TR.gamestate.phase,position:TR.ship.object3d.position.toArray(),velocity:TR.ship.velocity.toArray(),livingEnemies:TR.enemies.list().filter(e=>e.alive).length})};
+for(const room of ['mossbrook','boss'])takes['voxelheroes-'+room]={game:'voxelheroes',seconds:10,
+ setup:async p=>{await specs.voxelheroes.setup(p);await p.evaluate(room=>__voxelHeroes.teleport(room==='boss'?'d2-boss:0,0':'v1:1,1',room==='boss'?11:7.5,room==='boss'?12.5:12.5),room);await p.waitForTimeout(700);},
+ action:async p=>{await p.keyboard.down('Space');for(const key of ['ArrowUp','ArrowRight','ArrowLeft']){await p.keyboard.down(key);await p.waitForTimeout(1500);await p.keyboard.up(key);}await p.keyboard.up('Space');}};
+for(const mode of ['corridor','skirmish'])takes['tunnelrat-'+mode]={game:'tunnelrat',seconds:12,
+ setup:async p=>{await p.evaluate(async mode=>{const T=await import('three'),s=TR.ship;TR.debug.god();s.velocity.set(0,0,0);const original=s.update.bind(s),up=new T.Vector3(0,1,0),mat=new T.Matrix4(),quat=new T.Quaternion();let timer=0;
+  if(mode==='corridor'){
+   const edges=TR.field.decor.edges.filter(e=>!e.locked&&e.style==='built');edges.sort((a,b)=>b.polyline.length-a.polyline.length);const edge=edges[0],route=edge.polyline.map(p=>p.clone());window.__photoRoute=route.map(p=>p.toArray());let at=3;s.object3d.position.copy(route[2]);s.object3d.quaternion.setFromRotationMatrix(mat.lookAt(s.object3d.position,route[at],up));
+   s.update=(dt,input)=>{timer+=dt;const pos=s.object3d.position;while(at<route.length-1&&pos.distanceTo(route[at])<3)at++;const target=route[at],distance=pos.distanceTo(target);quat.setFromRotationMatrix(mat.lookAt(pos,target,up));s.object3d.quaternion.slerp(quat,1-Math.exp(-dt*5));input.axis={x:0,y:0,z:distance<2&&at===route.length-1?0:.22,roll:0};input.mouseDX=input.mouseDY=0;input.fire=false;input.boost=false;original(dt,input);};
+  }else{
+   const enemies=TR.enemies.list().filter(e=>e.alive&&!e.isReactor);let enemy,eye;for(const e of enemies){for(const offset of [[0,0,8],[8,0,0],[0,0,-8],[-8,0,0]]){const candidate=e.pos.clone().add(new T.Vector3(...offset)),direction=e.pos.clone().sub(candidate).normalize();if(TR.field.sample(candidate.x,candidate.y,candidate.z)<-1.5&&TR.field.raycast(candidate,direction,7)<0){enemy=e;eye=candidate;break;}}if(enemy)break;}if(!enemy)throw Error('No clear combat framing');s.object3d.position.copy(eye);s.object3d.quaternion.setFromRotationMatrix(mat.lookAt(eye,enemy.pos,up));
+   s.update=(dt,input)=>{timer+=dt;const pos=s.object3d.position;if(enemy.alive){quat.setFromRotationMatrix(mat.lookAt(pos,enemy.pos,up));s.object3d.quaternion.slerp(quat,1-Math.exp(-dt*5));}input.axis={x:timer<2?.08:0,y:0,z:0,roll:0};input.mouseDX=input.mouseDY=0;input.fire=enemy.alive&&timer>1&&timer<7;input.boost=false;original(dt,input);};
+  }
+ },mode);await p.waitForTimeout(100);},action:undefined,
+ telemetry:()=>({phase:TR.gamestate.phase,position:TR.ship.object3d.position.toArray(),clearance:TR.field.sample(...TR.ship.object3d.position.toArray()),livingEnemies:TR.enemies.list().filter(e=>e.alive).length,route:window.__photoRoute})};
+for(const map of [0,2,4])takes['deadends-'+map]={game:'deadends',seconds:22,
+ setup:async p=>{await p.evaluate(map=>{DEAD_ENDS.startMap(map);DEAD_ENDS.setAuto(true);DEAD_ENDS.setInvincible(true);DEAD_ENDS.setGore('carnage');},map);await p.waitForTimeout(7000);await p.evaluate(()=>DEAD_ENDS.queueHorde(110,false,true));},
+ action:async p=>{await p.waitForTimeout(7000);await p.evaluate(()=>DEAD_ENDS.queueHorde(80,true,true));},telemetry:()=>({sample:DEAD_ENDS.sample(),fx:DEAD_ENDS.getFX()})};
+for(const map of [1,3,8])takes['biomass-'+map]={game:'biomass',url:'/capture/biomass/?map='+map+'&autoplay=1&speed=3&spawn=30000&gold=7000&autobuild=1',seconds:18,setup:async p=>p.waitForTimeout(16000)};
+async function run(names){
+ const server=createServer();await new Promise(r=>server.listen(8970,'127.0.0.1',r));
+ const browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-unsafe-webgpu','--use-angle=d3d11','--mute-audio','--disable-background-timer-throttling','--disable-renderer-backgrounding']});let failed=0;
+ try{for(const name of names){const take=takes[name];if(!take)throw Error('Unknown take '+name);const s={...specs[take.game],...take};const dir=path.join(root,'.local/takes',take.game);fs.mkdirSync(dir,{recursive:true});
+  const context=await browser.newContext({viewport:{width:1280,height:720},deviceScaleFactor:1});await localBuilds(context);const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
+  try{console.log('TAKE START',name);await p.goto('http://127.0.0.1:8970'+s.url,{waitUntil:'domcontentloaded'});await p.waitForFunction(s.ready,null,{timeout:90000});await s.setup(p);await p.screenshot({path:path.join(dir,name+'-start.png')});
+   const before=await p.evaluate(s.telemetry),recording=s.dom?recordDOM(p,name,s.seconds,dir):record(p,s.canvas,s.seconds);recording.catch(()=>{});await p.waitForFunction(()=>window.__captureStarted);if(s.action)await s.action(p);const result=await recording;
+   const file=path.join(dir,name+'.mp4');if(!result.masterFile)fs.writeFileSync(file,Buffer.from(result.data,'base64'));else if(path.resolve(result.masterFile)!==path.resolve(file))fs.copyFileSync(result.masterFile,file);delete result.data;const after=await p.evaluate(s.telemetry);await p.screenshot({path:path.join(dir,name+'-end.png')});
+   fs.writeFileSync(path.join(dir,name+'.json'),JSON.stringify({name,game:take.game,url:s.url,source:s.source,sourceSha256:crypto.createHash('sha256').update(fs.readFileSync(s.source)).digest('hex'),capturedUtc:new Date().toISOString(),recording:result,before,after,errors},null,2));console.log('TAKE COMPLETE',name,JSON.stringify({recording:result,errors}));
+  }catch(e){failed++;console.error('TAKE FAILED',name,e.stack);await p.screenshot({path:path.join(dir,name+'-failed.png')}).catch(()=>{});}finally{await context.close();}
+ }}finally{await browser.close();await new Promise(r=>server.close(r));}process.exitCode=failed?1:0;
+}
+module.exports={takes,run};
+if(require.main===module)run(process.argv.slice(2)).catch(e=>{console.error(e);process.exitCode=1;});

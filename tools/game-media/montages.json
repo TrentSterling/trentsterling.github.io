@@ -1,0 +1,4080 @@
+{
+  "project-demigod-2025-present": {
+    "title": "Project Demigod (2025-Present)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/masters/demigod.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/demigod.mp4",
+        "start": 3.5293170000000003,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "gems-together-2026": {
+    "title": "Gems Together (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/gemstogether.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/gemstogether.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "voxel-heroes-2026": {
+    "title": "Voxel Heroes (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/voxelheroes/voxelheroes-mossbrook.mp4",
+        "start": 0.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: Mossbrook"
+      },
+      {
+        "source": ".local/masters/voxelheroes.mp4",
+        "start": 3.8,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          160
+        ],
+        "framing": "",
+        "label": "detail: dungeon melee"
+      },
+      {
+        "source": ".local/takes/voxelheroes/voxelheroes-boss.mp4",
+        "start": 4,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          320,
+          100
+        ],
+        "framing": "",
+        "label": "detail: boss chamber"
+      }
+    ],
+    "crf": 23
+  },
+  "smear-2026": {
+    "title": "SMEAR (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/smear/smear-v16-curl-wide.mp4",
+        "start": 2.5,
+        "duration": 1.2,
+        "speed": 2.5,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "wide: dragged dummy starts a broad liquid curl"
+      },
+      {
+        "source": ".local/takes/smear/smear-v16-curl-wide.mp4",
+        "start": 5.5,
+        "duration": 1.8,
+        "speed": 2,
+        "crop": [
+          832,
+          468,
+          224,
+          200
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "close crop: the new contact paint forms the curved stroke"
+      },
+      {
+        "source": ".local/takes/smear/smear-v16-curl-overhead.mp4",
+        "start": 9.1,
+        "duration": 1.8,
+        "speed": 2,
+        "crop": [
+          960,
+          540,
+          160,
+          100
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "detail: finish the curl and expose the painted floor"
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Recorded the exact published SMEAR V16 commit d13769f43c6df21dda9e74ec0c6d7edd1871fb75 using its existing grab, target and camera APIs. The dragged foot traces a curved path inspired by the original OG screenshot. Original GPU dynamics, paint and liquid transport; no game source changes. Cuts run at 2 to 2.5x."
+  },
+  "dead-ends-2026": {
+    "title": "DEAD ENDS (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/deadends/deadends-2.mp4",
+        "start": 3.3,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: horde rush"
+      },
+      {
+        "source": ".local/takes/deadends/deadends-0.mp4",
+        "start": 12,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          200,
+          190
+        ],
+        "framing": "",
+        "label": "detail: squad kiting"
+      },
+      {
+        "source": ".local/takes/deadends/deadends-4.mp4",
+        "start": 11.4,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          176,
+          85
+        ],
+        "framing": "",
+        "label": "detail: squad surrounded by the next wave"
+      }
+    ],
+    "crf": 23
+  },
+  "buttloads-2-2026": {
+    "title": "BUTTLOADS 2 (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/buttloads2.mp4",
+        "start": 0.5,
+        "duration": 1.2,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: surface excavation"
+      },
+      {
+        "source": ".local/takes/buttloads2/buttloads2-surface.mp4",
+        "start": 4.6,
+        "duration": 1.2,
+        "crop": [
+          896,
+          504,
+          100,
+          160
+        ],
+        "framing": "",
+        "label": "detail: bomb excavation"
+      },
+      {
+        "source": ".local/takes/buttloads2/buttloads2-0.mp4",
+        "start": 6.4,
+        "duration": 1.2,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: lantern workings"
+      },
+      {
+        "source": ".local/takes/buttloads2/buttloads2-2.mp4",
+        "start": 10.2,
+        "duration": 1.2,
+        "crop": [
+          960,
+          540,
+          160,
+          80
+        ],
+        "framing": "",
+        "label": "detail: violet undercroft mining"
+      }
+    ],
+    "crf": 23
+  },
+  "biomass-2026": {
+    "title": "BIOMASS (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/biomass/biomass-clear-4.mp4",
+        "start": 0.7,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: Chicane with a fresh horde and crossfire"
+      },
+      {
+        "source": ".local/takes/biomass/biomass-clear-6.mp4",
+        "start": 0.7,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          190
+        ],
+        "framing": "",
+        "label": "detail: Funnel horde, blood and flamethrowers"
+      },
+      {
+        "source": ".local/takes/biomass/biomass-8.mp4",
+        "start": 3.4,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          30
+        ],
+        "framing": "",
+        "label": "detail: Islands laser barrage"
+      }
+    ],
+    "crf": 25
+  },
+  "tunnelrat-2026": {
+    "title": "TUNNELRAT (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/tunnelrat/tunnelrat-clear-passage.mp4",
+        "start": 1.2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: flying through the tunnel rings"
+      },
+      {
+        "source": ".local/takes/tunnelrat/tunnelrat-skirmish.mp4",
+        "start": 0.9,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          130,
+          100
+        ],
+        "framing": "",
+        "label": "detail: enemy skirmish"
+      },
+      {
+        "source": ".local/takes/tunnelrat/tunnelrat-clear-reactor.mp4",
+        "start": 2.9,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          80,
+          65
+        ],
+        "framing": "",
+        "label": "detail: circling and firing at the reactor with the room in view"
+      }
+    ],
+    "crf": 24
+  },
+  "campfire-2026": {
+    "title": "Campfire (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/campfire.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/campfire.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          160,
+          170
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "slopeloop-2026": {
+    "title": "SLOPELOOP (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/slopeloop/slopeloop-full-run.mp4",
+        "start": 12.6,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: crest launch over the valley"
+      },
+      {
+        "source": ".local/takes/slopeloop/slopeloop-full-run.mp4",
+        "start": 15.3,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          110
+        ],
+        "framing": "",
+        "label": "detail: descending into a landing"
+      },
+      {
+        "source": ".local/takes/slopeloop/slopeloop-full-run.mp4",
+        "start": 20.7,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          256,
+          130
+        ],
+        "framing": "",
+        "label": "detail: flying toward the stone arch"
+      }
+    ],
+    "crf": 23
+  },
+  "ring-riot-2026": {
+    "title": "RING RIOT (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/ringriot.mp4",
+        "start": 0.5,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/ringriot.mp4",
+        "start": 3.2,
+        "duration": 1.6,
+        "crop": [
+          640,
+          360,
+          300,
+          200
+        ],
+        "framing": "",
+        "label": "detail: swinging through fighters"
+      },
+      {
+        "source": ".local/masters/ringriot.mp4",
+        "start": 5.0,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          280,
+          130
+        ],
+        "framing": "",
+        "label": "detail: chain reaction"
+      }
+    ],
+    "crf": 23
+  },
+  "arc-light-studies-2026": {
+    "title": "ARC / Light Studies (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/ltc.mp4",
+        "start": 0.2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: After Hours storefront"
+      },
+      {
+        "source": ".local/takes/ltc/ltc-studio.mp4",
+        "start": 2.5,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          80,
+          100
+        ],
+        "framing": "",
+        "label": "detail: rotating car and paint change"
+      },
+      {
+        "source": ".local/takes/ltc/ltc-gallery.mp4",
+        "start": 4.2,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          110
+        ],
+        "framing": "",
+        "label": "detail: animated polygon lights and reflections"
+      }
+    ],
+    "crf": 23
+  },
+  "froxel-2026": {
+    "title": "Froxel (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/froxel.mp4",
+        "start": 0.2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the industrial lighting hall"
+      },
+      {
+        "source": ".local/takes/froxel/froxel-scene-2.mp4",
+        "start": 0.5,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          160,
+          180
+        ],
+        "framing": "",
+        "label": "detail: open light field"
+      },
+      {
+        "source": ".local/takes/froxel/froxel-scene-1.mp4",
+        "start": 1.4,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          130,
+          270
+        ],
+        "framing": "",
+        "label": "detail: material lab surfaces and moving lights"
+      }
+    ],
+    "crf": 23
+  },
+  "aqua-empire-2026": {
+    "title": "Aqua Empire (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/aqua-empire/aqua-feeding-meals.mp4",
+        "start": 6.0,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=960:540:160:118",
+        "label": "wide: feeding a shoal in Coral Cove",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/aqua-empire/aqua-feeding-meals.mp4",
+        "start": 9.0,
+        "duration": 1.2,
+        "crop": [
+          896,
+          504,
+          192,
+          60
+        ],
+        "framing": "crop=960:540:160:118",
+        "label": "detail: fish gather around sinking food",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/aqua-empire/aqua-broodship-clean.mp4",
+        "start": 10.85,
+        "duration": 2.0,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=960:540:160:118",
+        "label": "wide: core shots defeat the Broodship in the kelp aquarium",
+        "accurateTrim": true
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original feeding and finale simulation. The existing finale fixture supplies the aquarium, fish and boss. Original blaster and collection actions drive the fight. An ignored copy hides HUD text and hint boxes while preserving lasers, attack effects and health indicators. The crop retains the waterline and scene floor."
+  },
+  "fellswoop-2026": {
+    "title": "FELLSWOOP (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/fellswoop/fellswoop-wide-sweep.mp4",
+        "start": 1.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: a sweep triggers falling trees across the grove",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/fellswoop/fellswoop-close-reactions.mp4",
+        "start": 1.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "detail: close view of the axe and chain reactions",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/fellswoop/fellswoop-close-reactions.mp4",
+        "start": 8.15,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          40
+        ],
+        "framing": "",
+        "label": "detail: axe cuts and flying logs",
+        "accurateTrim": true
+      }
+    ],
+    "crf": 24,
+    "sourceNote": "Original sandbox grove and existing photography camera. Pointer movement and power clicks trigger the shipping axe, tree reactions, beavers and regrowth."
+  },
+  "inkride-2026": {
+    "title": "INKRIDE (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/inkride.mp4",
+        "start": 2.25,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: downhill launch across the starter gap",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/inkride/inkride-roller.mp4",
+        "start": 2.5,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          80,
+          50
+        ],
+        "framing": "",
+        "label": "detail: roller-track jump and ragdoll landing",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/inkride/inkride-yard.mp4",
+        "start": 3.75,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          230,
+          150
+        ],
+        "framing": "",
+        "label": "detail: collision with the original wrecking-yard crates",
+        "accurateTrim": true
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Three original built-in tracks. Real rider and crate physics; cuts end before the later stationary ragdoll portions of the takes."
+  },
+  "tiny-treads-2026": {
+    "title": "Tiny Treads (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/tinytreads/treads-crater-maker.mp4",
+        "start": 4.65,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=960:540:136:70",
+        "label": "wide: shell impact excavates the target hill",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/tinytreads/treads-laser-battery.mp4",
+        "start": 5.0,
+        "duration": 1.6,
+        "crop": [
+          640,
+          360,
+          620,
+          240
+        ],
+        "framing": "crop=1200:500:0:110",
+        "label": "detail: battery beams strike the opposing tank",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/masters/tinytreads.mp4",
+        "start": 5.1,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          500,
+          140
+        ],
+        "framing": "crop=1200:500:0:110",
+        "label": "detail: pineapple fragments bounce and carve the ground",
+        "accurateTrim": true
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Three original weapon impacts at normal speed: Crater Maker, Laser Battery and Pineapple. Empty projectile-flight lead-ins are excluded. The Fireworks candidate is retained but excluded because the bursts are too high for a useful terrain crop."
+  },
+  "send-dudes-2026": {
+    "title": "SEND DUDES (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/senddudes.mp4",
+        "start": 0.2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: two massive armies meeting"
+      },
+      {
+        "source": ".local/takes/senddudes/senddudes-detail.mp4",
+        "start": 0.4,
+        "duration": 3.2,
+        "crop": [
+          1024,
+          576,
+          128,
+          100
+        ],
+        "framing": "",
+        "label": "detail: fighters, titans and rupture at the front line"
+      }
+    ],
+    "crf": 27
+  },
+  "breakmass-2026": {
+    "title": "BREAKMASS (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/breakmass/breakmass-clear-street.mp4",
+        "start": 5.9,
+        "duration": 1.2,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the street tower tips and breaks apart"
+      },
+      {
+        "source": ".local/takes/breakmass/breakmass-clear-water.mp4",
+        "start": 2.5,
+        "duration": 1.2,
+        "crop": [
+          896,
+          504,
+          260,
+          10
+        ],
+        "framing": "",
+        "label": "detail: the water tower falls off its supports"
+      },
+      {
+        "source": ".local/takes/breakmass/breakmass-clear-stack.mp4",
+        "start": 7.1,
+        "duration": 1.2,
+        "crop": [
+          768,
+          432,
+          380,
+          20
+        ],
+        "framing": "",
+        "label": "detail: the chimney tips across the foundry roof"
+      },
+      {
+        "source": ".local/takes/breakmass/breakmass-clear-street.mp4",
+        "start": 11.5,
+        "duration": 1.2,
+        "crop": [
+          896,
+          504,
+          240,
+          190
+        ],
+        "framing": "",
+        "label": "aftermath: the demolished street tower and settling rubble"
+      }
+    ],
+    "crf": 23
+  },
+  "buddy-bonk-2026": {
+    "title": "Buddy Bonk (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/buddy/buddy-action-freeze-air.mp4",
+        "start": 1.5,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: frozen buddy launches across the room",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/buddy/buddy-action-rockets.mp4",
+        "start": 1.2,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          256,
+          216
+        ],
+        "framing": "",
+        "label": "detail: repeated rocket impacts and ragdoll reactions",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/buddy/buddy-action-balloons.mp4",
+        "start": 1.2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: balloons lift and tumble the buddy",
+        "accurateTrim": true
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Three original sandbox tools and the original ragdoll simulation. Selected active sections precede the floor-rest and stunt-banner portions of the masters. Sequential trimming preserves the reviewed action timing."
+  },
+  "vixels-2026": {
+    "title": "Vixels (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vixels/vixels-island-smooth.mp4",
+        "start": 2.8,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=932:524:39:0",
+        "label": "wide: orbit the entire island without clipping the tree",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vixels/vixels-masonry-smooth.mp4",
+        "start": 2.8,
+        "duration": 1.6,
+        "crop": [
+          1152,
+          648,
+          64,
+          36
+        ],
+        "framing": "crop=932:524:39:0",
+        "label": "detail: beveled masonry on the original block",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vixels/vixels-woodland-smooth.mp4",
+        "start": 2.8,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "crop=932:524:39:0",
+        "label": "detail: pan across the original lichen vector material",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 22,
+    "fps": 30,
+    "sourceNote": "Original chunk, block and surface modes with the existing fit, material, macro, mouse-wheel and drag controls. Whole island, masonry block and woodland surface show three scales of the same vector-material renderer. The extreme end-grain macro take was rejected as too abstract. Source canvas is cropped to 16:9 without stretching."
+  },
+  "tinyrise-2026": {
+    "title": "Tinyrise (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/tinyrise/tinyrise-build-up.mp4",
+        "start": 1.5,
+        "duration": 1.1,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: empty plot to lower floors",
+        "speed": 2,
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/tinyrise/tinyrise-build-up.mp4",
+        "start": 3.7,
+        "duration": 2.7,
+        "crop": [
+          896,
+          504,
+          192,
+          150
+        ],
+        "framing": "",
+        "label": "detail: remaining floors and towers grow to completion",
+        "speed": 2,
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/tinyrise/tinyrise-build-up.mp4",
+        "start": 9.1,
+        "duration": 1,
+        "crop": [
+          768,
+          432,
+          256,
+          172
+        ],
+        "framing": "",
+        "label": "detail: the completed block",
+        "accurateTrim": true
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Sequential decode confirms a short empty-plot opening, complete floor-by-floor construction, and a final completed block. The construction runs at 2x; the final second runs at normal speed."
+  },
+  "terrain-lab-2026": {
+    "title": "Terrain Lab (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/terrainlab/terrainlab-meteors.mp4",
+        "start": 1.05,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: meteor strikes the hill and leaves a crater",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/terrainlab/terrainlab-build.mp4",
+        "start": 2.8,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          160,
+          110
+        ],
+        "framing": "",
+        "label": "detail: raised pillars join into a terrain bridge",
+        "accurateTrim": true,
+        "speed": 2
+      },
+      {
+        "source": ".local/takes/terrainlab/terrainlab-meteors.mp4",
+        "start": 5.8,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          160,
+          100
+        ],
+        "framing": "",
+        "label": "detail: another impact tears away the crater rim",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original terrain tools and meteor simulation. Three real impacts modify the heightfield; normal add-brush strokes and the existing bridge tool build the arch. The bridge construction cut is 2x; impacts are normal speed. All cameras and actions run only in an ignored capture copy."
+  },
+  "floating-origin-2026": {
+    "title": "Floating Origin (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/floatingorigin/floatingorigin-aisle.mp4",
+        "start": 2.8,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: uninterrupted movement along a clear warehouse aisle",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/floatingorigin/floatingorigin-flight.mp4",
+        "start": 2.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: boosted flight over the streaming warehouse",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/floatingorigin/floatingorigin-aisle.mp4",
+        "start": 11.2,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          90
+        ],
+        "framing": "",
+        "label": "detail: continuous travel across the original origin rebase",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original movement, procedural chunks and floating-origin implementation. The capture uses normal W/Shift movement on a clear boundary aisle and an elevated photography view. The ground take crosses 393 world units and one original rebase; the flight crosses 4,769 units and 15 rebases. The close cut includes the ground rebase and excludes stopped movement and the old foreground-pillar obstruction."
+  },
+  "terrainarray-2026": {
+    "title": "TerrainArray (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/terrainarray.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/terrainarray.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "asciicity": {
+    "title": "ASCIICITY",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/asciicity/asciicity-sunny.mp4",
+        "start": 5.6,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "eq=gamma=1.25:brightness=0.01",
+        "label": "wide: walk through the colored ASCII street",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/asciicity/asciicity-paper.mp4",
+        "start": 2.3,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "",
+        "label": "detail: original paper-print preset and passing street activity",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/asciicity/asciicity-avenue.mp4",
+        "start": 7,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          36
+        ],
+        "framing": "eq=gamma=1.25:brightness=0.01",
+        "label": "detail: a different avenue and skyline",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 24,
+    "fps": 30,
+    "sourceNote": "Original city, player movement/collision and ASCII postprocessing. Three normal forward walks use built-in sunny-dense and paper-print presets with larger glyph cells and exposure controls. A separate avenue is staged before recording. Color cuts receive a mild gamma lift for card-size readability. Canvas capture excludes HUD and tweak panels."
+  },
+  "ballpit-2026": {
+    "title": "BALLPIT (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/ballpit.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/ballpit.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          0,
+          216
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ],
+    "crf": 28
+  },
+  "critters-2026": {
+    "title": "critters (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/critters.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/critters.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          768,
+          432,
+          200,
+          190
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "jenn-s-farm-2026": {
+    "title": "Jenn's Farm (2026)",
+    "kind": "gameplay-capture",
+    "sourceNote": "Staged planted field using original planting, watering and growth APIs. Growth master adds six simulation seconds per second; first montage shot additionally runs at 5x. Harvesting uses the original task queue and real inventory results.",
+    "shots": [
+      {
+        "source": ".local/takes/jennsfarm/jennsfarm-growth.mp4",
+        "start": 0.1,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          100
+        ],
+        "framing": "",
+        "label": "wide: the planted plot grows into a varied crop field",
+        "speed": 5
+      },
+      {
+        "source": ".local/takes/jennsfarm/jennsfarm-harvest.mp4",
+        "start": 0.05,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          110
+        ],
+        "framing": "",
+        "label": "closer: Jenn walks the row and harvests ripe crops",
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/jennsfarm/jennsfarm-harvest.mp4",
+        "start": 1.8,
+        "duration": 1.6,
+        "crop": [
+          640,
+          360,
+          440,
+          215
+        ],
+        "framing": "",
+        "label": "detail: crop picking, particles and the cleared row",
+        "speed": 1
+      }
+    ]
+  },
+  "colony-2026": {
+    "title": "Colony (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/colony/colony-mining.mp4",
+        "start": 1.5,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: dwarves starting a daylight excavation"
+      },
+      {
+        "source": ".local/takes/colony/colony-mining.mp4",
+        "start": 7.5,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          150
+        ],
+        "framing": "",
+        "label": "detail: workers digging down"
+      },
+      {
+        "source": ".local/takes/colony/colony-mining.mp4",
+        "start": 11.0,
+        "duration": 1.6,
+        "crop": [
+          640,
+          360,
+          480,
+          340
+        ],
+        "framing": "",
+        "label": "detail: excavation advancing through the soil"
+      }
+    ],
+    "crf": 23
+  },
+  "megabunk-2026": {
+    "title": "megabunk (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/megabunk/megabunk-ridge-traverse.mp4",
+        "start": 0.3,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "eq=gamma=1.15",
+        "label": "wide: descend through the procedurally generated ridges",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/megabunk/megabunk-summit-detail.mp4",
+        "start": 0.3,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "eq=gamma=1.15",
+        "label": "detail: jump and run across an exposed summit",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/megabunk/megabunk-clear-detail.mp4",
+        "start": 2.7,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          80
+        ],
+        "framing": "eq=gamma=1.15",
+        "label": "detail: follow the grassy route down between the cliffs",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original movement, jumping, terrain collision and follow camera. A keyboard pilot follows sampled walkable routes; it does not teleport during the action. Original map controls select a more open terrain preset for the closer takes. The wide opening ends before its later camera occlusions; summit cuts end before the route finishes. Mild gamma adjustment improves shadow readability."
+  },
+  "volumetric-light-beam-2026": {
+    "title": "Volumetric Light Beam (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/threejs-volumetric-beam/beams-2048-wide.mp4",
+        "start": 0.3,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          240,
+          180
+        ],
+        "framing": "",
+        "label": "wide: the complete 2048-beam stress field"
+      },
+      {
+        "source": ".local/takes/threejs-volumetric-beam/beams-2048-detail.mp4",
+        "start": 1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: orbit within the field of 2048 lights"
+      },
+      {
+        "source": ".local/takes/threejs-volumetric-beam/beams-2048-detail.mp4",
+        "start": 4,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          180
+        ],
+        "framing": "",
+        "label": "detail: beam shafts and noise"
+      }
+    ],
+    "crf": 23
+  },
+  "craftmine-2025": {
+    "title": "CraftMine (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/craftmine/craftmine-clear-daylight.mp4",
+        "start": 0.15,
+        "duration": 1.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: clear daylight flight above the terrain",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/craftmine/craftmine-ground-rocket_launcher.mp4",
+        "start": 0.15,
+        "duration": 1.4,
+        "crop": [
+          1024,
+          576,
+          128,
+          144
+        ],
+        "framing": "",
+        "label": "detail: rocket impact in the open desert",
+        "accurateTrim": true
+      },
+      {
+        "source": ".local/takes/craftmine/craftmine-ground-bfg.mp4",
+        "start": 3.0,
+        "duration": 2.0,
+        "crop": [
+          896,
+          504,
+          192,
+          168
+        ],
+        "framing": "",
+        "label": "detail: BFG opens a deep crater in exposed terrain",
+        "accurateTrim": true
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Clear original terrain, normal rocket/BFG projectiles and destruction. The photography driver scouts the seeded desert and places the creative-mode camera with an unobstructed firing line. Snow-covered treetop takes were rejected. Sequential trimming preserves the reviewed impact timing."
+  },
+  "vibesand-2025": {
+    "title": "vibesand (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibesand/vibesand-sand-beach-v4.mp4",
+        "start": 2,
+        "duration": 1,
+        "speed": 1.5,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "wide: golden sand shore and a falling sand brush"
+      },
+      {
+        "source": ".local/takes/vibesand/vibesand-sand-fill-v4.mp4",
+        "start": 0.2,
+        "duration": 1.4,
+        "speed": 9,
+        "crop": [
+          896,
+          504,
+          160,
+          36
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "close: sand fills the shallow container and heaps above its rim"
+      },
+      {
+        "source": ".local/takes/vibesand/vibesand-sand-drain-v4.mp4",
+        "start": 0.5,
+        "duration": 1.2,
+        "speed": 3,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "breach the near edge and pour water into the basin"
+      },
+      {
+        "source": ".local/takes/vibesand/vibesand-sand-drain-v4.mp4",
+        "start": 9,
+        "duration": 1.2,
+        "speed": 12,
+        "crop": [
+          960,
+          540,
+          160,
+          72
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "detail: water level falls and exposes the sand bed"
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Four cuts from staged beach, sand-filling and layered water-tank scenes. Original GPU sand/water simulation and original Paint/Destroy brush shaders. Capture-only scene setup uses softer existing point lights and a higher fill camera. Input brush events and GPU material counts are saved with every take. Filling runs at 9x and the final long drain at 12x to include their visible outcomes within 4.8 seconds; the beach runs at 1.5x and breach at 3x."
+  },
+  "vibewater-2025": {
+    "title": "vibewater (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/vibewater.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/vibewater.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          165
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "vibeduders-2025": {
+    "title": "vibeduders (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibeduders/vibeduders-wide-blasts.mp4",
+        "start": 1.3,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the blast opens a gap in the hundred-thousand-enemy field",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibeduders/vibeduders-close-blasts.mp4",
+        "start": 7.0,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "detail: another blast clears the zoomed-in crowd",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibeduders/vibeduders-wide-blasts.mp4",
+        "start": 11.4,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          210,
+          90
+        ],
+        "framing": "",
+        "label": "detail: enemies refill the gap around obstacles",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 34,
+    "width": 480,
+    "fps": 24,
+    "sourceNote": "Original 100,000-enemy WebGPU simulation and normal left-click attraction, right-click attack and wheel zoom. The two takes register 258,042 and 329,140 cumulative kills through the original GPU counter and enemy respawning. Separate shots show attack expansion and the resulting crowd flow; no enemy or shader changes."
+  },
+  "vibevoxelprobes-2025": {
+    "title": "vibevoxelprobes (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibevoxelprobes/voxelprobes-field.mp4",
+        "start": 6.5,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          60
+        ],
+        "framing": "eq=gamma=1.15",
+        "label": "wide: colored lights move through the full voxel field",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibevoxelprobes/voxelprobes-balanced.mp4",
+        "start": 2.3,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          50
+        ],
+        "framing": "eq=gamma=1.15",
+        "label": "detail: moving probe responds to warm light",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibevoxelprobes/voxelprobes-balanced.mp4",
+        "start": 5.8,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          256,
+          150
+        ],
+        "framing": "eq=gamma=1.15",
+        "label": "detail: close view of the changing probe and light directions",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original CPU lighting bake, moving lights, direction vectors and probe shader. Camera, light count/intensity and display controls are adjusted through the original parameters. The closer take uses six lights to retain color separation; the washed-out twelve-light candidate is excluded. Mild gamma adjustment improves card-size readability."
+  },
+  "quantumvibes-2025": {
+    "title": "QuantumVibes (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/quantumvibes.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/quantumvibes.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "vibestar-2025": {
+    "title": "VibeStar (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/vibestar.mp4",
+        "start": 0.5,
+        "duration": 2.4,
+        "crop": [
+          960,
+          540,
+          160,
+          0
+        ],
+        "framing": "",
+        "label": "wide: framed simulation"
+      },
+      {
+        "source": ".local/masters/vibestar.mp4",
+        "start": 4.1,
+        "duration": 2.4,
+        "crop": [
+          640,
+          360,
+          320,
+          65
+        ],
+        "framing": "",
+        "label": "detail: routes and particles"
+      }
+    ],
+    "crf": 23
+  },
+  "vibecraft-2025": {
+    "title": "VibeCraft (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibecraft/vibecraft-landscape.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: daylight terrain and horizon"
+      },
+      {
+        "source": ".local/takes/vibecraft/vibecraft-landscape.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          130
+        ],
+        "framing": "",
+        "label": "detail: voxel ridges during the camera turn"
+      }
+    ],
+    "crf": 24
+  },
+  "vibebounce-2025": {
+    "title": "VibeBounce (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibebounce/vibebounce-overview.mp4",
+        "start": 0.25,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: rays spread around the complete voxel structure",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibebounce/vibebounce-chamber.mp4",
+        "start": 4.2,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "",
+        "label": "detail: rays reflect through the original carved chamber",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibebounce/vibebounce-well.mp4",
+        "start": 6.65,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          130
+        ],
+        "framing": "",
+        "label": "detail: a new source sends rays down the original shaft",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original generated voxel geometry, sparse voxel octree, click-to-place ray sources and reflection simulation. Three photography cameras show outside, chamber and shaft views. The cached demo incorrectly enables vertex colors without a geometry color attribute; the capture-only correction adds neutral white vertex colors so its existing instance colors render. No voxel or ray logic is changed. Normal UI sliders set 70 rays, distance 30 and line lifetime 1100 ms. The chamber and shaft takes contain paths with up to nine vertices, representing eight segments."
+  },
+  "vibecar-2025": {
+    "title": "VibeCar (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibecar/vibecar-follow-boxes.mp4",
+        "start": 2.9,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the car drives through the original stack of crates",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibecar/vibecar-follow-ramp.mp4",
+        "start": 4.1,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          100
+        ],
+        "framing": "",
+        "label": "detail: the ramp launches the car and its suspension lands",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibecar/vibecar-follow-turn.mp4",
+        "start": 3.0,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          100
+        ],
+        "framing": "",
+        "label": "detail: the front suspension settles and the car steers into its turn",
+        "accurateTrim": true,
+        "speed": 0.6
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original Cannon vehicle physics and WASD/handbrake input. Only the capture camera follows the vehicle, preserving the car and obstacle impacts in frame. The original crate layout loses ten boxes from their initial positions; the ramp take has a real airborne interval followed by wheel contact. The final turn detail runs at 0.6x and ends before a tree obstructs the camera. Later stationary and obstructed sections are excluded."
+  },
+  "spheres-2025": {
+    "title": "Spheres (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/spheres/spheres-colors.mp4",
+        "start": 0.2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=1024:576:0:224",
+        "label": "wide: original colored-circle animation",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/spheres/spheres-texture.mp4",
+        "start": 2.7,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "crop=1024:576:0:224",
+        "label": "detail: original blinking-eye shader",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/spheres/spheres-radar.mp4",
+        "start": 1.1,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "crop=1024:576:0:224",
+        "label": "detail: original animated radar shader",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 22,
+    "fps": 30,
+    "sourceNote": "Original procedural packing seeds and three built-in live shader modes: colors, texture/eyes and radar. The square 1024-pixel canvas is cropped to a proportional 16:9 region; circles remain round and the old side margins are removed. No shader or simulation changes."
+  },
+  "frim-lerp-2025": {
+    "title": "FRIM Lerp (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/lerp/lerp-proportional.mp4",
+        "start": 2.88,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: original frame-dependent and independent smoothing at three rates",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/lerp/lerp-proportional.mp4",
+        "start": 5.9,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          48,
+          140
+        ],
+        "framing": "",
+        "label": "detail: the low-rate comparison restarts and diverges",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/lerp/lerp-proportional.mp4",
+        "start": 2.88,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          448,
+          140
+        ],
+        "framing": "",
+        "label": "detail: the higher-rate comparison advances toward the targets",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "The original six simulations and three-second cycle run unchanged. CSS removes explanatory prose and formulas, enlarges the rendered panels, and retains the 10/30/60 FPS labels. Cuts start near cycle resets and omit the nearly settled tails; close crops preserve both rows."
+  },
+  "vibebeats-2025": {
+    "title": "vibebeats (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/vibebeats.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/vibebeats.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          0,
+          190
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "vibeprime-2025": {
+    "title": "vibeprime (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibeprime/vibeprime-full-sieve.mp4",
+        "start": 0.35,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the sieve begins excluding multiples of two",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibeprime/vibeprime-full-sieve.mp4",
+        "start": 3.85,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          120,
+          110
+        ],
+        "framing": "",
+        "label": "detail: later prime factors mark their remaining composites",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibeprime/vibeprime-full-sieve.mp4",
+        "start": 5.1,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "",
+        "label": "detail: the final prime pattern lights up",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original Run to End action on 300 numbers. All 62 primes are found and the 238 other cells are excluded. CSS hides explanatory sections, toolbar and status text while retaining the real number grid and its original transitions. Chrome screencast preserves source frame timestamps."
+  },
+  "ascii-wolfenstein-2025": {
+    "title": "ASCII Wolfenstein (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/wolfenstein/wolfenstein-route.mp4",
+        "start": 4.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: advance through the first corridor junction",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/wolfenstein/wolfenstein-far-route.mp4",
+        "start": 8.8,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: follow a second route into the central passage",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/wolfenstein/wolfenstein-route.mp4",
+        "start": 13.1,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "",
+        "label": "detail: ASCII walls pass on both sides",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 22,
+    "fps": 30,
+    "sourceNote": "Original raycaster, map, keyboard movement and wall collision. A page-scoped route pilot steers heading and the normal forward key. The far route begins from an open map cell; neither route teleports during capture. CSS removes surrounding instructions and preserves monospace glyph proportions. The source simulation updates at approximately 20 Hz; the 30 fps derivative does not imply 30 unique game frames."
+  },
+  "makeupbeachsudoku-2025": {
+    "title": "MakeupBeachSudoku (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/sudoku/sudoku-correct-play.mp4",
+        "start": 0.25,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the first correct makeup symbols fill the grid",
+        "accurateTrim": true,
+        "speed": 2
+      },
+      {
+        "source": ".local/takes/sudoku/sudoku-correct-play.mp4",
+        "start": 8.2,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          256,
+          100
+        ],
+        "framing": "",
+        "label": "detail: correct placements and sparkles across the middle rows",
+        "accurateTrim": true,
+        "speed": 2
+      },
+      {
+        "source": ".local/takes/sudoku/sudoku-correct-play.mp4",
+        "start": 16.5,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          256,
+          240
+        ],
+        "framing": "",
+        "label": "detail: the final rows fill with matching symbols",
+        "accurateTrim": true,
+        "speed": 2
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original generated puzzle and original palette/canvas click handlers. The capture pilot reads the existing solution and places all 48 missing symbols correctly, waiting for each placement animation to finish. Three 2x cuts show successive stages and exclude the later FLAWLESS overlay."
+  },
+  "pizzapachinko-2025": {
+    "title": "PizzaPachinko (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/pachinko/pachinko-right.mp4",
+        "start": 6.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=800:520:0:80",
+        "label": "wide: the ball ricochets through the topping pegs",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/pachinko/pachinko-left.mp4",
+        "start": 10.4,
+        "duration": 1.6,
+        "crop": [
+          640,
+          360,
+          180,
+          200
+        ],
+        "framing": "crop=800:520:0:80",
+        "label": "detail: a close bounce and descent between pegs",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/pachinko/pachinko-right.mp4",
+        "start": 16.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=800:520:0:80",
+        "label": "wide: the ball reaches the thousand-point prize and star burst",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original click-to-drop and single-ball physics on two generated boards. Capture waits until the current ball finishes before dropping another. The right master scores three thousand-point prizes. Close crop follows the measured ball bounds; the small top message strip is removed while retaining the pegs, prize bins and particles."
+  },
+  "shortpath-2025": {
+    "title": "ShortPath (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/shortpath.mp4",
+        "start": 0,
+        "duration": 1.1099999999999999,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/shortpath.mp4",
+        "start": 1.1099999999999999,
+        "duration": 1.1099999999999999,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "vibespace-2025": {
+    "title": "VibeSpace (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/vibespace.mp4",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/vibespace.mp4",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "vibepong-2025": {
+    "title": "VibePong (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibepong/vibepong-rallies.mp4",
+        "start": 0.2,
+        "duration": 1.8,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: both original AI paddles return the ball",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibepong/vibepong-rallies.mp4",
+        "start": 2.0,
+        "duration": 1.2,
+        "crop": [
+          896,
+          504,
+          384,
+          0
+        ],
+        "framing": "",
+        "label": "detail: right-paddle impact at half speed",
+        "accurateTrim": true,
+        "speed": 0.5
+      },
+      {
+        "source": ".local/takes/vibepong/vibepong-powerups.mp4",
+        "start": 0.7,
+        "duration": 1.8,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the original multiball powerup sends three balls across the court",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 23,
+    "sourceNote": "Original CPU-versus-CPU simulation, paddle collisions and randomly collected powerups. The normal simulation-speed sliders are set to 2.4 and 3.2; debug overlays are disabled with their UI controls. A 0.6-second source interval is shown at half speed for a readable close paddle impact, and the other two cuts retain the full court. Multiball arises from the original random pickup logic."
+  },
+  "vibemaze-2025": {
+    "title": "VibeMaze (2025)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/takes/vibemaze/vibemaze-route.mp4",
+        "start": 0.05,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=864:486:208:117",
+        "label": "wide: approach and collect the first item",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibemaze/vibemaze-far-route.mp4",
+        "start": 2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=864:486:208:117",
+        "label": "wide: another passage and pickup",
+        "accurateTrim": true,
+        "speed": 1
+      },
+      {
+        "source": ".local/takes/vibemaze/vibemaze-route.mp4",
+        "start": 6,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "crop=864:486:208:117",
+        "label": "detail: pass a large collectible at a corridor turn",
+        "accurateTrim": true,
+        "speed": 1
+      }
+    ],
+    "crf": 29,
+    "fps": 24,
+    "sourceNote": "Original maze rendering, collectibles, keyboard movement and wall collision. A route pilot follows actual open cells using the forward key and heading; the two takes collect eight and seven items with no sampled player position inside a wall. DOM framing keeps the original glyph aspect ratio, crops surplus ceiling/floor and excludes surrounding instructions."
+  },
+  "cellgen-2025": {
+    "title": "CellGen (2025)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/cellgen.gif",
+        "start": 0,
+        "duration": 1.6,
+        "speed": 3.375,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "wide: original opening shows the complete dungeon and cell structure"
+      },
+      {
+        "source": "img/cellgen.gif",
+        "start": 5.4,
+        "duration": 3.2,
+        "speed": 2.1875,
+        "crop": [
+          640,
+          360,
+          320,
+          270
+        ],
+        "framing": "",
+        "accurateTrim": true,
+        "label": "detail: switch to visible cells and follow the moving visibility region"
+      }
+    ],
+    "sourceNote": "Includes the complete original 12.4-second GIF timeline from frame zero. The previous edit selected only its first 5.2 seconds and omitted the visibility switch. The full-dungeon phase runs at 3.375x and the visibility demonstration at 2.1875x to fit 4.8 seconds. A lower-centered close crop keeps the active cell region in view."
+  },
+  "scamper-2024-2025": {
+    "title": "Scamper (2024-2025)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/archive-video/scamper-sewer-2023.mp4",
+        "start": 474,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "eq=gamma=1.18",
+        "label": "wide: 2023 sewer tunnel run"
+      },
+      {
+        "source": ".local/archive-video/scamper-sewer-2023.mp4",
+        "start": 421.5,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          160,
+          90
+        ],
+        "framing": "eq=gamma=1.18",
+        "label": "detail: sewer junction"
+      },
+      {
+        "source": ".local/archive-video/scamper-sewer-2023.mp4",
+        "start": 124.5,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "eq=gamma=1.18",
+        "label": "detail: VR climbing"
+      }
+    ],
+    "sourceUrl": "https://www.youtube.com/watch?v=843XG0DoJuE",
+    "sourceDate": "2023-08-24",
+    "sourceCreator": "A Wolf in VR",
+    "crf": 23
+  },
+  "heist-and-jam-2020": {
+    "title": "Heist And Jam (2020)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/heist_and_jam.gif",
+        "start": 0.64,
+        "duration": 0.65,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: interior gameplay"
+      },
+      {
+        "source": "img/heist_and_jam.gif",
+        "start": 1.8,
+        "duration": 1.4,
+        "crop": [
+          960,
+          540,
+          160,
+          100
+        ],
+        "framing": "",
+        "label": "detail: ragdoll pile"
+      }
+    ],
+    "width": 480,
+    "fps": 24,
+    "crf": 26
+  },
+  "death-island-2020": {
+    "title": "Death Island (2020)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/death_island.gif",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": "img/death_island.gif",
+        "start": 3.4500000000000006,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ],
+    "width": 480,
+    "fps": 24,
+    "crf": 26
+  },
+  "loopstuck-2019": {
+    "title": "LoopStuck (2019)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/loopstuck.gif",
+        "start": 0,
+        "duration": 2.205,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": "img/loopstuck.gif",
+        "start": 2.205,
+        "duration": 2.205,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ],
+    "width": 480,
+    "fps": 24,
+    "crf": 26
+  },
+  "roland-2018": {
+    "title": "Roland (2018)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/roland_small.gif",
+        "start": 4.0,
+        "duration": 2.2,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": "img/roland_small.gif",
+        "start": 2,
+        "duration": 1.9,
+        "crop": [
+          1024,
+          576,
+          128,
+          0
+        ],
+        "framing": "",
+        "label": "detail: character dash"
+      }
+    ]
+  },
+  "jenn-s-cafe-2017": {
+    "title": "Jenn's Cafe (2017)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/jenns_cafe.gif",
+        "start": 0.05,
+        "duration": 1.45,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": "img/jenns_cafe.gif",
+        "start": 1.6,
+        "duration": 1.45,
+        "crop": [
+          960,
+          540,
+          160,
+          140
+        ],
+        "framing": "",
+        "label": "detail: cafe floor"
+      }
+    ]
+  },
+  "humanity-s-last-breath-2017": {
+    "title": "Humanity's Last Breath (2017)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/humanitys_last_breath.gif",
+        "start": 1.85,
+        "duration": 1.7,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: cave flight"
+      },
+      {
+        "source": "img/humanitys_last_breath.gif",
+        "start": 3.6,
+        "duration": 1.7,
+        "crop": [
+          896,
+          504,
+          192,
+          130
+        ],
+        "framing": "",
+        "label": "detail: cave descent"
+      }
+    ]
+  },
+  "7dayspacejam-2016": {
+    "title": "7DaySpaceJam (2016)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/7dayspacejam.gif",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1056,
+          594,
+          96,
+          60
+        ],
+        "framing": "",
+        "label": "wide: ship battle with peripheral debug text excluded"
+      },
+      {
+        "source": "img/7dayspacejam.gif",
+        "start": 3.5700000000000007,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ],
+    "width": 480,
+    "fps": 24,
+    "crf": 26
+  },
+  "dash-till-dawn-2016": {
+    "title": "Dash Till Dawn (2016)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://www.youtube.com/watch?v=NBHL7rwasqg",
+    "sourceDate": "2015-07-18",
+    "sourceCreator": "Trent Sterling",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/vlog9.mp4",
+        "start": 18.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: running across the ruined street"
+      },
+      {
+        "source": ".local/archive-video/recovered/vlog9.mp4",
+        "start": 123,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          120,
+          60
+        ],
+        "framing": "",
+        "label": "detail: vaulting above the zombies"
+      },
+      {
+        "source": ".local/archive-video/recovered/vlog9.mp4",
+        "start": 230.2,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          220,
+          30
+        ],
+        "framing": "",
+        "label": "detail: leaping over the wrecked vehicle"
+      }
+    ]
+  },
+  "fezcraft-2014": {
+    "title": "FezCraft (2014)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/masters/fezcraft.mp4",
+        "start": 0,
+        "duration": 2.145,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": ".local/masters/fezcraft.mp4",
+        "start": 2.145,
+        "duration": 2.145,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "planet-jumper-2014": {
+    "title": "Planet Jumper (2014)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/planet_jumper.gif",
+        "start": 0.2,
+        "duration": 2.4,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide"
+      },
+      {
+        "source": "img/planet_jumper.gif",
+        "start": 4.4,
+        "duration": 2.4,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail"
+      }
+    ]
+  },
+  "new-years-game-jam-2013": {
+    "title": "New Years Game Jam (2013)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": "img/weirdsoniccontrathing.gif",
+        "start": 0,
+        "duration": 1.2,
+        "crop": [
+          928,
+          522,
+          0,
+          140
+        ],
+        "framing": "",
+        "label": "wide: industrial platforms and projectile trails; stats excluded"
+      },
+      {
+        "source": "img/weirdsoniccontrathing.gif",
+        "start": 1.2,
+        "duration": 1.2,
+        "crop": [
+          704,
+          396,
+          224,
+          200
+        ],
+        "framing": "",
+        "label": "detail: the player and projectiles; stats excluded"
+      }
+    ]
+  },
+  "dynamite-max-2011": {
+    "title": "Dynamite Max (2011)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://www.youtube.com/watch?v=KZftmS7gLvA",
+    "sourceDate": "2010-10-29",
+    "sourceCreator": "Trent Sterling",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/dynamite3d.mp4",
+        "start": 22.2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "delogo=x=360:y=184:w=202:h=86,crop=1148:640:66:80,eq=gamma=1.25:brightness=0.015:saturation=1.1",
+        "label": "wide: Papervision3D player crosses the moving platforms"
+      },
+      {
+        "source": ".local/archive-video/recovered/dynamite3d.mp4",
+        "start": 118,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          65
+        ],
+        "framing": "delogo=x=360:y=184:w=202:h=86,crop=1148:640:66:80,eq=gamma=1.25:brightness=0.015:saturation=1.1",
+        "label": "detail: breakable joints and falling 3D crates"
+      },
+      {
+        "source": ".local/archive-video/recovered/dynamite3d.mp4",
+        "start": 146.8,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          65
+        ],
+        "framing": "delogo=x=360:y=184:w=202:h=86,crop=1148:640:66:80,eq=gamma=1.25:brightness=0.015:saturation=1.1",
+        "label": "detail: box character and swinging crate"
+      }
+    ],
+    "crf": 23
+  },
+  "configjoint-climbing-2025": {
+    "title": "ConfigJoint Climbing (2025)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/configjoint.webm",
+        "start": 57,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=1920:928:0:128",
+        "label": "wide: physics body climbing the rock"
+      },
+      {
+        "source": ".local/archive-video/recovered/configjoint.webm",
+        "start": 22.5,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          92
+        ],
+        "framing": "crop=1920:928:0:128",
+        "label": "detail: gripping the rock in first person"
+      },
+      {
+        "source": ".local/archive-video/recovered/configjoint.webm",
+        "start": 68,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          256,
+          172
+        ],
+        "framing": "crop=1920:928:0:128",
+        "label": "detail: jointed body on the upper rock"
+      }
+    ],
+    "sourceUrl": "https://www.youtube.com/watch?v=3_x33cRPl9E",
+    "sourceDate": "2025-09-15",
+    "sourceCreator": "Trent Sterling"
+  },
+  "hackerpunk-vr-2021": {
+    "title": "HackerPunk VR (2021)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/punchinduders.mp4",
+        "start": 3.9,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: multiplayer movement through the arena"
+      },
+      {
+        "source": ".local/archive-video/recovered/punchinduders.mp4",
+        "start": 50.6,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          110
+        ],
+        "framing": "",
+        "label": "detail: physics interaction with another player"
+      },
+      {
+        "source": ".local/archive-video/recovered/punchinduders.mp4",
+        "start": 54,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: looking across the neon arena"
+      }
+    ],
+    "sourceUrl": "https://www.youtube.com/watch?v=k1BcMzdztUM",
+    "sourceDate": "2025-05-17",
+    "sourceCreator": "Trent Sterling",
+    "sourceIdentityNote": "Uploader explicitly names HackerPunk VR. The combined blog also covers Punchin Duders; this footage is not assigned to that separate card."
+  },
+  "farmvr-2022": {
+    "title": "FarmVR (2022)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/farmvr-farming.webm",
+        "start": 16.7,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: farm buildings across the water"
+      },
+      {
+        "source": ".local/archive-video/recovered/farmvr-farming.webm",
+        "start": 48.7,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          100
+        ],
+        "framing": "",
+        "label": "detail: reaching into the greenhouse crop beds"
+      },
+      {
+        "source": ".local/archive-video/recovered/farmvr-farming.webm",
+        "start": 53,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          100
+        ],
+        "framing": "",
+        "label": "detail: reaching into the vegetable plants"
+      }
+    ],
+    "sourceUrl": "https://www.youtube.com/watch?v=Lohn8Uy93yk",
+    "sourceDate": "2022-07-16",
+    "sourceCreator": "Trent Sterling"
+  },
+  "magic-archer-2014": {
+    "title": "Magic Archer (2014)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/magicarcher.mp4",
+        "start": 240.2,
+        "duration": 1.6,
+        "crop": [
+          832,
+          468,
+          224,
+          0
+        ],
+        "framing": "",
+        "label": "wide: torch-lit multiplayer traversal above the chat overlay"
+      },
+      {
+        "source": ".local/archive-video/recovered/magicarcher.mp4",
+        "start": 290.4,
+        "duration": 1.6,
+        "crop": [
+          640,
+          360,
+          540,
+          100
+        ],
+        "framing": "",
+        "label": "detail: players jumping around the torch-lit platforms"
+      },
+      {
+        "source": ".local/archive-video/recovered/magicarcher.mp4",
+        "start": 283.6,
+        "duration": 1.6,
+        "crop": [
+          384,
+          216,
+          640,
+          438
+        ],
+        "framing": "",
+        "label": "detail: the pursuing crowd, clear of chat and network stats"
+      }
+    ],
+    "sourceUrl": "https://www.youtube.com/watch?v=IP3tRx5HkTg",
+    "sourceDate": "2014-11-12",
+    "sourceCreator": "Trent Sterling"
+  },
+  "3-day-rpg-2013": {
+    "title": "3 Day RPG (2013)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/3dayrpg.mp4",
+        "start": 3,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: running around the campfire"
+      },
+      {
+        "source": ".local/archive-video/recovered/3dayrpg.mp4",
+        "start": 44,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          260,
+          160
+        ],
+        "framing": "",
+        "label": "detail: caped character turning by the barrel"
+      },
+      {
+        "source": ".local/archive-video/recovered/3dayrpg.mp4",
+        "start": 60,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          100
+        ],
+        "framing": "",
+        "label": "detail: returning between mushrooms and stones"
+      }
+    ],
+    "sourceUrl": "https://www.youtube.com/watch?v=qPAqgfRW54Y",
+    "sourceDate": "2013-02-28",
+    "sourceCreator": "Trent Sterling"
+  },
+  "that-dummy-2012": {
+    "title": "That Dummy (2012)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/thatdummy.webm",
+        "start": 180.4,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=1440:810:0:150",
+        "label": "wide: bouncing physics blocks"
+      },
+      {
+        "source": ".local/archive-video/recovered/thatdummy.webm",
+        "start": 225.8,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          120,
+          60
+        ],
+        "framing": "crop=1440:810:0:150",
+        "label": "detail: platforming through the blue-framed room"
+      },
+      {
+        "source": ".local/archive-video/recovered/thatdummy.webm",
+        "start": 270.6,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          60
+        ],
+        "framing": "crop=1440:810:0:150",
+        "label": "detail: character and blocks under blue lighting"
+      }
+    ],
+    "sourceUrl": "https://www.youtube.com/watch?v=vVkjyptJG_0",
+    "sourceDate": "2013-09-10",
+    "sourceCreator": "Trent Sterling"
+  },
+  "vaultscript-2010": {
+    "title": "VaultScript (2010)",
+    "kind": "archived-gameplay",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/vaultscript.mp4",
+        "start": 29.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: third-person wasteland view"
+      },
+      {
+        "source": ".local/archive-video/recovered/vaultscript.mp4",
+        "start": 62,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          160,
+          50
+        ],
+        "framing": "",
+        "label": "detail: first-person combat in the wasteland"
+      },
+      {
+        "source": ".local/archive-video/recovered/vaultscript.mp4",
+        "start": 73,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          100,
+          65
+        ],
+        "framing": "",
+        "label": "detail: running across the hills"
+      }
+    ],
+    "sourceUrl": "https://www.youtube.com/watch?v=dtliWdnoCqo",
+    "sourceDate": "2009-02-02",
+    "sourceCreator": "Trent Sterling"
+  },
+  "monkeportals-2023": {
+    "title": "MonkePortals (2023)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://monke.tront.xyz/video1.mp4",
+    "sourceDate": null,
+    "sourceCreator": "Trent Sterling",
+    "sourcePage": "https://monke.tront.xyz",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/monke-overview.mp4",
+        "start": 0.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: moving through the tiled multiplayer arena"
+      },
+      {
+        "source": ".local/archive-video/recovered/monke-overview.mp4",
+        "start": 14.2,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          48,
+          0
+        ],
+        "framing": "",
+        "label": "detail: animated portal in the arena wall"
+      },
+      {
+        "source": ".local/archive-video/recovered/monke-overview.mp4",
+        "start": 36,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          200,
+          0
+        ],
+        "framing": "",
+        "label": "detail: another player in the portal arena"
+      }
+    ]
+  },
+  "guys-girls-and-guns-2016": {
+    "title": "Guys, Girls, and Guns (2016)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://trent.itch.io/guys-girls-and-guns",
+    "sourceDate": null,
+    "sourceCreator": "Trent Sterling",
+    "sourceAssets": [
+      "https://img.itch.zone/aW1nLzk3MDIzNTAuZ2lm/original/YVj3Jl.gif",
+      "https://img.itch.zone/aW1nLzk3MDIzMDQuZ2lm/original/pN6HtE.gif"
+    ],
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/guys-girls-guns-more.gif",
+        "start": 0.03,
+        "duration": 1.85,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: fighting through the crowd"
+      },
+      {
+        "source": ".local/archive-video/recovered/guys-girls-guns.gif",
+        "start": 0.6,
+        "duration": 2.35,
+        "crop": [
+          768,
+          432,
+          256,
+          200
+        ],
+        "framing": "",
+        "label": "detail: player turning and firing"
+      }
+    ]
+  },
+  "super-turbo-ship-puncher-3-2015": {
+    "title": "Super Turbo Ship Puncher 3 (2015)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://www.youtube.com/watch?v=-4UeOnwsK5Q",
+    "sourceDate": "2014-10-20",
+    "sourceCreator": "Trent Sterling",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/shippuncher.mp4",
+        "start": 56.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: dodging the incoming swarm"
+      },
+      {
+        "source": ".local/archive-video/recovered/shippuncher.mp4",
+        "start": 37.5,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          256,
+          144
+        ],
+        "framing": "",
+        "label": "detail: laser sweeping the field"
+      },
+      {
+        "source": ".local/archive-video/recovered/shippuncher.mp4",
+        "start": 65.3,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "detail: close view of pickups and incoming ships"
+      }
+    ]
+  },
+  "voxel-bomberman-2014": {
+    "title": "Voxel Bomberman (2014)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://tront.xyz/blog/posts/voxel-engine-progress/",
+    "sourceDate": "2013-12-15",
+    "sourceCreator": "Trent Sterling",
+    "sourceAssets": [
+      "https://tront.xyz/blog/assets/img/fastpathing.gif"
+    ],
+    "sourceIdentityNote": "Original post introduces the Bomberman revival, then shows this footage under Pathfinding Tweaks and AI Smoothing. The moving characters and their path lines are part of the running prototype.",
+    "shots": [
+      {
+        "source": ".local/archive-video/voxel-path.gif",
+        "start": 0.02,
+        "duration": 1.45,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: moving agents around the Bomberman arena"
+      },
+      {
+        "source": ".local/archive-video/voxel-path.gif",
+        "start": 1.5,
+        "duration": 1.45,
+        "crop": [
+          896,
+          504,
+          300,
+          142
+        ],
+        "framing": "",
+        "label": "detail: characters navigating beside the central blocks"
+      }
+    ]
+  },
+  "ducktoy-2026": {
+    "title": "DuckToy (2026)",
+    "kind": "gameplay-capture",
+    "crf": 22,
+    "shots": [
+      {
+        "source": ".local/native/ducktoy/ducktoy-flock.mp4",
+        "start": 0.1,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: six colorful ducks collide using original flock physics"
+      },
+      {
+        "source": ".local/native/ducktoy/ducktoy-flock.mp4",
+        "start": 2.6,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          160,
+          125
+        ],
+        "framing": "",
+        "label": "detail: a fresh throw, collisions and rubber deformation"
+      },
+      {
+        "source": ".local/native/ducktoy/duck-brush.mp4",
+        "start": 0.05,
+        "duration": 1.6,
+        "crop": [
+          640,
+          360,
+          320,
+          160
+        ],
+        "framing": "",
+        "label": "detail: native brush interaction twists the duck"
+      }
+    ]
+  },
+  "tronteq-2026": {
+    "title": "TrontEQ (2026)",
+    "kind": "gameplay-capture",
+    "crf": 22,
+    "shots": [
+      {
+        "source": ".local/native/tronteq/tronteq-spectrum.mp4",
+        "start": 0.3,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the original FFT spectrum and EQ curve"
+      },
+      {
+        "source": ".local/native/tronteq/tronteq-spectrum.mp4",
+        "start": 1.9,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          200,
+          40
+        ],
+        "framing": "",
+        "label": "detail: EQ frequency and gain adjustment"
+      },
+      {
+        "source": ".local/native/tronteq/tronteq-spectrum.mp4",
+        "start": 4.3,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          160,
+          50
+        ],
+        "framing": "",
+        "label": "detail: measured waveform and native Scope Trails"
+      }
+    ]
+  },
+  "trontsnap-2026": {
+    "title": "TrontSnap (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/native/trontsnap/trontsnap-interactions.mp4",
+        "start": 1.0,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: scroll the original gallery through public game captures"
+      },
+      {
+        "source": ".local/native/trontsnap/trontsnap-interactions.mp4",
+        "start": 3.6,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "editor: draw a yellow arrow with the original annotation tool"
+      },
+      {
+        "source": ".local/native/trontsnap/trontsnap-interactions.mp4",
+        "start": 5.35,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          300,
+          120
+        ],
+        "framing": "",
+        "label": "detail: draw a box around the terrain cavity"
+      }
+    ]
+  },
+  "spaceview-2026": {
+    "title": "SpaceView (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/native/spaceview/spaceview-navigation.mp4",
+        "start": 0.2,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: complete showcase disk to Unity Projects folder zoom"
+      },
+      {
+        "source": ".local/native/spaceview/spaceview-navigation.mp4",
+        "start": 1.85,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          100,
+          90
+        ],
+        "framing": "",
+        "label": "detail: descend into a project and its file layout"
+      },
+      {
+        "source": ".local/native/spaceview/spaceview-navigation.mp4",
+        "start": 5.0,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "types: filter by extension, then switch to the type treemap"
+      }
+    ]
+  },
+  "powershell-manager": {
+    "title": "PowerShell Manager",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/native/powershellmanager/powershellmanager-layouts.mp4",
+        "start": 0.8,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: resize the original four-slot layout preview"
+      },
+      {
+        "source": ".local/native/powershellmanager/powershellmanager-layouts.mp4",
+        "start": 4.3,
+        "duration": 1.6,
+        "crop": [
+          544,
+          306,
+          484,
+          155
+        ],
+        "framing": "",
+        "label": "detail: drag the six-slot horizontal divider"
+      },
+      {
+        "source": ".local/native/powershellmanager/powershellmanager-layouts.mp4",
+        "start": 8.4,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          250,
+          82
+        ],
+        "framing": "",
+        "label": "inventory: drag a sample window to reorder its slot"
+      }
+    ]
+  },
+  "device-history": {
+    "title": "Device History",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/device-history.mp4",
+        "start": 0.25,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: original event timeline receives sample disconnect and reconnect"
+      },
+      {
+        "source": ".local/masters/device-history.mp4",
+        "start": 3.15,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          0,
+          120
+        ],
+        "framing": "",
+        "label": "detail: expand the USB backup drive in the original known-device list"
+      },
+      {
+        "source": ".local/masters/device-history.mp4",
+        "start": 5.0,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          0,
+          154
+        ],
+        "framing": "",
+        "label": "storage: capacity bar and device information with theme change"
+      }
+    ]
+  },
+  "youtube-downloader-2026": {
+    "title": "YouTube Downloader (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/native/downloader/downloader-transfer.mp4",
+        "start": 0.7,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: actual engine transfer progress in the original app UI"
+      },
+      {
+        "source": ".local/native/downloader/downloader-transfer.mp4",
+        "start": 5.1,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          0,
+          144
+        ],
+        "framing": "",
+        "label": "detail: real transfer completes and the saved-file result appears"
+      },
+      {
+        "source": ".local/native/downloader/downloader-transfer.mp4",
+        "start": 7.0,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "preferences: original theme controls switch dark to light"
+      }
+    ]
+  },
+  "speedslap-2026": {
+    "title": "SpeedSlap (2026)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/speedslap.mp4",
+        "start": 0.15,
+        "duration": 1.2,
+        "crop": [
+          1024,
+          576,
+          0,
+          24
+        ],
+        "framing": "",
+        "label": "wide: original SpeedSlap overlay toggles real video playback to 3x"
+      },
+      {
+        "source": ".local/masters/speedslap.mp4",
+        "start": 1.2,
+        "duration": 1.8,
+        "crop": [
+          512,
+          288,
+          0,
+          36
+        ],
+        "framing": "",
+        "label": "detail: wheel and keyboard change playback speed"
+      },
+      {
+        "source": ".local/masters/speedslap.mp4",
+        "start": 4.5,
+        "duration": 1.8,
+        "crop": [
+          640,
+          360,
+          460,
+          12
+        ],
+        "framing": "",
+        "label": "detail: toggle and reset after dragging the original overlay"
+      }
+    ]
+  },
+  "splitter4gpt-2024": {
+    "title": "Splitter4GPT (2024)",
+    "kind": "gameplay-capture",
+    "shots": [
+      {
+        "source": ".local/masters/splitter.mp4",
+        "start": 2.25,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: the original tool creates chunks from public README text"
+      },
+      {
+        "source": ".local/masters/splitter.mp4",
+        "start": 3.75,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          128,
+          180
+        ],
+        "framing": "",
+        "label": "detail: choose and copy chunks with original success feedback"
+      },
+      {
+        "source": ".local/masters/splitter.mp4",
+        "start": 5.65,
+        "duration": 1.6,
+        "crop": [
+          960,
+          540,
+          128,
+          180
+        ],
+        "framing": "",
+        "label": "detail: custom chunk size creates ten smaller parts"
+      }
+    ]
+  },
+  "platformershooter-2014": {
+    "title": "platformershooter (2014)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://www.youtube.com/watch?v=Cwgr0tiM3OQ",
+    "sourceDate": "2014-12-13",
+    "sourceNote": "Original accelerated development timelapse, slowed to 0.375x of the uploaded video. Only its final clean gameplay interval is used; this does not represent realtime game performance.",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/ld31.mp4",
+        "start": 91.8,
+        "duration": 1.6,
+        "speed": 0.375,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=1012:570:326:322",
+        "label": "wide: platform arena and spawning enemies; editor and stats cropped away"
+      },
+      {
+        "source": ".local/archive-video/recovered/ld31.mp4",
+        "start": 92.425,
+        "duration": 1.6,
+        "speed": 0.375,
+        "crop": [
+          1024,
+          576,
+          128,
+          50
+        ],
+        "framing": "crop=1012:570:326:322",
+        "label": "detail: characters and hit effects across the middle platforms"
+      }
+    ]
+  },
+  "voxel-helicopter-shooter-2014": {
+    "title": "Voxel Helicopter Shooter (2014)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://www.youtube.com/watch?v=qFx_cJcXj34",
+    "sourceDate": "2014-09-30",
+    "sourceCreator": "Trent Sterling",
+    "sourceNote": "CubeCopter gameplay from Vlog 1, matched to the original Voxel Helicopter Shooter project screenshots. Unity chrome and the Windows taskbar are cropped out.",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/vlog1.mp4",
+        "start": 480,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=1088:612:96:74",
+        "label": "wide: river crossing, helicopters and incoming projectiles"
+      },
+      {
+        "source": ".local/archive-video/recovered/vlog1.mp4",
+        "start": 498,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          256,
+          180
+        ],
+        "framing": "crop=1088:612:96:74",
+        "label": "detail: attacking helicopter, smoke and voxel debris"
+      },
+      {
+        "source": ".local/archive-video/recovered/vlog1.mp4",
+        "start": 514.6,
+        "duration": 1.6,
+        "crop": [
+          576,
+          324,
+          384,
+          196
+        ],
+        "framing": "crop=1088:612:96:74",
+        "label": "close: projectiles and explosions above the river"
+      }
+    ]
+  },
+  "don-t-touch-the-red-stuff-2014": {
+    "title": "Don't Touch the Red Stuff! (2014)",
+    "kind": "archived-gameplay",
+    "sourceUrl": "https://www.youtube.com/watch?v=qHfz6rU4GYA",
+    "sourceDate": "2014-10-15",
+    "sourceCreator": "Trent Sterling",
+    "sourceNote": "Original Vlog 2 gameplay, matched to the same-day project post. All three levels are represented. The thin window title strip is cropped away.",
+    "shots": [
+      {
+        "source": ".local/archive-video/recovered/vlog2.mp4",
+        "start": 467.8,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "crop=1280:710:0:10",
+        "label": "wide: jump across the first level beneath a descending hazard"
+      },
+      {
+        "source": ".local/archive-video/recovered/vlog2.mp4",
+        "start": 519,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          176,
+          120
+        ],
+        "framing": "crop=1280:710:0:10",
+        "label": "detail: leap to the final coin between moving red pillars"
+      },
+      {
+        "source": ".local/archive-video/recovered/vlog2.mp4",
+        "start": 551.4,
+        "duration": 1.6,
+        "crop": [
+          768,
+          432,
+          240,
+          176
+        ],
+        "framing": "crop=1280:710:0:10",
+        "label": "close: zigzag descent through the third level"
+      }
+    ]
+  },
+  "audiobounce": {
+    "title": "AudioBounce",
+    "kind": "gameplay-capture",
+    "crf": 23,
+    "sourceNote": "Original Unity 6 demo, GPU compute/renderer and seven sources. Three bug paths staged 0.6m above their original heights to clear floor voxels; original listener walks through rooms. Independent photography camera. Offscreen 60Hz simulation-step capture, not a realtime performance measurement.",
+    "shots": [
+      {
+        "source": ".local/native/audiobounce/audiobounce-demo.mp4",
+        "start": 2.6,
+        "duration": 1.6,
+        "crop": [
+          1280,
+          720,
+          0,
+          0
+        ],
+        "framing": "",
+        "label": "wide: ray propagation across the original multi-room demo"
+      },
+      {
+        "source": ".local/native/audiobounce/audiobounce-demo.mp4",
+        "start": 7.8,
+        "duration": 1.6,
+        "crop": [
+          1024,
+          576,
+          128,
+          72
+        ],
+        "framing": "",
+        "label": "detail: moving source rays reflect through the atrium"
+      },
+      {
+        "source": ".local/native/audiobounce/audiobounce-demo.mp4",
+        "start": 14.2,
+        "duration": 1.6,
+        "crop": [
+          896,
+          504,
+          192,
+          108
+        ],
+        "framing": "",
+        "label": "close: sound propagation across the amphitheater tiers"
+      }
+    ],
+    "width": 480,
+    "fps": 24
+  }
+}
