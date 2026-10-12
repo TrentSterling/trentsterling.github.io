@@ -277,6 +277,8 @@ async function assertFocusInside(page, step) {
             const state = () => game.evaluate(() => ({ attached: document.querySelectorAll('.gameplay-preview[src]').length,
                 playing: [...document.querySelectorAll('.gameplay-preview')].filter(v => !v.paused).length,
                 videos: [...document.querySelectorAll('.gameplay-preview')].map(v => ({ id: v.closest('[data-preview]').id, total: v.getVideoPlaybackQuality().totalVideoFrames, dropped: v.getVideoPlaybackQuality().droppedVideoFrames })) }));
+            // Match the established gallery load test: let all decoders warm up.
+            await game.waitForTimeout(2000);
             const before = await state();
             await game.waitForTimeout(5000);
             const after = await state();
@@ -285,7 +287,11 @@ async function assertFocusInside(page, step) {
             const retained = after.videos.filter(v => byId.has(v.id));
             const frames = retained.reduce((sum, v) => sum + v.total - byId.get(v.id).total, 0);
             const drops = retained.reduce((sum, v) => sum + v.dropped - byId.get(v.id).dropped, 0);
-            assert.ok(frames > 100 && drops / frames < .1, 'custom radial themes retain smooth bounded video playback');
+            const measurement = { width: size.width, before, after, frames, drops, dropPercent: 100 * drops / frames };
+            fs.mkdirSync(diagnosticsDir, { recursive: true });
+            fs.writeFileSync(path.join(diagnosticsDir, `custom-gallery-playback-${size.width}.json`), JSON.stringify(measurement, null, 2));
+            console.log('Custom gallery playback:', JSON.stringify(measurement));
+            assert.ok(frames > 100 && drops / frames < .1, 'custom radial themes retain smooth bounded video playback: ' + JSON.stringify({ frames, drops }));
             await game.evaluate(() => document.getElementById('filter-mod').click());
             await game.waitForTimeout(300);
             assert.equal(await game.locator('.gameplay-preview[src]').evaluateAll(videos => videos.every(v => v.closest('.item').classList.contains('tag-mod') && v.getBoundingClientRect().width > 0)), true);
