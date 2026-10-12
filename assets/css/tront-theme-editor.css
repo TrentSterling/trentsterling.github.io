@@ -232,3 +232,6 @@ html[data-tront-theme-surface="gallery"][data-te-gallery="custom"] #filter-flash
 
 html[data-tront-theme-surface="gallery"][data-te-gallery="custom"] .item { border-color: var(--te-card-accent, var(--te-line)); transition: box-shadow .2s ease; }
 html[data-tront-theme-surface="gallery"][data-te-gallery="custom"] .image-container { border-color: var(--te-card-accent, var(--te-line)); transition: none; }
+
+/* Color changes are atomic: never interpolate through unreadable old ink. */
+html[data-tront-theme-surface="gallery"][data-te-gallery="custom"] .filter-nav label { transition: transform .16s ease; }

@@ -21,7 +21,7 @@ html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-cont
 html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-container { background: var(--te-panel); border-bottom: 1px solid var(--te-line); }
 html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-container::before,
 html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-container .nav-link::before { display: none; }
-html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-container .nav-link { color: var(--te-muted); background: var(--te-elem); border-color: var(--te-line); box-shadow: none; transform: none; }
+html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-container .nav-link { color: var(--te-muted); background: var(--te-elem); border-color: var(--te-line); box-shadow: none; transform: none; transition: transform .16s ease; }
 html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-container .nav-link:hover { color: var(--te-ink); background: var(--te-hover); }
 html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-container .nav-link.active { color: var(--te-ink); background: var(--te-button); border-color: var(--te-accent); }
 @media (max-width: 600px) {

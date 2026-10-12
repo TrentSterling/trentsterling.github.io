@@ -139,6 +139,10 @@ async function assertFocusInside(page, step) {
             await page.locator('.te-dialog').waitFor({ state: 'visible' });
             for (const id of ['dark', 'cyan', 'purple', 'ember', 'moss', 'light']) {
                 await page.selectOption('[name="preset"]', id);
+                if (route === '/games/') {
+                    assert.equal(await page.locator('html').getAttribute('data-te-gallery'), 'custom');
+                    assert.equal(await page.locator('html').getAttribute('data-theme'), null);
+                }
                 await auditText(page);
                 if (route === '/') {
                     const grid = await page.evaluate(() => ({ image: getComputedStyle(document.body).backgroundImage, size: getComputedStyle(document.body).backgroundSize }));
@@ -224,7 +228,52 @@ async function assertFocusInside(page, step) {
         assert.equal(await page.locator('html').getAttribute('data-tront-theme-surface'), 'gallery');
         assert.equal(await page.evaluate(() => window.TrontThemeEditor.key), 'tront-theme-gallery-v1');
         assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundImage), 'none');
+        // Exercise the unchanged media controller with custom colors actually active.
+        const playback = [];
+        for (const size of [{ width: 2560, height: 1440, cap: 12 }, { width: 390, height: 844, cap: 2 }]) {
+            phase = 'custom gallery playback at ' + size.width;
+            const context = await browser.newContext({ viewport: { width: size.width, height: size.height }, isMobile: size.width < 600, hasTouch: size.width < 600 });
+            await context.route('**/*', r => r.request().url().startsWith(url) ? r.continue() : r.fulfill({ json: {} }));
+            const game = await context.newPage();
+            game.on('pageerror', error => errors.push(error.message));
+            await game.goto(url + '/games/');
+            await game.locator('#tront-theme-btn').click();
+            await game.selectOption('[name="preset"]', 'purple');
+            await game.locator('[name="position-1"]').focus();
+            await game.keyboard.press('ArrowRight');
+            await game.keyboard.press('Escape');
+            assert.equal(await game.locator('html').getAttribute('data-te-gallery'), 'custom');
+            await game.locator('[data-preview]').first().scrollIntoViewIfNeeded();
+            await game.waitForFunction(() => [...document.querySelectorAll('.gameplay-preview')].some(v => !v.paused && v.getVideoPlaybackQuality().totalVideoFrames > 5));
+            const state = () => game.evaluate(() => ({ attached: document.querySelectorAll('.gameplay-preview[src]').length,
+                playing: [...document.querySelectorAll('.gameplay-preview')].filter(v => !v.paused).length,
+                videos: [...document.querySelectorAll('.gameplay-preview')].map(v => ({ id: v.closest('[data-preview]').id, total: v.getVideoPlaybackQuality().totalVideoFrames, dropped: v.getVideoPlaybackQuality().droppedVideoFrames })) }));
+            const before = await state();
+            await game.waitForTimeout(5000);
+            const after = await state();
+            assert.ok(after.playing > 0 && after.attached <= size.cap && after.playing <= size.cap);
+            const byId = new Map(before.videos.map(v => [v.id, v]));
+            const retained = after.videos.filter(v => byId.has(v.id));
+            const frames = retained.reduce((sum, v) => sum + v.total - byId.get(v.id).total, 0);
+            const drops = retained.reduce((sum, v) => sum + v.dropped - byId.get(v.id).dropped, 0);
+            assert.ok(frames > 100 && drops / frames < .1, 'custom radial themes retain smooth bounded video playback');
+            await game.evaluate(() => document.getElementById('filter-mod').click());
+            await game.waitForTimeout(300);
+            assert.equal(await game.locator('.gameplay-preview[src]').evaluateAll(videos => videos.every(v => v.closest('.item').classList.contains('tag-mod') && v.getBoundingClientRect().width > 0)), true);
+            await game.evaluate(() => document.getElementById('filter-all').click());
+            await game.locator('[data-preview]').first().scrollIntoViewIfNeeded();
+            await game.evaluate(() => document.getElementById('preview-toggle').click());
+            await game.waitForFunction(() => !document.querySelector('.gameplay-preview[src]'));
+            await game.reload();
+            assert.equal(await game.locator('#preview-toggle').innerText(), 'Play previews');
+            assert.equal(await game.locator('.gameplay-preview[src]').count(), 0);
+            assert.equal(await game.locator('html').getAttribute('data-te-gallery'), 'custom');
+            playback.push({ width: size.width, cap: size.cap, before, after, frames, drops, dropPercent: 100 * drops / frames, filtering: 'passed', pausePersistence: 'passed' });
+            await context.close();
+        }
         assert.deepEqual(errors, []);
+        fs.mkdirSync(diagnosticsDir, { recursive: true });
+        fs.writeFileSync(path.join(diagnosticsDir, 'theme-browser-report.json'), JSON.stringify({ status: 'passed', nativeBaseline: baselineRoot ? { widths: [1440, 390], themes: ['dark', 'tront-purple', 'light'], exactGeometryAndBackground: true, localDependenciesLoaded: true } : null, routes: ['/', '/discord/', '/games/'], presets: 6, widths: [320, 390, 768, 1280], customGalleryPlayback: playback, errors }, null, 2));
         console.log('PASS: real-browser theme interactions, computed text contrast, mobile fit and gallery preference isolation.');
     } catch (error) {
         if (page && !page.isClosed()) {
