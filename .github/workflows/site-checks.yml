@@ -63,6 +63,7 @@ jobs:
           name: site-browser-review-${{ github.event.pull_request.number }}
           path: |
             .local/theme-review/*.png
+            .local/theme-review/*.json
             .local/gallery-*.png
             .local/gallery-verification.json
             .local/gallery-playback-load.json

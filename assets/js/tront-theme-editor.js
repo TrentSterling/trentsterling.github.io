@@ -236,6 +236,20 @@
             if (draftStart) { remember(draftStart); draftStart = null; sync(); }
             opener.setAttribute('aria-expanded', 'false'); opener.focus();
         });
+        // Keep sequential keyboard navigation inside the editor even when a
+        // browser would otherwise move from the last control to browser chrome.
+        // These endpoints are always visible/enabled; native Tab order between
+        // them still handles radio groups, hidden pegs and collapsed details.
+        dialog.addEventListener('keydown', function (event) {
+            if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
+            var first = dialog.querySelector('[data-action="close"]');
+            var last = dialog.querySelector('[data-action="reset"]');
+            if (event.shiftKey && doc.activeElement === first) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && doc.activeElement === last) {
+                event.preventDefault(); first.focus();
+            }
+        });
         var backdropDown = false;
         function isOutside(event) {
             var rect = dialog.getBoundingClientRect();

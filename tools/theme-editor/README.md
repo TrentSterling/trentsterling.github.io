@@ -50,12 +50,20 @@ With Playwright and its browser already installed, run the separate browser suit
     node tools/theme-editor/browser.cjs
 
 For an existing supported browser installation, `THEME_BROWSER_EXECUTABLE` can
-select its executable. `THEME_SCREENSHOTS` can point to an existing directory to
-save mobile review screenshots. This is a localhost-only check; it does not
-publish or deploy the site. Do not bypass execution or browser access denials.
+select its executable. `THEME_SCREENSHOTS` selects the review artifact directory
+(created if needed). The suite saves eight review screenshots: the editor and
+closed page for both Home and Discord, each at desktop/Midnight-dark and
+mobile/Paper-light sizes. Closed-page captures include the full page. A failure
+also saves a diagnostic screenshot and JSON report with the current test phase,
+focused element, document focus state, and recent focus events. Without
+`THEME_SCREENSHOTS`, failure diagnostics go to `.local/theme-review`.
+
+This is a localhost-only check; it does not publish or deploy the site. Do not
+bypass execution or browser access denials.
 
 The browser suite tests both pages, every preset, computed foreground contrast,
-keyboard editing, focus containment/restoration, Escape/outside dismissal,
+keyboard editing, forward/reverse focus containment and restoration, hidden-peg
+and collapsed-control exclusion with one/four pegs, Escape/outside dismissal,
 responsive overflow, saved-choice restoration, reduced motion and gallery
 preference isolation. Manually review desktop/mobile appearance and native color
 pickers as well. If browser execution is blocked, report those stages as unrun.

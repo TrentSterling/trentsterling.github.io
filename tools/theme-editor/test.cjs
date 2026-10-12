@@ -198,6 +198,29 @@ test('repeated open/close is idempotent and restores focus and expanded state', 
     // and focus containment need the separate real-browser smoke test.
     env.opener.fire('click'); env.dialog.close(); assert.equal(env.doc.activeElement, env.opener);
 });
+test('Tab wraps only at modal boundaries; reverse Tab, modifiers and other keys keep native behavior', () => {
+    const env = environment(); env.opener.fire('click');
+    const first = env.dialog.querySelector('[data-action="close"]');
+    const last = env.dialog.querySelector('[data-action="reset"]');
+    function key(active, key, modifiers = {}) {
+        let prevented = false; active.focus();
+        env.dialog.fire('keydown', { key, ...modifiers, preventDefault() { prevented = true; } });
+        return prevented;
+    }
+    for (let i = 0; i < 4; i++) {
+        assert.equal(key(last, 'Tab'), true); assert.equal(env.doc.activeElement, first);
+        assert.equal(key(first, 'Tab', { shiftKey: true }), true); assert.equal(env.doc.activeElement, last);
+    }
+    assert.equal(key(first, 'Tab'), false, 'native forward navigation is retained within the editor');
+    assert.equal(key(last, 'Tab', { shiftKey: true }), false, 'native reverse navigation is retained within the editor');
+    const middle = env.dialog.querySelector('[name="angle"]');
+    assert.equal(key(middle, 'Tab'), false); assert.equal(key(middle, 'Tab', { shiftKey: true }), false);
+    for (const modifiers of [{ ctrlKey: true }, { altKey: true }, { metaKey: true }]) assert.equal(key(last, 'Tab', modifiers), false);
+    assert.equal(key(first, 'Escape'), false, 'native Escape dismissal remains untouched');
+    assert.equal(key(middle, 'ArrowRight'), false, 'native slider keyboard editing remains untouched');
+    change(env, 'count', 1);
+    assert.equal(key(last, 'Tab'), true); assert.equal(env.doc.activeElement, first, 'hidden pegs cannot change the endpoints');
+});
 test('outside dismissal requires both pointerdown and click outside; dragging out does not dismiss', () => {
     const env = environment(); env.opener.fire('click');
     env.dialog.fire('pointerdown', { clientX: 200, clientY: 200 });

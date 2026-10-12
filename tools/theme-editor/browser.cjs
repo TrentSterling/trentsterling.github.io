@@ -3,10 +3,13 @@
  */
 'use strict';
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { chromium } = require('playwright');
 const { createServer } = require('../game-media/server.cjs');
 const server = createServer();
 const screenshots = process.env.THEME_SCREENSHOTS;
+const diagnosticsDir = screenshots || path.resolve('.local/theme-review');
 
 async function auditText(page) {
     const failures = await page.evaluate(() => {
@@ -30,15 +33,38 @@ async function auditText(page) {
     });
     assert.deepEqual(failures, [], 'rendered foregrounds meet the shared whole-background bound');
 }
+async function focusDetails(page) {
+    return page.evaluate(() => {
+        const active = document.activeElement, dialog = document.querySelector('.te-dialog');
+        const describe = element => element ? { tag: element.tagName, id: element.id, name: element.getAttribute('name'), type: element.getAttribute('type'), action: element.getAttribute('data-action') } : null;
+        const closedDetails = active?.closest('details:not([open])');
+        const inClosedDetailsContent = !!closedDetails && !closedDetails.querySelector('summary')?.contains(active);
+        const hiddenAncestor = !!active?.closest('[hidden]');
+        const visible = !!active?.getClientRects().length && getComputedStyle(active).visibility === 'visible';
+        return { url: location.href, documentHasFocus: document.hasFocus(), dialogOpen: !!dialog?.open,
+            insideDialog: !!active?.closest('.te-dialog'), active: describe(active),
+            hiddenAncestor, inClosedDetailsContent, visible,
+            trace: window.__themeFocusTrace || [] };
+    });
+}
+async function assertFocusInside(page, step) {
+    const details = await focusDetails(page);
+    assert.equal(details.insideDialog, true, `focus stays within native modal (${step}): ${JSON.stringify(details)}`);
+    assert.equal(details.hiddenAncestor, false, `focus skips hidden pegs (${step}): ${JSON.stringify(details)}`);
+    assert.equal(details.inClosedDetailsContent, false, `focus skips collapsed controls (${step}): ${JSON.stringify(details)}`);
+    assert.equal(details.visible, true, `focused control is visible (${step}): ${JSON.stringify(details)}`);
+}
 (async () => {
-    let browser;
+    let browser, page;
+    let phase = 'browser startup';
     try {
+        if (screenshots) fs.mkdirSync(screenshots, { recursive: true });
         await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
         const url = `http://127.0.0.1:${server.address().port}`;
         const options = { headless: true };
         if (process.env.THEME_BROWSER_EXECUTABLE) options.executablePath = process.env.THEME_BROWSER_EXECUTABLE;
         browser = await chromium.launch(options);
-        const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+        page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
         const errors = [];
         page.on('pageerror', error => errors.push(error.message));
         await page.route('**/*', route => {
@@ -51,7 +77,21 @@ async function auditText(page) {
         await page.evaluate(() => { localStorage.setItem('tront-theme', 'tront-purple'); localStorage.setItem('tront-previews-paused', 'true'); });
         await page.reload();
         for (const route of ['/', '/discord/']) {
+            phase = route + ' preset and editing checks';
             await page.goto(url + route);
+            await page.evaluate(() => {
+                window.__themeFocusTrace = [];
+                const record = event => {
+                    const active = document.activeElement;
+                    window.__themeFocusTrace.push({ event: event.type, key: event.key, shift: event.shiftKey,
+                        active: active?.id || active?.getAttribute('name') || active?.getAttribute('data-action') || active?.tagName,
+                        documentHasFocus: document.hasFocus() });
+                    if (window.__themeFocusTrace.length > 40) window.__themeFocusTrace.shift();
+                };
+                document.addEventListener('focusin', record);
+                document.addEventListener('keydown', record);
+                window.addEventListener('blur', record);
+            });
             await page.locator('#tront-theme-btn').click();
             await page.locator('.te-dialog').waitFor({ state: 'visible' });
             for (const id of ['dark', 'cyan', 'purple', 'ember', 'moss', 'light']) {
@@ -78,23 +118,61 @@ async function auditText(page) {
             assert.equal(await page.locator('.te-dialog').isVisible(), false);
             assert.equal(await page.locator('#tront-theme-btn').evaluate(el => el === document.activeElement), true);
             await page.locator('#tront-theme-btn').click();
-            for (let n = 0; n < 24; n++) {
-                await page.keyboard.press('Tab');
-                assert.equal(await page.evaluate(() => document.activeElement.closest('dialog') !== null), true, 'focus stays within native modal');
+            phase = route + ' modal focus boundaries';
+            await page.locator('[data-action="reset"]').focus();
+            await page.keyboard.press('Tab');
+            assert.equal(await page.locator('[data-action="close"]').evaluate(el => el === document.activeElement), true, 'last control wraps forward to first');
+            await page.keyboard.press('Shift+Tab');
+            assert.equal(await page.locator('[data-action="reset"]').evaluate(el => el === document.activeElement), true, 'first control wraps backward to last');
+            // Exercise full and single-peg editors with details open/closed.
+            // Every Tab must skip hidden pegs and collapsed controls.
+            for (const count of ['1', '4']) {
+                await page.locator('.te-details').evaluate(el => { el.open = true; });
+                await page.selectOption('[name="count"]', count);
+                for (const expanded of [true, false]) {
+                    await page.locator('[data-action="close"]').focus();
+                    await page.locator('.te-details').evaluate((el, open) => { el.open = open; }, expanded);
+                    for (const direction of ['Tab', 'Shift+Tab']) {
+                        await page.locator('[data-action="close"]').focus();
+                        for (let n = 0; n < 24; n++) {
+                            phase = `${route} focus ${count} peg(s) ${expanded ? 'expanded' : 'collapsed'} ${direction} ${n + 1}`;
+                            await page.keyboard.press(direction);
+                            await assertFocusInside(page, phase);
+                        }
+                    }
+                }
             }
+            phase = route + ' outside dismissal, persistence and responsive checks';
             await page.mouse.click(5, 5);
             assert.equal(await page.locator('.te-dialog').isVisible(), false);
             const saved = await page.evaluate(() => localStorage.getItem('tront-theme-editor-v1'));
             await page.reload();
             assert.equal(await page.evaluate(() => localStorage.getItem('tront-theme-editor-v1')), saved);
+            const pageName = route === '/' ? 'home' : 'discord';
+            phase = route + ' dark desktop visual review';
+            await page.locator('#tront-theme-btn').click();
+            await page.selectOption('[name="preset"]', 'dark');
+            await page.locator('.te-details').evaluate(el => { el.open = true; });
+            await auditText(page);
+            if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-editor-desktop-dark.png`) });
+            await page.keyboard.press('Escape');
+            await auditText(page);
+            if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-desktop-dark.png`), fullPage: true });
+            // Paper/light gives the mobile review a different polarity.
+            await page.locator('#tront-theme-btn').click();
+            await page.selectOption('[name="preset"]', 'light');
+            await page.keyboard.press('Escape');
+            phase = route + ' light mobile visual review';
             for (const width of [320, 390, 768]) {
                 await page.setViewportSize({ width, height: 844 });
                 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'page does not scroll horizontally');
                 await page.locator('#tront-theme-btn').click();
                 assert.equal(await page.locator('.te-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'editor fits narrow screens');
                 await auditText(page);
-                if (screenshots && width === 390) await page.screenshot({ path: `${screenshots}/${route === '/' ? 'home' : 'discord'}-theme-mobile.png` });
+                if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-editor-mobile-light.png`) });
                 await page.keyboard.press('Escape');
+                await auditText(page);
+                if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-mobile-light.png`), fullPage: true });
             }
             await page.setViewportSize({ width: 1280, height: 900 });
             await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -108,6 +186,18 @@ async function auditText(page) {
         assert.equal(await page.locator('html').getAttribute('data-theme'), 'tront-purple');
         assert.deepEqual(errors, []);
         console.log('PASS: real-browser theme interactions, computed text contrast, mobile fit and gallery preference isolation.');
+    } catch (error) {
+        if (page && !page.isClosed()) {
+            try {
+                fs.mkdirSync(diagnosticsDir, { recursive: true });
+                const focus = await focusDetails(page);
+                const report = { phase, error: error.message, focus };
+                console.error('Theme browser failure diagnostics:', JSON.stringify(report, null, 2));
+                fs.writeFileSync(path.join(diagnosticsDir, 'theme-browser-failure.json'), JSON.stringify(report, null, 2));
+                await page.screenshot({ path: path.join(diagnosticsDir, 'theme-browser-failure.png'), fullPage: true });
+            } catch (diagnosticError) { console.error('Could not capture browser diagnostics:', diagnosticError.message); }
+        }
+        throw error;
     } finally {
         if (browser) await browser.close();
         await new Promise(resolve => server.close(resolve));
