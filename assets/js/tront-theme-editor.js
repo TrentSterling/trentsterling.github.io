@@ -1,5 +1,5 @@
 /*
- * Opt-in theme editor for the homepage and Discord page only.
+ * Opt-in theme editor. Gallery keeps its original look until a new palette is chosen.
  * Reuses the palette and color helpers in tront-system.js without changing its
  * shared engine. Never writes the legacy tront-theme / gallery preference keys.
  *
@@ -13,7 +13,9 @@
     'use strict';
     var T = root.Tront;
     if (!T) return;
-    var KEY = 'tront-theme-editor-v1';
+    var doc = root.document;
+    var gallery = !!(doc && doc.documentElement.getAttribute('data-tront-theme-surface') === 'gallery');
+    var KEY = gallery ? 'tront-theme-gallery-v1' : 'tront-theme-editor-v1';
     var PRESETS = [
         { id: 'dark', name: 'Midnight', mode: 'dark', colors: ['#64748b', '#334155', '#171d2e', '#655783'] },
         { id: 'cyan', name: 'Cyan', mode: 'dark', colors: ['#56ccff', '#1871b8', '#2dd4bf', '#99f6e4'] },
@@ -37,9 +39,9 @@
         if (!value || typeof value !== 'object' || Array.isArray(value)) return fallback;
         return {
             version: 1,
-            preset: PRESETS.some(function (p) { return p.id === value.preset; }) ? value.preset : 'custom',
+            preset: value.preset === 'gallery-original' || PRESETS.some(function (p) { return p.id === value.preset; }) ? value.preset : 'custom',
             mode: value.mode === 'light' ? 'light' : 'dark',
-            count: Math.round(clamp(value.count, 1, 4, 4)),
+            count: 4, // Older one-to-three-peg choices migrate to the complete stored palette.
             angle: Math.round(clamp(value.angle, 0, 360, 135)),
             intensity: Math.round(clamp(value.intensity, 0, 100, 65)),
             frost: Math.round(clamp(value.frost, 75, 100, 88)),
@@ -117,12 +119,17 @@
             red: readable([227, 83, 112], bound, ink),
             blue: readable([83, 159, 228], bound, ink)
         };
+        // Opaque grid lines stay inside the already-checked button color bounds.
+        var gridX = T.mix(base, raw[0].color, dark ? 0.28 : 0.20);
+        var gridY = T.mix(base, raw[2].color, dark ? 0.28 : 0.20);
         var vars = {
             '--te-bg': T.toHex(base), '--te-panel': T.toHex(panel), '--te-elem': T.toHex(elem), '--te-hover': T.toHex(hover),
             '--te-panel-fill': 'rgba(' + panel.join(',') + ',' + state.frost / 100 + ')',
             '--te-blur': (100 - state.frost) / 2 + 'px',
             '--te-wash': gradient(wash, state.angle), '--te-button': gradient(button, state.angle),
             '--te-preview': gradient(raw, state.angle),
+            '--te-grid-x': T.toHex(gridX), '--te-grid-y': T.toHex(gridY),
+            '--te-glow-opacity': String(state.intensity / 100 * (dark ? 0.15 : 0.08)),
             '--te-line': T.toHex(readable(T.mix(panel, ink, 0.28), bound, ink, 3.1))
         };
         Object.keys(colors).forEach(function (key) { vars['--te-' + key] = T.toHex(colors[key]); });
@@ -142,18 +149,26 @@
     root.TrontThemeEditor = { key: KEY, presets: clone(PRESETS), preset: preset, normalize: normalize,
         fromLegacy: fromLegacy, buildTokens: buildTokens, sample: sample, contrast: contrast, colorMagic: colorMagic };
 
-    var doc = root.document;
     if (!doc || !doc.documentElement.hasAttribute('data-tront-theme-editor')) return;
     var html = doc.documentElement;
-    var storageAvailable = true;
+    var storageAvailable = true, legacyGallery = 'dark', galleryCards = [];
+    function originalGallery() {
+        var original = fromLegacy(legacyGallery);
+        if (legacyGallery === 'dark') {
+            original.pegs = ['#a855f7', '#ff8b3d', '#2ee6d7', '#58a6ff'].map(function (color, i) { return { color: color, position: Math.round(i * 100 / 3) }; });
+        }
+        original.preset = 'gallery-original';
+        return original;
+    }
     function readStored() {
         try {
+            legacyGallery = root.localStorage.getItem('tront-theme') || 'dark';
             var saved = root.localStorage.getItem(KEY);
             if (saved) {
                 try { var parsed = JSON.parse(saved); if (parsed && parsed.version === 1) return normalize(parsed); } catch (_) { /* Fall back to the prior choice. */ }
             }
-            return fromLegacy(root.localStorage.getItem('tront-theme'));
-        } catch (_) { storageAvailable = false; return preset('dark'); }
+            return gallery ? originalGallery() : fromLegacy(legacyGallery);
+        } catch (_) { storageAvailable = false; return gallery ? originalGallery() : preset('dark'); }
     }
     var state = readStored(), history = [], draftStart = null, dialog, opener, status, currentTokens;
     function apply() {
@@ -161,8 +176,16 @@
         Object.keys(currentTokens.vars).forEach(function (key) { html.style.setProperty(key, currentTokens.vars[key]); });
         html.setAttribute('data-te-mode', state.mode);
         html.style.colorScheme = state.mode;
-        // Only this document opts in. The old origin-wide preference stays intact.
-        html.removeAttribute('data-theme');
+        // Reading the original gallery choice never rewrites its old preference.
+        var nativeGallery = gallery && state.preset === 'gallery-original';
+        if (gallery) html.setAttribute('data-te-gallery', nativeGallery ? 'native' : 'custom');
+        if (nativeGallery && legacyGallery !== 'dark') html.setAttribute('data-theme', legacyGallery);
+        else html.removeAttribute('data-theme');
+        galleryCards.forEach(function (card) {
+            var accent = readable(card.color, currentTokens.bound, currentTokens.colors.ink);
+            card.element.style.setProperty('--te-card-accent', T.toHex(accent));
+        });
+        if (html.getAttribute('data-tront-theme-surface') === 'blog') html.setAttribute('data-mode', state.mode);
     }
     function save() {
         try { root.localStorage.setItem(KEY, JSON.stringify(state)); storageAvailable = true; }
@@ -180,26 +203,27 @@
         apply(); save(); sync();
     }
     function announce() {
-        if (status) status.textContent = storageAvailable ? 'Home and Discord only. Choices save in this browser.' : 'Preview only. Browser storage is unavailable.';
+        if (status) status.textContent = storageAvailable ? (gallery ? 'Games keeps its radial background. Choices save in this browser.' : 'Choices save in this browser.') : 'Preview only. Browser storage is unavailable.';
     }
     function sync() {
         if (!dialog) return;
         dialog.querySelector('[name="preset"]').value = state.preset;
         dialog.querySelectorAll('[name="mode"]').forEach(function (input) { input.checked = input.value === state.mode; });
-        ['count', 'angle', 'intensity', 'frost'].forEach(function (name) {
+        ['angle', 'intensity', 'frost'].forEach(function (name) {
             dialog.querySelector('[name="' + name + '"]').value = state[name];
             var out = dialog.querySelector('[data-value="' + name + '"]');
             if (out) out.textContent = state[name] + (name === 'angle' ? '°' : '%');
         });
         state.pegs.forEach(function (peg, i) {
-            dialog.querySelector('[data-peg-row="' + i + '"]').hidden = i >= state.count;
             dialog.querySelector('[name="color-' + i + '"]').value = peg.color;
             dialog.querySelector('[name="position-' + i + '"]').value = peg.position;
             dialog.querySelector('[data-value="position-' + i + '"]').textContent = peg.position + '%';
         });
         dialog.querySelector('[data-action="undo"]').disabled = !history.length;
-        opener.querySelector('.theme-label').textContent = ' Theme';
-        opener.querySelector('.theme-icon').textContent = state.mode === 'dark' ? '◐' : '◑';
+        var original = gallery && state.preset === 'gallery-original';
+        var legacyLabel = ({ 'tront-cyan': ['⚡', 'Cyan'], 'tront-purple': ['🔮', 'Purple'], 'tront-ember': ['🔥', 'Ember'], light: ['☀️', 'Light'] })[legacyGallery] || ['🌙', 'Dark'];
+        opener.querySelector('.theme-label').textContent = original ? ' ' + legacyLabel[1] : ' Theme';
+        opener.querySelector('.theme-icon').textContent = original ? legacyLabel[0] : state.mode === 'dark' ? '◐' : '◑';
         announce();
     }
     function init() {
@@ -210,17 +234,23 @@
         dialog.className = 'te-dialog';
         dialog.setAttribute('aria-labelledby', 'te-title');
         dialog.innerHTML = '<div class="te-heading"><div><h2 id="te-title">Theme</h2></div><button type="button" class="te-close" data-action="close" aria-label="Close theme editor">×</button></div>' +
-            '<div class="te-presets"><label for="te-preset">Palette</label><select id="te-preset" name="preset">' + PRESETS.map(function (p) { return '<option value="' + p.id + '">' + p.name + '</option>'; }).join('') + '<option value="custom" disabled>Custom</option></select><button type="button" data-action="magic">ColorMagic</button></div>' +
+            '<div class="te-presets"><label for="te-preset">Palette</label><select id="te-preset" name="preset">' + PRESETS.map(function (p) { return '<option value="' + p.id + '">' + p.name + '</option>'; }).join('') + (gallery ? '<option value="gallery-original">Original gallery</option>' : '') + '<option value="custom" disabled>Custom</option></select><button type="button" data-action="magic">ColorMagic</button></div>' +
             '<fieldset class="te-mode"><legend>Appearance</legend><label><input type="radio" name="mode" value="dark"> Dark</label><label><input type="radio" name="mode" value="light"> Light</label></fieldset>' +
             '<div class="te-preview" role="img" aria-label="Your selected gradient colors"></div>' +
-            '<details class="te-details"><summary>Fine-tune gradient</summary><div class="te-tuning"><label class="te-count" for="te-count">Color pegs <select id="te-count" name="count"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>' +
+            '<section class="te-details" aria-labelledby="te-gradient-title"><h3 id="te-gradient-title">Gradient</h3><div class="te-tuning">' +
             [0, 1, 2, 3].map(function (i) { return '<div class="te-peg" data-peg-row="' + i + '"><label for="te-color-' + i + '">Color ' + (i + 1) + '</label><input id="te-color-' + i + '" name="color-' + i + '" type="color"><input type="range" min="0" max="100" step="1" id="te-position-' + i + '" name="position-' + i + '" aria-label="Color ' + (i + 1) + ' position"><output for="te-position-' + i + '" data-value="position-' + i + '"></output></div>'; }).join('') +
             '<label class="te-slider" for="te-angle">Angle <output for="te-angle" data-value="angle"></output><input id="te-angle" type="range" name="angle" min="0" max="360" step="1"></label>' +
             '<label class="te-slider" for="te-intensity">Color intensity <output for="te-intensity" data-value="intensity"></output><input id="te-intensity" type="range" name="intensity" min="0" max="100" step="1"></label>' +
             '<label class="te-slider" for="te-frost">Panel frost <output for="te-frost" data-value="frost"></output><input id="te-frost" type="range" name="frost" min="75" max="100" step="1"></label>' +
-            '<p class="te-hint">Page colors stay softened so the text stays readable.</p></div></details>' +
+            '<p class="te-hint">Page colors stay softened so the text stays readable.</p></div></section>' +
             '<div class="te-actions"><button type="button" data-action="undo">Undo</button><button type="button" data-action="reset">Reset</button></div><p class="te-status" role="status" aria-live="polite"></p>';
         doc.body.appendChild(dialog);
+        if (gallery && doc.querySelectorAll) {
+            galleryCards = Array.prototype.map.call(doc.querySelectorAll('.item'), function (element) {
+                return { element: element, color: T.hexToRgb(element.style.getPropertyValue('--highlight-color').trim()) || currentTokens.colors.accent };
+            });
+            apply();
+        }
         status = dialog.querySelector('.te-status');
         opener.type = 'button'; opener.hidden = false;
         opener.setAttribute('aria-label', 'Choose a theme');
@@ -239,7 +269,7 @@
         // Keep sequential keyboard navigation inside the editor even when a
         // browser would otherwise move from the last control to browser chrome.
         // These endpoints are always visible/enabled; native Tab order between
-        // them still handles radio groups, hidden pegs and collapsed details.
+        // them still handles the native radio and slider controls.
         dialog.addEventListener('keydown', function (event) {
             if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return;
             var first = dialog.querySelector('[data-action="close"]');
@@ -262,7 +292,7 @@
             if (!action) return;
             if (action.dataset.action === 'close') dialog.close();
             if (action.dataset.action === 'magic') commit(colorMagic(state));
-            if (action.dataset.action === 'reset') commit(preset('dark'));
+            if (action.dataset.action === 'reset') commit(gallery ? originalGallery() : preset('dark'));
             if (action.dataset.action === 'undo' && history.length) {
                 state = history.pop(); draftStart = null; apply(); save(); sync();
             }
@@ -274,14 +304,14 @@
             var next = clone(state);
             if (/^color-\d$/.test(name)) next.pegs[Number(name.slice(-1))].color = input.value;
             else if (/^position-\d$/.test(name)) next.pegs[Number(name.slice(-1))].position = Number(input.value);
-            else if (['count', 'angle', 'intensity', 'frost'].indexOf(name) !== -1) next[name] = Number(input.value);
+            else if (['angle', 'intensity', 'frost'].indexOf(name) !== -1) next[name] = Number(input.value);
             else return;
             next.preset = 'custom'; state = normalize(next); apply(); save(); sync();
         }
         dialog.addEventListener('input', function (event) { updateInput(event.target); });
         dialog.addEventListener('change', function (event) {
             var input = event.target;
-            if (input.name === 'preset') { commit(preset(input.value)); return; }
+            if (input.name === 'preset') { commit(input.value === 'gallery-original' && gallery ? originalGallery() : preset(input.value)); return; }
             if (input.name === 'mode') { var next = clone(state); next.mode = input.value; next.preset = 'custom'; commit(next); return; }
             updateInput(input);
             if (draftStart) { remember(draftStart); draftStart = null; sync(); }

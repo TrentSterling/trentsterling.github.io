@@ -53,7 +53,7 @@ class Dialog extends Element {
 function environment(options = {}) {
     const writes = [], reads = [], store = { ...(options.storage || {}) };
     const doc = { readyState: options.loading ? 'loading' : 'complete', listeners: {}, activeElement: null };
-    doc.documentElement = new Element('html', options.optIn === false ? {} : { 'data-tront-theme-editor': '' }, doc);
+    doc.documentElement = new Element('html', options.optIn === false ? {} : { 'data-tront-theme-editor': '', ...(options.gallery ? { 'data-tront-theme-surface': 'gallery', 'data-te-gallery': 'native' } : {}) }, doc);
     doc.body = new Element('body', {}, doc);
     const opener = new Element('button', { id: 'tront-theme-btn', hidden: '' }, doc);
     opener.children.push(new Element('span', { class: 'theme-label' }, doc), new Element('span', { class: 'theme-icon' }, doc));
@@ -79,7 +79,7 @@ function environment(options = {}) {
     };
 }
 const engine = environment({ optIn: false }).api;
-function stateOf(env) { return JSON.parse(env.store[engine.key]); }
+function stateOf(env) { return JSON.parse(env.store[env.api.key]); }
 function click(env, action) { env.dialog.fire('click', { target: env.dialog.querySelector(`[data-action="${action}"]`) }); }
 function change(env, name, value, type = 'change') {
     const control = env.dialog.querySelectorAll(`[name="${name}"]`).find(input => name !== 'mode' || input.value === value);
@@ -93,7 +93,9 @@ function checkRamp(state, steps = 128) {
         const page = engine.sample(wash, i * 100 / steps);
         const frosted = T.mix(page, panel, tokens.state.frost / 100);
         const nested = T.mix(frosted, panel, tokens.state.frost / 100);
-        const grounds = [base, panel, elem, hover, page, frosted, nested, engine.sample(button, i * 100 / steps)];
+        const a = Number(tokens.vars['--te-glow-opacity']);
+        const glow = T.mix(T.mix(base, tokens.grounds.raw[0].color, a), tokens.grounds.raw[2].color, a);
+        const grounds = [base, panel, elem, hover, page, frosted, nested, glow, T.mix(glow, panel, tokens.state.frost / 100), T.hexToRgb(tokens.vars['--te-grid-x']), T.hexToRgb(tokens.vars['--te-grid-y']), engine.sample(button, i * 100 / steps)];
         for (const [name, foreground] of Object.entries(tokens.colors)) {
             for (const background of grounds) assert.ok(engine.contrast(foreground, background) >= 4.5, `${name} failed ${JSON.stringify(state)}`);
         }
@@ -103,7 +105,7 @@ function checkRamp(state, steps = 128) {
 }
 const environmentPure = environment({ optIn: false }).win.Tront;
 
-test('all presets, both modes, peg counts, intensity and frost limits pass whole-ramp contrast', () => {
+test('all presets, modes, legacy peg-count migrations, grid and radial grounds pass contrast', () => {
     for (const p of engine.presets) for (const mode of ['dark', 'light']) for (const count of [1, 2, 3, 4]) {
         for (const intensity of [0, 50, 100]) for (const frost of [75, 100]) {
             checkRamp({ ...engine.preset(p.id), mode, count, intensity, frost });
@@ -128,18 +130,19 @@ test('normalization rejects injected colors, limits all fields, retains four ind
     assert.equal(s.pegs[0].color, engine.preset('dark').pegs[0].color);
     for (const bad of [null, [], true, 7, 'bad']) assert.deepEqual(plain(engine.normalize(bad)), plain(engine.preset('dark')));
 });
-test('movable stops render their exact sorted positions, including hard stops and a single color', () => {
+test('four movable stops render exact sorted positions and preserve old hidden colors', () => {
     const state = engine.preset('cyan'); state.angle = 217;
     state.pegs = [{ color: '#ff0000', position: 75 }, { color: '#00ff00', position: 10 }, { color: '#0000ff', position: 75 }, { color: '#ffffff', position: 100 }];
     const tokens = engine.buildTokens(state);
     assert.deepEqual(plain(tokens.grounds.raw.map(p => p.position)), [10, 75, 75, 100]);
     assert.match(tokens.vars['--te-preview'], /^linear-gradient\(217deg in srgb, #00ff00 10%, #ff0000 75%, #0000ff 75%, #ffffff 100%\)$/);
     assert.deepEqual(plain(engine.sample(tokens.grounds.raw, 75)), [0, 0, 255]);
-    state.count = 1; const single = engine.buildTokens(state);
-    assert.deepEqual(plain(engine.sample(single.grounds.wash, 0)), plain(engine.sample(single.grounds.wash, 100)));
+    state.count = 1; const migrated = engine.buildTokens(state);
+    assert.equal(migrated.state.count, 4);
+    assert.deepEqual(plain(migrated.state.pegs), plain(state.pegs));
 });
-test('ColorMagic preserves mode, stop count, positions, angle and frost while replacing the palette', () => {
-    const prior = engine.preset('light'); prior.count = 2; prior.pegs[0].position = 22;
+test('ColorMagic preserves four stops, mode, positions, angle and frost while replacing the palette', () => {
+    const prior = engine.preset('light'); prior.pegs[0].position = 22;
     const next = engine.colorMagic(prior, () => .314);
     for (const key of ['mode', 'count', 'angle', 'intensity', 'frost']) assert.equal(next[key], prior[key]);
     assert.deepEqual(plain(next.pegs.map(p => p.position)), plain(prior.pegs.map(p => p.position)));
@@ -218,8 +221,8 @@ test('Tab wraps only at modal boundaries; reverse Tab, modifiers and other keys 
     for (const modifiers of [{ ctrlKey: true }, { altKey: true }, { metaKey: true }]) assert.equal(key(last, 'Tab', modifiers), false);
     assert.equal(key(first, 'Escape'), false, 'native Escape dismissal remains untouched');
     assert.equal(key(middle, 'ArrowRight'), false, 'native slider keyboard editing remains untouched');
-    change(env, 'count', 1);
-    assert.equal(key(last, 'Tab'), true); assert.equal(env.doc.activeElement, first, 'hidden pegs cannot change the endpoints');
+    assert.equal(env.dialog.querySelectorAll('[data-peg-row]').length, 4);
+    assert.equal(env.dialog.querySelector('[name="count"]'), null);
 });
 test('outside dismissal requires both pointerdown and click outside; dragging out does not dismiss', () => {
     const env = environment(); env.opener.fire('click');
@@ -228,13 +231,12 @@ test('outside dismissal requires both pointerdown and click outside; dragging ou
     env.dialog.fire('pointerdown', { clientX: 10, clientY: 10 });
     env.dialog.fire('click', { clientX: 10, clientY: 10 }); assert.equal(env.dialog.open, false);
 });
-test('continuous editing is one undo step; reset is undoable; hidden pegs keep their colors', () => {
+test('continuous editing is one undo step; reset is undoable; all four pegs stay visible', () => {
     const env = environment(); const original = engine.preset('dark');
     change(env, 'angle', 23, 'input'); change(env, 'angle', 24, 'input'); change(env, 'angle', 25, 'input'); change(env, 'angle', 25);
     assert.equal(stateOf(env).angle, 25); click(env, 'undo'); assert.equal(stateOf(env).angle, original.angle);
     assert.equal(env.dialog.querySelector('[data-action="undo"]').disabled, true);
-    change(env, 'color-3', '#ff00aa'); change(env, 'count', 1);
-    assert.equal(env.dialog.querySelector('[data-peg-row="3"]').hidden, true); change(env, 'count', 4);
+    change(env, 'color-3', '#ff00aa');
     assert.equal(stateOf(env).pegs[3].color, '#ff00aa'); assert.equal(env.dialog.querySelector('[data-peg-row="3"]').hidden, false);
     const before = stateOf(env); click(env, 'reset'); assert.equal(stateOf(env).preset, 'dark'); click(env, 'undo'); assert.deepEqual(stateOf(env), before);
 });
@@ -255,7 +257,7 @@ test('all generated controls have accessible names and native keyboard semantics
     }
     assert.equal(env.dialog.querySelector('[data-action="close"]').attrs.type, 'button');
 });
-test('integration opts in only home/Discord and keeps the legacy gallery dependency graph', () => {
+test('integration adds the editor while preserving the legacy gallery styles and motion assets', () => {
     for (const file of ['index.html', 'discord/index.html']) {
         const html = fs.readFileSync(path.join(base, file), 'utf8');
         assert.match(html, /<html[^>]*data-tront-theme-editor/);
@@ -264,9 +266,40 @@ test('integration opts in only home/Discord and keeps the legacy gallery depende
         assert.ok(html.indexOf('assets/js/tront-system.js') < html.indexOf('assets/js/tront-theme-editor.js'));
     }
     const games = fs.readFileSync(path.join(base, 'games/index.html'), 'utf8');
-    assert.ok(!games.includes('tront-theme-editor')); assert.match(games, /assets\/js\/tront-theme\.js/); assert.match(games, /assets\/css\/tront-themes\.css/);
+    assert.match(games, /data-tront-theme-surface="gallery" data-te-gallery="native"/);
+    assert.match(games, /assets\/js\/tront-theme-editor\.js/); assert.match(games, /assets\/css\/tront-themes\.css/);
+    assert.match(games, /games\/gallery-motion\.js/); assert.match(games, /games\/gallery-motion\.css/);
     const css = fs.readFileSync(path.join(base, 'assets/css/tront-theme-editor.css'), 'utf8');
     assert.match(css, /html\[data-tront-theme-editor\] \[hidden\]\s*\{\s*display: none !important/);
     assert.match(css, /prefers-reduced-motion: reduce/); assert.match(css, /100dvh/);
     assert.ok(!editorSource.includes("setItem('tront-theme'"));
+});
+
+test('gallery defaults and Reset preserve its native theme, radial shape and separate preferences', () => {
+    const savedHome = JSON.stringify(engine.preset('light'));
+    const env = environment({ gallery: true, storage: { 'tront-theme': 'tront-purple', 'tront-theme-editor-v1': savedHome, 'tront-previews-paused': 'true' } });
+    assert.equal(env.api.key, 'tront-theme-gallery-v1');
+    assert.equal(env.doc.documentElement.getAttribute('data-te-gallery'), 'native');
+    assert.equal(env.doc.documentElement.getAttribute('data-theme'), 'tront-purple');
+    assert.equal(env.writes.length, 0);
+    change(env, 'preset', 'cyan');
+    assert.equal(env.doc.documentElement.getAttribute('data-te-gallery'), 'custom');
+    assert.equal(env.doc.documentElement.hasAttribute('data-theme'), false);
+    assert.equal(stateOf(env).count, 4);
+    click(env, 'reset');
+    assert.equal(env.doc.documentElement.getAttribute('data-te-gallery'), 'native');
+    assert.equal(env.doc.documentElement.getAttribute('data-theme'), 'tront-purple');
+    assert.equal(env.store['tront-theme-editor-v1'], savedHome);
+    assert.equal(env.store['tront-theme'], 'tront-purple');
+    assert.equal(env.store['tront-previews-paused'], 'true');
+    assert.ok(env.writes.every(([key]) => key === 'tront-theme-gallery-v1'));
+});
+test('editor always exposes four pegs without a collapsed or count-dependent mode', () => {
+    const saved = engine.preset('cyan'); saved.count = 1;
+    const env = environment({ storage: { [engine.key]: JSON.stringify(saved) } });
+    assert.equal(env.dialog.querySelectorAll('[data-peg-row]').length, 4);
+    assert.ok(env.dialog.querySelectorAll('[data-peg-row]').every(row => !row.hidden));
+    assert.equal(env.dialog.querySelector('details'), null);
+    assert.equal(env.dialog.querySelector('[name="count"]'), null);
+    assert.equal(env.api.normalize(saved).count, 4);
 });

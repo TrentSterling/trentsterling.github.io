@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en" data-tront-theme-editor>
+<html lang="en" data-tront-theme-editor data-tront-theme-surface="grid">
 <head>
     <!-- Google tag (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-27SVZGYHZ3"></script>
@@ -182,6 +182,7 @@
         .nav-link.active::before { animation: continuous-sheen 3s infinite linear; }
     </style>
     <link rel="stylesheet" href="/assets/css/tront-theme-editor.css">
+    <link rel="stylesheet" href="/assets/css/tront-navbar.css">
     <script src="/assets/js/tront-system.js"></script>
     <script src="/assets/js/tront-theme-editor.js"></script>
     
@@ -241,7 +242,7 @@
 <body>
 
     <!-- THE BEST NAVBAR HTML (ADAPTED) -->
-    <nav id="magic-navbar-container">
+    <nav id="magic-navbar-container" aria-label="Primary">
         <button id="tront-theme-btn" class="nav-link" type="button" hidden><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
         <!-- Elements are in reverse order for the CSS hover hack to work -->
         <a href="/discord/" class="nav-link">Discord</a>
