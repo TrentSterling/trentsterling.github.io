@@ -45,7 +45,7 @@ async function auditText(page) {
     });
     assert.deepEqual(failures, [], 'rendered foregrounds meet the shared whole-background bound');
 }
-async function reviewScrolledGrid(page, label) {
+async function reviewScrolledGrid(page, pageName, label) {
     for (const [position, fraction] of [['middle', .5], ['bottom', 1]]) {
         await page.evaluate(f => scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * f), fraction);
         await page.waitForTimeout(120);
@@ -53,7 +53,7 @@ async function reviewScrolledGrid(page, label) {
         assert.ok(grid.y > 0, 'grid review actually scrolls below the initial viewport');
         assert.equal((grid.image.match(/linear-gradient/g) || []).length, 3);
         assert.match(grid.size, /^50px 50px, 50px 50px,/);
-        if (screenshots) await page.screenshot({ path: path.join(screenshots, `home-grid-${label}-${position}.png`) });
+        if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-grid-${label}-${position}.png`) });
     }
     await page.evaluate(() => scrollTo(0, 0));
 }
@@ -156,7 +156,7 @@ async function assertFocusInside(page, step) {
                     assert.equal(await page.locator('html').getAttribute('data-theme'), null);
                 }
                 await auditText(page);
-                if (route === '/') {
+                if (route === '/' || route === '/discord/') {
                     const grid = await page.evaluate(() => ({ image: getComputedStyle(document.body).backgroundImage, size: getComputedStyle(document.body).backgroundSize }));
                     assert.match(grid.size, /^50px 50px, 50px 50px,/);
                     assert.equal((grid.image.match(/linear-gradient/g) || []).length, 3);
@@ -214,7 +214,7 @@ async function assertFocusInside(page, step) {
             await page.keyboard.press('Escape');
             await auditText(page);
             if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-desktop-dark.png`), fullPage: route !== '/games/' });
-            if (route === '/') await reviewScrolledGrid(page, 'desktop-dark');
+            if (route === '/' || route === '/discord/') await reviewScrolledGrid(page, pageName, 'desktop-dark');
             // Paper/light gives the mobile review a different polarity.
             await page.locator('#tront-theme-btn').click();
             await page.selectOption('[name="preset"]', 'light');
@@ -230,9 +230,24 @@ async function assertFocusInside(page, step) {
                 await page.keyboard.press('Escape');
                 await auditText(page);
                 if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-mobile-light.png`), fullPage: route !== '/games/' });
-                if (route === '/' && width === 390) await reviewScrolledGrid(page, 'mobile-light');
+                if ((route === '/' || route === '/discord/') && width === 390) await reviewScrolledGrid(page, pageName, 'mobile-light');
             }
             await page.setViewportSize({ width: 1280, height: 900 });
+            phase = route + ' button and prose link affordances';
+            for (const selector of (route === '/games/' ? ['#magic-navbar-container .nav-link'] : ['.cta-button', '.join-button', '.links a', '#magic-navbar-container .nav-link'])) {
+                const link = page.locator(selector).first();
+                if (!await link.count()) continue;
+                await link.hover();
+                assert.equal(await link.evaluate(el => getComputedStyle(el).textDecorationLine), 'none', 'button-style links have no hover underline');
+                await link.focus();
+                await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
+                assert.equal(await link.evaluate(el => getComputedStyle(el).textDecorationLine), 'none');
+                assert.notEqual(await link.evaluate(el => getComputedStyle(el).outlineStyle), 'none', 'keyboard focus remains visible');
+            }
+            if (route === '/discord/' && screenshots) {
+                await page.locator('.cta-button').first().hover();
+                await page.screenshot({ path: path.join(screenshots, 'discord-cta-hover.png') });
+            }
             await page.emulateMedia({ reducedMotion: 'reduce' });
             assert.equal(await page.locator('.nav-link').first().evaluate(el => getComputedStyle(el).animationName), 'none');
             await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -242,6 +257,10 @@ async function assertFocusInside(page, step) {
         assert.equal(await page.locator('html').getAttribute('data-tront-theme-surface'), 'gallery');
         assert.equal(await page.evaluate(() => window.TrontThemeEditor.key), 'tront-theme-gallery-v1');
         assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundImage), 'none');
+        // Measure playback in a fresh browser, just like the standalone gallery suite.
+        // Prior full-page screenshot/DOM audits must not retain tabs or compositor state.
+        await browser.close(); page = null;
+        browser = await chromium.launch(options);
         // Exercise the unchanged media controller with custom colors actually active.
         const playback = [];
         for (const size of [{ width: 2560, height: 1440, cap: 12 }, { width: 390, height: 844, cap: 2 }]) {
@@ -262,6 +281,8 @@ async function assertFocusInside(page, step) {
             const state = () => game.evaluate(() => ({ attached: document.querySelectorAll('.gameplay-preview[src]').length,
                 playing: [...document.querySelectorAll('.gameplay-preview')].filter(v => !v.paused).length,
                 videos: [...document.querySelectorAll('.gameplay-preview')].map(v => ({ id: v.closest('[data-preview]').id, total: v.getVideoPlaybackQuality().totalVideoFrames, dropped: v.getVideoPlaybackQuality().droppedVideoFrames })) }));
+            // Match the established gallery load test: let all decoders warm up.
+            await game.waitForTimeout(2000);
             const before = await state();
             await game.waitForTimeout(5000);
             const after = await state();
@@ -270,7 +291,11 @@ async function assertFocusInside(page, step) {
             const retained = after.videos.filter(v => byId.has(v.id));
             const frames = retained.reduce((sum, v) => sum + v.total - byId.get(v.id).total, 0);
             const drops = retained.reduce((sum, v) => sum + v.dropped - byId.get(v.id).dropped, 0);
-            assert.ok(frames > 100 && drops / frames < .1, 'custom radial themes retain smooth bounded video playback');
+            const measurement = { width: size.width, before, after, frames, drops, dropPercent: 100 * drops / frames };
+            fs.mkdirSync(diagnosticsDir, { recursive: true });
+            fs.writeFileSync(path.join(diagnosticsDir, `custom-gallery-playback-${size.width}.json`), JSON.stringify(measurement, null, 2));
+            console.log('Custom gallery playback:', JSON.stringify(measurement));
+            assert.ok(frames > 100 && drops / frames < .1, 'custom radial themes retain smooth bounded video playback: ' + JSON.stringify({ frames, drops }));
             await game.evaluate(() => document.getElementById('filter-mod').click());
             await game.waitForTimeout(300);
             assert.equal(await game.locator('.gameplay-preview[src]').evaluateAll(videos => videos.every(v => v.closest('.item').classList.contains('tag-mod') && v.getBoundingClientRect().width > 0)), true);

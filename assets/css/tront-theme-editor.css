@@ -198,7 +198,7 @@ html[data-tront-theme-editor] .te-status { color: var(--te-muted); font-size: 12
     html[data-tront-theme-editor]:not([data-te-gallery="native"]) #magic-navbar-container .nav-link:hover { transform: none; }
 }
 
-/* Homepage: retain the original 50px grid over the palette wash. */
+/* Home and Discord each retain their original 50px grid over the palette wash. */
 html[data-tront-theme-editor][data-tront-theme-surface="grid"] body {
     background-image: linear-gradient(var(--te-grid-y) 1px, transparent 1px), linear-gradient(90deg, var(--te-grid-x) 1px, transparent 1px), var(--te-wash);
     background-size: 50px 50px, 50px 50px, cover;
@@ -235,3 +235,7 @@ html[data-tront-theme-surface="gallery"][data-te-gallery="custom"] .image-contai
 
 /* Color changes are atomic: never interpolate through unreadable old ink. */
 html[data-tront-theme-surface="gallery"][data-te-gallery="custom"] .filter-nav label { transition: transform .16s ease; }
+
+/* Button-style links stay buttons on hover/focus; prose links keep their cues. */
+html[data-tront-theme-editor]:not([data-tront-theme-surface="gallery"]) :is(.cta-button, .join-button, .links a),
+html[data-tront-theme-editor]:not([data-tront-theme-surface="gallery"]) :is(.cta-button, .join-button, .links a):is(:hover, :focus, :active, :visited) { text-decoration: none; }

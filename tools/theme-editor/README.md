@@ -77,3 +77,10 @@ The editor is always expanded and normalizes older one-to-three-peg settings to 
 CI checks out the PR base separately. `THEME_BASELINE_ROOT=... node tools/theme-editor/preserve.cjs` checks text, inline layouts, gallery markup and protected Git blobs. Browser checks compare original gallery card geometry and background composition at desktop/mobile widths across legacy dark, purple and light before testing custom themes. The sparse baseline uses current-served legacy assets only after the source guard proves their Git blobs match the base. Browser checks reject any missing local dependency. Native Games navbar geometry is also compared exactly; shared navbar geometry opts in only after a custom gallery palette is chosen.
 
 A separate custom-theme playback check measures desktop/mobile frames and drops, enforces 12/2 preview caps, and exercises filtering and persistent pause after editing a peg. The unchanged 27-case gallery playback suite still runs separately.
+
+
+## Preserve each page's design language
+
+ColorMagic supplies colors and contrast bounds, not a replacement layout or one universal background. Before adding a page, inspect its original background layers, materials, typography and accent roles. Home and Discord both had two-direction 50px grids before the editor (Discord source: `7a3a635:discord/index.html`, body CSS); Games has two blurred circular glows and a separate fixed grid. Keep those compositions and recolor their existing roles. The blog uses Chirpy reading surfaces, sidebar and syntax accents, not the gallery or homepage background.
+
+Browser checks require the grid on both Home and Discord in every preset and save real scrolled-viewport captures at their middle/bottom. Full-page Chromium captures omit off-viewport fixed backgrounds, so they cannot alone verify that behavior. Button-style links are checked in hover and keyboard focus states; prose links keep their own link affordances. For a new integration, record and compare its own before/after composition instead of accepting readability alone as visual preservation.

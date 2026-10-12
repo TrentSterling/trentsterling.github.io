@@ -303,3 +303,15 @@ test('editor always exposes four pegs without a collapsed or count-dependent mod
     assert.equal(env.dialog.querySelector('[name="count"]'), null);
     assert.equal(env.api.normalize(saved).count, 4);
 });
+
+
+test('Home and Discord keep their own grid composition, while Games keeps its radial surface', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const root = path.resolve(__dirname, '../..');
+    for (const page of ['index.html', 'discord/index.html']) {
+        const html = fs.readFileSync(path.join(root, page), 'utf8');
+        assert.match(html, /data-tront-theme-surface="grid"/);
+        assert.match(html, /background-size:\s*50px 50px/);
+    }
+    assert.match(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'), /data-tront-theme-surface="gallery"/);
+});
