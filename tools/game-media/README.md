@@ -21,6 +21,20 @@ card media remain in ignored `.local/` for further editing and comparison.
 
 ## Local review
 
+After changing the gallery's cards or media, refresh its static social preview:
+
+```powershell
+node tools/game-media/refresh-og.cjs
+```
+
+This captures the current first four cards at 1200 x 630 using their reviewed
+gameplay posters. Capture-only spacing keeps the full row readable. It updates
+`games/og-image.png`, writes a content-versioned PNG, and points both Open Graph
+and Twitter metadata at that new filename. Commit all of those changes together.
+If the first row changes, update both image alt descriptions in `games/index.html`.
+Old Discord messages may retain cached previews; share a fresh page URL such as
+`https://tront.xyz/games/?v=20261012` when checking a newly published image.
+
 From the site root, run `node tools/game-media/server.cjs`.
 
 - Gallery: http://127.0.0.1:8965/games/
