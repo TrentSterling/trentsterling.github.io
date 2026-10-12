@@ -45,6 +45,18 @@ async function auditText(page) {
     });
     assert.deepEqual(failures, [], 'rendered foregrounds meet the shared whole-background bound');
 }
+async function reviewScrolledGrid(page, label) {
+    for (const [position, fraction] of [['middle', .5], ['bottom', 1]]) {
+        await page.evaluate(f => scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * f), fraction);
+        await page.waitForTimeout(120);
+        const grid = await page.evaluate(() => ({ y: scrollY, image: getComputedStyle(document.body).backgroundImage, size: getComputedStyle(document.body).backgroundSize }));
+        assert.ok(grid.y > 0, 'grid review actually scrolls below the initial viewport');
+        assert.equal((grid.image.match(/linear-gradient/g) || []).length, 3);
+        assert.match(grid.size, /^50px 50px, 50px 50px,/);
+        if (screenshots) await page.screenshot({ path: path.join(screenshots, `home-grid-${label}-${position}.png`) });
+    }
+    await page.evaluate(() => scrollTo(0, 0));
+}
 async function focusDetails(page) {
     return page.evaluate(() => {
         const active = document.activeElement, dialog = document.querySelector('.te-dialog');
@@ -202,6 +214,7 @@ async function assertFocusInside(page, step) {
             await page.keyboard.press('Escape');
             await auditText(page);
             if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-desktop-dark.png`), fullPage: route !== '/games/' });
+            if (route === '/') await reviewScrolledGrid(page, 'desktop-dark');
             // Paper/light gives the mobile review a different polarity.
             await page.locator('#tront-theme-btn').click();
             await page.selectOption('[name="preset"]', 'light');
@@ -217,6 +230,7 @@ async function assertFocusInside(page, step) {
                 await page.keyboard.press('Escape');
                 await auditText(page);
                 if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-mobile-light.png`), fullPage: route !== '/games/' });
+                if (route === '/' && width === 390) await reviewScrolledGrid(page, 'mobile-light');
             }
             await page.setViewportSize({ width: 1280, height: 900 });
             await page.emulateMedia({ reducedMotion: 'reduce' });
