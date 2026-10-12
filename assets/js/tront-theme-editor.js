@@ -221,7 +221,7 @@
         });
         dialog.querySelector('[data-action="undo"]').disabled = !history.length;
         var original = gallery && state.preset === 'gallery-original';
-        var legacyLabel = ({ 'tront-cyan': ['⚡', 'Cyan'], 'tront-purple': ['🔮', 'Purple'], 'tront-ember': ['🔥', 'Ember'], light: ['☀', 'Light'] })[legacyGallery] || ['🌙', 'Dark'];
+        var legacyLabel = ({ 'tront-cyan': ['⚡', 'Cyan'], 'tront-purple': ['🔮', 'Purple'], 'tront-ember': ['🔥', 'Ember'], light: ['☀️', 'Light'] })[legacyGallery] || ['🌙', 'Dark'];
         opener.querySelector('.theme-label').textContent = original ? ' ' + legacyLabel[1] : ' Theme';
         opener.querySelector('.theme-icon').textContent = original ? legacyLabel[0] : state.mode === 'dark' ? '◐' : '◑';
         announce();
