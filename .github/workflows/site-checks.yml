@@ -10,6 +10,7 @@ on:
       - assets/css/tront-theme*.css
       - assets/js/tront-theme*.js
       - assets/js/tront-system.js
+      - assets/css/tront-navbar.css
       - tools/theme-editor/**
       - tools/game-media/verify.cjs
       - tools/game-media/server.cjs
@@ -28,6 +29,7 @@ jobs:
     timeout-minutes: 12
     env:
       THEME_BROWSER_EXECUTABLE: /opt/google/chrome/chrome
+      THEME_BASELINE_ROOT: ${{ github.workspace }}/.local/theme-baseline
       THEME_SCREENSHOTS: ${{ github.workspace }}/.local/theme-review
     steps:
       - name: Check out the exact PR head
@@ -35,6 +37,17 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
+      - name: Read the current base for content and gallery regression checks
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          path: .local/theme-baseline
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /index.html
+            /discord/index.html
+            /games/index.html
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
@@ -48,6 +61,8 @@ jobs:
           mkdir -p .local/theme-review
           echo "NODE_PATH=$RUNNER_TEMP/site-tests/node_modules" >> "$GITHUB_ENV"
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/site-tests/node_modules/playwright" >> "$GITHUB_ENV"
+      - name: Check copy and gallery source preservation
+        run: node tools/theme-editor/preserve.cjs
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls

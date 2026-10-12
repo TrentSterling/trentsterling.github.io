@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-tront-theme-editor data-tront-theme-surface="gallery" data-te-gallery="native">
 <head>
     <!-- Google tag (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-27SVZGYHZ3"></script>
@@ -35,7 +35,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
+    <script>(function(){try{var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}}catch(e){}})();</script>
     <link rel="stylesheet" href="/assets/css/tront-themes.css">
     <script type="application/ld+json">
     {
@@ -126,6 +126,10 @@
         footer{text-align:center;padding:4rem 1rem 3rem;color:var(--text-muted);font-size:.9rem;margin-top:2rem;border-top:1px solid #30363d}
         footer a{color:#e0e0e0;text-decoration:underline}
     </style>
+    <link rel="stylesheet" href="/assets/css/tront-theme-editor.css">
+    <link rel="stylesheet" href="/assets/css/tront-navbar.css">
+    <script src="/assets/js/tront-system.js"></script>
+    <script src="/assets/js/tront-theme-editor.js"></script>
     <link rel="stylesheet" href="/games/gallery-motion.css">
     <script defer src="/games/gallery-motion.js"></script>
     <noscript><style>body{opacity:1;visibility:visible}</style></noscript>
@@ -133,8 +137,8 @@
 <body>
     <div class="grid-overlay"></div>
 
-    <nav id="magic-navbar-container">
-        <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
+    <nav id="magic-navbar-container" aria-label="Primary">
+        <button id="tront-theme-btn" class="nav-link" type="button" hidden><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
         <a href="/discord/" class="nav-link">Discord</a>
         <a href="/blog/" class="nav-link">Blog</a>
         <a href="javascript:void(0);" class="nav-link active">Games</a>
@@ -365,6 +369,5 @@
             fetchWidgetData();
         })();
     </script>
-    <script src="/assets/js/tront-theme.js"></script>
 </body>
 </html>
