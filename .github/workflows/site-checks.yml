@@ -27,8 +27,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     env:
-      NODE_PATH: ${{ runner.temp }}/site-tests/node_modules
-      PLAYWRIGHT_MODULE: ${{ runner.temp }}/site-tests/node_modules/playwright
       THEME_BROWSER_EXECUTABLE: /opt/google/chrome/chrome
       THEME_SCREENSHOTS: ${{ github.workspace }}/.local/theme-review
     steps:
@@ -48,6 +46,8 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
           node "$RUNNER_TEMP/site-tests/node_modules/playwright/cli.js" install --with-deps chrome
           mkdir -p .local/theme-review
+          echo "NODE_PATH=$RUNNER_TEMP/site-tests/node_modules" >> "$GITHUB_ENV"
+          echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/site-tests/node_modules/playwright" >> "$GITHUB_ENV"
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls
