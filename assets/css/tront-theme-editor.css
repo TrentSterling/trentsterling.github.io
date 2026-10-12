@@ -199,7 +199,7 @@ html[data-tront-theme-editor] .te-status { color: var(--te-muted); font-size: 12
 }
 
 /* Homepage: retain the original 50px grid over the palette wash. */
-html[data-tront-theme-surface="grid"] body {
+html[data-tront-theme-editor][data-tront-theme-surface="grid"] body {
     background-image: linear-gradient(var(--te-grid-y) 1px, transparent 1px), linear-gradient(90deg, var(--te-grid-x) 1px, transparent 1px), var(--te-wash);
     background-size: 50px 50px, 50px 50px, cover;
 }
