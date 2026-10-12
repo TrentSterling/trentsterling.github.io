@@ -257,6 +257,10 @@ async function assertFocusInside(page, step) {
         assert.equal(await page.locator('html').getAttribute('data-tront-theme-surface'), 'gallery');
         assert.equal(await page.evaluate(() => window.TrontThemeEditor.key), 'tront-theme-gallery-v1');
         assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundImage), 'none');
+        // Measure playback in a fresh browser, just like the standalone gallery suite.
+        // Prior full-page screenshot/DOM audits must not retain tabs or compositor state.
+        await browser.close(); page = null;
+        browser = await chromium.launch(options);
         // Exercise the unchanged media controller with custom colors actually active.
         const playback = [];
         for (const size of [{ width: 2560, height: 1440, cap: 12 }, { width: 390, height: 844, cap: 2 }]) {
