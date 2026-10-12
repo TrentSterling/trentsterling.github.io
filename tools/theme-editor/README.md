@@ -1,4 +1,4 @@
-# Home and Discord theme editor
+# Shared ColorMagic theme editor
 
 `/`, `/discord/`, and `/games/` opt in with `data-tront-theme-editor`. The editor reuses
 color conversion and harmony helpers from the unchanged `tront-system.js`.
@@ -38,7 +38,7 @@ From the repository root, using Node's built-in test runner (no new dependencies
     node --check assets/js/tront-theme-editor.js
     node --test tools/theme-editor/test.cjs
 
-The pure/DOM-contract suite checks 288 preset/mode/count/intensity/frost
+The pure/DOM-contract suite checks preset/mode/legacy-count/intensity/frost
 combinations plus 240 deterministic stress themes. It samples page and button
 ramps, composited and nested panels, all foreground tokens, and border contrast.
 It also checks storage migration/failure, opt-in isolation, inaccessible-control
@@ -51,9 +51,10 @@ With Playwright and its browser already installed, run the separate browser suit
 
 For an existing supported browser installation, `THEME_BROWSER_EXECUTABLE` can
 select its executable. `THEME_SCREENSHOTS` selects the review artifact directory
-(created if needed). The suite saves eight review screenshots: the editor and
-closed page for both Home and Discord, each at desktop/Midnight-dark and
-mobile/Paper-light sizes. Closed-page captures include the full page. A failure
+(created if needed). The suite saves twelve review screenshots: the editor and closed page for
+Home, Discord and Games, each at desktop/Midnight-dark and mobile/Paper-light
+sizes. Home/Discord closed-page captures include the full page; Games captures
+use the viewport so review files stay practical. A failure
 also saves a diagnostic screenshot and JSON report with the current test phase,
 focused element, document focus state, and recent focus events. Without
 `THEME_SCREENSHOTS`, failure diagnostics go to `.local/theme-review`.
@@ -62,8 +63,7 @@ This is a localhost-only check; it does not publish or deploy the site. Do not
 bypass execution or browser access denials.
 
 The browser suite tests all three pages, every preset, computed foreground contrast,
-keyboard editing, forward/reverse focus containment and restoration, hidden-peg
-and collapsed-control exclusion with one/four pegs, Escape/outside dismissal,
+keyboard editing, forward/reverse focus containment and restoration, always-visible four-peg controls, Escape/outside dismissal,
 responsive overflow, saved-choice restoration, reduced motion and gallery
 preference isolation. Manually review desktop/mobile appearance and native color
 pickers as well. If browser execution is blocked, report those stages as unrun.
@@ -74,4 +74,6 @@ Home retains its original 50px grid with opaque, peg-derived line colors inside 
 
 The editor is always expanded and normalizes older one-to-three-peg settings to all four stored colors. No copy, game cards, filtering, playback code, media, or inline page layout is rewritten. `tront-navbar.css` shares only the primary navbar geometry, never the blog sidebar.
 
-CI checks out the PR base separately. `THEME_BASELINE_ROOT=... node tools/theme-editor/preserve.cjs` checks text, inline layouts, gallery markup and protected Git blobs. Browser checks compare original gallery card geometry and background composition at desktop/mobile widths across legacy dark, purple and light before testing custom themes. The unchanged 27-case gallery playback suite still runs separately.
+CI checks out the PR base separately. `THEME_BASELINE_ROOT=... node tools/theme-editor/preserve.cjs` checks text, inline layouts, gallery markup and protected Git blobs. Browser checks compare original gallery card geometry and background composition at desktop/mobile widths across legacy dark, purple and light before testing custom themes. The sparse baseline uses current-served legacy assets only after the source guard proves their Git blobs match the base. Browser checks reject any missing local dependency. Native Games navbar geometry is also compared exactly; shared navbar geometry opts in only after a custom gallery palette is chosen.
+
+A separate custom-theme playback check measures desktop/mobile frames and drops, enforces 12/2 preview caps, and exercises filtering and persistent pause after editing a peg. The unchanged 27-case gallery playback suite still runs separately.
