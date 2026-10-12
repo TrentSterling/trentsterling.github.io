@@ -45,7 +45,7 @@ async function auditText(page) {
     });
     assert.deepEqual(failures, [], 'rendered foregrounds meet the shared whole-background bound');
 }
-async function reviewScrolledGrid(page, label) {
+async function reviewScrolledGrid(page, pageName, label) {
     for (const [position, fraction] of [['middle', .5], ['bottom', 1]]) {
         await page.evaluate(f => scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * f), fraction);
         await page.waitForTimeout(120);
@@ -53,7 +53,7 @@ async function reviewScrolledGrid(page, label) {
         assert.ok(grid.y > 0, 'grid review actually scrolls below the initial viewport');
         assert.equal((grid.image.match(/linear-gradient/g) || []).length, 3);
         assert.match(grid.size, /^50px 50px, 50px 50px,/);
-        if (screenshots) await page.screenshot({ path: path.join(screenshots, `home-grid-${label}-${position}.png`) });
+        if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-grid-${label}-${position}.png`) });
     }
     await page.evaluate(() => scrollTo(0, 0));
 }
@@ -156,7 +156,7 @@ async function assertFocusInside(page, step) {
                     assert.equal(await page.locator('html').getAttribute('data-theme'), null);
                 }
                 await auditText(page);
-                if (route === '/') {
+                if (route === '/' || route === '/discord/') {
                     const grid = await page.evaluate(() => ({ image: getComputedStyle(document.body).backgroundImage, size: getComputedStyle(document.body).backgroundSize }));
                     assert.match(grid.size, /^50px 50px, 50px 50px,/);
                     assert.equal((grid.image.match(/linear-gradient/g) || []).length, 3);
@@ -214,7 +214,7 @@ async function assertFocusInside(page, step) {
             await page.keyboard.press('Escape');
             await auditText(page);
             if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-desktop-dark.png`), fullPage: route !== '/games/' });
-            if (route === '/') await reviewScrolledGrid(page, 'desktop-dark');
+            if (route === '/' || route === '/discord/') await reviewScrolledGrid(page, pageName, 'desktop-dark');
             // Paper/light gives the mobile review a different polarity.
             await page.locator('#tront-theme-btn').click();
             await page.selectOption('[name="preset"]', 'light');
@@ -230,9 +230,24 @@ async function assertFocusInside(page, step) {
                 await page.keyboard.press('Escape');
                 await auditText(page);
                 if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-mobile-light.png`), fullPage: route !== '/games/' });
-                if (route === '/' && width === 390) await reviewScrolledGrid(page, 'mobile-light');
+                if ((route === '/' || route === '/discord/') && width === 390) await reviewScrolledGrid(page, pageName, 'mobile-light');
             }
             await page.setViewportSize({ width: 1280, height: 900 });
+            phase = route + ' button and prose link affordances';
+            for (const selector of (route === '/games/' ? ['#magic-navbar-container .nav-link'] : ['.cta-button', '.join-button', '.links a', '#magic-navbar-container .nav-link'])) {
+                const link = page.locator(selector).first();
+                if (!await link.count()) continue;
+                await link.hover();
+                assert.equal(await link.evaluate(el => getComputedStyle(el).textDecorationLine), 'none', 'button-style links have no hover underline');
+                await link.focus();
+                await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
+                assert.equal(await link.evaluate(el => getComputedStyle(el).textDecorationLine), 'none');
+                assert.notEqual(await link.evaluate(el => getComputedStyle(el).outlineStyle), 'none', 'keyboard focus remains visible');
+            }
+            if (route === '/discord/' && screenshots) {
+                await page.locator('.cta-button').first().hover();
+                await page.screenshot({ path: path.join(screenshots, 'discord-cta-hover.png') });
+            }
             await page.emulateMedia({ reducedMotion: 'reduce' });
             assert.equal(await page.locator('.nav-link').first().evaluate(el => getComputedStyle(el).animationName), 'none');
             await page.emulateMedia({ reducedMotion: 'no-preference' });
