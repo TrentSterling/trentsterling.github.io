@@ -1,0 +1,14 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {svgMarkers,unavailable,visibleBox,assertPublic,categoryMarkers,repairedPostMarker,CATEGORY_NAMES,FIXED_IMAGE}=require('./contract.cjs');
+const html=`<button id="sidebar-trigger" aria-label="Menu"><svg width="1.25em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button><button id="search-trigger" aria-label="Search"><svg width="1.25em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 5 5"></path></svg></button>`;
+test('extract exact inline SVG marker shapes and attributes',()=>{const m=svgMarkers(html);assert.equal(m['sidebar-trigger'].shapes[0].attrs.d,'M4 6h16M4 12h16M4 18h16');assert.equal(m['search-trigger'].shapes.length,2);});
+test('formatting whitespace does not alter marker comparison',()=>assert.deepEqual(svgMarkers(html),svgMarkers(html.replaceAll('><','>\n <'))));
+test('font glyph fallback cannot pass SVG marker check',()=>assert.throws(()=>svgMarkers(html.replace(/<svg[\s\S]*?<\/svg>/,'<i class="fas fa-bars"></i>'))));
+test('missing accessible control name fails',()=>assert.throws(()=>svgMarkers(html.replace('aria-label="Menu"','aria-label=""'))));
+test('proxy page detection includes whitespace',()=>{assert.ok(unavailable('<title>Site Unavailable</title>'));assert.ok(unavailable('SiteUnavailable'));assert.equal(unavailable('Tront Dev'),false);});
+test('hidden, zero-size and offscreen anchors are not clickable evidence',()=>{assert.equal(visibleBox({x:390,y:0,width:100,height:20},{width:390,height:844}),false);assert.equal(visibleBox({x:0,y:0,width:0,height:20},{width:390,height:844}),false);assert.ok(visibleBox({x:20,y:100,width:100,height:20},{width:390,height:844}));});
+test('HTTP probe destination is exact public origin only',()=>{assertPublic('https://tront.xyz/blog/');for(const u of ['http://tront.xyz/blog/','https://tront.xyz.evil.example/','https://evil.example/','https://user:pass@tront.xyz/'])assert.throws(()=>assertPublic(u));});
+
+test('category index marker requires its heading and all seven known links',()=>{const doc='<h1>Categories</h1>'+CATEGORY_NAMES.map(n=>'<a href="/blog/categories/'+n+'/">'+n+'</a>').join('');assert.equal(categoryMarkers(doc).knownCategoryLinks.length,7);assert.throws(()=>categoryMarkers(doc.replace('/blog/categories/ai/','/wrong/')));});
+test('fixed enlargement link cannot retain the broken root variant',()=>{assert.equal(repairedPostMarker('<a href="'+FIXED_IMAGE+'">image</a>').oldWrongRootHrefAbsent,true);assert.throws(()=>repairedPostMarker('<a href="'+FIXED_IMAGE+'">image</a><a href="'+FIXED_IMAGE.replace('/blog/','/')+'">old</a>'));});

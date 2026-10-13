@@ -1,0 +1,79 @@
+name: Bounded public site follow-up
+on:
+  pull_request:
+    paths:
+      - tools/site-followup/**
+      - .github/workflows/site-followup.yml
+permissions:
+  contents: read
+concurrency:
+  group: site-followup-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  public-mobile-and-roadmap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    env:
+      THEME_BROWSER_EXECUTABLE: /opt/google/chrome/chrome
+      SITE_FOLLOWUP_OUTPUT: .local/site-followup
+      TUTORIAL_BASELINE_ROOT: .local/tutorial-baseline
+      TUTORIAL_CANDIDATE_ROOT: .local/tutorial-candidate
+      BLOG_EXPECT_ROOT: .local/blog-expected
+    steps:
+      - name: Read exact follow-up test head
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Read exact tutorial baseline
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: TrentSterling/tutorials
+          ref: cab52f2e322bb478aa13b198a446451604c6dc7b
+          path: .local/tutorial-baseline
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /index.html
+      - name: Read exact one-href tutorial candidate
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: TrentSterling/tutorials
+          ref: f46659445e27f821f859d5aae9180ace3f415bac
+          path: .local/tutorial-candidate
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /index.html
+      - name: Read exact deployed blog SVG marker
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: TrentSterling/blog
+          ref: 7f0471eba88b129331ae13404876f621ec62db37
+          path: .local/blog-expected
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /_includes/topbar.html
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Check bounded audit contracts
+        run: |
+          node --check tools/site-followup/followup.cjs
+          node --test tools/site-followup/test.cjs
+          node -e "const fs=require('node:fs'),C=require('./tools/site-followup/contract.cjs');console.log(C.tutorialDiff(fs.readFileSync('.local/tutorial-baseline/index.html'),fs.readFileSync('.local/tutorial-candidate/index.html')));C.svgMarkers(fs.readFileSync('.local/blog-expected/_includes/topbar.html','utf8'));"
+      - name: Install existing pinned tooling and official Chrome
+        run: |
+          npm install --prefix "$RUNNER_TEMP/site-followup" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
+          node "$RUNNER_TEMP/site-followup/node_modules/playwright/cli.js" install --with-deps chrome
+          echo "NODE_PATH=$RUNNER_TEMP/site-followup/node_modules" >> "$GITHUB_ENV"
+      - name: Check actual mobile blog and visible Roadmap navigation
+        run: timeout 240s node tools/site-followup/followup.cjs
+      - name: Retain focused evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: site-followup-${{ github.event.pull_request.number }}
+          path: .local/site-followup/**
+          include-hidden-files: true
+          retention-days: 3
+          if-no-files-found: warn
