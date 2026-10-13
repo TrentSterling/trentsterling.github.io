@@ -236,12 +236,16 @@ async function assertFocusInside(page, step) {
                     await nativePage.evaluate(value => { localStorage.setItem('tront-theme', value); localStorage.removeItem('tront-theme-gallery-v1'); }, legacy);
                     await nativePage.reload();
                     await nativePage.locator('body.fonts-loaded').waitFor();
+                    // The class starts the native 400ms entrance fade; wait for
+                    // its final frame before comparing or capturing appearance.
+                    await nativePage.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
                     const before = await snapshot();
                     if (screenshots) await nativePage.screenshot({ path: path.join(screenshots, `games-native-${width}-${legacy}-before.png`) });
                     await nativePage.goto(url + '/games/');
                     await nativePage.evaluate(value => { localStorage.setItem('tront-theme', value); localStorage.removeItem('tront-theme-gallery-v1'); }, legacy);
                     await nativePage.reload();
                     await nativePage.locator('body.fonts-loaded').waitFor();
+                    await nativePage.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
                     assert.equal(await nativePage.locator('html').getAttribute('data-te-gallery'), 'native');
                     const after = await snapshot();
                     const { navbar: oldNav, ...oldGallery } = before, { navbar: newNav, ...newGallery } = after;
