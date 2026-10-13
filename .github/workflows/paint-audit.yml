@@ -1,8 +1,9 @@
-name: Public site first-paint audit
+name: Public site release and route audit
 on:
   pull_request:
     paths:
       - tools/paint-audit/**
+      - tools/route-audit/**
       - .github/workflows/paint-audit.yml
 permissions:
   contents: read
@@ -20,6 +21,7 @@ jobs:
       PAINT_HTTP_ROUTES: tools/paint-audit/http-routes.json
       PAINT_EXPECT_MAIN_ROOT: .local/main-expected
       PAINT_EXPECT_MONKE_ROOT: .local/monke-expected
+      PAINT_EXPECT_BLOG_ROOT: .local/blog-expected
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -29,7 +31,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: TrentSterling/trentsterling.github.io
-          ref: 6afc1a3c367a59e52ec97cbb6aaa98ed20938d9e
+          ref: 6fbe52c2926bc13e8751be2d902b38e54b2c6df1
           path: .local/main-expected
           persist-credentials: false
           sparse-checkout-cone-mode: false
@@ -48,12 +50,21 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: /index.htm
+      - name: Read exact expected blog bridge deployment
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: TrentSterling/blog
+          ref: f4d343aba76095f3e6df3c0ddf2eb855dbcd5447
+          path: .local/blog-expected
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /assets/css/tront-theme-bridge.css
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '24'
           package-manager-cache: false
       - name: Validate capture analysis
-        run: node --test tools/paint-audit/test.cjs
+        run: node --test tools/paint-audit/test.cjs tools/paint-audit/release-test.cjs
       - name: Compare public bytes and inspect all main-repository page statuses
         run: timeout 180s node tools/paint-audit/http-verify.cjs
       - name: Install existing pinned tooling and official Chrome
@@ -63,9 +74,9 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/paint-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
           node "$RUNNER_TEMP/paint-tests/node_modules/playwright/cli.js" install --with-deps chrome
           echo "NODE_PATH=$RUNNER_TEMP/paint-tests/node_modules" >> "$GITHUB_ENV"
-      - name: Record actual public first-paint behavior
+      - name: Verify released blog first-paint and search behavior
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
-        run: timeout 420s node tools/paint-audit/capture.cjs
+        run: timeout 240s node tools/paint-audit/post-release.cjs
       - name: Retain bounded diagnostic artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -75,3 +86,37 @@ jobs:
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: warn
+
+
+  route-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out test harness
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Unit-test read-only harness
+        run: python3 -m unittest discover -s tools/route-audit -p 'test_route_audit.py' -v
+      - name: Check known public routes and bounded local references
+        run: >-
+          python3 tools/route-audit/route_audit.py live
+          --inventory tools/route-audit/ci-inventory.json
+          --output route-smoke-artifacts
+          --workers 4 --rate 4 --timeout 15 --seconds 900
+          --max-requests 3400 --max-html 1000 --max-assets 2200
+          --max-total-bytes 104857600
+          --max-html-bytes 8388608 --max-css-bytes 1048576
+          --asset-probe-bytes 4096 --link-depth 2 --css-depth 2
+          --max-sitemaps 12 --max-sitemap-entries 2000
+      - name: Upload HTTP, route, metadata and reference evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: route-smoke-${{ github.event.pull_request.number || github.run_id }}
+          path: route-smoke-artifacts/
+          if-no-files-found: error
+          retention-days: 7

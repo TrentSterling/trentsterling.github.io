@@ -184,4 +184,4 @@ async function main(){
   if(run.errors.length||run.results.some(r=>/blocked|inconclusive/.test(r.summary.status)||r.summary.unsettledFonts)) process.exitCode=2;
 }
 if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});
-module.exports={instrumentation};
+module.exports={instrumentation,capture};
