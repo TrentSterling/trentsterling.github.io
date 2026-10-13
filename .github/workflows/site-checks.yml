@@ -13,6 +13,8 @@ on:
       - assets/css/tront-navbar.css
       - tools/theme-editor/**
       - tools/game-media/verify.cjs
+      - tools/game-media/isaac-archive.cjs
+      - tools/game-media/isaac-archive.test.cjs
       - tools/game-media/server.cjs
       - .github/workflows/site-checks.yml
 
@@ -53,16 +55,22 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
           node "$RUNNER_TEMP/site-tests/node_modules/playwright/cli.js" install --with-deps chrome
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ffmpeg
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
           mkdir -p .local/theme-review
           echo "NODE_PATH=$RUNNER_TEMP/site-tests/node_modules" >> "$GITHUB_ENV"
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/site-tests/node_modules/playwright" >> "$GITHUB_ENV"
       - name: Check copy and gallery source preservation
         run: node tools/theme-editor/preserve.cjs
+      - name: Test reviewed Isaac archive media contracts
+        run: node --test tools/game-media/isaac-archive.test.cjs
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
-        run: timeout 180s node tools/theme-editor/browser.cjs
+        run: timeout 300s node tools/theme-editor/browser.cjs
       - name: Run the unchanged gallery browser suite
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 180s node tools/game-media/verify.cjs

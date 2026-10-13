@@ -7,7 +7,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { createServer } = require('../game-media/server.cjs');
-const { assertRendered: assertGalleryContent } = require('./gallery-content.cjs');
+const { assertRendered: assertGalleryContent, baseline: galleryBaseline, normalizeYearsForPreservation } = require('./gallery-content.cjs');
+const isaacArchive = require('../game-media/isaac-archive.cjs');
+const normalizeComparison = html => normalizeYearsForPreservation(isaacArchive.normalizeForPreservation(html));
 const server = createServer();
 const baselineRoot = process.env.THEME_BASELINE_ROOT;
 // The complete original checkout supplies its own unchanged server and assets.
@@ -18,6 +20,8 @@ const diagnosticsDir = screenshots || path.resolve('.local/theme-review');
 
 const closeLifecycle = [];
 const nativeGalleryReview = [];
+const approvedGalleryReview = [];
+const comparisonNormalization = 'Comparison-only HTML restores exactly four approved year spans and the reviewed Isaac media container to historical markup. Raw candidate audits and screenshots remain unchanged and require all 117 years.';
 
 // Native close is queued. Normal flows await the event; rapid flows deliberately do not.
 async function installCloseTrace(page) {
@@ -216,7 +220,17 @@ async function assertFocusInside(page, step) {
         browser = await chromium.launch(options);
         if (baselineRoot) {
             const native = await browser.newContext();
-            await native.route('**/*', request => [url, baselineUrl].some(origin => request.request().url().startsWith(origin + '/')) ? request.continue() : request.abort());
+            await native.route('**/*', async route => {
+                const requestUrl = route.request().url();
+                if (![url, baselineUrl].some(origin => requestUrl.startsWith(origin + '/'))) return route.abort();
+                if (route.request().resourceType() === 'document' && new URL(requestUrl).pathname === '/games/') {
+                    // This context compares unchanged native rendering only. Raw
+                    // current content is audited separately below and in all 27 gallery checks.
+                    const response = await route.fetch();
+                    return route.fulfill({ response, body: normalizeComparison(await response.text()) });
+                }
+                return route.continue();
+            });
             const nativePage = await native.newPage();
             const missing = [];
             nativePage.on('response', response => { if ([url, baselineUrl].some(origin => response.url().startsWith(origin + '/')) && response.status() >= 400) missing.push({ url: response.url(), status: response.status() }); });
@@ -240,16 +254,16 @@ async function assertFocusInside(page, step) {
                     // The class starts the native 400ms entrance fade; wait for
                     // its final frame before comparing or capturing appearance.
                     await nativePage.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
-                    const beforeContent = await assertGalleryContent(nativePage);
+                    const beforeContent = await assertGalleryContent(nativePage, { historical: true });
                     const before = await snapshot();
-                    if (screenshots) await nativePage.screenshot({ path: path.join(screenshots, `games-native-${width}-${legacy}-before.png`) });
+                    if (screenshots) await nativePage.screenshot({ path: path.join(screenshots, `games-native-${width}-${legacy}-normalized-comparison-before.png`) });
                     await nativePage.goto(url + '/games/');
                     await nativePage.evaluate(value => { localStorage.setItem('tront-theme', value); localStorage.removeItem('tront-theme-gallery-v1'); }, legacy);
                     await nativePage.reload();
                     await nativePage.locator('body.fonts-loaded').waitFor();
                     await nativePage.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
                     assert.equal(await nativePage.locator('html').getAttribute('data-te-gallery'), 'native');
-                    const { textColors, ...contentContract } = await assertGalleryContent(nativePage);
+                    const { textColors, ...contentContract } = await assertGalleryContent(nativePage, { historical: true });
                     assert.deepEqual(textColors, beforeContent.textColors, 'native title, year, description and tag colors stay exact');
                     const after = await snapshot();
                     const { navbar: oldNav, ...oldGallery } = before, { navbar: newNav, ...newGallery } = after;
@@ -282,7 +296,7 @@ async function assertFocusInside(page, step) {
                         const r = label.getBoundingClientRect(), b = label.parentElement.getBoundingClientRect();
                         return r.width > 0 && r.left >= b.left && r.right <= b.right;
                     }), true, 'Theme label is visible and unclipped');
-                    if (screenshots) await nativePage.screenshot({ path: path.join(screenshots, `games-native-${width}-${legacy}-after.png`) });
+                    if (screenshots) await nativePage.screenshot({ path: path.join(screenshots, `games-native-${width}-${legacy}-normalized-comparison-after.png`) });
                     await opener.focus();
                     await nativePage.keyboard.press('Enter');
                     assert.equal(await nativePage.locator('.te-dialog').evaluate(dialog => dialog.open), true);
@@ -290,13 +304,93 @@ async function assertFocusInside(page, step) {
                     await dismissEditor(nativePage, 'escape');
                     assert.equal(await opener.evaluate(el => el === document.activeElement), true);
                     assert.equal(await opener.getAttribute('aria-label'), description);
-                    nativeGalleryReview.push({ width, legacy, before: oldNav, after: newNav, centeringDelta, exactGalleryGeometryAndBackground: true, keyboardOpenAndReturn: true, contentContract });
+                    nativeGalleryReview.push({ width, legacy, comparisonNormalization, before: oldNav, after: newNav, centeringDelta, exactGalleryGeometryAndBackground: true, keyboardOpenAndReturn: true, contentContract });
                     fs.mkdirSync(diagnosticsDir, { recursive: true });
                     fs.writeFileSync(path.join(diagnosticsDir, 'games-native-theme-control.json'), JSON.stringify(nativeGalleryReview, null, 2));
                 }
             }
             assert.deepEqual(missing, [], 'baseline and current gallery local dependencies must load successfully');
             await native.close();
+        }
+        // Real, unnormalized candidate coverage. These captures are final page
+        // appearance, unlike the explicitly labeled historical comparisons above.
+        for (const width of [1440, 390]) {
+            phase = 'raw year and Isaac review at ' + width;
+            const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 1000 }, isMobile: width === 390, hasTouch: width === 390 });
+            await context.route('**/*', route => route.request().url().startsWith(url + '/') ? route.continue() : route.fulfill({ json: {} }));
+            const raw = await context.newPage();
+            try {
+                for (const legacy of ['dark', 'tront-purple', 'light']) {
+                    phase = 'raw verified year labels ' + legacy + ' at ' + width;
+                    await raw.goto(url + '/games/');
+                    await raw.evaluate(value => { localStorage.setItem('tront-theme', value); localStorage.removeItem('tront-theme-gallery-v1'); }, legacy);
+                    await raw.reload(); await raw.locator('body.fonts-loaded').waitFor();
+                    await raw.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
+                    const { textColors, ...contentContract } = await assertGalleryContent(raw);
+                    assert.equal(contentContract.yearSpans, 117); assert.deepEqual(contentContract.knownMissingYearHrefs, []);
+                    const yearStyles = await raw.evaluate(corrections => {
+                        const results = [], allCards = [...document.querySelectorAll('.grid .item')];
+                        const existingYear = allCards.find(card => !Object.hasOwn(corrections, card.getAttribute('href')) && card.querySelector('.card-title span')).querySelector('.card-title span');
+                        const rgb = value => value.match(/[\d.]+/g).slice(0, 3).map(Number);
+                        const luminance = color => rgb(color).map(v => { v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
+                        const contrast = (a, b) => { a = luminance(a); b = luminance(b); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); };
+                        const styles = element => { const css = getComputedStyle(element); return { color: css.color, font: css.font, textShadow: css.textShadow }; };
+                        for (const [href, correction] of Object.entries(corrections)) {
+                            const card = allCards.find(card => card.getAttribute('href') === href), heading = card.querySelector('.card-title'), year = heading.querySelector('span');
+                            const reference = existingYear.cloneNode(true); reference.textContent = `(${correction.year})`; reference.style.position = 'absolute'; reference.style.visibility = 'hidden';
+                            heading.append(reference); const expected = styles(reference); reference.remove();
+                            const actual = styles(year), background = getComputedStyle(card).backgroundColor;
+                            results.push({ href, text: year.textContent, actual, expected, contrast: contrast(actual.color, background), referenceContrast: contrast(expected.color, background) });
+                        }
+                        return results;
+                    }, galleryBaseline.approvedYearCorrections);
+                    for (const item of yearStyles) {
+                        assert.equal(item.text, '(2026)'); assert.deepEqual(item.actual, item.expected, 'new years use the existing year style in the same card context');
+                        assert.equal(item.contrast, item.referenceContrast, 'new year contrast matches established neighboring-year styling');
+                    }
+                    for (const href of Object.keys(galleryBaseline.approvedYearCorrections)) {
+                        const card = raw.locator(`.grid .item[href="${href}"]`);
+                        await card.scrollIntoViewIfNeeded();
+                        await card.locator('img').evaluate(img => img.decode());
+                        if (screenshots) await raw.screenshot({ path: path.join(screenshots, `games-years-${width}-${legacy}-${href.replaceAll('/', '')}-actual.png`) });
+                    }
+                    approvedGalleryReview.push({ width, legacy, presentation: 'raw actual candidate, no normalization', contentContract, yearStyles });
+                }
+                phase = 'Isaac playback, pause, poster and filter flow at ' + width;
+                await raw.evaluate(() => { localStorage.setItem('tront-theme', 'dark'); localStorage.removeItem('tront-theme-gallery-v1'); localStorage.removeItem('tront-previews-paused'); });
+                await raw.goto(url + '/games/#preview-binding-of-isaac-clone-2014');
+                const card = raw.locator('#preview-binding-of-isaac-clone-2014');
+                const playing = async () => {
+                    await card.scrollIntoViewIfNeeded();
+                    await raw.waitForFunction(() => { const v = document.querySelector('#preview-binding-of-isaac-clone-2014 video'); return v && !v.paused && v.currentTime > .1 && v.getVideoPlaybackQuality().totalVideoFrames > 2; });
+                };
+                await playing();
+                const media = await card.locator('video').evaluate(v => ({ src: v.getAttribute('src'), duration: v.duration, width: v.videoWidth, height: v.videoHeight, muted: v.muted, loop: v.loop, playsInline: v.playsInline }));
+                assert.equal(media.src, '/games/media/binding-of-isaac-clone-2014.mp4?v=898704224836');
+                assert.ok(Math.abs(media.duration - 4.8) < .001); assert.equal(media.width, 576); assert.equal(media.height, 324);
+                assert.ok(media.muted && media.loop && media.playsInline);
+                assert.equal(await card.locator('img').evaluate(async img => { await img.decode(); return img.naturalWidth; }), 576);
+                if (screenshots) await raw.screenshot({ path: path.join(screenshots, `games-isaac-${width}-playback-actual.png`) });
+                await raw.evaluate(() => document.getElementById('preview-toggle').click());
+                await raw.waitForFunction(() => document.querySelectorAll('.gameplay-preview[src]').length === 0);
+                assert.equal(await card.locator('img').isVisible(), true);
+                if (screenshots) await raw.screenshot({ path: path.join(screenshots, `games-isaac-${width}-paused-poster-actual.png`) });
+                await raw.reload(); await card.scrollIntoViewIfNeeded();
+                assert.equal(await card.locator('video[src]').count(), 0, 'Isaac pause survives reload');
+                await raw.evaluate(() => document.getElementById('preview-toggle').click()); await playing();
+                await raw.evaluate(() => document.getElementById('filter-tool').click());
+                await raw.waitForFunction(() => !document.querySelector('#preview-binding-of-isaac-clone-2014 video[src]'));
+                assert.equal(await card.isVisible(), false, 'tool filtering hides the prototype and releases its source');
+                await raw.evaluate(() => document.getElementById('filter-prototype').click()); await playing();
+                approvedGalleryReview.push({ width, isaac: media, decodedPlayback: true, posterDecoded: true, pauseAndReload: true, filteringAndResume: true, presentation: 'raw actual candidate, no normalization' });
+                fs.mkdirSync(diagnosticsDir, { recursive: true });
+                fs.writeFileSync(path.join(diagnosticsDir, 'games-approved-additions.json'), JSON.stringify(approvedGalleryReview, null, 2));
+            } catch (error) {
+                fs.mkdirSync(diagnosticsDir, { recursive: true });
+                fs.writeFileSync(path.join(diagnosticsDir, 'games-additions-failure.json'), JSON.stringify({ width, phase, message: error.message, completed: approvedGalleryReview }, null, 2));
+                try { await raw.screenshot({ path: path.join(diagnosticsDir, `games-additions-failure-${width}-actual.png`) }); } catch {}
+                throw error;
+            } finally { await context.close(); }
         }
         page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
         const errors = [];
@@ -504,7 +598,7 @@ async function assertFocusInside(page, step) {
         }
         assert.deepEqual(errors, []);
         fs.mkdirSync(diagnosticsDir, { recursive: true });
-        fs.writeFileSync(path.join(diagnosticsDir, 'theme-browser-report.json'), JSON.stringify({ status: 'passed', nativeBaseline: baselineRoot ? { widths: [1440, 390, 360, 320], themes: ['dark', 'tront-purple', 'light'], exactGalleryGeometryAndBackground: true, navbarChange: 'Only the visible Theme opener width and resulting centered-row position may change; every other dimension, gap and font stays exact.', cases: nativeGalleryReview, localDependenciesLoaded: true, assetSources: 'separate original and candidate HTTP servers', independentOrigins: true } : null, routes: ['/', '/discord/', '/games/'], presets: 6, widths: [320, 390, 768, 1280], customGalleryPlayback: playback, queuedCloseLifecycle: closeLifecycle, errors }, null, 2));
+        fs.writeFileSync(path.join(diagnosticsDir, 'theme-browser-report.json'), JSON.stringify({ status: 'passed', comparisonNormalization, approvedGalleryReview, nativeBaseline: baselineRoot ? { widths: [1440, 390, 360, 320], themes: ['dark', 'tront-purple', 'light'], exactGalleryGeometryAndBackground: true, navbarChange: 'Only the visible Theme opener width and resulting centered-row position may change; every other dimension, gap and font stays exact.', cases: nativeGalleryReview, localDependenciesLoaded: true, assetSources: 'separate original and candidate HTTP servers', independentOrigins: true } : null, routes: ['/', '/discord/', '/games/'], presets: 6, widths: [320, 390, 768, 1280], customGalleryPlayback: playback, queuedCloseLifecycle: closeLifecycle, errors }, null, 2));
         console.log('PASS: real-browser theme interactions, computed text contrast, mobile fit and gallery preference isolation.');
     } catch (error) {
         if (page && !page.isClosed()) {
