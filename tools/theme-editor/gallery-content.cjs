@@ -1,9 +1,42 @@
-/* Frozen pre-theme copy contract. No runtime mutation or inferred project dates. */
+/* Frozen pre-theme copy plus explicitly reviewed year additions. No runtime mutation. */
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const baseline = require('./gallery-content-baseline.json');
+const approvedYearCorrections = baseline.approvedYearCorrections;
+const historicalCardsByHref = new Map(baseline.cards.map(card => [card.href, card]));
+for (const [href, correction] of Object.entries(approvedYearCorrections)) {
+    const original = historicalCardsByHref.get(href);
+    assert.ok(original && baseline.knownMissingYearHrefs.includes(href), 'year corrections only target documented historical omissions');
+    assert.equal(baseline.cards.filter(card => card.href === href).length, 1, 'each approved correction URL identifies exactly one card');
+    assert.equal(original.yearSpans.length, 0, 'year corrections never replace an existing project year');
+    assert.match(String(correction.year), /^\d{4}$/, 'every correction has a reviewed four-digit year');
+    assert.ok(correction.basis, 'every correction records independent project-history verification');
+}
+const expectedCards = baseline.cards.map(original => {
+    const card = JSON.parse(JSON.stringify(original)), correction = approvedYearCorrections[card.href];
+    if (correction) {
+        const year = `(${correction.year})`;
+        card.titleHtml += ` <span>${year}</span>`;
+        card.titleText += ` ${year}`;
+        card.yearSpans = [year];
+    }
+    return card;
+});
+const currentMissingYearHrefs = expectedCards.filter(card => !card.yearSpans.length).map(card => card.href);
+function normalizeYearsForPreservation(html) {
+    // Only these exact URL-keyed title additions are accepted. Every other
+    // byte, including wrong years and edits to neighboring copy, survives
+    // normalization and therefore still fails a strict baseline comparison.
+    return html.replace(/<a\b([^>]*\bclass="item\b[^>]*)>([\s\S]*?)<\/a>/g, (markup, attrs) => {
+        const href = attrs.match(/\bhref="([^"]*)"/)?.[1], correction = approvedYearCorrections[href];
+        if (!correction) return markup;
+        const original = historicalCardsByHref.get(href).titleHtml;
+        return markup.replace(`<h3 class="card-title">${original} <span>(${correction.year})</span></h3>`,
+            `<h3 class="card-title">${original}</h3>`);
+    });
+}
 function readCards(html) {
     const cards = [...html.matchAll(/<a\b([^>]*\bclass="item\b[^>]*)>([\s\S]*?)<\/a>/g)].map(([, attrs, body]) => {
         const match = pattern => { const found = body.match(pattern); assert.ok(found, 'each card keeps its complete heading, blurb and tags'); return found[1]; };
@@ -22,12 +55,19 @@ function readCards(html) {
 }
 function assertCards(cards) {
     assert.equal(cards.length, baseline.cards.length, 'all 117 cards remain present');
-    cards.forEach((card, i) => assert.deepEqual(card, baseline.cards[i], `card ${i + 1}: full title, year, description, tags, categories and link are preserved`));
-    assert.deepEqual(cards.filter(card => !card.yearSpans.length).map(card => card.href), baseline.knownMissingYearHrefs,
+    cards.forEach((card, i) => assert.deepEqual(card, expectedCards[i], `card ${i + 1}: full title, approved year, description, tags, categories and link are preserved`));
+    assert.deepEqual(cards.filter(card => !card.yearSpans.length).map(card => card.href), currentMissingYearHrefs,
         'any year omission or repair must be reviewed explicitly');
 }
 function assertSource(html) { assertCards(readCards(html)); }
-async function assertRendered(page) {
+function assertHistoricalCards(cards) {
+    assert.equal(cards.length, baseline.cards.length, 'all 117 historical cards remain present');
+    cards.forEach((card, i) => assert.deepEqual(card, baseline.cards[i], `historical card ${i + 1}: full title, original year, description, tags, categories and link are preserved`));
+    assert.deepEqual(cards.filter(card => !card.yearSpans.length).map(card => card.href), baseline.knownMissingYearHrefs,
+        'the historical comparison retains exactly the original four year omissions');
+}
+async function assertRendered(page, { historical = false } = {}) {
+    assert.equal(typeof historical, 'boolean', 'historical rendering checks must be explicitly selected');
     const result = await page.evaluate(() => {
         const failures = [], textColors = [];
         const cards = [...document.querySelectorAll('.grid .item')].map(card => {
@@ -56,13 +96,18 @@ async function assertRendered(page) {
         });
         return { cards, failures, textColors };
     });
-    assertCards(result.cards);
+    if (historical) assertHistoricalCards(result.cards);
+    else assertCards(result.cards);
     assert.deepEqual(result.failures, [], 'every title, year span, full blurb and category tag is rendered without hiding or card clipping');
     return { cards: result.cards.length, yearSpans: result.cards.reduce((count, card) => count + card.yearSpans.length, 0),
-        knownMissingYearHrefs: baseline.knownMissingYearHrefs, exactContent: true, hiddenOrClipped: [], textColors: result.textColors };
+        contentMode: historical ? 'historical' : 'approved-current',
+        knownMissingYearHrefs: historical ? baseline.knownMissingYearHrefs : currentMissingYearHrefs,
+        historicalMissingYearHrefs: baseline.knownMissingYearHrefs,
+        approvedYearCorrections: historical ? {} : approvedYearCorrections,
+        exactContent: true, hiddenOrClipped: [], textColors: result.textColors };
 }
 if (require.main === module) {
     assertSource(fs.readFileSync(process.argv[2] || path.resolve(__dirname, '../../games/index.html'), 'utf8'));
-    console.log('PASS: exact full text, year spans, tags, categories, links and order of all 117 cards match the pre-theme snapshot.');
+    console.log('PASS: all 117 cards preserve the pre-theme copy and original years, plus four independently verified 2026 year additions.');
 }
-module.exports = { baseline, readCards, assertCards, assertSource, assertRendered };
+module.exports = { baseline, expectedCards, currentMissingYearHrefs, normalizeYearsForPreservation, readCards, assertCards, assertHistoricalCards, assertSource, assertRendered };

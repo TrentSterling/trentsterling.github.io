@@ -11,11 +11,15 @@ const editorSource = fs.readFileSync(path.join(base, 'assets/js/tront-theme-edit
 const galleryContent = require('./gallery-content.cjs');
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('all 117 cards preserve exact pre-theme titles, years, full descriptions, tags and category classes', () => {
+test('all 117 cards preserve pre-theme copy and original years plus four verified year additions', () => {
     galleryContent.assertSource(fs.readFileSync(path.join(base, 'games/index.html'), 'utf8'));
     assert.equal(galleryContent.baseline.cards.length, 117);
     assert.equal(galleryContent.baseline.cards.filter(card => card.yearSpans.length).length, 113);
     assert.deepEqual(galleryContent.baseline.knownMissingYearHrefs, ['/audiobounce/', '/asciicity/', '/device-history/', '/powershellmanager/']);
+    assert.deepEqual(Object.keys(galleryContent.baseline.approvedYearCorrections), galleryContent.baseline.knownMissingYearHrefs);
+    assert.deepEqual(Object.values(galleryContent.baseline.approvedYearCorrections).map(correction => correction.year), [2026, 2026, 2026, 2026]);
+    assert.equal(galleryContent.expectedCards.filter(card => card.yearSpans.length).length, 117);
+    assert.deepEqual(galleryContent.currentMissingYearHrefs, []);
 });
 test('content contract rejects year deletion, blurb simplification, tag loss and reordered cards', () => {
     for (const mutate of [
@@ -25,8 +29,87 @@ test('content contract rejects year deletion, blurb simplification, tag loss and
         cards => { cards[0].classes = ['item']; },
         cards => { [cards[0], cards[1]] = [cards[1], cards[0]]; }
     ]) {
-        const cards = plain(galleryContent.baseline.cards); mutate(cards);
+        const cards = plain(galleryContent.expectedCards); mutate(cards);
         assert.throws(() => galleryContent.assertCards(cards), /preserved/);
+    }
+});
+test('approved year normalization recovers the complete frozen historical card record', () => {
+    const html = fs.readFileSync(path.join(base, 'games/index.html'), 'utf8');
+    const historical = galleryContent.normalizeYearsForPreservation(html);
+    assert.deepEqual(galleryContent.readCards(historical), galleryContent.baseline.cards);
+    assert.equal(galleryContent.normalizeYearsForPreservation(historical), historical, 'historical titles remain untouched');
+    for (const [index, original] of galleryContent.baseline.cards.entries()) {
+        const current = galleryContent.expectedCards[index];
+        if (Object.hasOwn(galleryContent.baseline.approvedYearCorrections, original.href)) {
+            assert.deepEqual({ ...current, titleHtml: original.titleHtml, titleText: original.titleText, yearSpans: original.yearSpans }, original);
+        } else assert.deepEqual(current, original, `${original.href}: no unapproved card changes`);
+    }
+});
+test('year normalization never masks wrong years, wrong targets or neighboring copy changes', () => {
+    const html = fs.readFileSync(path.join(base, 'games/index.html'), 'utf8');
+    const historical = galleryContent.normalizeYearsForPreservation(html);
+    for (const [before, after] of [
+        ['AudioBounce <span>(2026)</span>', 'AudioBounce <span>(2025)</span>'],
+        ['ASCIICITY <span>(2026)</span>', 'ASCIICITY <span>(2026-Present)</span>'],
+        ['Device History <span>(2026)</span>', 'Device History <span class="new-year">(2026)</span>'],
+        ['href="/powershellmanager/"', 'href="/unreviewed-project/"'],
+        ['Binding of Isaac Clone <span>(2014)</span>', 'Binding of Isaac Clone <span>(2026)</span>'],
+        ['GPU-accelerated spatial audio occlusion for Unity,', 'Spatial audio for Unity,']
+    ]) {
+        assert.ok(html.includes(before), `test mutation exists: ${before}`);
+        assert.notEqual(galleryContent.normalizeYearsForPreservation(html.replace(before, after)), historical, `${before}: unreviewed changes remain visible`);
+        assert.throws(() => galleryContent.assertSource(html.replace(before, after)), /preserved/);
+    }
+});
+test('corrected years cannot be omitted or replaced while the historical fixture stays yearless', () => {
+    for (const href of galleryContent.baseline.knownMissingYearHrefs) {
+        const index = galleryContent.expectedCards.findIndex(card => card.href === href);
+        const omitted = plain(galleryContent.expectedCards);
+        omitted[index] = plain(galleryContent.baseline.cards[index]);
+        assert.throws(() => galleryContent.assertCards(omitted), /preserved/);
+        const incorrect = plain(galleryContent.expectedCards);
+        incorrect[index].titleHtml = incorrect[index].titleHtml.replace('(2026)', '(2025)');
+        incorrect[index].titleText = incorrect[index].titleText.replace('(2026)', '(2025)');
+        incorrect[index].yearSpans = ['(2025)'];
+        assert.throws(() => galleryContent.assertCards(incorrect), /preserved/);
+    }
+});
+test('historical comparison and current candidate require their own exact immutable content contracts', () => {
+    galleryContent.assertHistoricalCards(plain(galleryContent.baseline.cards));
+    galleryContent.assertCards(plain(galleryContent.expectedCards));
+    assert.throws(() => galleryContent.assertCards(plain(galleryContent.baseline.cards)), /preserved/);
+    assert.throws(() => galleryContent.assertHistoricalCards(plain(galleryContent.expectedCards)), /preserved/);
+    for (const mutate of [
+        cards => { cards[0].yearSpans = []; },
+        cards => { cards[0].blurbText = 'Simplified description.'; cards[0].blurbHtml = 'Simplified description.'; },
+        cards => { cards[0].tags = []; cards[0].tagsHtml = ''; },
+        cards => { cards[0].href = '/different-project/'; },
+        cards => { [cards[0], cards[1]] = [cards[1], cards[0]]; }
+    ]) {
+        const historical = plain(galleryContent.baseline.cards); mutate(historical);
+        assert.throws(() => galleryContent.assertHistoricalCards(historical), /preserved/);
+    }
+});
+test('render contract mode selection preserves exact copy and visibility failures in both modes', async () => {
+    // Stubs test assertion routing only; browser.cjs checks actual DOM rendering.
+    const page = (cards, failures = []) => ({ evaluate: async () => ({ cards: plain(cards), failures, textColors: [] }) });
+    const historical = await galleryContent.assertRendered(page(galleryContent.baseline.cards), { historical: true });
+    assert.equal(historical.contentMode, 'historical');
+    assert.equal(historical.yearSpans, 113);
+    assert.deepEqual(historical.knownMissingYearHrefs, galleryContent.baseline.knownMissingYearHrefs);
+    assert.deepEqual(historical.approvedYearCorrections, {});
+    const current = await galleryContent.assertRendered(page(galleryContent.expectedCards));
+    assert.equal(current.contentMode, 'approved-current');
+    assert.equal(current.yearSpans, 117);
+    assert.deepEqual(current.knownMissingYearHrefs, []);
+    assert.deepEqual(current.approvedYearCorrections, galleryContent.baseline.approvedYearCorrections);
+    await assert.rejects(galleryContent.assertRendered(page(galleryContent.baseline.cards)), /preserved/);
+    await assert.rejects(galleryContent.assertRendered(page(galleryContent.expectedCards), { historical: true }), /preserved/);
+    for (const historical of [false, true]) {
+        const cards = historical ? galleryContent.baseline.cards : galleryContent.expectedCards;
+        for (const reason of ['hidden text or ancestor', 'transparent or unrendered text', 'text extends beyond the clipping card']) {
+            await assert.rejects(galleryContent.assertRendered(page(cards, [{ reason }]), { historical }), /without hiding or card clipping/);
+        }
     }
 });
 

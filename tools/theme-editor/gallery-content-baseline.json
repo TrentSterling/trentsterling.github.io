@@ -8,6 +8,39 @@
     "/device-history/",
     "/powershellmanager/"
   ],
+  "approvedYearCorrectionsNote": "Explicitly requested year metadata corrections, verified against each matching project history on 2026-10-13. These are additions, not recovered historical card text. The original cards and knownMissingYearHrefs remain the immutable pre-theme record. Gallery introduction dates were not used.",
+  "approvedYearCorrections": {
+    "/audiobounce/": {
+      "year": 2026,
+      "basis": "Initial 2026 project scaffold and matching Unity spatial-audio SDK history independently verified."
+    },
+    "/asciicity/": {
+      "year": 2026,
+      "basis": "Matching Three.js ASCII city root commit dated 2026-08-15; first public release dated 2026-08-16.",
+      "sources": [
+        "https://github.com/TrentSterling/asciicity/commit/4e949e36d3f9b2ae1a1672345060bd36350c665a",
+        "https://github.com/TrentSterling/asciicity/releases/tag/v0.1.0"
+      ]
+    },
+    "/device-history/": {
+      "year": 2026,
+      "basis": "Matching USB monitor root commit and first public release dated 2026-02-28; owner development post has the same date.",
+      "sources": [
+        "https://github.com/TrentSterling/device-history/commit/a9c6c23f48c2c4aeaf567f359dbd2244684c5eb9",
+        "https://github.com/TrentSterling/device-history/releases/tag/v0.3.0",
+        "https://github.com/TrentSterling/blog/blob/main/_posts/2026-02-28-device-history.md"
+      ]
+    },
+    "/powershellmanager/": {
+      "year": 2026,
+      "basis": "Matching window arranger initial release commit and public v0.1.0 release dated 2026-02-28; owner development post has the same date.",
+      "sources": [
+        "https://github.com/TrentSterling/powershellmanager/commit/794b60310446556e98d45d8761e76a8d3660fd1f",
+        "https://github.com/TrentSterling/powershellmanager/releases/tag/v0.1.0",
+        "https://github.com/TrentSterling/blog/blob/main/_posts/2026-02-28-powershellmanager.md"
+      ]
+    }
+  },
   "cards": [
     {
       "href": "https://store.steampowered.com/app/1646580/Project_Demigod/",
