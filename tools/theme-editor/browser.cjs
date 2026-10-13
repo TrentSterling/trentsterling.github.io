@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { createServer } = require('../game-media/server.cjs');
+const { assertRendered: assertGalleryContent } = require('./gallery-content.cjs');
 const server = createServer();
 const baselineRoot = process.env.THEME_BASELINE_ROOT;
 // The complete original checkout supplies its own unchanged server and assets.
@@ -239,6 +240,7 @@ async function assertFocusInside(page, step) {
                     // The class starts the native 400ms entrance fade; wait for
                     // its final frame before comparing or capturing appearance.
                     await nativePage.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
+                    const beforeContent = await assertGalleryContent(nativePage);
                     const before = await snapshot();
                     if (screenshots) await nativePage.screenshot({ path: path.join(screenshots, `games-native-${width}-${legacy}-before.png`) });
                     await nativePage.goto(url + '/games/');
@@ -247,6 +249,8 @@ async function assertFocusInside(page, step) {
                     await nativePage.locator('body.fonts-loaded').waitFor();
                     await nativePage.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
                     assert.equal(await nativePage.locator('html').getAttribute('data-te-gallery'), 'native');
+                    const { textColors, ...contentContract } = await assertGalleryContent(nativePage);
+                    assert.deepEqual(textColors, beforeContent.textColors, 'native title, year, description and tag colors stay exact');
                     const after = await snapshot();
                     const { navbar: oldNav, ...oldGallery } = before, { navbar: newNav, ...newGallery } = after;
                     assert.deepEqual(newGallery, oldGallery, `exact native gallery geometry/background survives ${legacy} at ${width}px`);
@@ -286,7 +290,7 @@ async function assertFocusInside(page, step) {
                     await dismissEditor(nativePage, 'escape');
                     assert.equal(await opener.evaluate(el => el === document.activeElement), true);
                     assert.equal(await opener.getAttribute('aria-label'), description);
-                    nativeGalleryReview.push({ width, legacy, before: oldNav, after: newNav, centeringDelta, exactGalleryGeometryAndBackground: true, keyboardOpenAndReturn: true });
+                    nativeGalleryReview.push({ width, legacy, before: oldNav, after: newNav, centeringDelta, exactGalleryGeometryAndBackground: true, keyboardOpenAndReturn: true, contentContract });
                     fs.mkdirSync(diagnosticsDir, { recursive: true });
                     fs.writeFileSync(path.join(diagnosticsDir, 'games-native-theme-control.json'), JSON.stringify(nativeGalleryReview, null, 2));
                 }
@@ -353,6 +357,7 @@ async function assertFocusInside(page, step) {
                 }
                 await dismissEditor(page);
                 await auditText(page);
+                if (route === '/games/') await assertGalleryContent(page);
                 await page.locator('#tront-theme-btn').click();
             }
             assert.equal(await page.locator('.te-dialog details').count(), 0, 'advanced controls never collapse');
@@ -415,6 +420,7 @@ async function assertFocusInside(page, step) {
                 if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-editor-mobile-light.png`) });
                 await dismissEditor(page, 'escape');
                 await auditText(page);
+                if (route === '/games/') await assertGalleryContent(page);
                 if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-mobile-light.png`), fullPage: route !== '/games/' });
                 if ((route === '/' || route === '/discord/') && width === 390) await reviewScrolledGrid(page, pageName, 'mobile-light');
             }

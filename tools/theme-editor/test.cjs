@@ -8,7 +8,27 @@ const vm = require('node:vm');
 const base = path.resolve(__dirname, '../..');
 const systemSource = fs.readFileSync(path.join(base, 'assets/js/tront-system.js'), 'utf8');
 const editorSource = fs.readFileSync(path.join(base, 'assets/js/tront-theme-editor.js'), 'utf8');
+const galleryContent = require('./gallery-content.cjs');
 const plain = value => JSON.parse(JSON.stringify(value));
+
+test('all 117 cards preserve exact pre-theme titles, years, full descriptions, tags and category classes', () => {
+    galleryContent.assertSource(fs.readFileSync(path.join(base, 'games/index.html'), 'utf8'));
+    assert.equal(galleryContent.baseline.cards.length, 117);
+    assert.equal(galleryContent.baseline.cards.filter(card => card.yearSpans.length).length, 113);
+    assert.deepEqual(galleryContent.baseline.knownMissingYearHrefs, ['/audiobounce/', '/asciicity/', '/device-history/', '/powershellmanager/']);
+});
+test('content contract rejects year deletion, blurb simplification, tag loss and reordered cards', () => {
+    for (const mutate of [
+        cards => { cards[0].titleHtml = cards[0].titleHtml.replace(/<span>.*?<\/span>/, ''); cards[0].yearSpans = []; },
+        cards => { cards[0].blurbText = 'A VR game.'; cards[0].blurbHtml = 'A VR game.'; },
+        cards => { cards[0].tags = []; cards[0].tagsHtml = ''; },
+        cards => { cards[0].classes = ['item']; },
+        cards => { [cards[0], cards[1]] = [cards[1], cards[0]]; }
+    ]) {
+        const cards = plain(galleryContent.baseline.cards); mutate(cards);
+        assert.throws(() => galleryContent.assertCards(cards), /preserved/);
+    }
+});
 
 // Minimal DOM contract, deliberately not a layout engine or browser substitute.
 class Element {

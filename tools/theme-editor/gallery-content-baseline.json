@@ -1,0 +1,2133 @@
+{
+  "baselineCommit": "2ebbdf765001edf21058f8af20d7d0ea071dbc32",
+  "baselinePath": "games/index.html",
+  "note": "Historical content snapshot, including four year omissions present when the cards were introduced. This records existing content; it does not approve or invent dates. Any intentional content repair requires explicit fixture review.",
+  "knownMissingYearHrefs": [
+    "/audiobounce/",
+    "/asciicity/",
+    "/device-history/",
+    "/powershellmanager/"
+  ],
+  "cards": [
+    {
+      "href": "https://store.steampowered.com/app/1646580/Project_Demigod/",
+      "classes": [
+        "item",
+        "tag-game",
+        "tag-vr"
+      ],
+      "titleHtml": "Project Demigod <span>(2025-Present)</span>",
+      "titleText": "Project Demigod (2025-Present)",
+      "yearSpans": [
+        "(2025-Present)"
+      ],
+      "blurbHtml": "Contract Network Programmer + Unity Generalist for Omnifarious Studios on the physics-driven VR superhero sandbox; netcode, gameplay, menus, IK, ragdoll, shaders, and performance.",
+      "blurbText": "Contract Network Programmer + Unity Generalist for Omnifarious Studios on the physics-driven VR superhero sandbox; netcode, gameplay, menus, IK, ragdoll, shaders, and performance.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">VR</span>",
+      "tags": [
+        "Game",
+        "VR"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/gemstogether/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Gems Together <span>(2026)</span>",
+      "titleText": "Gems Together (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Match three with the people you love. One shared jewel board: everyone who opens the page plays on it together, cursors and all, or grab a private room for two. Built for Jennifer.",
+      "blurbText": "Match three with the people you love. One shared jewel board: everyone who opens the page plays on it together, cursors and all, or grab a private room for two. Built for Jennifer.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/voxelheroes/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Voxel Heroes <span>(2026)</span>",
+      "titleText": "Voxel Heroes (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "A voxel action adventure for solo heroes and co-op parties. Explore Mossbrook, tackle four dungeons and the Fourfold Tower, and earn new tools. Split up, share the adventure, or give your friends a harmless sword bonk.",
+      "blurbText": "A voxel action adventure for solo heroes and co-op parties. Explore Mossbrook, tackle four dungeons and the Fourfold Tower, and earn new tools. Split up, share the adventure, or give your friends a harmless sword bonk.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">Co-op</span>",
+      "tags": [
+        "Game",
+        "Co-op"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/smear/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "SMEAR <span>(2026)</span>",
+      "titleText": "SMEAR (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Leave a mark. Grab a dummy, slam it, and drag it through blood that stays. A physics playground with contact smears, wall splashes, and dripping stains.",
+      "blurbText": "Leave a mark. Grab a dummy, slam it, and drag it through blood that stays. A physics playground with contact smears, wall splashes, and dripping stains.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span><span class=\"tag\">Physics</span>",
+      "tags": [
+        "Prototype",
+        "Physics"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/deadends/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "DEAD ENDS <span>(2026)</span>",
+      "titleText": "DEAD ENDS (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Top-down co-op zombie escape. Four survivors, huge hordes, smart AI squadmates, one red safehouse door. Play online with whoever is there or share a room code with friends.",
+      "blurbText": "Top-down co-op zombie escape. Four survivors, huge hordes, smart AI squadmates, one red safehouse door. Play online with whoever is there or share a room code with friends.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/buttloads2/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "BUTTLOADS 2 <span>(2026)</span>",
+      "titleText": "BUTTLOADS 2 (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "First-person sequel to my 2015 jam mining game. Dig beneath your backyard, sell what you find, upgrade the cutter, follow the signal deeper. Early prototype.",
+      "blurbText": "First-person sequel to my 2015 jam mining game. Dig beneath your backyard, sell what you find, upgrade the cutter, follow the signal deeper. Early prototype.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/biomass/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "BIOMASS <span>(2026)</span>",
+      "titleText": "BIOMASS (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Tower defense against 100,000 zombies simulated as a fluid, entirely on GPU compute. Giants, lasers, WebGPU right in the browser.",
+      "blurbText": "Tower defense against 100,000 zombies simulated as a fluid, entirely on GPU compute. Giants, lasers, WebGPU right in the browser.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/tunnelrat/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "TUNNELRAT <span>(2026)</span>",
+      "titleText": "TUNNELRAT (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "6DOF procedural mine crawler. Descend through biomes hunting keycards, dodging hazards, managing shield and energy.",
+      "blurbText": "6DOF procedural mine crawler. Descend through biomes hunting keycards, dodging hazards, managing shield and energy.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/campfire/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Campfire <span>(2026)</span>",
+      "titleText": "Campfire (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Cozy multiplayer hangout around a campfire. P2P peer sync, procedural critters, WASD to walk, chat, and pet the wildlife.",
+      "blurbText": "Cozy multiplayer hangout around a campfire. P2P peer sync, procedural critters, WASD to walk, chat, and pet the wildlife.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/ducktoy/",
+      "classes": [
+        "item",
+        "ducktoy-card",
+        "tag-tool",
+        "tag-prototype"
+      ],
+      "titleHtml": "DuckToy <span>(2026)</span>",
+      "titleText": "DuckToy (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "A little flock for your Windows desktop. Grab, toss, and brush colorful rubber ducks. Still in development; not released yet.",
+      "blurbText": "A little flock for your Windows desktop. Grab, toss, and brush colorful rubber ducks. Still in development; not released yet.",
+      "tagsHtml": "<span class=\"tag\">Desktop Toy</span><span class=\"tag\">Unreleased</span>",
+      "tags": [
+        "Desktop Toy",
+        "Unreleased"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/slopeloop/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "SLOPELOOP <span>(2026)</span>",
+      "titleText": "SLOPELOOP (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "3.2 km. One good line. Chain downhill landings, collect burst charge and beat your personal best through Sunfall Causeway. A browser momentum runner inspired by HASTE.",
+      "blurbText": "3.2 km. One good line. Chain downhill landings, collect burst charge and beat your personal best through Sunfall Causeway. A browser momentum runner inspired by HASTE.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/ringriot/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "RING RIOT <span>(2026)</span>",
+      "titleText": "RING RIOT (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "The front row is ammo. Sidestep a swing, bank discs off the wall, and turn the next hit into a chain reaction. Play a five-round run, try builds in Sandbox, or test your browser with eight honest benchmarks.",
+      "blurbText": "The front row is ammo. Sidestep a swing, bank discs off the wall, and turn the next hit into a chain reaction. Play a five-round run, try builds in Sandbox, or test your browser with eight honest benchmarks.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">Physics</span>",
+      "tags": [
+        "Game",
+        "Physics"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/ltc/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "ARC / Light Studies <span>(2026)</span>",
+      "titleText": "ARC / Light Studies (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Paint emitters and surfaces, explore soft shadows, and inspect the math behind a highlight. Seven interactive scenes, contextual editors, and ray-tested comparisons, based on LTC research.",
+      "blurbText": "Paint emitters and surfaces, explore soft shadows, and inspect the math behind a highlight. Seven interactive scenes, contextual editors, and ray-tested comparisons, based on LTC research.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span><span class=\"tag\">Rendering</span>",
+      "tags": [
+        "Prototype",
+        "Rendering"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/froxel/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Froxel <span>(2026)</span>",
+      "titleText": "Froxel (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "500 moving point lights, three scenes, and a renderer you can pull apart. Inspect real froxel light lists, compare shading models, and benchmark your GPU with exportable timing receipts.",
+      "blurbText": "500 moving point lights, three scenes, and a renderer you can pull apart. Inspect real froxel light lists, compare shading models, and benchmark your GPU with exportable timing receipts.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span><span class=\"tag\">Rendering</span>",
+      "tags": [
+        "Prototype",
+        "Rendering"
+      ]
+    },
+    {
+      "href": "/aqua-empire/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Aqua Empire <span>(2026)</span>",
+      "titleText": "Aqua Empire (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "A little ocean. A big empire. Feed a shoal into a ridiculous aquarium economy, protect the nursery, fight the Broodship, hatch the Crown Fish. Then keep your empire.",
+      "blurbText": "A little ocean. A big empire. Feed a shoal into a ridiculous aquarium economy, protect the nursery, fight the Broodship, hatch the Crown Fish. Then keep your empire.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/fellswoop/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "FELLSWOOP <span>(2026)</span>",
+      "titleText": "FELLSWOOP (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "A little forest. A very busy axe. Sweep a giant axe over a floating island and fell the grove in one swoop: pumpkin blasts, chain lightning, busy beavers. Then axe it all again tomorrow.",
+      "blurbText": "A little forest. A very busy axe. Sweep a giant axe over a floating island and fell the grove in one swoop: pumpkin blasts, chain lightning, busy beavers. Then axe it all again tomorrow.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/inkride/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "INKRIDE <span>(2026)</span>",
+      "titleText": "INKRIDE (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Shared ink. Bad landings. Draw tracks in ink, ride them, crash beautifully. A physics sketchbook you can play alone or in a room where everyone draws and rides the same sheet.",
+      "blurbText": "Shared ink. Bad landings. Draw tracks in ink, ride them, crash beautifully. A physics sketchbook you can play alone or in a room where everyone draws and rides the same sheet.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/tinytreads/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Tiny Treads <span>(2026)</span>",
+      "titleText": "Tiny Treads (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Small tanks. Big grudges. Turn-based artillery with destructible terrain and 400 wild weapons: quick battles against the CPU, hot-seat, or online with a public quick join.",
+      "blurbText": "Small tanks. Big grudges. Turn-based artillery with destructible terrain and 400 wild weapons: quick battles against the CPU, hot-seat, or online with a public quick join.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/senddudes/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "SEND DUDES <span>(2026)</span>",
+      "titleText": "SEND DUDES (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Outnumbered? Send dudes. Hold the core through three sieges, turn kills into reinforcements, unlock Titans. 200,000 fighters simulated on the GPU, blood that stays on the ground. WebGPU.",
+      "blurbText": "Outnumbered? Send dudes. Hold the core through three sieges, turn kills into reinforcements, unlock Titans. 200,000 fighters simulated on the GPU, blood that stays on the ground. WebGPU.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/breakmass/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "BREAKMASS <span>(2026)</span>",
+      "titleText": "BREAKMASS (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "The city is ammunition. Voxel destruction sandbox: grab a building with the God Hand, rip it off its supports and throw it through the one next door. Rockets, bomb rain, real rigid-body collapses.",
+      "blurbText": "The city is ammunition. Voxel destruction sandbox: grab a building with the God Hand, rip it off its supports and throw it through the one next door. Rockets, bomb rain, real rigid-body collapses.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">Physics</span>",
+      "tags": [
+        "Game",
+        "Physics"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/buddy/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Buddy Bonk <span>(2026)</span>",
+      "titleText": "Buddy Bonk (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Multiplayer ragdoll sandbox. Grab a limb, wind up, let go. One shared room, four players over WebRTC, 31 tools, and one Buddy who never learns.",
+      "blurbText": "Multiplayer ragdoll sandbox. Grab a limb, wind up, let go. One shared room, four players over WebRTC, 31 tools, and one Buddy who never learns.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">Multiplayer</span>",
+      "tags": [
+        "Game",
+        "Multiplayer"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vixels/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Vixels <span>(2026)</span>",
+      "titleText": "Vixels (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Vector materials for voxel blocks: contours in data textures, evaluated in the shader. Zoom forever, no bitmap blur.",
+      "blurbText": "Vector materials for voxel blocks: contours in data textures, evaluated in the shader. Zoom forever, no bitmap blur.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/tinyrise/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Tinyrise <span>(2026)</span>",
+      "titleText": "Tinyrise (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Build the whole city, then zoom in and watch one tiny life use your stairs. Brutalist concrete, glass and brick blocks, bridges, caf\u00e9s, real routes.",
+      "blurbText": "Build the whole city, then zoom in and watch one tiny life use your stairs. Brutalist concrete, glass and brick blocks, bridges, caf\u00e9s, real routes.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/terrainlab/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Terrain Lab <span>(2026)</span>",
+      "titleText": "Terrain Lab (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Streamed Surface Nets terrain sandbox. Carve and build in the same frame, plant forests, wake volcanoes, dig up a fossil.",
+      "blurbText": "Streamed Surface Nets terrain sandbox. Carve and build in the same frame, plant forests, wake volcanoes, dig up a fossil.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/tronteq/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "TrontEQ <span>(2026)</span>",
+      "titleText": "TrontEQ (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Zero-latency system-wide EQ for Windows. Custom audio driver (APO) inside the Windows audio engine, Rust GUI, 33 beat-reactive music visualizers.",
+      "blurbText": "Zero-latency system-wide EQ for Windows. Custom audio driver (APO) inside the Windows audio engine, Rust GUI, 33 beat-reactive music visualizers.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "/ytdl/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "YouTube Downloader <span>(2026)</span>",
+      "titleText": "YouTube Downloader (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Video, MP3, or both. Pick a quality and folder in a compact Rust app with custom window chrome, editable themes, and bundled download tools. One portable Windows EXE.",
+      "blurbText": "Video, MP3, or both. Pick a quality and folder in a compact Rust app with custom window chrome, editable themes, and bundled download tools. One portable Windows EXE.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "/trontsnap/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "TrontSnap <span>(2026)</span>",
+      "titleText": "TrontSnap (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Screenshots, recording with audio, offline OCR and an annotation editor. Search your TrontSnap and ShareX history together, choose dark or light themes, then paste or drag a capture straight into another app.",
+      "blurbText": "Screenshots, recording with audio, offline OCR and an annotation editor. Search your TrontSnap and ShareX history together, choose dark or light themes, then paste or drag a capture straight into another app.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/floatingorigin/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "Floating Origin <span>(2026)</span>",
+      "titleText": "Floating Origin (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Walk a million units from spawn without watching the world rattle apart. The floating-origin trick explained, with a Three.js infinite-IKEA sandbox.",
+      "blurbText": "Walk a million units from spawn without watching the world rattle apart. The floating-origin trick explained, with a Three.js infinite-IKEA sandbox.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/terrainarray/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "TerrainArray <span>(2026)</span>",
+      "titleText": "TerrainArray (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Bit-packed splat maps in WebGL2: blending 32+ terrain textures through one sampler. Tutorial + live demo.",
+      "blurbText": "Bit-packed splat maps in WebGL2: blending 32+ terrain textures through one sampler. Tutorial + live demo.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "/audiobounce/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "AudioBounce",
+      "titleText": "AudioBounce",
+      "yearSpans": [],
+      "blurbHtml": "GPU-accelerated spatial audio occlusion for Unity, with voxel ray tracing and multi-bounce reflections. Early development.",
+      "blurbText": "GPU-accelerated spatial audio occlusion for Unity, with voxel ray tracing and multi-bounce reflections. Early development.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "/asciicity/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "ASCIICITY",
+      "titleText": "ASCIICITY",
+      "yearSpans": [],
+      "blurbHtml": "Explore a sunny Miami-inspired city on foot or by car, rendered as live ASCII with Three.js.",
+      "blurbText": "Explore a sunny Miami-inspired city on foot or by car, rendered as live ASCII with Three.js.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/ballpit/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "BALLPIT <span>(2026)</span>",
+      "titleText": "BALLPIT (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "GPU contact physics testbed - 20,000 balls simulated with WebGPU compute. Left-drag to push, right-drag to pull.",
+      "blurbText": "GPU contact physics testbed - 20,000 balls simulated with WebGPU compute. Left-drag to push, right-drag to pull.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/critters/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "critters <span>(2026)</span>",
+      "titleText": "critters (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Procedural creature sandbox: primitive shapes fused into seamless toon critters by an SDF blend-shell vertex shader. Walks, hops, flies, all procedural.",
+      "blurbText": "Procedural creature sandbox: primitive shapes fused into seamless toon critters by an SDF blend-shell vertex shader. Walks, hops, flies, all procedural.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/jennsfarm/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Jenn's Farm <span>(2026)</span>",
+      "titleText": "Jenn's Farm (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "3D browser farming game with Animal Crossing world curvature. Procedural textures and audio, click-to-play farming, auto-save.",
+      "blurbText": "3D browser farming game with Animal Crossing world curvature. Procedural textures and audio, click-to-play farming, auto-save.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/colony/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Colony <span>(2026)</span>",
+      "titleText": "Colony (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Dwarf colony idle game - Craft the World meets Cookie Clicker. 6 resources, 7+ buildings, tech tree, offline progress.",
+      "blurbText": "Dwarf colony idle game - Craft the World meets Cookie Clicker. 6 resources, 7+ buildings, tech tree, offline progress.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/megabunk/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "megabunk <span>(2026)</span>",
+      "titleText": "megabunk (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Procedural terrain tech demo - a clone of MEGABONK's snake-walk world generation. Real-time tweaking, dynamic elevation.",
+      "blurbText": "Procedural terrain tech demo - a clone of MEGABONK's snake-walk world generation. Real-time tweaking, dynamic elevation.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/device-history/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "Device History",
+      "titleText": "Device History",
+      "yearSpans": [],
+      "blurbHtml": "A Windows USB device monitor that records connections and disconnections, with a desktop interface and CLI mode.",
+      "blurbText": "A Windows USB device monitor that records connections and disconnections, with a desktop interface and CLI mode.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "/powershellmanager/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "PowerShell Manager",
+      "titleText": "PowerShell Manager",
+      "yearSpans": [],
+      "blurbHtml": "Arrange windows into weighted grids, drag terminals into order, and make the workspace yours with ColorMagic Theme Studio.",
+      "blurbText": "Arrange windows into weighted grids, drag terminals into order, and make the workspace yours with ColorMagic Theme Studio.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/spaceview/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "SpaceView <span>(2026)</span>",
+      "titleText": "SpaceView (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "A fast disk space visualizer inspired by SpaceMonger. Squarified treemaps, smooth camera, lazy LOD. Built with Rust + egui. Single portable .exe.",
+      "blurbText": "A fast disk space visualizer inspired by SpaceMonger. Squarified treemaps, smooth camera, lazy LOD. Built with Rust + egui. Single portable .exe.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://github.com/TrentSterling/fishnet-eos-native",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "FishNet-EOS-Native <span>(2026)</span>",
+      "titleText": "FishNet-EOS-Native (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Standalone EOS transport for FishNet with zero PlayEveryWare dependency. Features host migration, voice chat, matchmaking, replay system, and 4-digit lobby codes.",
+      "blurbText": "Standalone EOS transport for FishNet with zero PlayEveryWare dependency. Features host migration, voice chat, matchmaking, replay system, and 4-digit lobby codes.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/speedslap/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "SpeedSlap <span>(2026)</span>",
+      "titleText": "SpeedSlap (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Chrome extension for advanced YouTube playback speed control. Configurable shortcuts, scroll wheel control, draggable overlay, and speed persistence.",
+      "blurbText": "Chrome extension for advanced YouTube playback speed control. Configurable shortcuts, scroll wheel control, draggable overlay, and speed persistence.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/threejs-volumetric-beam/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Volumetric Light Beam <span>(2026)</span>",
+      "titleText": "Volumetric Light Beam (2026)",
+      "yearSpans": [
+        "(2026)"
+      ],
+      "blurbHtml": "Three.js port of HL2-style fake volumetric lights. Cylindrical billboarding + procedural noise on a flat quad - the same trick Valve used in 2004.",
+      "blurbText": "Three.js port of HL2-style fake volumetric lights. Cylindrical billboarding + procedural noise on a flat quad - the same trick Valve used in 2004.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/configjoint-climbing/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "ConfigJoint Climbing <span>(2025)</span>",
+      "titleText": "ConfigJoint Climbing (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Physics-based Unity climbing with ConfigurableJoints for reaching, gripping, and pulling. Inspired by White Knuckle. Devlog and video.",
+      "blurbText": "Physics-based Unity climbing with ConfigurableJoints for reaching, gripping, and pulling. Inspired by White Knuckle. Devlog and video.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/craftmine/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "CraftMine <span>(2025)</span>",
+      "titleText": "CraftMine (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "AI-generated Minecraft clone with P2P multiplayer - 46 blocks, 36 mobs, 19 weapons. Runs in your browser.",
+      "blurbText": "AI-generated Minecraft clone with P2P multiplayer - 46 blocks, 36 mobs, 19 weapons. Runs in your browser.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibesand",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "vibesand <span>(2025)</span>",
+      "titleText": "vibesand (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "High-performance WebGPU sand simulation rendering 2+ million voxels in real-time at 60fps.",
+      "blurbText": "High-performance WebGPU sand simulation rendering 2+ million voxels in real-time at 60fps.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibewater",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "vibewater <span>(2025)</span>",
+      "titleText": "vibewater (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "3D water simulation using WebGPU compute shaders for high-performance fluid dynamics.",
+      "blurbText": "3D water simulation using WebGPU compute shaders for high-performance fluid dynamics.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibeduders",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "vibeduders <span>(2025)</span>",
+      "titleText": "vibeduders (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "WebGPU demo rendering 100,000 active agents with individual behaviors and GPU-driven animation.",
+      "blurbText": "WebGPU demo rendering 100,000 active agents with individual behaviors and GPU-driven animation.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibevoxelprobes",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "vibevoxelprobes <span>(2025)</span>",
+      "titleText": "vibevoxelprobes (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Voxel-based global illumination lighting probes demonstration with real-time light bouncing.",
+      "blurbText": "Voxel-based global illumination lighting probes demonstration with real-time light bouncing.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/quantumvibes",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "QuantumVibes <span>(2025)</span>",
+      "titleText": "QuantumVibes (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Full quantum double-slit experiment simulator with customizable parameters and wave function visualization.",
+      "blurbText": "Full quantum double-slit experiment simulator with customizable parameters and wave function visualization.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibestar",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "VibeStar <span>(2025)</span>",
+      "titleText": "VibeStar (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Threaded A* pathfinding visualizer in a voxel world, demonstrating multi-core CPU utilization.",
+      "blurbText": "Threaded A* pathfinding visualizer in a voxel world, demonstrating multi-core CPU utilization.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibecraft",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "VibeCraft <span>(2025)</span>",
+      "titleText": "VibeCraft (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Procedural voxel terrain with custom chunk-loading system and infinite world generation.",
+      "blurbText": "Procedural voxel terrain with custom chunk-loading system and infinite world generation.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibebounce",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "VibeBounce <span>(2025)</span>",
+      "titleText": "VibeBounce (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Sparse Voxel Octree (SVO) and ray bounce visualization for real-time global illumination research.",
+      "blurbText": "Sparse Voxel Octree (SVO) and ray bounce visualization for real-time global illumination research.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibecar",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "VibeCar <span>(2025)</span>",
+      "titleText": "VibeCar (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Browser-based raycast vehicle physics with realistic suspension and tire models.",
+      "blurbText": "Browser-based raycast vehicle physics with realistic suspension and tire models.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/boostmelon-and-vibe-projects/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "BoostMelon <span>(2025)</span>",
+      "titleText": "BoostMelon (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Multiplayer racing prototype built with FishNet and Epic Online Services for seamless online play.",
+      "blurbText": "Multiplayer racing prototype built with FishNet and Epic Online Services for seamless online play.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/spheres",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "Spheres <span>(2025)</span>",
+      "titleText": "Spheres (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Procedural packed texture generator for VFX with RGBA channel encoding.",
+      "blurbText": "Procedural packed texture generator for VFX with RGBA channel encoding.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/lerp",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "FRIM Lerp <span>(2025)</span>",
+      "titleText": "FRIM Lerp (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Interactive tutorial on framerate-independent smoothing with Unity code examples.",
+      "blurbText": "Interactive tutorial on framerate-independent smoothing with Unity code examples.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibebeats",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "vibebeats <span>(2025)</span>",
+      "titleText": "vibebeats (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Interactive web-based music toy generating procedurally evolving melodic patterns.",
+      "blurbText": "Interactive web-based music toy generating procedurally evolving melodic patterns.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibeprime",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "vibeprime <span>(2025)</span>",
+      "titleText": "vibeprime (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Educational prime number visualization with dynamic interactive graphics.",
+      "blurbText": "Educational prime number visualization with dynamic interactive graphics.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/wolfenstein",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "ASCII Wolfenstein <span>(2025)</span>",
+      "titleText": "ASCII Wolfenstein (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Vanilla JS ASCII renderer emulating classic Wolfenstein raycasting with fisheye FOV correction.",
+      "blurbText": "Vanilla JS ASCII renderer emulating classic Wolfenstein raycasting with fisheye FOV correction.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/vibe-coding-gemini/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "2D AI Racer <span>(2025)</span>",
+      "titleText": "2D AI Racer (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Top-down racing with AI opponents demonstrating path-following and avoidance behaviors.",
+      "blurbText": "Top-down racing with AI opponents demonstrating path-following and avoidance behaviors.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/vibe-coding-gemini/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Bookworm Clone <span>(2025)</span>",
+      "titleText": "Bookworm Clone (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Word-finding game with dynamic letter grid and dictionary validation.",
+      "blurbText": "Word-finding game with dynamic letter grid and dictionary validation.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/vibe-coding-gemini/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Marble Game <span>(2025)</span>",
+      "titleText": "Marble Game (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "Physics-based marble roller with dynamic track generation.",
+      "blurbText": "Physics-based marble roller with dynamic track generation.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/sudoku",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "MakeupBeachSudoku <span>(2025)</span>",
+      "titleText": "MakeupBeachSudoku (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "A mobile-first Sudoku recreation built in Phaser 3, inspired by classic makeup-themed girl games from Cosmopolitan.com.",
+      "blurbText": "A mobile-first Sudoku recreation built in Phaser 3, inspired by classic makeup-themed girl games from Cosmopolitan.com.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/pachinko",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "PizzaPachinko <span>(2025)</span>",
+      "titleText": "PizzaPachinko (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "A heavily 'juiced' vanilla JS reimagining of the classic 'Pizza Pachinko' minigame from the Papa Louie series.",
+      "blurbText": "A heavily 'juiced' vanilla JS reimagining of the classic 'Pizza Pachinko' minigame from the Papa Louie series.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/shortpath",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "ShortPath <span>(2025)</span>",
+      "titleText": "ShortPath (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "A vanilla JS visualizer exploring the 2025 Duan-Mao pathfinding breakthrough that bypasses Dijkstra's 40-year sorting bottleneck.",
+      "blurbText": "A vanilla JS visualizer exploring the 2025 Duan-Mao pathfinding breakthrough that bypasses Dijkstra's 40-year sorting bottleneck.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibespace",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "VibeSpace <span>(2025)</span>",
+      "titleText": "VibeSpace (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "An interactive 3D space flight prototype using Three.js. Features a procedurally generated universe, a web worker for performance, and a \"boosty\" autopilot.",
+      "blurbText": "An interactive 3D space flight prototype using Three.js. Features a procedurally generated universe, a web worker for performance, and a \"boosty\" autopilot.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibepong/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "VibePong <span>(2025)</span>",
+      "titleText": "VibePong (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "A hyper-stylized, audio-visual CPU vs CPU Pong simulation with dynamic physics and powerups.",
+      "blurbText": "A hyper-stylized, audio-visual CPU vs CPU Pong simulation with dynamic physics and powerups.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/vibemaze",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "VibeMaze <span>(2025)</span>",
+      "titleText": "VibeMaze (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "A 3D maze game rendered entirely in ASCII characters. Built with vanilla JS to explore 3D rasterization, collision, and lighting.",
+      "blurbText": "A 3D maze game rendered entirely in ASCII characters. Built with vanilla JS to explore 3D rasterization, collision, and lighting.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/cellgen/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "CellGen <span>(2025)</span>",
+      "titleText": "CellGen (2025)",
+      "yearSpans": [
+        "(2025)"
+      ],
+      "blurbHtml": "A Unity editor tool for procedural dungeon generation and culling using a spatial hash grid.",
+      "blurbText": "A Unity editor tool for procedural dungeon generation and culling using a spatial hash grid.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://store.steampowered.com/app/2481930/Scamper/",
+      "classes": [
+        "item",
+        "tag-game",
+        "tag-vr"
+      ],
+      "titleHtml": "Scamper <span>(2024-2025)</span>",
+      "titleText": "Scamper (2024-2025)",
+      "yearSpans": [
+        "(2024-2025)"
+      ],
+      "blurbHtml": "A tense VR horror-adventure. My primary contribution was networking architecture.",
+      "blurbText": "A tense VR horror-adventure. My primary contribution was networking architecture.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">VR</span>",
+      "tags": [
+        "Game",
+        "VR"
+      ]
+    },
+    {
+      "href": "https://tront.xyz/splitter/",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "Splitter4GPT <span>(2024)</span>",
+      "titleText": "Splitter4GPT (2024)",
+      "yearSpans": [
+        "(2024)"
+      ],
+      "blurbHtml": "A web utility to intelligently split large text files into smaller, manageable chunks suitable for LLMs.",
+      "blurbText": "A web utility to intelligently split large text files into smaller, manageable chunks suitable for LLMs.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://monke.tront.xyz",
+      "classes": [
+        "item",
+        "tag-game",
+        "tag-vr"
+      ],
+      "titleHtml": "MonkePortals <span>(2023)</span>",
+      "titleText": "MonkePortals (2023)",
+      "yearSpans": [
+        "(2023)"
+      ],
+      "blurbHtml": "A Gorilla Tag-inspired VR game featuring dynamic portal mechanics for traversal and puzzle-solving.",
+      "blurbText": "A Gorilla Tag-inspired VR game featuring dynamic portal mechanics for traversal and puzzle-solving.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">VR</span>",
+      "tags": [
+        "Game",
+        "VR"
+      ]
+    },
+    {
+      "href": "/blog/posts/farmvr/",
+      "classes": [
+        "item",
+        "tag-game",
+        "tag-vr"
+      ],
+      "titleHtml": "FarmVR <span>(2022)</span>",
+      "titleText": "FarmVR (2022)",
+      "yearSpans": [
+        "(2022)"
+      ],
+      "blurbHtml": "Cozy farming sim in VR: plant, water, harvest and sell with your own hands. Stardew Valley meets Quest. Never reached a releasable state.",
+      "blurbText": "Cozy farming sim in VR: plant, water, harvest and sell with your own hands. Stardew Valley meets Quest. Never reached a releasable state.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">VR</span>",
+      "tags": [
+        "Game",
+        "VR"
+      ]
+    },
+    {
+      "href": "/blog/posts/punchin-duders-hackerpunk-vr/",
+      "classes": [
+        "item",
+        "tag-game",
+        "tag-vr"
+      ],
+      "titleHtml": "Punchin' Duders <span>(2021)</span>",
+      "titleText": "Punchin' Duders (2021)",
+      "yearSpans": [
+        "(2021)"
+      ],
+      "blurbHtml": "VR brawler on Quest 2. You punch dudes, they ragdoll. Physics-based combat that never stops being satisfying.",
+      "blurbText": "VR brawler on Quest 2. You punch dudes, they ragdoll. Physics-based combat that never stops being satisfying.",
+      "tagsHtml": "<span class=\"tag\">Game</span><span class=\"tag\">VR</span>",
+      "tags": [
+        "Game",
+        "VR"
+      ]
+    },
+    {
+      "href": "https://github.com/TrentSterling/punk",
+      "classes": [
+        "item",
+        "tag-prototype",
+        "tag-vr"
+      ],
+      "titleHtml": "HackerPunk VR <span>(2021)</span>",
+      "titleText": "HackerPunk VR (2021)",
+      "yearSpans": [
+        "(2021)"
+      ],
+      "blurbHtml": "Cyberpunk hacking game in VR: jack into systems, navigate virtual spaces, avoid ICE. Neon grids and data streams on Quest 2.",
+      "blurbText": "Cyberpunk hacking game in VR: jack into systems, navigate virtual spaces, avoid ICE. Neon grids and data streams on Quest 2.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span><span class=\"tag\">VR</span>",
+      "tags": [
+        "Prototype",
+        "VR"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/heist-and-jam-2020",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "Heist And Jam <span>(2020)</span>",
+      "titleText": "Heist And Jam (2020)",
+      "yearSpans": [
+        "(2020)"
+      ],
+      "blurbHtml": "Made for Mix and Jam 2020 and missed the deadline. Oh well. Let's rob a bank.",
+      "blurbText": "Made for Mix and Jam 2020 and missed the deadline. Oh well. Let's rob a bank.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/death-island",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Death Island <span>(2020)</span>",
+      "titleText": "Death Island (2020)",
+      "yearSpans": [
+        "(2020)"
+      ],
+      "blurbHtml": "Mini Jam 53 entry, theme Oasis. Playable but unfinished, with a few secrets to find.",
+      "blurbText": "Mini Jam 53 entry, theme Oasis. Playable but unfinished, with a few secrets to find.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/blog/posts/rigidbody-duder-loopstuck/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "RigidbodyDuder <span>(2019)</span>",
+      "titleText": "RigidbodyDuder (2019)",
+      "yearSpans": [
+        "(2019)"
+      ],
+      "blurbHtml": "Unity demo for a robust character controller implemented using Rigidbody physics for smooth movement.",
+      "blurbText": "Unity demo for a robust character controller implemented using Rigidbody physics for smooth movement.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/loopstuck",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "LoopStuck <span>(2019)</span>",
+      "titleText": "LoopStuck (2019)",
+      "yearSpans": [
+        "(2019)"
+      ],
+      "blurbHtml": "Incomplete time-loop puzzle game for workingclassduck's jam. Repeat the same short window, learn the patterns. Outer Wilds at jam scale.",
+      "blurbText": "Incomplete time-loop puzzle game for workingclassduck's jam. Repeat the same short window, learn the patterns. Outer Wilds at jam scale.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "/blog/posts/roland-ai1/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Roland <span>(2018)</span>",
+      "titleText": "Roland (2018)",
+      "yearSpans": [
+        "(2018)"
+      ],
+      "blurbHtml": "Cute 3D platformer about an orange ball that rolls around. A collaboration with Andre of Venturous Games. Never shipped.",
+      "blurbText": "Cute 3D platformer about an orange ball that rolls around. A collaboration with Andre of Venturous Games. Never shipped.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/blog/posts/roland-ai1/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "A.I.1 <span>(2018)</span>",
+      "titleText": "A.I.1 (2018)",
+      "yearSpans": [
+        "(2018)"
+      ],
+      "blurbHtml": "FomeDome's Descent-style Metroidvania built in PlayMaker. I pitched in with custom PlayMaker actions and C# help. We both burned out before it shipped.",
+      "blurbText": "FomeDome's Descent-style Metroidvania built in PlayMaker. I pitched in with custom PlayMaker actions and C# help. We both burned out before it shipped.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/jenns-cafe",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Jenn's Cafe <span>(2017)</span>",
+      "titleText": "Jenn's Cafe (2017)",
+      "yearSpans": [
+        "(2017)"
+      ],
+      "blurbHtml": "Cafe game prototype from 2017. The itch page still says the build is incoming.",
+      "blurbText": "Cafe game prototype from 2017. The itch page still says the build is incoming.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/humanitys-last-breath-divejam",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "Humanity's Last Breath <span>(2017)</span>",
+      "titleText": "Humanity's Last Breath (2017)",
+      "yearSpans": [
+        "(2017)"
+      ],
+      "blurbHtml": "DIVEJAM 2017 entry. Aim your sub with the mouse, shoot, thrust. Not very good, not that bad either.",
+      "blurbText": "DIVEJAM 2017 entry. Aim your sub with the mouse, shoot, thrust. Not very good, not that bad either.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/7dayspacejam",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "7DaySpaceJam <span>(2016)</span>",
+      "titleText": "7DaySpaceJam (2016)",
+      "yearSpans": [
+        "(2016)"
+      ],
+      "blurbHtml": "A $15 bet that I could make a game in seven days. FreeSpace-inspired space shooter with a devlog on YouTube.",
+      "blurbText": "A $15 bet that I could make a game in seven days. FreeSpace-inspired space shooter with a devlog on YouTube.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/dash-till-dawn",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Dash Till Dawn <span>(2016)</span>",
+      "titleText": "Dash Till Dawn (2016)",
+      "yearSpans": [
+        "(2016)"
+      ],
+      "blurbHtml": "An endless runner where players must jump over hordes of oncoming zombies to achieve the highest score.",
+      "blurbText": "An endless runner where players must jump over hordes of oncoming zombies to achieve the highest score.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/guys-girls-and-guns",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Guys, Girls, and Guns <span>(2016)</span>",
+      "titleText": "Guys, Girls, and Guns (2016)",
+      "yearSpans": [
+        "(2016)"
+      ],
+      "blurbHtml": "Top-down zombie shooter with a strong multiplayer focus. Team up with friends to survive endless waves.",
+      "blurbText": "Top-down zombie shooter with a strong multiplayer focus. Team up with friends to survive endless waves.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/blog/posts/ld34-js-runtime-unity/",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "JS Runtime in Unity <span>(2015)</span>",
+      "titleText": "JS Runtime in Unity (2015)",
+      "yearSpans": [
+        "(2015)"
+      ],
+      "blurbHtml": "Ludum Dare 34 entry exploring runtime JavaScript execution within a Unity application for dynamic scripting.",
+      "blurbText": "Ludum Dare 34 entry exploring runtime JavaScript execution within a Unity application for dynamic scripting.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "/blog/posts/multiplayer-topdown-zombie/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "MP Zombie Shooter <span>(2015)</span>",
+      "titleText": "MP Zombie Shooter (2015)",
+      "yearSpans": [
+        "(2015)"
+      ],
+      "blurbHtml": "Photon-powered top-down zombie shooter prototype. Explored multiplayer networking concepts.",
+      "blurbText": "Photon-powered top-down zombie shooter prototype. Explored multiplayer networking concepts.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/blog/posts/bacon-game-jam-buttloads/",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "BUTTLOADS! <span>(2015)</span>",
+      "titleText": "BUTTLOADS! (2015)",
+      "yearSpans": [
+        "(2015)"
+      ],
+      "blurbHtml": "A Motherload-inspired mining game made for Bacon Game Jam 09. Drill deep into the earth to find riches and reach the core.",
+      "blurbText": "A Motherload-inspired mining game made for Bacon Game Jam 09. Drill deep into the earth to find riches and reach the core.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "/blog/posts/bear-party-ld33/",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "Bear Party <span>(2015)</span>",
+      "titleText": "Bear Party (2015)",
+      "yearSpans": [
+        "(2015)"
+      ],
+      "blurbHtml": "Ludum Dare 33 entry under the theme \"You Are the Monster\". Play as a giant bear, smashing buses and eating children.",
+      "blurbText": "Ludum Dare 33 entry under the theme \"You Are the Monster\". Play as a giant bear, smashing buses and eating children.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "https://trent.itch.io/super-turbo-ship-puncher-3",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "Super Turbo Ship Puncher 3 <span>(2015)</span>",
+      "titleText": "Super Turbo Ship Puncher 3 (2015)",
+      "yearSpans": [
+        "(2015)"
+      ],
+      "blurbHtml": "48-hour Bacon Game Jam shmup, theme Millions Of Them. Dodge hundreds of enemies, grab thousands of pickups, score millions. Twin-stick with a controller.",
+      "blurbText": "48-hour Bacon Game Jam shmup, theme Millions Of Them. Dodge hundreds of enemies, grab thousands of pickups, score millions. Twin-stick with a controller.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "/blog/posts/tiny-zombies/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Tiny Zombies <span>(2015)</span>",
+      "titleText": "Tiny Zombies (2015)",
+      "yearSpans": [
+        "(2015)"
+      ],
+      "blurbHtml": "Just a bunch of tiny zombies. A Unity horde experiment from the winter of 2014.",
+      "blurbText": "Just a bunch of tiny zombies. A Unity horde experiment from the winter of 2014.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/voxel-blocky-dungeon/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Voxel Blocky Dungeon <span>(2015)</span>",
+      "titleText": "Voxel Blocky Dungeon (2015)",
+      "yearSpans": [
+        "(2015)"
+      ],
+      "blurbHtml": "Blocky Dungeon reborn in 3D voxels, inspired by 3D Dot Game Heroes. Dungeons plus the outdoors, on a rapid-release schedule.",
+      "blurbText": "Blocky Dungeon reborn in 3D voxels, inspired by 3D Dot Game Heroes. Dungeons plus the outdoors, on a rapid-release schedule.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/voxel-twinstick-voxefire/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "VoxeFire <span>(2015)</span>",
+      "titleText": "VoxeFire (2015)",
+      "yearSpans": [
+        "(2015)"
+      ],
+      "blurbHtml": "A voxel twinstick shooter for Amazon FireTV, featuring destructive environments and fast-paced gameplay.",
+      "blurbText": "A voxel twinstick shooter for Amazon FireTV, featuring destructive environments and fast-paced gameplay.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "https://github.com/TrentSterling/CobbleConverter",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "CobbleConverter <span>(2013)</span>",
+      "titleText": "CobbleConverter (2013)",
+      "yearSpans": [
+        "(2013)"
+      ],
+      "blurbHtml": "Bukkit plugin that turns cobblestone into shop tokens for a Minecraft server economy.",
+      "blurbText": "Bukkit plugin that turns cobblestone into shop tokens for a Minecraft server economy.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "/blog/posts/magic-archer/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Magic Archer <span>(2014)</span>",
+      "titleText": "Magic Archer (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "2D pixel art multiplayer game with live level editing. Built with Unity networking, dev streamed on Twitch.",
+      "blurbText": "2D pixel art multiplayer game with live level editing. Built with Unity networking, dev streamed on Twitch.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/ludum-dare-31/",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "platformershooter <span>(2014)</span>",
+      "titleText": "platformershooter (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "A Super Crate Box clone made for Ludum Dare 31. Weapon pickups randomly change your firearm.",
+      "blurbText": "A Super Crate Box clone made for Ludum Dare 31. Weapon pickups randomly change your firearm.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "javascript:void(0);",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Binding of Isaac Clone <span>(2014)</span>",
+      "titleText": "Binding of Isaac Clone (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "Twitch-streamed prototype of a Binding of Isaac-like dungeon crawler with procedural generation.",
+      "blurbText": "Twitch-streamed prototype of a Binding of Isaac-like dungeon crawler with procedural generation.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/dont-touch-the-red-stuff/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Don't Touch the Red Stuff! <span>(2014)</span>",
+      "titleText": "Don't Touch the Red Stuff! (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "A simple and challenging 1-day platformer game. Players must navigate treacherous levels avoiding red obstacles.",
+      "blurbText": "A simple and challenging 1-day platformer game. Players must navigate treacherous levels avoiding red obstacles.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/blog/posts/voxel-engine-progress/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Blocky Dungeon <span>(2014)</span>",
+      "titleText": "Blocky Dungeon (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "Voxel RPG on my own Unity voxel engine: runtime level editor, automatic texture atlasing, the whole scene batched into one draw call with dynamic lighting on mobile.",
+      "blurbText": "Voxel RPG on my own Unity voxel engine: runtime level editor, automatic texture atlasing, the whole scene batched into one draw call with dynamic lighting on mobile.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/fezcraft/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "FezCraft <span>(2014)</span>",
+      "titleText": "FezCraft (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "A Minecraft prototype implementing Fez-style rotating 3D blocks to reveal new pathways and perspectives.",
+      "blurbText": "A Minecraft prototype implementing Fez-style rotating 3D blocks to reveal new pathways and perspectives.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/voxel-engine-progress/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Voxel Bomberman <span>(2014)</span>",
+      "titleText": "Voxel Bomberman (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "A Bomberman-style game built with a 3D voxel art style, featuring destructible environments.",
+      "blurbText": "A Bomberman-style game built with a 3D voxel art style, featuring destructible environments.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/voxel-helicopter-shooter/",
+      "classes": [
+        "item",
+        "tag-prototype"
+      ],
+      "titleHtml": "Voxel Helicopter Shooter <span>(2014)</span>",
+      "titleText": "Voxel Helicopter Shooter (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "My last PlayMaker experiment before going back to pure C#. A voxel helicopter, guns, and not much more.",
+      "blurbText": "My last PlayMaker experiment before going back to pure C#. A voxel helicopter, guns, and not much more.",
+      "tagsHtml": "<span class=\"tag\">Prototype</span>",
+      "tags": [
+        "Prototype"
+      ]
+    },
+    {
+      "href": "/blog/posts/thomas-clone/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Thomas Was A Clone <span>(2014)</span>",
+      "titleText": "Thomas Was A Clone (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "Minimalist platformer inspired by Thomas Was Alone. Unfinished, but great practice for lighting and level design. Streamed on Twitch, viewers funded the Amplify tools.",
+      "blurbText": "Minimalist platformer inspired by Thomas Was Alone. Unfinished, but great practice for lighting and level design. Streamed on Twitch, viewers funded the Amplify tools.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/blog/posts/android-game-dev-free-art/",
+      "classes": [
+        "item",
+        "tag-game"
+      ],
+      "titleHtml": "Planet Jumper <span>(2014)</span>",
+      "titleText": "Planet Jumper (2014)",
+      "yearSpans": [
+        "(2014)"
+      ],
+      "blurbHtml": "Started as a PlayMaker forum answer, became an Android game: hop planet to planet and outrun the sun. Kenney art, PlayMaker only, a solid 60 FPS on a tablet.",
+      "blurbText": "Started as a PlayMaker forum answer, became an Android game: hop planet to planet and outrun the sun. Kenney art, PlayMaker only, a solid 60 FPS on a tablet.",
+      "tagsHtml": "<span class=\"tag\">Game</span>",
+      "tags": [
+        "Game"
+      ]
+    },
+    {
+      "href": "/blog/posts/a-new-year-2014/",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "New Years Game Jam <span>(2013)</span>",
+      "titleText": "New Years Game Jam (2013)",
+      "yearSpans": [
+        "(2013)"
+      ],
+      "blurbHtml": "My New Years jam entry for 2013. It came out releasable, then I decided it needed more art polish than code.",
+      "blurbText": "My New Years jam entry for 2013. It came out releasable, then I decided it needed more art polish than code.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "/blog/posts/3-day-rpg/",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "3 Day RPG <span>(2013)</span>",
+      "titleText": "3 Day RPG (2013)",
+      "yearSpans": [
+        "(2013)"
+      ],
+      "blurbHtml": "An RPG in three days, stacked on top of OneGameAMonth crunch. TheVillageBlacksmith talked me into it.",
+      "blurbText": "An RPG in three days, stacked on top of OneGameAMonth crunch. TheVillageBlacksmith talked me into it.",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "/blog/posts/ludum-dare-26/",
+      "classes": [
+        "item",
+        "tag-game-jam"
+      ],
+      "titleHtml": "Ludum Dare 26 <span>(2013)</span>",
+      "titleText": "Ludum Dare 26 (2013)",
+      "yearSpans": [
+        "(2013)"
+      ],
+      "blurbHtml": "My first Ludum Dare entry on the theme of \"Minimalism.\"",
+      "blurbText": "My first Ludum Dare entry on the theme of \"Minimalism.\"",
+      "tagsHtml": "<span class=\"tag\">Game Jam</span>",
+      "tags": [
+        "Game Jam"
+      ]
+    },
+    {
+      "href": "https://github.com/TrentSterling/SuperSpy",
+      "classes": [
+        "item",
+        "tag-mod"
+      ],
+      "titleHtml": "SuperSpy <span>(2013)</span>",
+      "titleText": "SuperSpy (2013)",
+      "yearSpans": [
+        "(2013)"
+      ],
+      "blurbHtml": "A Minecraft plugin for spying on commands and private chat messages on a server.",
+      "blurbText": "A Minecraft plugin for spying on commands and private chat messages on a server.",
+      "tagsHtml": "<span class=\"tag\">Mod</span>",
+      "tags": [
+        "Mod"
+      ]
+    },
+    {
+      "href": "https://github.com/TrentSterling/CommandControl",
+      "classes": [
+        "item",
+        "tag-mod"
+      ],
+      "titleHtml": "CommandControl <span>(2013)</span>",
+      "titleText": "CommandControl (2013)",
+      "yearSpans": [
+        "(2013)"
+      ],
+      "blurbHtml": "Bukkit plugin that blacklists or password-locks abusable Minecraft commands, with logging and bans on failed attempts.",
+      "blurbText": "Bukkit plugin that blacklists or password-locks abusable Minecraft commands, with logging and bans on failed attempts.",
+      "tagsHtml": "<span class=\"tag\">Mod</span>",
+      "tags": [
+        "Mod"
+      ]
+    },
+    {
+      "href": "https://github.com/TrentSterling/DungeonGen",
+      "classes": [
+        "item",
+        "tag-tool"
+      ],
+      "titleHtml": "DungeonGen <span>(2013)</span>",
+      "titleText": "DungeonGen (2013)",
+      "yearSpans": [
+        "(2013)"
+      ],
+      "blurbHtml": "A procedural dungeon generator built with three.js. Voxel tileset art by Yuukirus.",
+      "blurbText": "A procedural dungeon generator built with three.js. Voxel tileset art by Yuukirus.",
+      "tagsHtml": "<span class=\"tag\">Tool</span>",
+      "tags": [
+        "Tool"
+      ]
+    },
+    {
+      "href": "https://github.com/TrentSterling/MobControl",
+      "classes": [
+        "item",
+        "tag-mod"
+      ],
+      "titleHtml": "MobControl <span>(2013)</span>",
+      "titleText": "MobControl (2013)",
+      "yearSpans": [
+        "(2013)"
+      ],
+      "blurbHtml": "Bukkit plugin controlling chunk spawns and breeding of mobs, made for a skyblock economy server.",
+      "blurbText": "Bukkit plugin controlling chunk spawns and breeding of mobs, made for a skyblock economy server.",
+      "tagsHtml": "<span class=\"tag\">Mod</span>",
+      "tags": [
+        "Mod"
+      ]
+    },
+    {
+      "href": "https://github.com/TrentSterling/KittyScript",
+      "classes": [
+        "item",
+        "tag-mod"
+      ],
+      "titleHtml": "KittyScript <span>(2012)</span>",
+      "titleText": "KittyScript (2012)",
+      "yearSpans": [
+        "(2012)"
+      ],
+      "blurbHtml": "An old Garry's Mod RP gamemode written from scratch. Long since broken.",
+      "blurbText": "An old Garry's Mod RP gamemode written from scratch. Long since broken.",
+      "tagsHtml": "<span class=\"tag\">Mod</span>",
+      "tags": [
+        "Mod"
+      ]
+    },
+    {
+      "href": "/blog/posts/that-dummy/",
+      "classes": [
+        "item",
+        "tag-flash-game"
+      ],
+      "titleHtml": "That Dummy <span>(2012)</span>",
+      "titleText": "That Dummy (2012)",
+      "yearSpans": [
+        "(2012)"
+      ],
+      "blurbHtml": "A FlashPunk collaboration with Andrew Sandifer, featuring challenging platforming puzzles.",
+      "blurbText": "A FlashPunk collaboration with Andrew Sandifer, featuring challenging platforming puzzles.",
+      "tagsHtml": "<span class=\"tag\">Flash Game</span>",
+      "tags": [
+        "Flash Game"
+      ]
+    },
+    {
+      "href": "https://www.youtube.com/watch?v=X3QiuOJWoJs",
+      "classes": [
+        "item",
+        "tag-flash-game"
+      ],
+      "titleHtml": "Dynamite Max <span>(2011)</span>",
+      "titleText": "Dynamite Max (2011)",
+      "yearSpans": [
+        "(2011)"
+      ],
+      "blurbHtml": "My 3D Flash game from before Stage3D. Papervision3D then Away3DLite faking 3D on the CPU, Box2D then Nape physics: a 2.5D physics platformer with a real level editor, rope bridges, joints and triggers. Rebooted once in FlashPunk. Never finished.",
+      "blurbText": "My 3D Flash game from before Stage3D. Papervision3D then Away3DLite faking 3D on the CPU, Box2D then Nape physics: a 2.5D physics platformer with a real level editor, rope bridges, joints and triggers. Rebooted once in FlashPunk. Never finished.",
+      "tagsHtml": "<span class=\"tag\">Flash Game</span>",
+      "tags": [
+        "Flash Game"
+      ]
+    },
+    {
+      "href": "/blog/posts/new-look-coming-fallout-ish-game-plans/",
+      "classes": [
+        "item",
+        "tag-mod"
+      ],
+      "titleHtml": "VaultScript <span>(2010)</span>",
+      "titleText": "VaultScript (2010)",
+      "yearSpans": [
+        "(2010)"
+      ],
+      "blurbHtml": "Fallout-flavored Garry's Mod RP gamemode. Abandoned when I moved to rural Missouri and switched to Flash games to pay the bills.",
+      "blurbText": "Fallout-flavored Garry's Mod RP gamemode. Abandoned when I moved to rural Missouri and switched to Flash games to pay the bills.",
+      "tagsHtml": "<span class=\"tag\">Mod</span>",
+      "tags": [
+        "Mod"
+      ]
+    },
+    {
+      "href": "javascript:void(0);",
+      "classes": [
+        "item",
+        "tag-flash-game"
+      ],
+      "titleHtml": "BomberTank <span>(2009)</span>",
+      "titleText": "BomberTank (2009)",
+      "yearSpans": [
+        "(2009)"
+      ],
+      "blurbHtml": "A long-lost Bomberman-style Flash game that featured customizable tanks and arena battles.",
+      "blurbText": "A long-lost Bomberman-style Flash game that featured customizable tanks and arena battles.",
+      "tagsHtml": "<span class=\"tag\">Flash Game</span>",
+      "tags": [
+        "Flash Game"
+      ]
+    }
+  ]
+}
