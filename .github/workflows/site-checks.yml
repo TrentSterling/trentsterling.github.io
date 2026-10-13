@@ -55,6 +55,10 @@ jobs:
         run: |
           npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
           node "$RUNNER_TEMP/site-tests/node_modules/playwright/cli.js" install --with-deps chrome
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y ffmpeg
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
           mkdir -p .local/theme-review
           echo "NODE_PATH=$RUNNER_TEMP/site-tests/node_modules" >> "$GITHUB_ENV"
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/site-tests/node_modules/playwright" >> "$GITHUB_ENV"
