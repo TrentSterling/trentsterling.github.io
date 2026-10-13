@@ -16,6 +16,7 @@ const screenshots = process.env.THEME_SCREENSHOTS;
 const diagnosticsDir = screenshots || path.resolve('.local/theme-review');
 
 const closeLifecycle = [];
+const nativeGalleryReview = [];
 
 // Native close is queued. Normal flows await the event; rapid flows deliberately do not.
 async function installCloseTrace(page) {
@@ -223,23 +224,71 @@ async function assertFocusInside(page, step) {
                 const cards = [...document.querySelectorAll('.grid .item')];
                 return { body: { background: getComputedStyle(document.body).backgroundImage, color: getComputedStyle(document.body).backgroundColor },
                     before: style(document.body, '::before'), after: style(document.body, '::after'), grid: style(document.querySelector('.grid-overlay')),
-                    navbar: [...document.querySelectorAll('#magic-navbar-container .nav-link')].map(el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return { text: el.textContent, x: r.x, y: r.y, width: r.width, height: r.height, font: s.fontSize }; }),
+                    navbar: { container: style(document.querySelector('#magic-navbar-container')),
+                        layout: ['gap', 'padding', 'justifyContent', 'flexDirection'].map(key => [key, getComputedStyle(document.querySelector('#magic-navbar-container'))[key]]),
+                        links: [...document.querySelectorAll('#magic-navbar-container .nav-link')].map(el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return { id: el.id, text: el.innerText.trim(), x: r.x, y: r.y, width: r.width, height: r.height, font: s.font, padding: s.padding }; }) },
                     cards: cards.map(el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return { title: el.querySelector('.card-title').textContent, x: r.x, y: r.y, width: r.width, height: r.height, background: s.backgroundColor, border: s.borderColor }; }) };
             });
-            for (const width of [1440, 390]) {
+            for (const width of [1440, 390, 360, 320]) {
                 await nativePage.setViewportSize({ width, height: 1000 });
                 for (const legacy of ['dark', 'tront-purple', 'light']) {
                     await nativePage.goto(baselineUrl + '/games/');
                     await nativePage.evaluate(value => { localStorage.setItem('tront-theme', value); localStorage.removeItem('tront-theme-gallery-v1'); }, legacy);
                     await nativePage.reload();
                     await nativePage.locator('body.fonts-loaded').waitFor();
+                    // The class starts the native 400ms entrance fade; wait for
+                    // its final frame before comparing or capturing appearance.
+                    await nativePage.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
                     const before = await snapshot();
+                    if (screenshots) await nativePage.screenshot({ path: path.join(screenshots, `games-native-${width}-${legacy}-before.png`) });
                     await nativePage.goto(url + '/games/');
                     await nativePage.evaluate(value => { localStorage.setItem('tront-theme', value); localStorage.removeItem('tront-theme-gallery-v1'); }, legacy);
                     await nativePage.reload();
                     await nativePage.locator('body.fonts-loaded').waitFor();
+                    await nativePage.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
                     assert.equal(await nativePage.locator('html').getAttribute('data-te-gallery'), 'native');
-                    assert.deepEqual(await snapshot(), before, `native gallery geometry/background survives ${legacy} at ${width}px`);
+                    const after = await snapshot();
+                    const { navbar: oldNav, ...oldGallery } = before, { navbar: newNav, ...newGallery } = after;
+                    assert.deepEqual(newGallery, oldGallery, `exact native gallery geometry/background survives ${legacy} at ${width}px`);
+                    assert.deepEqual(newNav.container, oldNav.container, 'native navbar surface and dimensions are unchanged');
+                    assert.deepEqual(newNav.layout, oldNav.layout, 'native navbar gaps, padding and alignment are unchanged');
+                    assert.equal(newNav.links.length, oldNav.links.length);
+                    const oldOpener = oldNav.links.find(link => link.id === 'tront-theme-btn');
+                    const newOpener = newNav.links.find(link => link.id === 'tront-theme-btn');
+                    assert.equal(newOpener.text, 'Theme', 'the editor action remains visible at every native width');
+                    // Only the action's label/width changes. The centered row shifts
+                    // by half that width delta, with no other geometry exemption.
+                    const centeringDelta = (oldOpener.width - newOpener.width) / 2;
+                    newNav.links.forEach((link, index) => {
+                        const { x, ...actual } = link, { x: oldX, ...expected } = oldNav.links[index];
+                        if (link.id === 'tront-theme-btn') { expected.text = 'Theme'; expected.width = newOpener.width; }
+                        assert.deepEqual(actual, expected, 'all other native navigation geometry and copy stay exact');
+                        assert.ok(Math.abs(x - oldX - centeringDelta) <= 1 / 64, 'nav moves only by the intended label-width centering delta');
+                        assert.ok(x >= 0 && x + link.width <= width, 'each native navigation control stays within the viewport');
+                    });
+                    const opener = nativePage.locator('#tront-theme-btn');
+                    const legacyName = ({ dark: 'Dark', 'tront-purple': 'Purple', light: 'Light' })[legacy];
+                    const appearance = legacy === 'light' ? 'Light' : 'Dark';
+                    const description = `Theme editor. Current palette: Original gallery (${legacyName}). Appearance: ${appearance}.`;
+                    assert.equal(await opener.getAttribute('aria-label'), description);
+                    assert.equal(await opener.getAttribute('title'), description);
+                    assert.equal(await opener.locator('.theme-icon').getAttribute('aria-hidden'), 'true');
+                    assert.equal(await opener.locator('.theme-label').isVisible(), true);
+                    assert.equal(await opener.locator('.theme-label').evaluate(label => {
+                        const r = label.getBoundingClientRect(), b = label.parentElement.getBoundingClientRect();
+                        return r.width > 0 && r.left >= b.left && r.right <= b.right;
+                    }), true, 'Theme label is visible and unclipped');
+                    if (screenshots) await nativePage.screenshot({ path: path.join(screenshots, `games-native-${width}-${legacy}-after.png`) });
+                    await opener.focus();
+                    await nativePage.keyboard.press('Enter');
+                    assert.equal(await nativePage.locator('.te-dialog').evaluate(dialog => dialog.open), true);
+                    assert.equal(await nativePage.locator('[data-peg-row]:visible').count(), 4);
+                    await dismissEditor(nativePage, 'escape');
+                    assert.equal(await opener.evaluate(el => el === document.activeElement), true);
+                    assert.equal(await opener.getAttribute('aria-label'), description);
+                    nativeGalleryReview.push({ width, legacy, before: oldNav, after: newNav, centeringDelta, exactGalleryGeometryAndBackground: true, keyboardOpenAndReturn: true });
+                    fs.mkdirSync(diagnosticsDir, { recursive: true });
+                    fs.writeFileSync(path.join(diagnosticsDir, 'games-native-theme-control.json'), JSON.stringify(nativeGalleryReview, null, 2));
                 }
             }
             assert.deepEqual(missing, [], 'baseline and current gallery local dependencies must load successfully');
@@ -285,6 +334,12 @@ async function assertFocusInside(page, step) {
                 if (route === '/games/') {
                     assert.equal(await page.locator('html').getAttribute('data-te-gallery'), 'custom');
                     assert.equal(await page.locator('html').getAttribute('data-theme'), null);
+                    const palette = await page.locator('[name="preset"] option:checked').innerText();
+                    const appearance = id === 'light' ? 'Light' : 'Dark';
+                    const description = `Theme editor. Current palette: ${palette}. Appearance: ${appearance}.`;
+                    assert.equal((await page.locator('#tront-theme-btn .theme-label').innerText()).trim(), 'Theme');
+                    assert.equal(await page.locator('#tront-theme-btn').getAttribute('aria-label'), description);
+                    assert.equal(await page.locator('#tront-theme-btn').getAttribute('title'), description);
                 }
                 await auditText(page);
                 if (route === '/' || route === '/discord/') {
@@ -443,7 +498,7 @@ async function assertFocusInside(page, step) {
         }
         assert.deepEqual(errors, []);
         fs.mkdirSync(diagnosticsDir, { recursive: true });
-        fs.writeFileSync(path.join(diagnosticsDir, 'theme-browser-report.json'), JSON.stringify({ status: 'passed', nativeBaseline: baselineRoot ? { widths: [1440, 390], themes: ['dark', 'tront-purple', 'light'], exactGeometryAndBackground: true, localDependenciesLoaded: true, assetSources: 'separate original and candidate HTTP servers', independentOrigins: true } : null, routes: ['/', '/discord/', '/games/'], presets: 6, widths: [320, 390, 768, 1280], customGalleryPlayback: playback, queuedCloseLifecycle: closeLifecycle, errors }, null, 2));
+        fs.writeFileSync(path.join(diagnosticsDir, 'theme-browser-report.json'), JSON.stringify({ status: 'passed', nativeBaseline: baselineRoot ? { widths: [1440, 390, 360, 320], themes: ['dark', 'tront-purple', 'light'], exactGalleryGeometryAndBackground: true, navbarChange: 'Only the visible Theme opener width and resulting centered-row position may change; every other dimension, gap and font stays exact.', cases: nativeGalleryReview, localDependenciesLoaded: true, assetSources: 'separate original and candidate HTTP servers', independentOrigins: true } : null, routes: ['/', '/discord/', '/games/'], presets: 6, widths: [320, 390, 768, 1280], customGalleryPlayback: playback, queuedCloseLifecycle: closeLifecycle, errors }, null, 2));
         console.log('PASS: real-browser theme interactions, computed text contrast, mobile fit and gallery preference isolation.');
     } catch (error) {
         if (page && !page.isClosed()) {
