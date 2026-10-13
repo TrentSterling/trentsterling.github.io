@@ -9,19 +9,139 @@ const { chromium } = require('playwright');
 const { createServer } = require('../game-media/server.cjs');
 const server = createServer();
 const baselineRoot = process.env.THEME_BASELINE_ROOT;
-if (baselineRoot) {
-    const original = server.listeners('request')[0];
-    server.removeAllListeners('request');
-    server.on('request', (req, res) => {
-        if (new URL(req.url, 'http://localhost').pathname === '/__baseline-games/') {
-            const html = fs.readFileSync(path.join(baselineRoot, 'games/index.html'), 'utf8').replace('<head>', '<head><base href="/games/">');
-            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(html);
-        } else original(req, res);
-    });
-}
+// The complete original checkout supplies its own unchanged server and assets.
+const baselineServer = baselineRoot ? require(path.join(path.resolve(baselineRoot), 'tools/game-media/server.cjs')).createServer() : null;
 
 const screenshots = process.env.THEME_SCREENSHOTS;
 const diagnosticsDir = screenshots || path.resolve('.local/theme-review');
+
+const closeLifecycle = [];
+
+// Native close is queued. Normal flows await the event; rapid flows deliberately do not.
+async function installCloseTrace(page) {
+    await page.evaluate(() => {
+        if (window.__themeCloseTrace) return;
+        window.__themeCloseTrace = []; window.__themeCloseEvents = 0;
+        const dialog = document.querySelector('.te-dialog');
+        dialog.addEventListener('close', () => { window.__themeCloseEvents++; });
+        const record = (event, stage) => {
+            const active = document.activeElement, target = event.target;
+            window.__themeCloseTrace.push({ event: event.type, stage, time: performance.now(),
+                target: target?.id || target?.getAttribute?.('name') || target?.tagName,
+                action: target?.closest?.('[data-action]')?.getAttribute('data-action') || null,
+                open: dialog.open, expanded: document.querySelector('#tront-theme-btn').getAttribute('aria-expanded'),
+                active: active?.id || active?.getAttribute('name') || active?.getAttribute('data-action') || active?.tagName,
+                preset: dialog.querySelector('[name="preset"]').value,
+                gallery: document.documentElement.getAttribute('data-te-gallery'), mode: document.documentElement.getAttribute('data-te-mode') });
+            if (window.__themeCloseTrace.length > 300) window.__themeCloseTrace.shift();
+        };
+        for (const type of ['pointerdown', 'click', 'input', 'change', 'cancel', 'close', 'focusin']) {
+            document.addEventListener(type, event => {
+                if (event.target === dialog || event.target?.closest?.('.te-dialog, #tront-theme-btn')) {
+                    record(event, 'capture'); queueMicrotask(() => record(event, 'settled'));
+                }
+            }, true);
+        }
+    });
+}
+async function closeDetails(page) {
+    return page.evaluate(() => {
+        const dialog = document.querySelector('.te-dialog'), active = document.activeElement;
+        return { url: location.href, open: dialog.open, expanded: document.querySelector('#tront-theme-btn').getAttribute('aria-expanded'),
+            active: { tag: active?.tagName, href: active?.getAttribute('href'), id: active?.id, name: active?.getAttribute('name'), action: active?.getAttribute('data-action') },
+            key: TrontThemeEditor.key, state: JSON.parse(localStorage.getItem(TrontThemeEditor.key) || 'null'),
+            preset: dialog.querySelector('[name="preset"]').value, gallery: document.documentElement.getAttribute('data-te-gallery'),
+            legacy: localStorage.getItem('tront-theme'), htmlMode: document.documentElement.getAttribute('data-te-mode'),
+            blogMode: document.documentElement.getAttribute('data-mode'), closeEvents: window.__themeCloseEvents || 0,
+            trace: window.__themeCloseTrace || [] };
+    });
+}
+async function openEditor(page) {
+    await installCloseTrace(page);
+    if (!await page.locator('.te-dialog').evaluate(el => el.open)) {
+        await page.waitForFunction(() => document.querySelector('#tront-theme-btn').getAttribute('aria-expanded') === 'false');
+        await page.locator('#tront-theme-btn').click();
+    }
+    await page.waitForFunction(() => document.querySelector('.te-dialog').open && document.querySelector('#tront-theme-btn').getAttribute('aria-expanded') === 'true');
+}
+async function dismissEditor(page, method = 'button') {
+    await installCloseTrace(page);
+    const events = await page.evaluate(() => window.__themeCloseEvents);
+    assert.equal(await page.locator('.te-dialog').evaluate(el => el.open), true, 'dismissal begins with an open dialog');
+    if (method === 'escape') await page.keyboard.press('Escape');
+    else if (method === 'outside') await page.mouse.click(5, 5);
+    else await page.locator('[data-action="close"]').click();
+    await page.waitForFunction(events => window.__themeCloseEvents > events && !document.querySelector('.te-dialog').open &&
+        document.querySelector('#tront-theme-btn').getAttribute('aria-expanded') === 'false' && document.activeElement === document.querySelector('#tront-theme-btn'), events, { timeout: 5000 });
+}
+async function verifyQueuedCloseLifecycle(page, route) {
+    await installCloseTrace(page);
+    const untouched = await page.evaluate(() => Object.fromEntries(['tront-theme', 'tront-previews-paused', 'tront-theme-editor-v1', 'tront-theme-gallery-v1']
+        .filter(key => key !== TrontThemeEditor.key).map(key => [key, localStorage.getItem(key)])));
+    const result = { route, rapid: [] };
+    for (const method of ['button', 'native-close']) {
+        await openEditor(page);
+        const events = await page.evaluate(() => window.__themeCloseEvents);
+        // Both calls happen in one JS task, before the browser can deliver close.
+        await page.evaluate(method => {
+            const dialog = document.querySelector('.te-dialog');
+            if (method === 'button') dialog.querySelector('[data-action="close"]').click(); else dialog.close();
+            document.querySelector('#tront-theme-btn').click();
+        }, method);
+        await page.waitForFunction(events => window.__themeCloseEvents > events, events, { timeout: 5000 });
+        const detail = await closeDetails(page); result.rapid.push({ method, detail });
+        assert.equal(detail.open, true, 'queued old close leaves reopened dialog open: ' + method);
+        assert.equal(detail.expanded, 'true', 'queued old close cannot collapse aria-expanded: ' + method);
+        assert.equal(detail.active.action, 'close', 'queued old close cannot steal focus from reopened modal: ' + method);
+        await dismissEditor(page);
+    }
+    await openEditor(page);
+    const nativeFocusEvents = await page.evaluate(() => window.__themeCloseEvents);
+    await page.evaluate(() => { document.querySelector('.te-dialog').close(); document.querySelector('#magic-navbar-container a').focus(); });
+    await page.waitForFunction(events => window.__themeCloseEvents > events, nativeFocusEvents, { timeout: 5000 });
+    result.nativeCloseLaterFocus = await closeDetails(page);
+    assert.equal(result.nativeCloseLaterFocus.open, false); assert.equal(result.nativeCloseLaterFocus.expanded, 'false');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('#magic-navbar-container a')), true, 'queued native close preserves a later deliberate navigation focus');
+    await openEditor(page);
+    const escapeEvents = await page.evaluate(() => window.__themeCloseEvents);
+    // This is a real browser Escape action, immediately followed by reopen.
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => document.querySelector('#tront-theme-btn').click());
+    await page.waitForFunction(events => window.__themeCloseEvents > events, escapeEvents, { timeout: 5000 });
+    result.escapeReopen = await closeDetails(page);
+    assert.equal(result.escapeReopen.open, true); assert.equal(result.escapeReopen.expanded, 'true');
+    assert.equal(result.escapeReopen.active.action, 'close', 'native Escape/reopen retains modal focus');
+    await dismissEditor(page, 'escape');
+    await openEditor(page);
+    await page.selectOption('[name="preset"]', 'light');
+    await page.locator('[name="position-1"]').focus();
+    await page.keyboard.press('ArrowRight');
+    const beforeReset = await closeDetails(page);
+    await page.locator('[data-action="reset"]').click();
+    result.reset = await closeDetails(page);
+    const gallery = route === '/games/';
+    assert.equal(result.reset.preset, gallery ? 'gallery-original' : 'dark');
+    assert.equal(result.reset.state.preset, gallery ? 'gallery-original' : 'dark');
+    assert.equal(result.reset.open, true); assert.equal(result.reset.expanded, 'true');
+    assert.equal(await page.locator('[data-action="reset"]').evaluate(el => el === document.activeElement), true, 'Reset retains focus on the activated control');
+    if (gallery) assert.equal(result.reset.gallery, 'native');
+    else assert.deepEqual(result.reset.state, await page.evaluate(() => TrontThemeEditor.preset('dark')), 'Reset restores exact shared Midnight state');
+    if (route.startsWith('/blog/')) await page.waitForFunction(() => document.documentElement.getAttribute('data-mode') === 'dark' && sessionStorage.getItem('mode') === 'dark');
+    await page.locator('[data-action="undo"]').click();
+    result.undo = await closeDetails(page);
+    assert.deepEqual(result.undo.state, beforeReset.state, 'Undo restores all four edited pegs and prior mode');
+    assert.equal(result.undo.active.action, 'undo', 'Undo retains focus');
+    if (gallery) assert.equal(result.undo.gallery, 'custom');
+    if (route.startsWith('/blog/')) await page.waitForFunction(() => document.documentElement.getAttribute('data-mode') === 'light' && sessionStorage.getItem('mode') === 'light');
+    await dismissEditor(page);
+    const saved = await page.evaluate(() => localStorage.getItem(TrontThemeEditor.key));
+    result.closed = await closeDetails(page);
+    await page.reload();
+    assert.equal(await page.evaluate(() => localStorage.getItem(TrontThemeEditor.key)), saved, 'restored custom state persists');
+    assert.deepEqual(await page.evaluate(keys => Object.fromEntries(keys.map(key => [key, localStorage.getItem(key)])), Object.keys(untouched)), untouched, 'unrelated and legacy storage stays untouched');
+    result.persistence = 'passed';
+    return result;
+}
 
 async function auditText(page) {
     const failures = await page.evaluate(() => {
@@ -68,7 +188,9 @@ async function focusDetails(page) {
         return { url: location.href, documentHasFocus: document.hasFocus(), dialogOpen: !!dialog?.open,
             insideDialog: !!active?.closest('.te-dialog'), active: describe(active),
             hiddenAncestor, inClosedDetailsContent, visible,
-            trace: window.__themeFocusTrace || [] };
+            trace: window.__themeFocusTrace || [], closeEvents: window.__themeCloseEvents || 0,
+            ariaExpanded: document.querySelector('#tront-theme-btn')?.getAttribute('aria-expanded'),
+            closeTrace: window.__themeCloseTrace || [] };
     });
 }
 async function assertFocusInside(page, step) {
@@ -85,15 +207,17 @@ async function assertFocusInside(page, step) {
         if (screenshots) fs.mkdirSync(screenshots, { recursive: true });
         await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
         const url = `http://127.0.0.1:${server.address().port}`;
+        if (baselineServer) await new Promise(resolve => baselineServer.listen(0, '127.0.0.1', resolve));
+        const baselineUrl = baselineServer ? `http://127.0.0.1:${baselineServer.address().port}` : null;
         const options = { headless: true };
         if (process.env.THEME_BROWSER_EXECUTABLE) options.executablePath = process.env.THEME_BROWSER_EXECUTABLE;
         browser = await chromium.launch(options);
         if (baselineRoot) {
             const native = await browser.newContext();
-            await native.route('**/*', request => request.request().url().startsWith(url) ? request.continue() : request.abort());
+            await native.route('**/*', request => [url, baselineUrl].some(origin => request.request().url().startsWith(origin + '/')) ? request.continue() : request.abort());
             const nativePage = await native.newPage();
             const missing = [];
-            nativePage.on('response', response => { if (response.url().startsWith(url) && response.status() >= 400) missing.push({ url: response.url(), status: response.status() }); });
+            nativePage.on('response', response => { if ([url, baselineUrl].some(origin => response.url().startsWith(origin + '/')) && response.status() >= 400) missing.push({ url: response.url(), status: response.status() }); });
             const snapshot = () => nativePage.evaluate(() => {
                 const style = (element, pseudo) => { const s = getComputedStyle(element, pseudo); return Object.fromEntries(['backgroundColor', 'backgroundImage', 'backgroundSize', 'filter', 'opacity', 'width', 'height', 'top', 'left', 'transform', 'zIndex'].map(k => [k, s[k]])); };
                 const cards = [...document.querySelectorAll('.grid .item')];
@@ -105,12 +229,14 @@ async function assertFocusInside(page, step) {
             for (const width of [1440, 390]) {
                 await nativePage.setViewportSize({ width, height: 1000 });
                 for (const legacy of ['dark', 'tront-purple', 'light']) {
-                    await nativePage.goto(url + '/__baseline-games/');
+                    await nativePage.goto(baselineUrl + '/games/');
                     await nativePage.evaluate(value => { localStorage.setItem('tront-theme', value); localStorage.removeItem('tront-theme-gallery-v1'); }, legacy);
                     await nativePage.reload();
                     await nativePage.locator('body.fonts-loaded').waitFor();
                     const before = await snapshot();
                     await nativePage.goto(url + '/games/');
+                    await nativePage.evaluate(value => { localStorage.setItem('tront-theme', value); localStorage.removeItem('tront-theme-gallery-v1'); }, legacy);
+                    await nativePage.reload();
                     await nativePage.locator('body.fonts-loaded').waitFor();
                     assert.equal(await nativePage.locator('html').getAttribute('data-te-gallery'), 'native');
                     assert.deepEqual(await snapshot(), before, `native gallery geometry/background survives ${legacy} at ${width}px`);
@@ -134,6 +260,11 @@ async function assertFocusInside(page, step) {
         for (const route of ['/', '/discord/', '/games/']) {
             phase = route + ' preset and editing checks';
             await page.goto(url + route);
+            phase = route + ' queued-close, Escape/reopen and Reset/Undo';
+            closeLifecycle.push(await verifyQueuedCloseLifecycle(page, route));
+            fs.mkdirSync(diagnosticsDir, { recursive: true });
+            fs.writeFileSync(path.join(diagnosticsDir, 'theme-close-lifecycle.json'), JSON.stringify(closeLifecycle, null, 2));
+            phase = route + ' preset and editing checks';
             await page.evaluate(() => {
                 window.__themeFocusTrace = [];
                 const record = event => {
@@ -165,7 +296,7 @@ async function assertFocusInside(page, step) {
                     const radial = await page.evaluate(() => ({ body: getComputedStyle(document.body).backgroundImage, radius: getComputedStyle(document.body, '::before').borderRadius, blur: getComputedStyle(document.body, '::before').filter }));
                     assert.equal(radial.body, 'none'); assert.equal(radial.radius, '50%'); assert.equal(radial.blur, 'blur(150px)');
                 }
-                await page.locator('[data-action="close"]').click();
+                await dismissEditor(page);
                 await auditText(page);
                 await page.locator('#tront-theme-btn').click();
             }
@@ -181,7 +312,7 @@ async function assertFocusInside(page, step) {
             await page.locator('[data-action="magic"]').click();
             await page.locator('[name="mode"][value="light"]').check();
             await auditText(page);
-            await page.keyboard.press('Escape');
+            await dismissEditor(page, 'escape');
             assert.equal(await page.locator('.te-dialog').isVisible(), false);
             assert.equal(await page.locator('#tront-theme-btn').evaluate(el => el === document.activeElement), true);
             await page.locator('#tront-theme-btn').click();
@@ -200,7 +331,7 @@ async function assertFocusInside(page, step) {
                 }
             }
             phase = route + ' outside dismissal, persistence and responsive checks';
-            await page.mouse.click(5, 5);
+            await dismissEditor(page, 'outside');
             assert.equal(await page.locator('.te-dialog').isVisible(), false);
             const saved = await page.evaluate(() => localStorage.getItem(window.TrontThemeEditor.key));
             await page.reload();
@@ -211,14 +342,14 @@ async function assertFocusInside(page, step) {
             await page.selectOption('[name="preset"]', 'dark');
             await auditText(page);
             if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-editor-desktop-dark.png`) });
-            await page.keyboard.press('Escape');
+            await dismissEditor(page, 'escape');
             await auditText(page);
             if (screenshots) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-desktop-dark.png`), fullPage: route !== '/games/' });
             if (route === '/' || route === '/discord/') await reviewScrolledGrid(page, pageName, 'desktop-dark');
             // Paper/light gives the mobile review a different polarity.
             await page.locator('#tront-theme-btn').click();
             await page.selectOption('[name="preset"]', 'light');
-            await page.keyboard.press('Escape');
+            await dismissEditor(page, 'escape');
             phase = route + ' light mobile visual review';
             for (const width of [320, 390, 768]) {
                 await page.setViewportSize({ width, height: 844 });
@@ -227,7 +358,7 @@ async function assertFocusInside(page, step) {
                 assert.equal(await page.locator('.te-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'editor fits narrow screens');
                 await auditText(page);
                 if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-editor-mobile-light.png`) });
-                await page.keyboard.press('Escape');
+                await dismissEditor(page, 'escape');
                 await auditText(page);
                 if (screenshots && width === 390) await page.screenshot({ path: path.join(screenshots, `${pageName}-page-mobile-light.png`), fullPage: route !== '/games/' });
                 if ((route === '/' || route === '/discord/') && width === 390) await reviewScrolledGrid(page, pageName, 'mobile-light');
@@ -274,7 +405,7 @@ async function assertFocusInside(page, step) {
             await game.selectOption('[name="preset"]', 'purple');
             await game.locator('[name="position-1"]').focus();
             await game.keyboard.press('ArrowRight');
-            await game.keyboard.press('Escape');
+            await dismissEditor(game, 'escape');
             assert.equal(await game.locator('html').getAttribute('data-te-gallery'), 'custom');
             await game.locator('[data-preview]').first().scrollIntoViewIfNeeded();
             await game.waitForFunction(() => [...document.querySelectorAll('.gameplay-preview')].some(v => !v.paused && v.getVideoPlaybackQuality().totalVideoFrames > 5));
@@ -312,7 +443,7 @@ async function assertFocusInside(page, step) {
         }
         assert.deepEqual(errors, []);
         fs.mkdirSync(diagnosticsDir, { recursive: true });
-        fs.writeFileSync(path.join(diagnosticsDir, 'theme-browser-report.json'), JSON.stringify({ status: 'passed', nativeBaseline: baselineRoot ? { widths: [1440, 390], themes: ['dark', 'tront-purple', 'light'], exactGeometryAndBackground: true, localDependenciesLoaded: true } : null, routes: ['/', '/discord/', '/games/'], presets: 6, widths: [320, 390, 768, 1280], customGalleryPlayback: playback, errors }, null, 2));
+        fs.writeFileSync(path.join(diagnosticsDir, 'theme-browser-report.json'), JSON.stringify({ status: 'passed', nativeBaseline: baselineRoot ? { widths: [1440, 390], themes: ['dark', 'tront-purple', 'light'], exactGeometryAndBackground: true, localDependenciesLoaded: true, assetSources: 'separate original and candidate HTTP servers', independentOrigins: true } : null, routes: ['/', '/discord/', '/games/'], presets: 6, widths: [320, 390, 768, 1280], customGalleryPlayback: playback, queuedCloseLifecycle: closeLifecycle, errors }, null, 2));
         console.log('PASS: real-browser theme interactions, computed text contrast, mobile fit and gallery preference isolation.');
     } catch (error) {
         if (page && !page.isClosed()) {
@@ -329,5 +460,6 @@ async function assertFocusInside(page, step) {
     } finally {
         if (browser) await browser.close();
         await new Promise(resolve => server.close(resolve));
+        if (baselineServer?.listening) await new Promise(resolve => baselineServer.close(resolve));
     }
 })().catch(error => { console.error(error); process.exitCode = 1; });

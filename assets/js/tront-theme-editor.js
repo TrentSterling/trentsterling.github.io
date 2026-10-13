@@ -257,15 +257,34 @@
         opener.setAttribute('aria-haspopup', 'dialog');
         opener.setAttribute('aria-controls', dialog.id);
         opener.setAttribute('aria-expanded', 'false');
+        var dialogSessionOpen = false;
+        function finishClose() {
+            // Native close events are queued. An older event must never alter a
+            // reopened dialog, split its draft, or steal focus from a later action.
+            if (dialog.open || !dialogSessionOpen) return;
+            dialogSessionOpen = false;
+            if (draftStart) { remember(draftStart); draftStart = null; sync(); }
+            opener.setAttribute('aria-expanded', 'false');
+            // Native close already restored focus. Never overwrite a newer
+            // focus choice when its queued notification eventually arrives.
+        }
+        function closeEditor() {
+            if (!dialog.open) return;
+            dialog.close();
+            // Our close button/backdrop updates are synchronous; native Escape
+            // still uses the browser's close event and its default behavior.
+            finishClose();
+            if (!dialog.open) opener.focus({ preventScroll: true });
+        }
         opener.addEventListener('click', function () {
             if (dialog.open) return;
-            dialog.showModal(); opener.setAttribute('aria-expanded', 'true');
+            // A native close may have finished before its notification arrived.
+            finishClose();
+            dialog.showModal(); dialogSessionOpen = true;
+            opener.setAttribute('aria-expanded', 'true');
             dialog.querySelector('[data-action="close"]').focus();
         });
-        dialog.addEventListener('close', function () {
-            if (draftStart) { remember(draftStart); draftStart = null; sync(); }
-            opener.setAttribute('aria-expanded', 'false'); opener.focus();
-        });
+        dialog.addEventListener('close', finishClose);
         // Keep sequential keyboard navigation inside the editor even when a
         // browser would otherwise move from the last control to browser chrome.
         // These endpoints are always visible/enabled; native Tab order between
@@ -287,10 +306,10 @@
         }
         dialog.addEventListener('pointerdown', function (event) { backdropDown = isOutside(event); });
         dialog.addEventListener('click', function (event) {
-            if (backdropDown && isOutside(event)) { dialog.close(); return; }
+            if (backdropDown && isOutside(event)) { closeEditor(); return; }
             var action = event.target.closest('[data-action]');
             if (!action) return;
-            if (action.dataset.action === 'close') dialog.close();
+            if (action.dataset.action === 'close') closeEditor();
             if (action.dataset.action === 'magic') commit(colorMagic(state));
             if (action.dataset.action === 'reset') commit(gallery ? originalGallery() : preset('dark'));
             if (action.dataset.action === 'undo' && history.length) {
