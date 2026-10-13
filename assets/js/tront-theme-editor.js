@@ -221,9 +221,17 @@
         });
         dialog.querySelector('[data-action="undo"]').disabled = !history.length;
         var original = gallery && state.preset === 'gallery-original';
-        var legacyLabel = ({ 'tront-cyan': ['⚡', 'Cyan'], 'tront-purple': ['🔮', 'Purple'], 'tront-ember': ['🔥', 'Ember'], light: ['☀️', 'Light'] })[legacyGallery] || ['🌙', 'Dark'];
-        opener.querySelector('.theme-label').textContent = original ? ' ' + legacyLabel[1] : ' Theme';
-        opener.querySelector('.theme-icon').textContent = original ? legacyLabel[0] : state.mode === 'dark' ? '◐' : '◑';
+        opener.querySelector('.theme-label').textContent = ' Theme';
+        opener.querySelector('.theme-icon').textContent = state.mode === 'dark' ? '◐' : '◑';
+        if (gallery) {
+            var legacyLabel = ({ 'tront-cyan': 'Cyan', 'tront-purple': 'Purple', 'tront-ember': 'Ember', light: 'Light' })[legacyGallery] || 'Dark';
+            var selected = PRESETS.find(function (p) { return p.id === state.preset; });
+            var paletteLabel = original ? 'Original gallery (' + legacyLabel + ')' : selected ? selected.name : 'Custom';
+            var description = 'Theme editor. Current palette: ' + paletteLabel + '. Appearance: ' + (state.mode === 'dark' ? 'Dark' : 'Light') + '.';
+            opener.setAttribute('aria-label', description);
+            opener.setAttribute('title', description);
+            opener.querySelector('.theme-icon').setAttribute('aria-hidden', 'true');
+        }
         announce();
     }
     function init() {

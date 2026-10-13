@@ -312,6 +312,64 @@ test('gallery defaults and Reset preserve its native theme, radial shape and sep
     assert.equal(env.store['tront-previews-paused'], 'true');
     assert.ok(env.writes.every(([key]) => key === 'tront-theme-gallery-v1'));
 });
+function assertGalleryOpener(env, palette, appearance) {
+    const description = `Theme editor. Current palette: ${palette}. Appearance: ${appearance}.`;
+    assert.equal(env.opener.querySelector('.theme-label').textContent.trim(), 'Theme');
+    assert.equal(env.opener.attrs['aria-label'], description);
+    assert.equal(env.opener.attrs.title, description);
+    assert.equal(env.opener.querySelector('.theme-icon').attrs['aria-hidden'], 'true');
+    assert.equal(env.opener.attrs['aria-haspopup'], 'dialog');
+    assert.equal(env.opener.attrs['aria-controls'], 'tront-theme-editor');
+}
+test('Games always names the editor action while describing each original palette separately', () => {
+    for (const [legacy, label, appearance] of [
+        [undefined, 'Dark', 'Dark'], ['dark', 'Dark', 'Dark'], ['tront-cyan', 'Cyan', 'Dark'],
+        ['tront-purple', 'Purple', 'Dark'], ['tront-ember', 'Ember', 'Dark'], ['light', 'Light', 'Light'], ['unknown', 'Dark', 'Dark']
+    ]) {
+        const storage = { 'tront-previews-paused': 'true' };
+        if (legacy !== undefined) storage['tront-theme'] = legacy;
+        const env = environment({ gallery: true, storage });
+        assertGalleryOpener(env, `Original gallery (${label})`, appearance);
+        assert.equal(env.writes.length, 0, 'describing the original choice does not write preferences');
+        env.opener.fire('click');
+        assert.equal(env.dialog.open, true);
+        assert.equal(env.dialog.querySelectorAll('[data-peg-row]').length, 4);
+        assert.equal(env.opener.attrs['aria-expanded'], 'true');
+        click(env, 'magic');
+        assertGalleryOpener(env, 'Custom', appearance);
+        click(env, 'reset');
+        assertGalleryOpener(env, `Original gallery (${label})`, appearance);
+        click(env, 'close');
+        assert.equal(env.doc.activeElement, env.opener);
+        assert.equal(env.opener.attrs['aria-expanded'], 'false');
+        assert.equal(env.store['tront-theme'], legacy);
+        assert.equal(env.store['tront-previews-paused'], 'true');
+        assert.ok(env.writes.every(([key]) => key === 'tront-theme-gallery-v1'));
+    }
+});
+test('Games theme description follows preset, peg, mode, Undo, reload and cross-tab changes', () => {
+    const env = environment({ gallery: true, storage: { 'tront-theme': 'tront-purple' } });
+    change(env, 'preset', 'light');
+    assertGalleryOpener(env, 'Paper', 'Light');
+    change(env, 'color-0', '#123456');
+    assertGalleryOpener(env, 'Custom', 'Light');
+    click(env, 'undo');
+    assertGalleryOpener(env, 'Paper', 'Light');
+    change(env, 'mode', 'dark');
+    assertGalleryOpener(env, 'Custom', 'Dark');
+    const reload = environment({ gallery: true, storage: env.store });
+    assertGalleryOpener(reload, 'Custom', 'Dark');
+    env.store[env.api.key] = JSON.stringify(env.api.preset('cyan'));
+    env.storageEvent(env.api.key);
+    assertGalleryOpener(env, 'Cyan', 'Dark');
+    click(env, 'reset');
+    assertGalleryOpener(env, 'Original gallery (Purple)', 'Dark');
+    for (const surface of ['grid', 'blog']) {
+        const other = environment({ surface });
+        assert.equal(other.opener.attrs['aria-label'], 'Choose a theme', `${surface} naming is unchanged`);
+        assert.equal(other.opener.attrs.title, undefined);
+    }
+});
 test('editor always exposes four pegs without a collapsed or count-dependent mode', () => {
     const saved = engine.preset('cyan'); saved.count = 1;
     const env = environment({ storage: { [engine.key]: JSON.stringify(saved) } });

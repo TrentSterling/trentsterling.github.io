@@ -104,6 +104,10 @@ html[data-tront-theme-editor]:not([data-tront-theme-surface="gallery"]) #magic-n
 html[data-tront-theme-editor]:not([data-tront-theme-surface="gallery"]) #magic-navbar-container .nav-link.active { background: var(--te-button); color: var(--te-ink); border-color: var(--te-accent); }
 html[data-tront-theme-editor] :is(a, button, input, select, summary):focus-visible { outline: 3px solid var(--te-accent); outline-offset: 3px; }
 html[data-tront-theme-editor]:not([data-tront-theme-surface="gallery"]) #tront-theme-btn { cursor: pointer; white-space: nowrap; gap: .3em; }
+/* The native gallery's legacy mobile rules hid both spans at 360px and below.
+   Keep the editor's action visible without changing the rest of its navbar. */
+html[data-tront-theme-editor][data-te-gallery="native"] #magic-navbar-container #tront-theme-btn .theme-label { display: inline; }
+html[data-tront-theme-editor][data-te-gallery="native"] #magic-navbar-container #tront-theme-btn .theme-icon { display: none; }
 html[data-tront-theme-editor] [hidden] { display: none !important; }
 
 /* Native modal supplies focus containment, Escape, and inert background. */
