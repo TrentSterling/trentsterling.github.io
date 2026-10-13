@@ -34,11 +34,11 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: /index.html
-      - name: Read exact one-href tutorial candidate
+      - name: Read exact href and Gemini-only tutorial candidate
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: TrentSterling/tutorials
-          ref: f46659445e27f821f859d5aae9180ace3f415bac
+          ref: 279510283f8519f7fa4a36adf2ebf02151075616
           path: .local/tutorial-candidate
           persist-credentials: false
           sparse-checkout-cone-mode: false
