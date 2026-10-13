@@ -47,16 +47,33 @@ class Element {
     }
 }
 class Dialog extends Element {
-    showModal() { assert.equal(this.open || false, false, 'showModal is not called twice'); this.open = true; }
-    close() { this.open = false; this.fire('close'); }
+    showModal() {
+        assert.equal(this.open || false, false, 'showModal is not called twice');
+        this.previouslyFocused = this.doc.activeElement; this.open = true;
+    }
+    close() {
+        if (!this.open) return;
+        this.open = false;
+        // Native restoration happens before the queued close notification.
+        if (this.previouslyFocused) this.previouslyFocused.focus({ preventScroll: true });
+        this.previouslyFocused = null;
+        if (this.doc.queuedDialogClose) this.doc.closeTasks.push(() => this.fire('close'));
+        else this.fire('close');
+    }
 }
 function environment(options = {}) {
     const writes = [], reads = [], store = { ...(options.storage || {}) };
-    const doc = { readyState: options.loading ? 'loading' : 'complete', listeners: {}, activeElement: null };
-    doc.documentElement = new Element('html', options.optIn === false ? {} : { 'data-tront-theme-editor': '', ...(options.gallery ? { 'data-tront-theme-surface': 'gallery', 'data-te-gallery': 'native' } : {}) }, doc);
+    const doc = { readyState: options.loading ? 'loading' : 'complete', listeners: {}, activeElement: null,
+        queuedDialogClose: !!options.queuedDialogClose, closeTasks: [] };
+    doc.documentElement = new Element('html', options.optIn === false ? {} : { 'data-tront-theme-editor': '', ...(options.gallery ? { 'data-tront-theme-surface': 'gallery', 'data-te-gallery': 'native' } : options.surface ? { 'data-tront-theme-surface': options.surface } : {}) }, doc);
     doc.body = new Element('body', {}, doc);
     const opener = new Element('button', { id: 'tront-theme-btn', hidden: '' }, doc);
     opener.children.push(new Element('span', { class: 'theme-label' }, doc), new Element('span', { class: 'theme-icon' }, doc));
+    // Model the initial user click's focus before showModal captures it.
+    opener.fire = function (type, extra) {
+        if (type === 'click' && !doc.body.children[0]?.open) this.focus();
+        Element.prototype.fire.call(this, type, extra);
+    };
     doc.getElementById = id => id === 'tront-theme-btn' ? opener : null;
     doc.createElement = name => name === 'dialog' ? new Dialog(name, {}, doc) : new Element(name, {}, doc);
     doc.addEventListener = (name, callback) => { (doc.listeners[name] ||= []).push(callback); };
@@ -75,6 +92,7 @@ function environment(options = {}) {
         api: win.TrontThemeEditor,
         ready() { doc.readyState = 'complete'; (doc.listeners.DOMContentLoaded || []).forEach(fn => fn()); },
         get dialog() { return doc.body.children[0]; },
+        flushClose(count = doc.closeTasks.length) { while (count-- > 0 && doc.closeTasks.length) doc.closeTasks.shift()(); },
         storageEvent(key) { (events.storage || []).forEach(fn => fn({ key })); }
     };
 }
@@ -315,3 +333,73 @@ test('Home and Discord keep their own grid composition, while Games keeps its ra
     }
     assert.match(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'), /data-tront-theme-surface="gallery"/);
 });
+
+// HTML queues native dialog close notifications after removing `open`.
+// Exercise the same five lifecycle regressions across shared-editor consumers.
+for (const consumer of [
+    { name: 'Home/Discord', surface: 'grid' },
+    { name: 'Games', gallery: true },
+    { name: 'Blog', surface: 'blog' }
+]) {
+    const create = () => environment({ ...consumer, queuedDialogClose: true });
+    const originalPreset = consumer.gallery ? 'gallery-original' : 'dark';
+    test(`${consumer.name}: queued close — explicit closure synchronously settles ARIA and focus`, () => {
+        const env = create();
+        for (let i = 0; i < 3; i++) {
+            env.opener.fire('click'); click(env, 'close');
+            assert.equal(env.dialog.open, false);
+            assert.equal(env.opener.attrs['aria-expanded'], 'false');
+            assert.ok(env.doc.activeElement === env.opener);
+        }
+        assert.equal(env.doc.closeTasks.length, 3); env.flushClose();
+        assert.equal(env.opener.attrs['aria-expanded'], 'false');
+    });
+    test(`${consumer.name}: queued close — a late notification cannot disturb a reopened dialog`, () => {
+        const env = create();
+        env.opener.fire('click'); click(env, 'close'); env.opener.fire('click');
+        const color = env.dialog.querySelector('[name="color-2"]'); color.focus();
+        env.flushClose();
+        assert.equal(env.dialog.open, true);
+        assert.equal(env.opener.attrs['aria-expanded'], 'true');
+        assert.ok(env.doc.activeElement === color);
+        change(env, 'preset', 'cyan'); click(env, 'reset');
+        assert.equal(stateOf(env).preset, originalPreset);
+    });
+    test(`${consumer.name}: queued close — a stale task cannot split a new continuous edit`, () => {
+        const env = create();
+        env.opener.fire('click'); click(env, 'close'); env.opener.fire('click');
+        change(env, 'angle', 20, 'input'); env.flushClose();
+        change(env, 'angle', 30, 'input'); change(env, 'angle', 40);
+        click(env, 'undo');
+        assert.equal(stateOf(env).preset, originalPreset);
+        assert.equal(stateOf(env).angle, 135);
+        assert.equal(env.dialog.querySelector('[data-action="undo"]').disabled, true);
+    });
+    test(`${consumer.name}: queued close — handled notifications cannot steal later focus`, () => {
+        const env = create();
+        env.opener.fire('click'); click(env, 'close');
+        const other = new Element('a', { href: '/games/' }, env.doc); other.focus();
+        env.flushClose();
+        assert.ok(env.doc.activeElement === other);
+        assert.equal(env.opener.attrs['aria-expanded'], 'false');
+    });
+    test(`${consumer.name}: queued close — native close finalizes its draft before immediate reopening`, () => {
+        const env = create();
+        env.opener.fire('click'); change(env, 'angle', 20, 'input');
+        env.dialog.close(); // Native Escape removes `open` before queuing `close`.
+        env.opener.fire('click'); change(env, 'angle', 30, 'input'); env.flushClose();
+        change(env, 'angle', 40); click(env, 'undo');
+        assert.equal(stateOf(env).angle, 20);
+        click(env, 'undo'); assert.equal(stateOf(env).preset, originalPreset);
+    });
+    test(`${consumer.name}: queued close — native closing preserves a later external focus choice`, () => {
+        const env = create();
+        env.opener.fire('click'); change(env, 'angle', 20, 'input'); env.dialog.close();
+        assert.ok(env.doc.activeElement === env.opener, 'native closure immediately restores focus');
+        const other = new Element('a', { href: '/games/' }, env.doc); other.focus(); env.flushClose();
+        assert.ok(env.doc.activeElement === other, 'queued cleanup must preserve newer focus');
+        assert.equal(env.opener.attrs['aria-expanded'], 'false');
+        env.opener.fire('click'); click(env, 'undo');
+        assert.equal(stateOf(env).preset, originalPreset, 'pending draft still forms an undo step');
+    });
+}

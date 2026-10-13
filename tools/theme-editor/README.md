@@ -45,6 +45,33 @@ It also checks storage migration/failure, opt-in isolation, inaccessible-control
 hiding, undo/reset, moveable stops, event handling, and the integration contract.
 The DOM fixture does not implement browser layout, native focus trapping or CSS.
 
+### Queued close notifications
+
+The HTML dialog algorithm queues its `close` notification after the dialog is
+already closed. A rapid reopen can therefore precede an older notification.
+The editor tracks its current dialog session: explicit close/backdrop actions
+settle ARIA, focus and pending undo drafts synchronously; later notifications
+cannot affect a reopened dialog or repeat an already handled cleanup. A native
+close is finalized before immediate reopening. Focus restoration does not scroll
+the page. Native Escape handling remains browser-owned.
+
+The DOM fixture can queue close notifications. Five regressions run against
+Home/Discord, Games and the Blog surface: immediate close state, reopened focus
+and ARIA, continuous-edit undo grouping, focus after a handled close, and native
+close followed by immediate reopen. All 15 failed against the previous handler
+and pass with session-aware cleanup. Color math, theme state, storage keys,
+gallery-native Reset and page presentation are unchanged.
+
+A sixth regression for each consumer models native immediate focus restoration
+followed by an external focus choice before the queued notification. It failed
+with unconditional delayed focus restoration and passes with state-only cleanup.
+Only explicit close/backdrop actions restore opener focus; native notifications
+and pre-reopen cleanup never overwrite a later focus choice.
+
+These deterministic tests complement real-browser modal and gallery checks;
+they do not replace native focus, Escape, layout or playback verification.
+See the [HTML dialog closing algorithm](https://html.spec.whatwg.org/multipage/interactive-elements.html#close-the-dialog).
+
 With Playwright and its browser already installed, run the separate browser suite:
 
     node tools/theme-editor/browser.cjs
@@ -74,7 +101,7 @@ Home retains its original 50px grid with opaque, peg-derived line colors inside 
 
 The editor is always expanded and normalizes older one-to-three-peg settings to all four stored colors. No copy, game cards, filtering, playback code, media, or inline page layout is rewritten. `tront-navbar.css` shares only the primary navbar geometry, never the blog sidebar.
 
-CI checks out the PR base separately. `THEME_BASELINE_ROOT=... node tools/theme-editor/preserve.cjs` checks text, inline layouts, gallery markup and protected Git blobs. Browser checks compare original gallery card geometry and background composition at desktop/mobile widths across legacy dark, purple and light before testing custom themes. The sparse baseline uses current-served legacy assets only after the source guard proves their Git blobs match the base. Browser checks reject any missing local dependency. Native Games navbar geometry is also compared exactly; shared navbar geometry opts in only after a custom gallery palette is chosen.
+CI checks out the PR base separately. `THEME_BASELINE_ROOT=... node tools/theme-editor/preserve.cjs` checks text, inline layouts, gallery markup and protected Git blobs. Browser checks compare original gallery card geometry and background composition at desktop/mobile widths across legacy dark, purple and light before testing custom themes. The complete baseline runs on its own HTTP server with its own committed assets; candidate and baseline origins receive identical legacy settings. Browser checks reject any missing local dependency on either origin. Native Games navbar geometry is also compared exactly; shared navbar geometry opts in only after a custom gallery palette is chosen.
 
 A separate custom-theme playback check measures desktop/mobile frames and drops, enforces 12/2 preview caps, and exercises filtering and persistent pause after editing a peg. The unchanged 27-case gallery playback suite still runs separately.
 
@@ -84,3 +111,16 @@ A separate custom-theme playback check measures desktop/mobile frames and drops,
 ColorMagic supplies colors and contrast bounds, not a replacement layout or one universal background. Before adding a page, inspect its original background layers, materials, typography and accent roles. Home and Discord both had two-direction 50px grids before the editor (Discord source: `7a3a635:discord/index.html`, body CSS); Games has two blurred circular glows and a separate fixed grid. Keep those compositions and recolor their existing roles. The blog uses Chirpy reading surfaces, sidebar and syntax accents, not the gallery or homepage background.
 
 Browser checks require the grid on both Home and Discord in every preset and save real scrolled-viewport captures at their middle/bottom. Full-page Chromium captures omit off-viewport fixed backgrounds, so they cannot alone verify that behavior. Button-style links are checked in hover and keyboard focus states; prose links keep their own link affordances. For a new integration, record and compare its own before/after composition instead of accepting readability alone as visual preservation.
+
+
+## Released blog consumer check
+
+The read-only PR workflow checks out released blog commit `fcf3292f6f7fa3c062a9820ccea50259a0974394` and builds its unchanged Chirpy 7.2.4 pages. The same build is served once with PR-head shared assets and once with PR-base assets. The blog’s existing child-route, responsive, contrast, search and sidebar suite runs unchanged, followed by `tools/theme-editor/blog-close.cjs` for queued close/reopen, native Escape, later focus, Reset/Undo and persistence on the blog home and a real post. No blog source is edited or deployed by this job.
+
+From the built blog checkout, with supported Chrome and Playwright installed:
+
+```sh
+CI=true THEME_BROWSER_EXECUTABLE=/opt/google/chrome/chrome \
+  BLOG_SITE_ROOT=_site BLOG_SCREENSHOTS=.local/blog-review \
+  node /path/to/site/tools/theme-editor/blog-close.cjs
+```
