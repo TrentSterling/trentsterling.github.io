@@ -38,3 +38,12 @@ The browser command is capped at 240 seconds; the job at nine minutes. Existing 
 The first run verified live blog release markers/categories/image repair, all 390px blog interactions with and without icon fonts, desktop tutorial click/Back, and genuine public raw roadmap Markdown. Baseline/candidate tutorial screenshots were byte-identical at both widths. Its center-point targeting errors are corrected here; all original accessibility, navigation and interaction assertions remain.
 
 Local validation: fourteen Node contract tests pass, syntax checks pass, exact revised tutorial source diff passes, and the reviewed Games source passes the new marker contract. No local Chrome run was attempted. Actual results of the revised seven-case suite still require the reviewed GitHub runner.
+
+
+## Final tutorial public-byte mode
+
+The default workflow still runs the full bounded audit. After tutorial Pages deployment, a reviewed workflow-only change may set `SITE_FOLLOWUP_GET_ONLY: 'true'`. This skips both tutorial source checkouts, the blog source checkout, Playwright/Chrome installation and all browser cases. It runs the same offline contract tests plus `tutorial-public.cjs`, a Node-built-in-only checker capped at 45 seconds. Main test-head checkout, pinned Node setup and short-lived evidence upload remain.
+
+This mode makes exactly three sequential GETs to `https://tront.xyz/tutorials/`, `/tutorials/gemini.md` and `/tutorials/gemini.html`, with 250ms spacing, 12-second request deadlines, 1 MiB body caps, no redirects and no link discovery. Hub bytes must hash to `aacd35a2682ae1a0dc02ce50cb97cfeefff049d826a8efe764defe4455dfa6c7`, matching the exact candidate that passed browser QA in run 38351438851. Root Markdown must match its existing authentic hash. The standalone document must return complete HTML 200 with its exact canonical and expected H1/H2. It writes `tutorial-public.json`; no browser executes and no assets or demo scripts are requested. Readability was inspected in the prior Chrome screenshot; this final mode checks deployment bytes and HTML markers only. The existing narrow tutorial hub content-pane layout remains a documented baseline defect.
+
+Local final-mode validation: nineteen offline tests and both JavaScript syntax checks pass. No public requests were made locally.
