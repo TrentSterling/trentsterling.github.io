@@ -3,7 +3,7 @@
 // Three exact public GETs only. No browser, script evaluation, redirects or link discovery.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const C=require('./contract.cjs');
-const INDEX_SHA256='aacd35a2682ae1a0dc02ce50cb97cfeefff049d826a8efe764defe4455dfa6c7';
+const INDEX_SHA256='d0d642615d7baab76a62149d1adfb14dc05d2eac652fed800fb9e4f0165971f0';
 const ROUTES=Object.freeze(['/tutorials/','/tutorials/gemini.md','/tutorials/gemini.html']);
 const MAX_BYTES=1024*1024;
 function allowed(url){C.assertPublic(url);assert.ok(ROUTES.some(route=>url===C.HOST+route),'only the three exact tutorial URLs are allowed');return url;}
@@ -34,7 +34,7 @@ async function publicGet(url,fetcher=fetch){
 async function main(){
  assert.equal(process.env.GITHUB_ACTIONS,'true','public requests run only in the reviewed GitHub runner');
  const out=path.resolve(process.env.SITE_FOLLOWUP_OUTPUT||'.local/site-followup');fs.mkdirSync(out,{recursive:true});
- const report={mode:'tutorial-public-get-only',started:new Date().toISOString(),tutorialMerge:'fe6a5a1e01be41121eee30247c495e7aea192ae4',browserTestedCandidate:C.TUTORIAL_CANDIDATE,expectedIndexSha256:INDEX_SHA256,bounds:{requests:3,concurrency:1,timeoutMs:12000,bytesPerResponse:MAX_BYTES,redirects:0,browser:false},results:[],errors:[]};
+ const report={mode:'tutorial-public-get-only',started:new Date().toISOString(),tutorialMerge:'2e612cc80eac788d8b69215018af6009d4a25a15',browserTestedCandidate:'49e8e17db8375c3afc00a94fb476397bd7a6fbe1',expectedIndexSha256:INDEX_SHA256,bounds:{requests:3,concurrency:1,timeoutMs:12000,bytesPerResponse:MAX_BYTES,redirects:0,browser:false},results:[],errors:[]};
  try{for(const route of ROUTES){report.results.push(await publicGet(C.HOST+route));await new Promise(r=>setTimeout(r,250));}}catch(error){report.errors.push(error.message);process.exitCode=1;}
  report.finished=new Date().toISOString();report.status=report.errors.length?'failed':'passed';fs.writeFileSync(path.join(out,'tutorial-public.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
 }
