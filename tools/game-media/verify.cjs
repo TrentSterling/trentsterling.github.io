@@ -68,7 +68,7 @@ async function context(browser,options={}){
   const wide=await context(browser,{viewport:{width:2560,height:1440}}),wp=await wide.newPage();
   const media=await wide.newCDPSession(wp),decoders={};await media.send('Media.enable');
   media.on('Media.playerPropertiesChanged',e=>{for(const p of e.properties)if(/decoder|resolution|codec/i.test(p.name)){(decoders[e.playerId]??={})[p.name]=p.value;}});
-  await wp.goto('http://127.0.0.1:8967/games/');await wp.locator('[data-preview]').first().scrollIntoViewIfNeeded();await wp.waitForTimeout(2000);
+  await wp.goto('http://127.0.0.1:8967/games/');await wp.locator('#preview-slopeloop-2026').scrollIntoViewIfNeeded();await wp.waitForTimeout(2000);
   const wideBefore=await state(wp);await wp.waitForTimeout(5000);const wideAfter=await state(wp);
   const frames=wideAfter.stats.reduce((n,v,i)=>n+v.total-(wideBefore.stats[i]?.total||0),0),drops=wideAfter.stats.reduce((n,v,i)=>n+v.dropped-(wideBefore.stats[i]?.dropped||0),0);
   check('A large desktop runs more than three previews within the twelve-slot cap',wideAfter.playing>3&&wideAfter.attached<=12&&wideAfter.visible,wideAfter);
