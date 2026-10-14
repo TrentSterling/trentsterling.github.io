@@ -20,6 +20,11 @@
       "id": "machinelearning",
       "href": "https://tront.xyz/machinelearning/",
       "markup": "<a id=\"card-machinelearning\" href=\"https://tront.xyz/machinelearning/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-prototype\" style=\"--highlight-color: #a4d0b3;\"><div class=\"image-container\" id=\"preview-machinelearning-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/machinelearning-recovered-2026.webp?v=3ff2d603e232\" alt=\"The original private movement research interface with two ragdoll climbers\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"600\"></div><div class=\"card-content\"><h3 class=\"card-title\">Learning to climb <span>(2026)</span></h3><p class=\"blurb\">Try a small climbing wall built from the movement research prototype. Move each hand between holds and reach the summit.</p><div class=\"tags\"><span class=\"tag\">Prototype</span><span class=\"tag\">Research</span></div></div></a>"
+    },
+    {
+      "id": "tiny-zombies-2026",
+      "href": "https://tront.xyz/tiny-zombies/",
+      "markup": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tiny-zombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\"><img class=\"bg-image\" src=\"/games/media/tiny-zombies-2026.png?v=e7ea5b211d4b\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
     }
   ],
   "media": {
