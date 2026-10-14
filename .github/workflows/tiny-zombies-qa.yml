@@ -24,7 +24,7 @@ jobs:
       - name: Real browser gameplay probe
         run: |
           python3 -m http.server 8080 >/tmp/tiny-zombies-http.log 2>&1 &
-          node scripts/tiny-zombies-gpu-trace.cjs
+          node scripts/tiny-zombies-render-matrix.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
