@@ -40,11 +40,11 @@ function loadApi() {
     return window.TrontAboutDiscovery;
 }
 
-test('catalog selects CraftMine and SMEAR plus one approved random game', () => {
+test('catalog selects CraftMine, SMEAR and two approved random games', () => {
     const api = loadApi();
     const ids = plain(api.catalog.map(game => game.id));
     assert.deepEqual(ids, ['craftmine', 'smear', 'inkride', 'tinytreads', 'tinyrise']);
-    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: storage(), random: () => 0.99 })), ['craftmine', 'smear', 'tinyrise']);
+    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: storage(), random: () => 0.99 })), ['craftmine', 'smear', 'tinyrise', 'inkride']);
     assert.deepEqual(plain(api.catalog.filter(game => ['inkride', 'tinytreads', 'tinyrise'].includes(game.id)).map(game => game.href)), ['/inkride/', '/tinytreads/', '/tinyrise/']);
     assert.equal(new Set(ids).size, ids.length);
 });
@@ -68,31 +68,37 @@ test('current canonical paths and common aliases resolve to the same game id', (
     assert.equal(api.canonicalGameId('/lerp/'), null);
 });
 
-test('the random additional choice is stable for a session and never duplicates the current game', () => {
+test('the two random choices are stable for a session and never duplicate the current game', () => {
     const api = loadApi();
     const session = storage();
     const first = api.selectGameIds('/smear/', { storage: session, random: () => 0.01 });
     const second = api.selectGameIds('/smear/', { storage: session, random: () => 0.99 });
-    assert.deepEqual(plain(first), ['craftmine', 'inkride']);
+    assert.deepEqual(plain(first), ['craftmine', 'inkride', 'tinytreads']);
     assert.deepEqual(plain(second), plain(first));
     assert.equal(session.values.get('tront-about-discovery-session-v1'), 'inkride');
+    assert.deepEqual(JSON.parse(session.values.get('tront-about-discovery-session-v2')), ['inkride', 'tinytreads']);
     assert.equal(new Set(first).size, first.length);
 });
 
 test('a current random game gets an eligible fallback without replacing the session pick', () => {
     const api = loadApi();
     const session = storage({ 'tront-about-discovery-session-v1': 'inkride' });
-    assert.deepEqual(plain(api.selectGameIds('/ink-ride/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'tinytreads']);
+    assert.deepEqual(plain(api.selectGameIds('/ink-ride/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'tinytreads', 'tinyrise']);
     assert.equal(session.values.get('tront-about-discovery-session-v1'), 'inkride');
-    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'inkride']);
+    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'inkride', 'tinytreads']);
 });
 
-test('posters are lazy and one shared video source is assigned only after interaction', () => {
+test('posters are lazy and up to three muted previews start only when visible', () => {
     assert.match(js, /image\.loading = 'lazy'/);
     assert.match(js, /function activate\(card\)/);
     assert.match(js, /video\.setAttribute\('src', game\.preview\)/);
-    assert.match(js, /function releaseCurrent\(\)/);
+    assert.match(js, /video\.setAttribute\('autoplay', ''\)/);
+    assert.match(js, /var MAX_PREVIEWS = 3/);
+    assert.match(js, /function releasePreview\(card\)/);
+    assert.match(js, /function updateLightweightMode\(\)/);
+    assert.match(js, /data-tront-discovery-game-surface/);
     assert.match(js, /visibilitychange/);
+    assert.doesNotMatch(js, /data-tront-discovery-status|Previewing CraftMine|Loading .* preview/i);
     assert.doesNotMatch(js, /className = 'tront-discovery__preview'/);
     assert.doesNotMatch(js, /archivalNote|archivalDetails|Earlier build|V16 footage/i);
     assert.doesNotMatch(js, /<video[^>]+\bsrc\s*=/i);
@@ -102,6 +108,8 @@ test('posters are lazy and one shared video source is assigned only after intera
     assert.match(css, /data-tront-discovery-game="smear"\]\s*\{\s*--td-card-accent: var\(--td-red\)/);
     assert.match(css, /data-tront-discovery-game="craftmine"\]\s*\{\s*--td-card-accent: var\(--td-green\)/);
     assert.match(css, /\.tront-discovery__image-link:focus-visible/);
+    assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+    assert.match(css, /\.tront-discovery--lightweight[\s\S]*\.tront-discovery__description \{ display: none; \}/);
     assert.match(css, /\.tront-discovery__grid[\s\S]*@media \(max-width: 520px\)/);
     assert.match(js, /prefers-reduced-motion: reduce/);
     assert.match(js, /connection\.saveData/);
