@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HARDPOINT</title>
+<style>
+  :root { --bg:#0b0e12; --accent:#ff9d2f; --accent2:#39d0ff; --danger:#ff3b3b; }
+  * { box-sizing:border-box; margin:0; padding:0; user-select:none; }
+  body { background:var(--bg); color:#fff; font-family:'Courier New',monospace; overflow:hidden; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+
+  /* ---- Menu ---- */
+  #menu { position:absolute; inset:0; z-index:10; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; background:rgba(6,8,12,.88); backdrop-filter:blur(10px); }
+  h1 { font-size:88px; letter-spacing:10px; color:var(--accent); font-weight:900;
+    text-shadow:0 0 40px rgba(255,157,47,.5); }
+  .sub { color:#7d8aa0; letter-spacing:8px; margin:4px 0 44px; font-size:16px; }
+  .chassis { display:flex; gap:18px; margin-bottom:40px; }
+  .btn-mech { background:rgba(20,26,36,.9); border:2px solid #2a3543; color:#aab;
+    padding:14px 28px; font:inherit; font-weight:bold; cursor:pointer; border-radius:4px; transition:.15s; }
+  .btn-mech:hover { border-color:var(--accent); color:#fff; }
+  .btn-mech.active { border-color:var(--accent); color:var(--accent); background:rgba(255,157,47,.12);
+    box-shadow:inset 0 0 18px rgba(255,157,47,.25); }
+  #deploy { font-size:24px; font-weight:900; letter-spacing:4px; padding:18px 70px; cursor:pointer;
+    color:#0b0e12; background:var(--accent); border:none; border-radius:4px; transition:.15s; }
+  #deploy:hover { box-shadow:0 0 36px rgba(255,157,47,.6); transform:scale(1.04); }
+  .keys { position:absolute; bottom:26px; color:#5a6678; font-size:13px; letter-spacing:1px; }
+
+  /* ---- HUD (filled by ui/Hud.js) ---- */
+  #hud { position:absolute; inset:0; z-index:5; pointer-events:none; display:none; }
+
+  /* ---- Game over ---- */
+  #over { position:absolute; inset:0; z-index:20; display:none; flex-direction:column;
+    align-items:center; justify-content:center; background:rgba(12,0,0,.92); }
+  #over h2 { color:var(--danger); font-size:72px; font-weight:900; text-shadow:0 0 40px var(--danger); }
+  #over p { font-size:22px; margin:16px 0 36px; color:#bbb; }
+  #reboot { font-size:20px; font-weight:900; letter-spacing:3px; padding:16px 50px; cursor:pointer;
+    color:#fff; background:var(--danger); border:none; border-radius:4px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="menu">
+  <h1>HARDPOINT</h1>
+  <div class="sub">SECONDARY MOVEMENT SYSTEM</div>
+  <div class="chassis">
+    <button class="btn-mech active" data-type="hunter">HUNTER (Light)</button>
+    <button class="btn-mech" data-type="grizzly">GRIZZLY (Heavy)</button>
+    <button class="btn-mech" data-type="jager">JÄGER (Strike)</button>
+  </div>
+  <button id="deploy">DEPLOY</button>
+  <div class="keys">[WASD] Move &nbsp; [SHIFT] Toggle Walk/Roll &nbsp; [SPACE] Boost-Hop &nbsp; [MOUSE] Aim Torso &nbsp; [L-CLICK] Autocannon</div>
+</div>
+
+<div id="hud"></div>
+
+<div id="over">
+  <h2>UNIT DESTROYED</h2>
+  <p>HOSTILES NEUTRALIZED: <span id="final">0</span></p>
+  <button id="reboot">REDEPLOY</button>
+</div>
+
+<script src="./app.js"></script>
+</body>
+</html>

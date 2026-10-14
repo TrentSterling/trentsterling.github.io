@@ -6,8 +6,8 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const isaac = require('../game-media/isaac-archive.cjs');
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
-const { normalizeYearsForPreservation } = require('./gallery-content.cjs');
-const normalizeGames = html => normalizeYearsForPreservation(craftmine2.normalizeForPreservation(isaac.normalizeForPreservation(html)));
+const { normalizeYearsForPreservation, normalizeReleasedForPreservation, recovered } = require('./gallery-content.cjs');
+const normalizeGames = html => normalizeYearsForPreservation(normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(isaac.normalizeForPreservation(html))));
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
 assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
@@ -41,6 +41,11 @@ craftmine2.assertMedia(root);
 for (const [file, expected] of Object.entries(craftmine2.files)) {
   if (beforeTree.has(file)) assert.ok([expected.sha256, expected.previousSha256].filter(Boolean).includes(beforeTree.get(file)), file+': reviewed baseline bytes');
   assert.equal(afterTree.get(file), expected.sha256, file+': approved new media');
+  beforeTree.delete(file); afterTree.delete(file);
+}
+for (const [file, expected] of Object.entries(recovered.media)) {
+  if (beforeTree.has(file)) assert.equal(beforeTree.get(file), expected.sha256, file+': reviewed recovered baseline media');
+  assert.equal(afterTree.get(file), expected.sha256, file+': reviewed recovered release screenshot');
   beforeTree.delete(file); afterTree.delete(file);
 }
 assert.deepEqual(afterTree, beforeTree, 'every other gallery media/behavior/shared legacy file stays byte-identical');

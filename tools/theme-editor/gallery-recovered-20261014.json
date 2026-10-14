@@ -1,0 +1,62 @@
+{
+  "purpose": "Reviewed playable recovered projects and limited research preview, approved for public release on 14 October 2026. Original historical cards stay intact.",
+  "cards": [
+    {
+      "id": "scrapyard",
+      "href": "https://tront.xyz/scrapyard/",
+      "markup": "<a id=\"card-scrapyard\" href=\"https://tront.xyz/scrapyard/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #d7ae75;\"><div class=\"image-container\" id=\"preview-scrapyard-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/scrapyard-recovered-2026.webp?v=0f741fda5d9c\" alt=\"SCRAPYARD SHUTDOWN industrial first-person robot combat\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"540\"></div><div class=\"card-content\"><h3 class=\"card-title\">SCRAPYARD SHUTDOWN <span>(2026)</span></h3><p class=\"blurb\">Fight through a robot-occupied industrial yard with a rifle and charged wrench. Disable three breakers, then reach the shutdown terminal.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
+    },
+    {
+      "id": "vectorrush",
+      "href": "https://tront.xyz/vectorrush/",
+      "markup": "<a id=\"card-vectorrush\" href=\"https://tront.xyz/vectorrush/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #93bbd7;\"><div class=\"image-container\" id=\"preview-vectorrush-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/vectorrush-recovered-2026.webp?v=4d1e8075e13d\" alt=\"Vector Rush mech arena combat\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"600\"></div><div class=\"card-content\"><h3 class=\"card-title\">Vector Rush <span>(2026)</span></h3><p class=\"blurb\">Dash, jump and trade missiles, beam fire and saber combos in a fast third-person mech arena.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
+    },
+    {
+      "id": "hearthwild",
+      "href": "https://tront.xyz/hearthwild/",
+      "markup": "<a id=\"card-hearthwild\" href=\"https://tront.xyz/hearthwild/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #b6c994;\"><div class=\"image-container\" id=\"preview-hearthwild-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/hearthwild-recovered-2026.webp?v=3a71f29a3287\" alt=\"Hearthwild living island and giant companion\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"600\"></div><div class=\"card-content\"><h3 class=\"card-title\">Hearthwild <span>(2026)</span></h3><p class=\"blurb\">Shape a living island with a physical god hand, elemental powers, village building and a trainable giant companion.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
+    },
+    {
+      "id": "machinelearning",
+      "href": "https://tront.xyz/machinelearning/",
+      "markup": "<a id=\"card-machinelearning\" href=\"https://tront.xyz/machinelearning/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-prototype\" style=\"--highlight-color: #a4d0b3;\"><div class=\"image-container\" id=\"preview-machinelearning-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/machinelearning-recovered-2026.webp?v=3ff2d603e232\" alt=\"The original private movement research interface with two ragdoll climbers\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"600\"></div><div class=\"card-content\"><h3 class=\"card-title\">Learning to climb <span>(2026)</span></h3><p class=\"blurb\">Try a small climbing wall built from the movement research prototype. Move each hand between holds and reach the summit.</p><div class=\"tags\"><span class=\"tag\">Prototype</span><span class=\"tag\">Research</span></div></div></a>"
+    },
+    {
+      "id": "hardpoint",
+      "href": "https://tront.xyz/hardpoint/",
+      "markup": "<a id=\"card-hardpoint\" href=\"https://tront.xyz/hardpoint/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #a8c0c9;\"><div class=\"image-container\" id=\"preview-hardpoint-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/hardpoint-recovered-2026.webp?v=725569f3f6c1\" alt=\"HARDPOINT player mech fighting in a desert arena\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"540\"></div><div class=\"card-content\"><h3 class=\"card-title\">HARDPOINT <span>(2026)</span></h3><p class=\"blurb\">Deploy a mech, switch between walking and rollers, boost over cover and duel enemy machines with an autocannon.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
+    }
+  ],
+  "media": {
+    "games/media/scrapyard-recovered-2026.webp": {
+      "sha256": "0f741fda5d9ce675903ac893142accc784b9fe3f9426daaa0f26843d08e52f1c",
+      "width": 960,
+      "height": 540,
+      "bytes": 38048
+    },
+    "games/media/vectorrush-recovered-2026.webp": {
+      "sha256": "4d1e8075e13d12e35e8550a367e0ad1f7302220eae78577e6725c08e679ee3f4",
+      "width": 960,
+      "height": 600,
+      "bytes": 46898
+    },
+    "games/media/hearthwild-recovered-2026.webp": {
+      "sha256": "3a71f29a3287d5815c7d0cd5695aeea437fc9f72498953ef483816abae024e13",
+      "width": 960,
+      "height": 600,
+      "bytes": 118400
+    },
+    "games/media/machinelearning-recovered-2026.webp": {
+      "sha256": "3ff2d603e23234dd9fbdfbe275cbae47837a4420370320067005bbba11577fe4",
+      "width": 960,
+      "height": 600,
+      "bytes": 19968
+    },
+    "games/media/hardpoint-recovered-2026.webp": {
+      "sha256": "725569f3f6c1e736515a7b043469af3e553f146002c958a2a4640af5189d237f",
+      "width": 960,
+      "height": 540,
+      "bytes": 10352
+    }
+  }
+}

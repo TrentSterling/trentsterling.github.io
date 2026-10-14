@@ -6,6 +6,7 @@ const path = require('node:path');
 const baseline = require('./gallery-content-baseline.json');
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
 const released = require('./gallery-released-20261014.json');
+const recovered = require('./gallery-recovered-20261014.json');
 const approvedYearCorrections = baseline.approvedYearCorrections;
 const historicalCardsByHref = new Map(baseline.cards.map(card => [card.href, card]));
 for (const [href, correction] of Object.entries(approvedYearCorrections)) {
@@ -27,12 +28,13 @@ const expectedCards = baseline.cards.map(original => {
     return card;
 });
 expectedCards.splice(1, 0, ...released.cards.map(card => readCards(card.markup)[0]));
+expectedCards.splice(1 + released.cards.length, 0, ...recovered.cards.map(card => readCards(card.markup)[0]));
 expectedCards.splice(1, 0, craftmine2.expectedCard); // Demigod stays first; every historical card retains its relative position.
 const currentMissingYearHrefs = expectedCards.filter(card => !card.yearSpans.length).map(card => card.href);
 function normalizeReleasedForPreservation(html) {
     // These exact cards already exist on master. Remove them only for the
     // 117-card historical browser comparison; raw candidate checks retain all four.
-    for (const entry of released.cards) {
+    for (const entry of [...released.cards, ...recovered.cards]) {
         const cards = [...html.matchAll(/<a\b[^>]*class="item\b[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
         const matches = cards.filter(card => card.includes('href="'+entry.href+'"'));
         assert.ok(matches.length <= 1, 'each already-published card remains unique');
@@ -71,7 +73,7 @@ function readCards(html) {
     return cards;
 }
 function assertCards(cards) {
-    assert.equal(cards.length, expectedCards.length, 'all 121 existing cards are preserved alongside the approved CraftMine 2 addition');
+    assert.equal(cards.length, expectedCards.length, 'all historical and approved release cards are preserved');
     cards.forEach((card, i) => assert.deepEqual(card, expectedCards[i], `card ${i + 1}: full title, approved year, description, tags, categories and link are preserved`));
     assert.deepEqual(cards.filter(card => !card.yearSpans.length).map(card => card.href), currentMissingYearHrefs,
         'any year omission or repair must be reviewed explicitly');
@@ -125,6 +127,6 @@ async function assertRendered(page, { historical = false } = {}) {
 }
 if (require.main === module) {
     assertSource(fs.readFileSync(process.argv[2] || path.resolve(__dirname, '../../games/index.html'), 'utf8'));
-    console.log('PASS: all 117 existing cards preserve pre-theme copy, original years and four verified year additions; the four later master entries are preserved and CraftMine 2 is the sole new card.');
+    console.log('PASS: all historical cards, CraftMine 2, and reviewed release cards preserve their exact content and order.');
 }
-module.exports = { baseline, released, expectedCards, normalizeReleasedForPreservation, currentMissingYearHrefs, normalizeYearsForPreservation, readCards, assertCards, assertHistoricalCards, assertSource, assertRendered };
+module.exports = { baseline, released, recovered, expectedCards, normalizeReleasedForPreservation, currentMissingYearHrefs, normalizeYearsForPreservation, readCards, assertCards, assertHistoricalCards, assertSource, assertRendered };

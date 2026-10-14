@@ -19,7 +19,7 @@ test('all 117 cards preserve pre-theme copy and original years plus four verifie
     assert.deepEqual(galleryContent.baseline.knownMissingYearHrefs, ['/audiobounce/', '/asciicity/', '/device-history/', '/powershellmanager/']);
     assert.deepEqual(Object.keys(galleryContent.baseline.approvedYearCorrections), galleryContent.baseline.knownMissingYearHrefs);
     assert.deepEqual(Object.values(galleryContent.baseline.approvedYearCorrections).map(correction => correction.year), [2026, 2026, 2026, 2026]);
-    assert.equal(galleryContent.expectedCards.filter(card => card.yearSpans.length).length, 122);
+    assert.equal(galleryContent.expectedCards.filter(card => card.yearSpans.length).length, 122 + galleryContent.recovered.cards.length);
     assert.deepEqual(galleryContent.currentMissingYearHrefs, []);
 });
 test('content contract rejects year deletion, blurb simplification, tag loss and reordered cards', () => {
@@ -40,7 +40,7 @@ test('approved year normalization recovers the complete frozen historical card r
     assert.deepEqual(galleryContent.readCards(historical), galleryContent.baseline.cards);
     assert.equal(galleryContent.normalizeYearsForPreservation(historical), historical, 'historical titles remain untouched');
     for (const [index, original] of galleryContent.baseline.cards.entries()) {
-        const current = galleryContent.expectedCards[index === 0 ? 0 : index + 5];
+        const current = galleryContent.expectedCards[index === 0 ? 0 : index + 5 + galleryContent.recovered.cards.length];
         if (Object.hasOwn(galleryContent.baseline.approvedYearCorrections, original.href)) {
             assert.deepEqual({ ...current, titleHtml: original.titleHtml, titleText: original.titleText, yearSpans: original.yearSpans }, original);
         } else assert.deepEqual(current, original, `${original.href}: no unapproved card changes`);
@@ -101,7 +101,7 @@ test('render contract mode selection preserves exact copy and visibility failure
     assert.deepEqual(historical.approvedYearCorrections, {});
     const current = await galleryContent.assertRendered(page(galleryContent.expectedCards));
     assert.equal(current.contentMode, 'approved-current');
-    assert.equal(current.yearSpans, 122);
+    assert.equal(current.yearSpans, 122 + galleryContent.recovered.cards.length);
     assert.deepEqual(current.knownMissingYearHrefs, []);
     assert.deepEqual(current.approvedYearCorrections, galleryContent.baseline.approvedYearCorrections);
     await assert.rejects(galleryContent.assertRendered(page(galleryContent.baseline.cards)), /preserved/);
@@ -566,7 +566,7 @@ for (const consumer of [
     });
 }
 
-test('CraftMine 2 is the sole exact new card; original CraftMine and the other 116 stay unchanged', () => {
+test('CraftMine 2 and reviewed releases preserve original CraftMine and the other 116 cards', () => {
     const html = fs.readFileSync(path.join(base,'games/index.html'),'utf8');
     const cards = galleryContent.readCards(html);
     assert.equal(cards[1].href, craftmine2.expectedCard.href);

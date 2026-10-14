@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Learning to climb | Tront</title>
+<meta name="description" content="A look inside Tront's private movement-learning research. Try a small physics climbing wall in your browser.">
+<link rel="canonical" href="https://tront.xyz/machinelearning/">
+<meta property="og:title" content="Learning to climb | Tront"><meta property="og:description" content="Movement research, one handhold at a time. Try the climbing wall."><meta property="og:image" content="https://tront.xyz/machinelearning/research.webp">
+<meta name="color-scheme" content="light dark"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><a class="brand" href="/">tront</a><nav aria-label="Main"><a href="/games/">Games</a><a href="#research">The research</a><a href="#play">Try the wall</a></nav></header>
+<main>
+<section class="hero">
+<div><h1>Learning<br>to climb.</h1><p>Movement research, one handhold at a time. A look inside an experiment in teaching characters to climb.</p><a class="button" href="#play">Try the climbing wall</a></div>
+<figure><img src="research.webp" alt="The original private climbing research interface, showing two ragdoll climbers and training controls" width="1280" height="800" fetchpriority="high"><figcaption>The original research prototype, captured running locally.</figcaption></figure>
+</section>
+<section id="play" class="play-section">
+<div class="play-heading"><h2>Your hands. Your route.</h2><p>This small preview uses the research prototype's ragdoll physics. You control the climber; no learning model runs here.</p></div>
+<div class="play-layout">
+<div class="wall-wrap"><canvas id="wall" width="400" height="600" tabindex="0" aria-label="Climbing wall. Select a hand, then click a reachable numbered hold, or use the hold buttons beside the wall.">Use the numbered hold buttons to climb.</canvas><div class="wall-status"><span id="height">0.0 m</span><span id="grips">Two hands attached</span></div></div>
+<div class="controls">
+<h3>Reach the summit</h3><p>Choose a hand, then a numbered hold. A solid ring marks what that hand can reach. Keep one hand attached.</p>
+<div class="hands" role="group" aria-label="Hand selection"><button id="left" aria-pressed="true">Left hand <kbd>Q</kbd></button><button id="right" aria-pressed="false">Right hand <kbd>E</kbd></button></div>
+<p class="hand-note">The selected hand alternates after each grab.</p>
+<h4>Reachable holds</h4><div id="holds" class="hold-buttons" aria-label="Reachable holds"></div>
+<p id="message" class="message" role="status" aria-live="polite">Select a hold to start climbing.</p>
+<div class="actions"><button id="reset">Start again</button><button id="pause" aria-pressed="true">Start physics</button></div>
+<details><summary>Controls and experiment notes</summary><p>Click or tap a hold. Q / E selects a hand. R resets. Space pauses when the wall has focus. All controls also work with Tab and Enter.</p><p>The compact route has rest holds and no stamina timer. Progress resets when you leave. Touch, mouse and keyboard controls are supported.</p></details>
+<noscript><p>This preview needs JavaScript. The research image above remains available.</p></noscript>
+</div></div>
+</section>
+<section id="research" class="research"><h2>From movement to learned behaviour.</h2><div class="research-copy"><p>The larger project explores characters that choose routes and learn how to move through them. The local prototype includes manual climbing, demonstrations and training experiments.</p><div><p>The training code and research workspace stay private. This public slice shares the physical climbing problem and a real view of the work.</p><p>Longer term: Rust, WASM and wgpu, with the browser as a place to play and inspect the results.</p></div></div></section>
+</main><footer><a href="/games/">More experiments from Tront</a><span>By Trent Sterling</span></footer>
+<script type="module" src="preview.js"></script>
+</body></html>

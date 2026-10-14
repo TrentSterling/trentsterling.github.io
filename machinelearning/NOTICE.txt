@@ -1,0 +1,4 @@
+Learning to climb public preview
+Copyright Trent Sterling. All rights reserved.
+
+This limited preview contains the original ragdoll physics helpers and a separate manual climbing interface. It does not contain the private training code, demonstrations, weights, or research documents. The research image is an actual local capture.

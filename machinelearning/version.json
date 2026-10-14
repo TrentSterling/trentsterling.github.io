@@ -1,0 +1,14 @@
+{
+  "name": "Learning to climb",
+  "version": "0.1.0",
+  "releaseDate": "2026-10-14",
+  "preview": "manual physics wall; no learning model or training code",
+  "files": {
+    "index.html": "49d5ec5c0266351aeee7e5c5de7a3e32bbfc47a1bea6582120930b844c707152",
+    "NOTICE.txt": "eae76079c59234d07a9432dfb018b253516eb5963482fb16069acf37c5d529ce",
+    "physics.js": "5fff4ab4185c7a900dc2221d1e4ec41edecc3bf0794ce1fd820e79dbc1d98067",
+    "preview.js": "675c1c41f017ee5cbefdfb7143d0a96e1cf6401c10890d01b976593aae120ed0",
+    "research.webp": "4f56f2e25a2db05c1eadaac5d2365153a7f3a0ece7f374584332dae5f7515b3b",
+    "style.css": "e5c0231e4a3d1b003a064e0bda40c2f841aca25108315f5d7d02ebea84828ca0"
+  }
+}
