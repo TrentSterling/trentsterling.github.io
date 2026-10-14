@@ -1,0 +1,31 @@
+name: Verify public HARDPOINT removal
+on:
+  push:
+    branches: [qa-hardpoint-live-20261014]
+permissions:
+  contents: read
+jobs:
+  public-gallery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: b8008f44c0243199cf06d16f19b64c296a34abf7
+          persist-credentials: false
+      - name: Verify deployed exact gallery bytes and retained assets
+        run: |
+          for attempt in $(seq 1 30); do
+            curl --fail --location --max-time 30 --silent --show-error "https://tront.xyz/games/?verify=hardpoint-$GITHUB_RUN_ID-$attempt" -o /tmp/live-games.html || true
+            if cmp -s games/index.html /tmp/live-games.html; then break; fi
+            sleep 10
+          done
+          cmp games/index.html /tmp/live-games.html
+          node tools/theme-editor/gallery-content.cjs /tmp/live-games.html
+          node -e 'const fs=require("fs"),assert=require("assert/strict");const h=fs.readFileSync("/tmp/live-games.html","utf8");assert.equal((h.match(/class="card-title"/g)||[]).length,126);assert.ok(!/hardpoint/i.test(h));console.log("PASS: public gallery matches exact merged HTML; 126 cards; HARDPOINT absent.")'
+          curl --fail --location --max-time 30 --silent --show-error https://tront.xyz/hardpoint/ -o /tmp/hardpoint-game.html
+          test $(wc -c < /tmp/hardpoint-game.html) -gt 1000
+          curl --fail --location --max-time 30 --silent --show-error https://tront.xyz/games/media/hardpoint-recovered-2026.webp -o /tmp/hardpoint-poster.webp
+          cmp games/media/hardpoint-recovered-2026.webp /tmp/hardpoint-poster.webp
+          sha256sum /tmp/live-games.html /tmp/hardpoint-poster.webp
+          echo "PASS: HARDPOINT hosting and exact retained poster remain available."
