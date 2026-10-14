@@ -7,7 +7,7 @@ plus a child with `data-tront-discovery-cards`. Pages can set
 `data-current-game` to a canonical slug; otherwise the component checks the
 canonical link and current path.
 
-The component shows CraftMine and SMEAR plus two distinct, session-stable picks
+The component shows CraftMine and SMEAR plus one session-stable pick
 from INKRIDE, Tiny Treads, and Tinyrise. It excludes the current game and known
 route aliases. SMEAR uses its poster until current preview footage is available.
 Only selected games create cards and request posters.
