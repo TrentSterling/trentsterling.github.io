@@ -40,11 +40,11 @@ function loadApi() {
     return window.TrontAboutDiscovery;
 }
 
-test('catalog selects CraftMine, SMEAR and two approved random games', () => {
+test('catalog selects CraftMine, SMEAR and one approved random game', () => {
     const api = loadApi();
     const ids = plain(api.catalog.map(game => game.id));
     assert.deepEqual(ids, ['craftmine', 'smear', 'inkride', 'tinytreads', 'tinyrise']);
-    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: storage(), random: () => 0.99 })), ['craftmine', 'smear', 'tinyrise', 'inkride']);
+    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: storage(), random: () => 0.99 })), ['craftmine', 'smear', 'tinyrise']);
     assert.deepEqual(plain(api.catalog.filter(game => ['inkride', 'tinytreads', 'tinyrise'].includes(game.id)).map(game => game.href)), ['/inkride/', '/tinytreads/', '/tinyrise/']);
     assert.equal(new Set(ids).size, ids.length);
 });
@@ -68,24 +68,35 @@ test('current canonical paths and common aliases resolve to the same game id', (
     assert.equal(api.canonicalGameId('/lerp/'), null);
 });
 
-test('the two random choices are stable for a session and never duplicate the current game', () => {
+test('the random pick is stable for a session and never duplicates the current game', () => {
     const api = loadApi();
     const session = storage();
     const first = api.selectGameIds('/smear/', { storage: session, random: () => 0.01 });
     const second = api.selectGameIds('/smear/', { storage: session, random: () => 0.99 });
-    assert.deepEqual(plain(first), ['craftmine', 'inkride', 'tinytreads']);
+    assert.deepEqual(plain(first), ['craftmine', 'inkride']);
     assert.deepEqual(plain(second), plain(first));
     assert.equal(session.values.get('tront-about-discovery-session-v1'), 'inkride');
-    assert.deepEqual(JSON.parse(session.values.get('tront-about-discovery-session-v2')), ['inkride', 'tinytreads']);
+    assert.deepEqual(JSON.parse(session.values.get('tront-about-discovery-session-v2')), ['inkride']);
     assert.equal(new Set(first).size, first.length);
+});
+});
+
+test('a saved pair from the previous version retains its first session pick', () => {
+    const api = loadApi();
+    const session = storage({
+        'tront-about-discovery-session-v1': 'inkride',
+        'tront-about-discovery-session-v2': JSON.stringify(['inkride', 'tinytreads'])
+    });
+    assert.deepEqual(plain(api.selectGameIds('/smear/', { storage: session, random: () => 0.99 })), ['craftmine', 'inkride']);
+    assert.deepEqual(JSON.parse(session.values.get('tront-about-discovery-session-v2')), ['inkride']);
 });
 
 test('a current random game gets an eligible fallback without replacing the session pick', () => {
     const api = loadApi();
     const session = storage({ 'tront-about-discovery-session-v1': 'inkride' });
-    assert.deepEqual(plain(api.selectGameIds('/ink-ride/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'tinytreads', 'tinyrise']);
+    assert.deepEqual(plain(api.selectGameIds('/ink-ride/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'tinytreads']);
     assert.equal(session.values.get('tront-about-discovery-session-v1'), 'inkride');
-    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'inkride', 'tinytreads']);
+    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'inkride']);
 });
 
 test('posters are lazy and up to three muted previews start only when visible', () => {
