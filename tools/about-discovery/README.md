@@ -15,9 +15,20 @@ focused, or its Preview button is activated. One video element is shared by all
 cards and its source is removed on release, tab hiding, or when it leaves view.
 Reduced-motion and Save-Data preferences keep the poster-only view.
 
-SMEAR's available clip is archival V16 footage sped up 2×; its card labels that
-clip and identifies V47.1 as the current source. It is not presented as current
-runtime evidence.
+When a host sits inside a closed `<details>` disclosure, the component creates
+no cards or poster requests until every containing disclosure opens. Closing a
+disclosure releases an active preview. The component does not register
+document-level keyboard or pointer handlers, so it can sit inside full-screen
+apps without taking over their input.
+
+CraftMine and SMEAR use short, activity-first descriptions. SMEAR's card says
+the edited preview is from an earlier build; its accessible expanded caption
+identifies V16 footage and the exact 2× and 2.5× shot speeds. The preview is not
+presented as current runtime evidence.
+
+The preview control is a compact play/stop icon with an accessible label and a
+44px target. The page heading appears once, and links remain independent of the
+preview control.
 
 The Lerp footer pilot vendors the same two assets locally so it remains usable
 before this shared source is published. Lerp's `tests/discovery.test.cjs` checks

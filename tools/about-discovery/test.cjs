@@ -49,6 +49,14 @@ test('catalog contains the two fixed picks and only the three approved random ch
     assert.deepEqual(catalog.filter(game => game.kind === 'Quick pick').map(game => game.href), ['/inkride/', '/tinytreads/', '/tinyrise/']);
 });
 
+test('every discovery card description is a complete, count-light sentence', () => {
+    const api = loadApi();
+    for (const game of api.catalog) {
+        assert.match(game.description, /^[A-Z].*[.!?]$/, game.id);
+        assert.doesNotMatch(game.description, /\b\d+\s+(?:blocks|mobs|weapons)\b/i, game.id);
+    }
+});
+
 test('current canonical paths and common aliases resolve to the same game id', () => {
     const api = loadApi();
     for (const [path, id] of [
@@ -87,16 +95,30 @@ test('posters are lazy, video source assignment is interaction-only, and reduced
     assert.match(js, /function disclosureChain\(host\)/);
     assert.match(js, /function disclosuresAreOpen\(chain\)/);
     assert.doesNotMatch(js, /doc\.addEventListener\(['"](?:keydown|pointerdown)['"]/);
+    assert.match(css, /width: 44px/);
+    assert.match(css, /\.tront-discovery__preview::before/);
+    assert.match(css, /\.tront-discovery__status:empty/);
+    assert.doesNotMatch(css, /\.tront-discovery__kind|\.tront-discovery__open/);
+    assert.doesNotMatch(js, /createText\('p', 'tront-discovery__kind'/);
+    assert.doesNotMatch(js, /className = 'tront-discovery__open'/);
     assert.match(js, /prefers-reduced-motion: reduce/);
     assert.match(js, /connection\.saveData/);
     assert.match(css, /\.tront-discovery__grid[\s\S]*@media \(max-width: 520px\)/);
     assert.match(css, /--td-red:[\s\S]*--td-green:/);
 });
 
-test('SMEAR preview is explicitly identified as archival footage from V16', () => {
+test('SMEAR preview is labeled as an earlier edit with exact accessible source details', () => {
     const api = loadApi();
     const smear = api.catalog.find(game => game.id === 'smear');
-    assert.match(smear.archivalNote, /Archival V16 footage, sped up/);
-    assert.match(smear.archivalNote, /current source is V47\.1/i);
+    assert.equal(smear.description, 'Grab dummies, break things and drag the mess around.');
+    assert.equal(smear.archivalNote, 'This edited preview is from an earlier build.');
+    assert.equal(smear.archivalDetails, 'The clip shows V16 footage; its shots are sped up 2×–2.5×.');
+    assert.doesNotMatch(smear.archivalNote + smear.archivalDetails, /current source|V47\.1/i);
     assert.match(smear.preview, /smear-2026\.mp4\?v=687dcd477595/);
+});
+
+test('CraftMine copy avoids stale counts and claims about its origin', () => {
+    const craftmine = loadApi().catalog.find(game => game.id === 'craftmine');
+    assert.equal(craftmine.description, 'Build, dig, and blow holes in a voxel world, solo or with friends.');
+    assert.doesNotMatch(craftmine.description, /AI-generated|\b\d+\s+(?:blocks|mobs|weapons)\b/i);
 });
