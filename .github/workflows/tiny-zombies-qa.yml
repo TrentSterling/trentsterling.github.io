@@ -3,6 +3,9 @@ on:
   push:
     branches: [codex/tiny-zombies-v8-browser-qa]
   workflow_dispatch:
+concurrency:
+  group: tiny-zombies-isolated-qa
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
