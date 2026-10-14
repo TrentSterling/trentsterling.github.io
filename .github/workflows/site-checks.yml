@@ -11,6 +11,9 @@ on:
       - assets/js/tront-theme*.js
       - assets/js/tront-system.js
       - assets/css/tront-navbar.css
+      - assets/css/tront-about-discovery.css
+      - assets/js/tront-about-discovery.js
+      - tools/about-discovery/**
       - tools/theme-editor/**
       - tools/game-media/verify.cjs
       - tools/game-media/isaac-archive.cjs
@@ -64,6 +67,8 @@ jobs:
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/site-tests/node_modules/playwright" >> "$GITHUB_ENV"
       - name: Check copy and gallery source preservation
         run: node tools/theme-editor/preserve.cjs
+      - name: Test opt-in About discovery component contracts
+        run: node --test tools/about-discovery/test.cjs
       - name: Test reviewed Isaac archive media contracts
         run: node --test tools/game-media/isaac-archive.test.cjs
       - name: Test theme math and state contracts
