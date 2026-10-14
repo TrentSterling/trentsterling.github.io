@@ -79,7 +79,6 @@ test('the random pick is stable for a session and never duplicates the current g
     assert.deepEqual(JSON.parse(session.values.get('tront-about-discovery-session-v2')), ['inkride']);
     assert.equal(new Set(first).size, first.length);
 });
-});
 
 test('a saved pair from the previous version retains its first session pick', () => {
     const api = loadApi();
