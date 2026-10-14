@@ -57,6 +57,12 @@
       "width": 960,
       "height": 540,
       "bytes": 10352
+    },
+    "games/media/tiny-zombies-2026.png": {
+      "sha256": "e7ea5b211d4b1fad1fbeac1ec843c0e44cf5170291d9aa9ee40222fa75a2d119",
+      "width": 640,
+      "height": 360,
+      "bytes": 230350
     }
   },
   "retiredCards": [
