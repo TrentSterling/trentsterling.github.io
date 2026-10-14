@@ -2557,9 +2557,9 @@ async function drawFrame(now){
  }
  {
   const aimTarget=context.getCurrentTexture().createView();const extra=stampThisFrame?{timestampWrites:{querySet:tsQuery,endOfPassWriteIndex:1}}:{};
-  const p=enc.beginRenderPass({label:'tone map and GPU glyphs',colorAttachments:[{view:aimTarget,clearValue:{r:0,g:0,b:0,a:1},loadOp:'clear',storeOp:'store'}],...extra});
+  const p=enc.beginRenderPass({label:'tone map isolated',colorAttachments:[{view:aimTarget,clearValue:{r:0,g:0,b:0,a:1},loadOp:'clear',storeOp:'store'}],...extra});
   p.setPipeline(postPipeline);p.setBindGroup(0,postBG);p.draw(3);
-  p.setPipeline(uiPipeline);p.setBindGroup(0,uiBG);p.draw(6,glyphCount);p.end();if(window.__tracePass)await window.__tracePass;
+  p.end();if(window.__tracePass)await window.__tracePass; const ui=enc.beginRenderPass({label:'HUD glyphs isolated',colorAttachments:[{view:aimTarget,loadOp:'load',storeOp:'store'}]}); ui.setPipeline(uiPipeline);ui.setBindGroup(0,uiBG);ui.draw(6,glyphCount);ui.end();if(window.__tracePass)await window.__tracePass;window.__traceDone=true;
  }
  let sample=false;
  if(!readBusy&&now>readCountdown){sample=true;readBusy=true;readCountdown=now+70;enc.copyBufferToBuffer(C,0,sampleBuffer,0,384);enc.copyBufferToBuffer(S,0,sampleBuffer,384,12288);}
