@@ -69,6 +69,8 @@ jobs:
         run: node tools/theme-editor/preserve.cjs
       - name: Test opt-in About discovery component contracts
         run: node --test tools/about-discovery/test.cjs
+      - name: Decode CraftMine and each eligible random preview in Chrome
+        run: timeout 180s node tools/about-discovery/media-decode.cjs
       - name: Test reviewed Isaac archive media contracts
         run: node --test tools/game-media/isaac-archive.test.cjs
       - name: Test theme math and state contracts
