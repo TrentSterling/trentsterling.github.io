@@ -25,6 +25,10 @@ async function context(browser,options={}){
   await page.locator('[data-preview]').first().scrollIntoViewIfNeeded();await page.waitForTimeout(2200);
   let s=await state(page);check('Desktop starts autoplay without hover and caps it at twelve',s.playing>0&&s.attached<=12&&s.visible,s);
   check('Decoded video advances',s.stats.some(v=>v.total>5&&v.time>0),s.stats);
+  const craftmine2=page.locator('#preview-craftmine2-2026');
+  check('CraftMine 2 is the second card with its own public destination',await page.locator('.grid .item').nth(1).getAttribute('href')==='https://tront.xyz/craftmine2/');
+  check('CraftMine 2 footage decodes and autoplays',await craftmine2.locator('video').evaluate(v=>!v.paused&&v.currentTime>0&&v.getVideoPlaybackQuality().totalVideoFrames>5));
+  check('CraftMine 2 poster is decoded',await craftmine2.locator('img').evaluate(i=>i.complete&&i.naturalWidth===640));
   const first=s.sources;
   await page.waitForTimeout(7000);s=await state(page);
   check('All eligible visible previews keep playing within the desktop limit',s.playing>0&&s.attached<=12,s);
