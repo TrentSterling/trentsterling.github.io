@@ -9,6 +9,8 @@ const approvedCard = "<a href=\"https://tront.xyz/craftmine2/\" target=\"_blank\
 const expectedCard = Object.freeze({"href":"https://tront.xyz/craftmine2/","classes":["item","tag-game"],"titleHtml":"CraftMine 2 <span>(2026)</span>","titleText":"CraftMine 2 (2026)","yearSpans":["(2026)"],"blurbHtml":"A new browser voxel sandbox with shimmering water, sunlit cliffs, and terrain you can blast apart. Explore the valley, build something, or reach for the rocket launcher.","blurbText":"A new browser voxel sandbox with shimmering water, sunlit cliffs, and terrain you can blast apart. Explore the valley, build something, or reach for the rocket launcher.","tagsHtml":"<span class=\"tag\">Game</span>","tags":["Game"]});
 // Live deployed CraftMine 2 capture, 2026-10-14. Two original-speed cuts:
 // waterfall [3.0,4.5), rocket [0.82,4.12). No overlays, generated frames, or speedup.
+// Live deployed CraftMine 2 capture, 2026-10-14. Two original-speed cuts:
+// waterfall [3.0,4.5), rocket [0.82,4.12). No overlays, generated frames, or speedup.
 const files = Object.freeze({
   "games/media/craftmine2-2026.mp4": {
     "bytes": 204542,
@@ -19,13 +21,13 @@ const files = Object.freeze({
     "sha256": "8ef0e86dbb3e11265e8e8ca8d5680b4d3efcc81663d1cc6ab7edee1a93563fdc"
   },
   "games/og-image.png": {
-    "bytes": 474118,
-    "sha256": "fd0927de6065b15c9f977486d9b662de8a358fa6d6638739a4876eeeb2159f21",
+    "bytes": 462805,
+    "sha256": "af2d3e10d1dda4255f4aa4ae136b6f65d47201865a9214613907463a57bb6e9c",
     "previousSha256": "a1678256fc046ca83e502c84212b144ee8c7dca75db6ee9898a040c544836bdf"
   },
-  "games/og-image-fd0927de6065.png": {
-    "bytes": 474118,
-    "sha256": "fd0927de6065b15c9f977486d9b662de8a358fa6d6638739a4876eeeb2159f21"
+  "games/og-image-af2d3e10d1dd.png": {
+    "bytes": 462805,
+    "sha256": "af2d3e10d1dda4255f4aa4ae136b6f65d47201865a9214613907463a57bb6e9c"
   }
 });
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');

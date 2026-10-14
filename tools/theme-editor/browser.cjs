@@ -7,10 +7,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { createServer } = require('../game-media/server.cjs');
-const { assertRendered: assertGalleryContent, baseline: galleryBaseline, normalizeYearsForPreservation } = require('./gallery-content.cjs');
+const { assertRendered: assertGalleryContent, baseline: galleryBaseline, normalizeYearsForPreservation, normalizeReleasedForPreservation } = require('./gallery-content.cjs');
 const isaacArchive = require('../game-media/isaac-archive.cjs');
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
-const normalizeComparison = html => normalizeYearsForPreservation(craftmine2.normalizeForPreservation(isaacArchive.normalizeForPreservation(html)));
+const normalizeComparison = html => normalizeYearsForPreservation(normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(isaacArchive.normalizeForPreservation(html))));
 const server = createServer();
 const baselineRoot = process.env.THEME_BASELINE_ROOT;
 // The complete original checkout supplies its own unchanged server and assets.
@@ -22,7 +22,7 @@ const diagnosticsDir = screenshots || path.resolve('.local/theme-review');
 const closeLifecycle = [];
 const nativeGalleryReview = [];
 const approvedGalleryReview = [];
-const comparisonNormalization = 'Comparison-only HTML restores exactly the CraftMine 2 addition, four approved year spans and the reviewed Isaac media container to historical markup. Raw candidate audits and screenshots remain unchanged and require all 118 years.';
+const comparisonNormalization = 'Comparison-only HTML restores exactly the CraftMine 2 addition, four already-published master cards, four approved year spans and the reviewed Isaac media container to historical markup. Raw candidate audits and screenshots remain unchanged and require all 122 years.';
 
 // Native close is queued. Normal flows await the event; rapid flows deliberately do not.
 async function installCloseTrace(page) {
@@ -328,7 +328,7 @@ async function assertFocusInside(page, step) {
                     await raw.reload(); await raw.locator('body.fonts-loaded').waitFor();
                     await raw.waitForFunction(() => getComputedStyle(document.body).opacity === '1');
                     const { textColors, ...contentContract } = await assertGalleryContent(raw);
-                    assert.equal(contentContract.yearSpans, 118); assert.deepEqual(contentContract.knownMissingYearHrefs, []);
+                    assert.equal(contentContract.yearSpans, 122); assert.deepEqual(contentContract.knownMissingYearHrefs, []);
                     const yearStyles = await raw.evaluate(corrections => {
                         const results = [], allCards = [...document.querySelectorAll('.grid .item')];
                         const existingYear = allCards.find(card => !Object.hasOwn(corrections, card.getAttribute('href')) && card.querySelector('.card-title span')).querySelector('.card-title span');

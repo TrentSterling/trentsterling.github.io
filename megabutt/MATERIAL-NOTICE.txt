@@ -1,0 +1,2 @@
+MEGABUTT terrain materials, 2026-10-13.
+Original moss/grass, limestone and earth PNGs generated with OpenAI imagegen for this project. No Megabonk or third-party game textures are included. The original generated images are embedded in native and Wasm builds; the renderer creates 512x512 layers and linear-light mipmaps at startup.

@@ -19,7 +19,7 @@ test('all 117 cards preserve pre-theme copy and original years plus four verifie
     assert.deepEqual(galleryContent.baseline.knownMissingYearHrefs, ['/audiobounce/', '/asciicity/', '/device-history/', '/powershellmanager/']);
     assert.deepEqual(Object.keys(galleryContent.baseline.approvedYearCorrections), galleryContent.baseline.knownMissingYearHrefs);
     assert.deepEqual(Object.values(galleryContent.baseline.approvedYearCorrections).map(correction => correction.year), [2026, 2026, 2026, 2026]);
-    assert.equal(galleryContent.expectedCards.filter(card => card.yearSpans.length).length, 118);
+    assert.equal(galleryContent.expectedCards.filter(card => card.yearSpans.length).length, 122);
     assert.deepEqual(galleryContent.currentMissingYearHrefs, []);
 });
 test('content contract rejects year deletion, blurb simplification, tag loss and reordered cards', () => {
@@ -36,11 +36,11 @@ test('content contract rejects year deletion, blurb simplification, tag loss and
 });
 test('approved year normalization recovers the complete frozen historical card record', () => {
     const html = fs.readFileSync(path.join(base, 'games/index.html'), 'utf8');
-    const historical = galleryContent.normalizeYearsForPreservation(craftmine2.normalizeForPreservation(html));
+    const historical = galleryContent.normalizeYearsForPreservation(galleryContent.normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(html)));
     assert.deepEqual(galleryContent.readCards(historical), galleryContent.baseline.cards);
     assert.equal(galleryContent.normalizeYearsForPreservation(historical), historical, 'historical titles remain untouched');
     for (const [index, original] of galleryContent.baseline.cards.entries()) {
-        const current = galleryContent.expectedCards[index === 0 ? 0 : index + 1];
+        const current = galleryContent.expectedCards[index === 0 ? 0 : index + 5];
         if (Object.hasOwn(galleryContent.baseline.approvedYearCorrections, original.href)) {
             assert.deepEqual({ ...current, titleHtml: original.titleHtml, titleText: original.titleText, yearSpans: original.yearSpans }, original);
         } else assert.deepEqual(current, original, `${original.href}: no unapproved card changes`);
@@ -101,7 +101,7 @@ test('render contract mode selection preserves exact copy and visibility failure
     assert.deepEqual(historical.approvedYearCorrections, {});
     const current = await galleryContent.assertRendered(page(galleryContent.expectedCards));
     assert.equal(current.contentMode, 'approved-current');
-    assert.equal(current.yearSpans, 118);
+    assert.equal(current.yearSpans, 122);
     assert.deepEqual(current.knownMissingYearHrefs, []);
     assert.deepEqual(current.approvedYearCorrections, galleryContent.baseline.approvedYearCorrections);
     await assert.rejects(galleryContent.assertRendered(page(galleryContent.baseline.cards)), /preserved/);
@@ -571,7 +571,7 @@ test('CraftMine 2 is the sole exact new card; original CraftMine and the other 1
     const cards = galleryContent.readCards(html);
     assert.equal(cards[1].href, craftmine2.expectedCard.href);
     assert.equal(cards[0].href, galleryContent.baseline.cards[0].href);
-    galleryContent.assertHistoricalCards(galleryContent.readCards(galleryContent.normalizeYearsForPreservation(craftmine2.normalizeForPreservation(html))));
+    galleryContent.assertHistoricalCards(galleryContent.readCards(galleryContent.normalizeYearsForPreservation(galleryContent.normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(html)))));
     for (const [from,to] of [['(2026)','(2025)'],['href="https://tront.xyz/craftmine2/"','href="/craftmine/"'],['shimmering water','different description'],['tag-game','tag-prototype']]) {
         assert.throws(()=>craftmine2.normalizeForPreservation(craftmine2.approvedCard.replace(from,to)),/exact reviewed/);
     }
@@ -584,5 +584,16 @@ test('CraftMine 2 media matches reviewed hashes, decodes fully, and meets the co
         const bytes=fs.readFileSync(path.join(base,name)), corrupted=Buffer.from(bytes); corrupted[corrupted.length-1]^=1;
         assert.throws(()=>craftmine2.assertReviewedBytes(name,corrupted),/exact reviewed content/);
         assert.throws(()=>craftmine2.assertReviewedBytes(name+'.other',bytes),/only exact reviewed/);
+    }
+});
+
+test('four concurrent master cards keep their exact released content and order', () => {
+    const html = fs.readFileSync(path.join(base,'games/index.html'),'utf8');
+    const released = galleryContent.released.cards;
+    assert.equal(released.length,4);
+    assert.deepEqual(galleryContent.expectedCards.slice(2,6),released.map(entry=>galleryContent.readCards(entry.markup)[0]));
+    for (const entry of released) {
+        assert.ok(html.includes(entry.markup));
+        assert.throws(()=>galleryContent.normalizeReleasedForPreservation(html.replace(entry.markup,entry.markup.replace('(2026)','(2025)'))),/stays exact/);
     }
 });
