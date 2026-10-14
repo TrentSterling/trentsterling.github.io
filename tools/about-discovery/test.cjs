@@ -40,13 +40,13 @@ function loadApi() {
     return window.TrontAboutDiscovery;
 }
 
-test('catalog contains the two fixed picks and only the three approved random choices', () => {
+test('catalog selects CraftMine and SMEAR plus one approved random game', () => {
     const api = loadApi();
-    const catalog = JSON.parse(JSON.stringify(api.catalog));
-    assert.deepEqual(catalog.filter(game => game.kind === 'Featured game' || game.kind === 'Featured prototype').map(game => game.id), ['craftmine', 'smear']);
-    assert.deepEqual(catalog.filter(game => game.kind === 'Quick pick').map(game => game.id), ['inkride', 'tinytreads', 'tinyrise']);
-    assert.equal(new Set(catalog.map(game => game.id)).size, catalog.length);
-    assert.deepEqual(catalog.filter(game => game.kind === 'Quick pick').map(game => game.href), ['/inkride/', '/tinytreads/', '/tinyrise/']);
+    const ids = plain(api.catalog.map(game => game.id));
+    assert.deepEqual(ids, ['craftmine', 'smear', 'inkride', 'tinytreads', 'tinyrise']);
+    assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: storage(), random: () => 0.99 })), ['craftmine', 'smear', 'tinyrise']);
+    assert.deepEqual(plain(api.catalog.filter(game => ['inkride', 'tinytreads', 'tinyrise'].includes(game.id)).map(game => game.href)), ['/inkride/', '/tinytreads/', '/tinyrise/']);
+    assert.equal(new Set(ids).size, ids.length);
 });
 
 test('every discovery card description is a complete, count-light sentence', () => {
@@ -79,7 +79,7 @@ test('the random additional choice is stable for a session and never duplicates 
     assert.equal(new Set(first).size, first.length);
 });
 
-test('a current game matching the saved random pick gets a stable eligible fallback without replacing the session pick', () => {
+test('a current random game gets an eligible fallback without replacing the session pick', () => {
     const api = loadApi();
     const session = storage({ 'tront-about-discovery-session-v1': 'inkride' });
     assert.deepEqual(plain(api.selectGameIds('/ink-ride/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'tinytreads']);
@@ -87,34 +87,31 @@ test('a current game matching the saved random pick gets a stable eligible fallb
     assert.deepEqual(plain(api.selectGameIds('/lerp/', { storage: session, random: () => 0.99 })), ['craftmine', 'smear', 'inkride']);
 });
 
-test('posters are lazy, video source assignment is interaction-only, and reduced-motion styling stays scoped', () => {
+test('posters are lazy and one shared video source is assigned only after interaction', () => {
     assert.match(js, /image\.loading = 'lazy'/);
     assert.match(js, /function activate\(card\)/);
     assert.match(js, /video\.setAttribute\('src', game\.preview\)/);
+    assert.match(js, /function releaseCurrent\(\)/);
+    assert.match(js, /visibilitychange/);
+    assert.doesNotMatch(js, /className = 'tront-discovery__preview'/);
+    assert.doesNotMatch(js, /archivalNote|archivalDetails|Earlier build|V16 footage/i);
     assert.doesNotMatch(js, /<video[^>]+\bsrc\s*=/i);
-    assert.match(js, /function disclosureChain\(host\)/);
-    assert.match(js, /function disclosuresAreOpen\(chain\)/);
-    assert.doesNotMatch(js, /doc\.addEventListener\(['"](?:keydown|pointerdown)['"]/);
-    assert.match(css, /width: 44px/);
-    assert.match(css, /\.tront-discovery__preview::before/);
-    assert.match(css, /\.tront-discovery__status:empty/);
-    assert.doesNotMatch(css, /\.tront-discovery__kind|\.tront-discovery__open/);
-    assert.doesNotMatch(js, /createText\('p', 'tront-discovery__kind'/);
-    assert.doesNotMatch(js, /className = 'tront-discovery__open'/);
+    assert.doesNotMatch(css, /tront-discovery__preview|archive-note|archive-details/i);
+    assert.match(css, /prefers-reduced-motion: reduce/);
+    assert.match(css, /--td-purple:[\s\S]*--td-teal:[\s\S]*--td-red:[\s\S]*--td-green:/);
+    assert.match(css, /data-tront-discovery-game="smear"\]\s*\{\s*--td-card-accent: var\(--td-red\)/);
+    assert.match(css, /data-tront-discovery-game="craftmine"\]\s*\{\s*--td-card-accent: var\(--td-green\)/);
+    assert.match(css, /\.tront-discovery__image-link:focus-visible/);
+    assert.match(css, /\.tront-discovery__grid[\s\S]*@media \(max-width: 520px\)/);
     assert.match(js, /prefers-reduced-motion: reduce/);
     assert.match(js, /connection\.saveData/);
-    assert.match(css, /\.tront-discovery__grid[\s\S]*@media \(max-width: 520px\)/);
-    assert.match(css, /--td-red:[\s\S]*--td-green:/);
 });
 
-test('SMEAR preview is labeled as an earlier edit with exact accessible source details', () => {
-    const api = loadApi();
-    const smear = api.catalog.find(game => game.id === 'smear');
+test('SMEAR uses its poster until current preview footage is available', () => {
+    const smear = loadApi().catalog.find(game => game.id === 'smear');
     assert.equal(smear.description, 'Grab dummies, break things and drag the mess around.');
-    assert.equal(smear.archivalNote, 'This edited preview is from an earlier build.');
-    assert.equal(smear.archivalDetails, 'The clip shows V16 footage; its shots are sped up 2×–2.5×.');
-    assert.doesNotMatch(smear.archivalNote + smear.archivalDetails, /current source|V47\.1/i);
-    assert.match(smear.preview, /smear-2026\.mp4\?v=687dcd477595/);
+    assert.equal(smear.preview, null);
+    assert.match(smear.poster, /^\/games\/media\/smear-2026\.webp\?v=/);
 });
 
 test('CraftMine copy avoids stale counts and claims about its origin', () => {
