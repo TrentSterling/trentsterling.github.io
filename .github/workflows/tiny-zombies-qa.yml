@@ -17,11 +17,11 @@ jobs:
       - run: npm install --no-save playwright
       - run: npx playwright install --with-deps chromium
       - name: Verify original build hash
-        run: echo "fde14468461cf2e44fd2871f5c43428153f1e0f02dc3af3005625a2f1109a407  tiny-zombies/index.html" | sha256sum -c
+        run: echo "787cdb9b13b91e27313e550826580e4030ce314fb571299ec171ddf051f99349  tiny-zombies/v9-original.html" | sha256sum -c
       - name: Real browser gameplay probe
         run: |
           python3 -m http.server 8080 >/tmp/tiny-zombies-http.log 2>&1 &
-          node scripts/tiny-zombies-browser-qa.cjs
+          node scripts/tiny-zombies-gpu-trace.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
