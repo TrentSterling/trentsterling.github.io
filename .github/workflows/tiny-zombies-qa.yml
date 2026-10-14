@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --no-save playwright
+      - run: npm install --no-save playwright@1.55.0
       - run: npx playwright install --with-deps chromium
       - name: Verify original build hash
         run: echo "787cdb9b13b91e27313e550826580e4030ce314fb571299ec171ddf051f99349  tiny-zombies/v9-original.html" | sha256sum -c
