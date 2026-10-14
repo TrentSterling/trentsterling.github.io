@@ -20,11 +20,6 @@
       "id": "machinelearning",
       "href": "https://tront.xyz/machinelearning/",
       "markup": "<a id=\"card-machinelearning\" href=\"https://tront.xyz/machinelearning/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-prototype\" style=\"--highlight-color: #a4d0b3;\"><div class=\"image-container\" id=\"preview-machinelearning-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/machinelearning-recovered-2026.webp?v=3ff2d603e232\" alt=\"The original private movement research interface with two ragdoll climbers\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"600\"></div><div class=\"card-content\"><h3 class=\"card-title\">Learning to climb <span>(2026)</span></h3><p class=\"blurb\">Try a small climbing wall built from the movement research prototype. Move each hand between holds and reach the summit.</p><div class=\"tags\"><span class=\"tag\">Prototype</span><span class=\"tag\">Research</span></div></div></a>"
-    },
-    {
-      "id": "hardpoint",
-      "href": "https://tront.xyz/hardpoint/",
-      "markup": "<a id=\"card-hardpoint\" href=\"https://tront.xyz/hardpoint/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #a8c0c9;\"><div class=\"image-container\" id=\"preview-hardpoint-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/hardpoint-recovered-2026.webp?v=725569f3f6c1\" alt=\"HARDPOINT player mech fighting in a desert arena\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"540\"></div><div class=\"card-content\"><h3 class=\"card-title\">HARDPOINT <span>(2026)</span></h3><p class=\"blurb\">Deploy a mech, switch between walking and rollers, boost over cover and duel enemy machines with an autocannon.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
     }
   ],
   "media": {
@@ -58,5 +53,13 @@
       "height": 540,
       "bytes": 10352
     }
-  }
+  },
+  "retiredCards": [
+    {
+      "id": "hardpoint",
+      "href": "https://tront.xyz/hardpoint/",
+      "markup": "<a id=\"card-hardpoint\" href=\"https://tront.xyz/hardpoint/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #a8c0c9;\"><div class=\"image-container\" id=\"preview-hardpoint-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/hardpoint-recovered-2026.webp?v=725569f3f6c1\" alt=\"HARDPOINT player mech fighting in a desert arena\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"540\"></div><div class=\"card-content\"><h3 class=\"card-title\">HARDPOINT <span>(2026)</span></h3><p class=\"blurb\">Deploy a mech, switch between walking and rollers, boost over cover and duel enemy machines with an autocannon.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
+    }
+  ],
+  "retiredCardsNote": "HARDPOINT was removed from the games portfolio at the owner's request on 2026-10-14. Keep its exact historical markup for baseline comparisons and preserve its media assets."
 }
