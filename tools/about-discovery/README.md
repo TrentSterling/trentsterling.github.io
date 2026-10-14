@@ -1,31 +1,34 @@
 # About / More by Tront discovery strip
 
-This is an opt-in, static component. A page opts in by including
-`/assets/css/tront-about-discovery.css`, `/assets/js/tront-about-discovery.js`,
-and a host element with `data-tront-discovery`, a child with
-`data-tront-discovery-cards`, and a status element with
-`data-tront-discovery-status`. Pages can set `data-current-game` to a canonical
-slug; otherwise the component checks the canonical link and current path.
+This opt-in component adds a compact game strip to an About area. A page opts in
+by including `/assets/css/tront-about-discovery.css`,
+`/assets/js/tront-about-discovery.js`, and a host with `data-tront-discovery`
+plus a child with `data-tront-discovery-cards`. Pages can set
+`data-current-game` to a canonical slug; otherwise the component checks the
+canonical link and current path.
 
-The component shows CraftMine and SMEAR plus one session-stable choice from
-INKRIDE, Tiny Treads, and Tinyrise. It excludes the current game, including the
-known route aliases. Only the selected cards get lazy poster images in the DOM.
-There is no video element or MP4 source until a visible card is hovered or keyboard-focused. One video element is shared by all cards and its source is removed on release, tab hiding, or when it leaves view. Reduced-motion and Save-Data preferences keep the poster-only view.
+The component shows CraftMine and SMEAR plus two distinct, session-stable picks
+from INKRIDE, Tiny Treads, and Tinyrise. It excludes the current game and known
+route aliases. SMEAR uses its poster until current preview footage is available.
+Only selected games create cards and request posters.
+
+Visible video-backed cards autoplay muted previews, with at most three videos
+active at once. MP4 sources are assigned only while a card is visible; sources
+are released when a card leaves view, the tab is hidden, or its disclosure
+closes. Pages can mark animated gameplay regions with
+`data-tront-discovery-game-surface`; while any marked region is visible, the
+strip switches to a compact poster-only mode. Reduced-motion and Save-Data
+preferences also keep posters only. Failed or blocked playback falls back to the
+poster without adding status copy to the About area.
 
 When a host sits inside a closed `<details>` disclosure, the component creates
-no cards or poster requests until every containing disclosure opens. Closing a
-disclosure releases an active preview. The component does not register
-document-level keyboard or pointer handlers, so it can sit inside full-screen
-apps without taking over their input.
+no cards or poster requests until every containing disclosure opens. The
+component does not register document-level keyboard or pointer handlers, so it
+can sit beside interactive demos without taking over their input. Normal poster
+and title links navigate independently of preview playback.
 
-CraftMine and SMEAR use short, activity-first descriptions. SMEAR currently has a static poster and no preview video.
-
-The page heading appears once, and normal poster and title links navigate independently of preview playback.
-
-The Lerp footer pilot vendors the same two assets locally so it remains usable
-before this shared source is published. Lerp's `tests/discovery.test.cjs` checks
-the mounted markup and pinned asset hashes; its existing Playwright browser
-suite checks deferred preview requests, input modes, source release, and responsive layout.
-
-Run `node --test tools/about-discovery/test.cjs` for the component's deterministic
-catalog, alias, session-choice, motion preference, and poster-only SMEAR checks.
+Run `node --test tools/about-discovery/test.cjs` for catalog, alias,
+session-choice, media-policy, and poster-only SMEAR checks. The Lerp pilot
+vendors the same assets; its source-preservation and Playwright browser suites
+cover visible autoplay, media release, active-game lightweight mode, input
+accessibility, and responsive layout.
