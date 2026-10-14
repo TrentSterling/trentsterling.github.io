@@ -58,7 +58,7 @@ function closeServer(server) {
             mediaResponses.length = 0;
             const fixture = '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">' +
                 '<link rel="stylesheet" href="' + origin + '/assets/css/tront-about-discovery.css"></head><body>' +
-                '<div style="height:1200px"></div><main data-tront-discovery><div data-tront-discovery-cards></div></main>' +
+                '<div style="height:1200px"></div><main class="tront-discovery" data-tront-discovery><div class="tront-discovery__grid" data-tront-discovery-cards></div></main>' +
                 '<script src="' + origin + '/assets/js/tront-about-discovery.js"></script></body></html>';
             await page.setContent(fixture, { waitUntil: 'load' });
             await page.waitForTimeout(250);
