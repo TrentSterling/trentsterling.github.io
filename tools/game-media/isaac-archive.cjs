@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
-const { assertSource } = require('../theme-editor/gallery-content.cjs');
+const { assertSource, recovered } = require('../theme-editor/gallery-content.cjs');
 
 // Original user-supplied recording is retained outside the public repository.
 // Two chronological cuts at original speed: [0.7, 1.9), [2.5, 6.1).
@@ -60,7 +60,7 @@ function assertMedia(root) {
     assert.ok(html.includes(approvedCard), 'the approved Isaac preview is integrated');
     assertSource(html); // Frozen card-content contract plus the independently reviewed year overlay.
     assert.equal((html.match(/data-preview=/g) || []).length, 93, '93 animated previews including CraftMine 2');
-    assert.equal((html.match(/<img[^>]*class="bg-image"/g) || []).length, 116, '116 fallback posters including CraftMine 2 and the four concurrent master cards');
+    assert.equal((html.match(/<img[^>]*class="bg-image"/g) || []).length, 116 + recovered.cards.length, 'fallback posters include all retained recovered cards');
     for (const [name, expected] of Object.entries(files)) {
         const bytes = fs.readFileSync(path.join(root, name));
         assertReviewedBytes(name, bytes);
@@ -81,7 +81,7 @@ function assertMedia(root) {
     const poster = probe(path.join(root, Object.keys(files)[1]));
     assert.equal(poster.streams.length, 1); assert.equal(poster.streams[0].codec_name, 'webp');
     assert.equal(poster.streams[0].width, 576); assert.equal(poster.streams[0].height, 324);
-    console.log('PASS: exact Isaac source-derived media, full decode, silent H.264/yuv420p, faststart, 4.8 seconds/96 frames/20fps, 576x324, 93 previews and 116 posters.');
+    console.log('PASS: exact Isaac source-derived media, full decode, silent H.264/yuv420p, faststart, 4.8 seconds/96 frames/20fps, 576x324, 93 previews and reviewed fallback posters.');
 }
 function assertOriginal(file) {
     const bytes = fs.readFileSync(file); assert.equal(bytes.length, source.bytes); assert.equal(digest(bytes), source.sha256);

@@ -34,7 +34,7 @@ const currentMissingYearHrefs = expectedCards.filter(card => !card.yearSpans.len
 function normalizeReleasedForPreservation(html) {
     // These exact cards already exist on master. Remove them only for the
     // 117-card historical browser comparison; raw candidate checks retain all four.
-    for (const entry of [...released.cards, ...recovered.cards]) {
+    for (const entry of [...released.cards, ...recovered.cards, ...(recovered.retiredCards || [])]) {
         const cards = [...html.matchAll(/<a\b[^>]*class="item\b[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
         const matches = cards.filter(card => card.includes('href="'+entry.href+'"'));
         assert.ok(matches.length <= 1, 'each already-published card remains unique');
