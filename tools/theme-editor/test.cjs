@@ -9,6 +9,7 @@ const base = path.resolve(__dirname, '../..');
 const systemSource = fs.readFileSync(path.join(base, 'assets/js/tront-system.js'), 'utf8');
 const editorSource = fs.readFileSync(path.join(base, 'assets/js/tront-theme-editor.js'), 'utf8');
 const galleryContent = require('./gallery-content.cjs');
+const craftmine2 = require('../game-media/craftmine2-card.cjs');
 const plain = value => JSON.parse(JSON.stringify(value));
 
 test('all 117 cards preserve pre-theme copy and original years plus four verified year additions', () => {
@@ -18,7 +19,7 @@ test('all 117 cards preserve pre-theme copy and original years plus four verifie
     assert.deepEqual(galleryContent.baseline.knownMissingYearHrefs, ['/audiobounce/', '/asciicity/', '/device-history/', '/powershellmanager/']);
     assert.deepEqual(Object.keys(galleryContent.baseline.approvedYearCorrections), galleryContent.baseline.knownMissingYearHrefs);
     assert.deepEqual(Object.values(galleryContent.baseline.approvedYearCorrections).map(correction => correction.year), [2026, 2026, 2026, 2026]);
-    assert.equal(galleryContent.expectedCards.filter(card => card.yearSpans.length).length, 117);
+    assert.equal(galleryContent.expectedCards.filter(card => card.yearSpans.length).length, 118);
     assert.deepEqual(galleryContent.currentMissingYearHrefs, []);
 });
 test('content contract rejects year deletion, blurb simplification, tag loss and reordered cards', () => {
@@ -35,11 +36,11 @@ test('content contract rejects year deletion, blurb simplification, tag loss and
 });
 test('approved year normalization recovers the complete frozen historical card record', () => {
     const html = fs.readFileSync(path.join(base, 'games/index.html'), 'utf8');
-    const historical = galleryContent.normalizeYearsForPreservation(html);
+    const historical = galleryContent.normalizeYearsForPreservation(craftmine2.normalizeForPreservation(html));
     assert.deepEqual(galleryContent.readCards(historical), galleryContent.baseline.cards);
     assert.equal(galleryContent.normalizeYearsForPreservation(historical), historical, 'historical titles remain untouched');
     for (const [index, original] of galleryContent.baseline.cards.entries()) {
-        const current = galleryContent.expectedCards[index];
+        const current = galleryContent.expectedCards[index === 0 ? 0 : index + 1];
         if (Object.hasOwn(galleryContent.baseline.approvedYearCorrections, original.href)) {
             assert.deepEqual({ ...current, titleHtml: original.titleHtml, titleText: original.titleText, yearSpans: original.yearSpans }, original);
         } else assert.deepEqual(current, original, `${original.href}: no unapproved card changes`);
@@ -65,7 +66,7 @@ test('corrected years cannot be omitted or replaced while the historical fixture
     for (const href of galleryContent.baseline.knownMissingYearHrefs) {
         const index = galleryContent.expectedCards.findIndex(card => card.href === href);
         const omitted = plain(galleryContent.expectedCards);
-        omitted[index] = plain(galleryContent.baseline.cards[index]);
+        omitted[index] = plain(galleryContent.baseline.cards.find(card => card.href === href));
         assert.throws(() => galleryContent.assertCards(omitted), /preserved/);
         const incorrect = plain(galleryContent.expectedCards);
         incorrect[index].titleHtml = incorrect[index].titleHtml.replace('(2026)', '(2025)');
@@ -100,7 +101,7 @@ test('render contract mode selection preserves exact copy and visibility failure
     assert.deepEqual(historical.approvedYearCorrections, {});
     const current = await galleryContent.assertRendered(page(galleryContent.expectedCards));
     assert.equal(current.contentMode, 'approved-current');
-    assert.equal(current.yearSpans, 117);
+    assert.equal(current.yearSpans, 118);
     assert.deepEqual(current.knownMissingYearHrefs, []);
     assert.deepEqual(current.approvedYearCorrections, galleryContent.baseline.approvedYearCorrections);
     await assert.rejects(galleryContent.assertRendered(page(galleryContent.baseline.cards)), /preserved/);
@@ -564,3 +565,24 @@ for (const consumer of [
         assert.equal(stateOf(env).preset, originalPreset, 'pending draft still forms an undo step');
     });
 }
+
+test('CraftMine 2 is the sole exact new card; original CraftMine and the other 116 stay unchanged', () => {
+    const html = fs.readFileSync(path.join(base,'games/index.html'),'utf8');
+    const cards = galleryContent.readCards(html);
+    assert.equal(cards[1].href, craftmine2.expectedCard.href);
+    assert.equal(cards[0].href, galleryContent.baseline.cards[0].href);
+    galleryContent.assertHistoricalCards(galleryContent.readCards(galleryContent.normalizeYearsForPreservation(craftmine2.normalizeForPreservation(html))));
+    for (const [from,to] of [['(2026)','(2025)'],['href="https://tront.xyz/craftmine2/"','href="/craftmine/"'],['shimmering water','different description'],['tag-game','tag-prototype']]) {
+        assert.throws(()=>craftmine2.normalizeForPreservation(craftmine2.approvedCard.replace(from,to)),/exact reviewed/);
+    }
+    assert.throws(()=>craftmine2.normalizeForPreservation(craftmine2.approvedCard+craftmine2.approvedCard),/at most one/);
+    assert.throws(()=>galleryContent.assertSource(craftmine2.normalizeForPreservation(html)),/preserved/);
+});
+test('CraftMine 2 media matches reviewed hashes, decodes fully, and meets the compact loop contract', () => {
+    craftmine2.assertMedia(base);
+    for (const name of Object.keys(craftmine2.files)) {
+        const bytes=fs.readFileSync(path.join(base,name)), corrupted=Buffer.from(bytes); corrupted[corrupted.length-1]^=1;
+        assert.throws(()=>craftmine2.assertReviewedBytes(name,corrupted),/exact reviewed content/);
+        assert.throws(()=>craftmine2.assertReviewedBytes(name+'.other',bytes),/only exact reviewed/);
+    }
+});

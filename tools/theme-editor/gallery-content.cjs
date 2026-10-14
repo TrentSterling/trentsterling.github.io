@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const baseline = require('./gallery-content-baseline.json');
+const craftmine2 = require('../game-media/craftmine2-card.cjs');
 const approvedYearCorrections = baseline.approvedYearCorrections;
 const historicalCardsByHref = new Map(baseline.cards.map(card => [card.href, card]));
 for (const [href, correction] of Object.entries(approvedYearCorrections)) {
@@ -24,6 +25,7 @@ const expectedCards = baseline.cards.map(original => {
     }
     return card;
 });
+expectedCards.splice(1, 0, craftmine2.expectedCard); // Demigod stays first; every historical card retains its relative position.
 const currentMissingYearHrefs = expectedCards.filter(card => !card.yearSpans.length).map(card => card.href);
 function normalizeYearsForPreservation(html) {
     // Only these exact URL-keyed title additions are accepted. Every other
@@ -54,14 +56,14 @@ function readCards(html) {
     return cards;
 }
 function assertCards(cards) {
-    assert.equal(cards.length, baseline.cards.length, 'all 117 cards remain present');
+    assert.equal(cards.length, expectedCards.length, 'all 117 existing cards are preserved alongside the approved CraftMine 2 addition');
     cards.forEach((card, i) => assert.deepEqual(card, expectedCards[i], `card ${i + 1}: full title, approved year, description, tags, categories and link are preserved`));
     assert.deepEqual(cards.filter(card => !card.yearSpans.length).map(card => card.href), currentMissingYearHrefs,
         'any year omission or repair must be reviewed explicitly');
 }
 function assertSource(html) { assertCards(readCards(html)); }
 function assertHistoricalCards(cards) {
-    assert.equal(cards.length, baseline.cards.length, 'all 117 historical cards remain present');
+    assert.equal(cards.length, baseline.cards.length, 'all 117 historical cards remain present and preserved');
     cards.forEach((card, i) => assert.deepEqual(card, baseline.cards[i], `historical card ${i + 1}: full title, original year, description, tags, categories and link are preserved`));
     assert.deepEqual(cards.filter(card => !card.yearSpans.length).map(card => card.href), baseline.knownMissingYearHrefs,
         'the historical comparison retains exactly the original four year omissions');
@@ -108,6 +110,6 @@ async function assertRendered(page, { historical = false } = {}) {
 }
 if (require.main === module) {
     assertSource(fs.readFileSync(process.argv[2] || path.resolve(__dirname, '../../games/index.html'), 'utf8'));
-    console.log('PASS: all 117 cards preserve the pre-theme copy and original years, plus four independently verified 2026 year additions.');
+    console.log('PASS: all 117 existing cards preserve pre-theme copy, original years and four verified year additions; CraftMine 2 is the sole new card.');
 }
 module.exports = { baseline, expectedCards, currentMissingYearHrefs, normalizeYearsForPreservation, readCards, assertCards, assertHistoricalCards, assertSource, assertRendered };
