@@ -23,8 +23,8 @@
     },
     {
       "id": "tiny-zombies-2026",
-      "href": "https://tront.xyz/tiny-zombies/",
-      "markup": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tiny-zombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\"><img class=\"bg-image\" src=\"/games/media/tiny-zombies-2026.png?v=e7ea5b211d4b\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
+      "href": "https://tront.xyz/tinyzombies/",
+      "markup": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\"><img class=\"bg-image\" src=\"/games/media/tiny-zombies-2026.png?v=e7ea5b211d4b\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
     }
   ],
   "media": {
@@ -70,7 +70,12 @@
       "id": "hardpoint",
       "href": "https://tront.xyz/hardpoint/",
       "markup": "<a id=\"card-hardpoint\" href=\"https://tront.xyz/hardpoint/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #a8c0c9;\"><div class=\"image-container\" id=\"preview-hardpoint-recovered-2026\"><img class=\"bg-image\" src=\"/games/media/hardpoint-recovered-2026.webp?v=725569f3f6c1\" alt=\"HARDPOINT player mech fighting in a desert arena\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"540\"></div><div class=\"card-content\"><h3 class=\"card-title\">HARDPOINT <span>(2026)</span></h3><p class=\"blurb\">Deploy a mech, switch between walking and rollers, boost over cover and duel enemy machines with an autocannon.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
+    },
+    {
+      "id": "tiny-zombies-2026",
+      "href": "https://tront.xyz/tiny-zombies/",
+      "markup": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tiny-zombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\"><img class=\"bg-image\" src=\"/games/media/tiny-zombies-2026.png?v=e7ea5b211d4b\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
     }
   ],
-  "retiredCardsNote": "HARDPOINT was removed from the games portfolio at the owner's request on 2026-10-14. Keep its exact historical markup for baseline comparisons and preserve its media assets."
+  "retiredCardsNote": "HARDPOINT was removed from the games portfolio at the owner's request on 2026-10-14. Keep its exact historical markup for baseline comparisons and preserve its media assets. Tiny Zombies moved to the owner-requested /tinyzombies/ URL on 2026-10-15. Preserve its exact former card for PR-base comparisons; the public card remains present at the new URL."
 }
