@@ -1,0 +1,11 @@
+{
+  "product": "MEGABUTT",
+  "version": "0.4.2",
+  "sourceRevision": "7084921761e7159ca20aea7868b2d2ff20598c50",
+  "sourceDirty": false,
+  "sha256": {
+    "index.html": "45e5b825ccfb38a5cc82bf866caaf2ab04b519f31a670f76af1515d6736c8d73",
+    "pkg/megabutt.js": "0f3e647d07447150a373c5e4313c8bc515bcd9eb16a41c1bb2aab843e82fe051",
+    "pkg/megabutt_bg.wasm": "47e6ff7b5647ec0f3f89c132b91e317080413ced1c779a7de811b219bd026a36"
+  }
+}

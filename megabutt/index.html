@@ -16,14 +16,14 @@
 <body>
   <canvas id="game" tabindex="0" aria-label="MEGABUTT 3D arena. WASD to move, Space to jump, Shift to dash, C to slide, right-drag to orbit, Tab to change view, H for controls."></canvas>
   <script type="module">
-    import init, { start, snapshot, simulate, take_export, take_capture } from './pkg/megabutt.js';
+    import init, { start, snapshot, simulate, take_export, take_capture } from './pkg/megabutt.js?v=0.4.2';
     const canvas = document.querySelector('canvas');
     const download = (url, name) => {
       const a = document.createElement('a'); a.href = url; a.download = name; a.click();
       if (url.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
     try {
-      await init(); await start();
+      await init({ module_or_path: new URL('./pkg/megabutt_bg.wasm?v=0.4.2', import.meta.url) }); await start();
       window.megabutt = { snapshot: () => JSON.parse(snapshot()), simulate: (count, frames, seed) => JSON.parse(simulate(count, frames, seed)) };
       document.documentElement.dataset.status = 'ready';
       canvas.focus();
