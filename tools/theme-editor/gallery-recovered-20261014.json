@@ -25,6 +25,12 @@
       "id": "tiny-zombies-2026",
       "href": "https://tront.xyz/tinyzombies/",
       "markup": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\"><img class=\"bg-image\" src=\"/games/media/tiny-zombies-2026.png?v=e7ea5b211d4b\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
+    },
+    {
+      "id": "crumplecar",
+      "href": "https://tront.xyz/crumplecar/",
+      "markup": "<a id=\"card-crumplecar\" href=\"https://tront.xyz/crumplecar/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #ee8c34;\"><div class=\"image-container\" id=\"preview-crumplecar-2026\" data-preview=\"/games/media/crumplecar-2026.mp4?v=074e84e6563b\"><img class=\"bg-image\" src=\"/games/media/crumplecar-2026.webp?v=d07c11f2a255\" alt=\"CRUMPLECAR driving through the crash yard\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">CRUMPLECAR <span>(2026)</span></h3><p class=\"blurb\">Explore open roads, launch off ramps and crumple your car in a driving playground. Keep the damage, repair in place, or enter a race or demolition derby.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "basis": "2026 prototype: exact V06.2 delivery on 2026-10-14; owner authorized public playable runtime and recorded gallery preview on 2026-10-15."
     }
   ],
   "media": {
@@ -63,6 +69,18 @@
       "width": 640,
       "height": 360,
       "bytes": 230350
+    },
+    "games/media/crumplecar-2026.mp4": {
+      "sha256": "074e84e6563bfe35f7a6eed795aed76d6d7886c66b1052f059511abb06d09fdf",
+      "width": 640,
+      "height": 360,
+      "bytes": 609703
+    },
+    "games/media/crumplecar-2026.webp": {
+      "sha256": "d07c11f2a255f8094527c7a0bb3e7a8a1f0b2f895303276a06a782e67e0da704",
+      "width": 640,
+      "height": 360,
+      "bytes": 29052
     }
   },
   "retiredCards": [
