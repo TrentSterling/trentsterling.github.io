@@ -1579,7 +1579,7 @@ function updateUI(){
     const placeables=Object.keys(PLACE_MAP);
     for(const r of placeables){
         const bt=PLACE_MAP[r];
-        const cnt=res[r]||0;
+        const cnt=Math.floor(res[r]||0);
         const isAct=selBlock===r&&tool==='build';
         tbar+=`<button class="bb${isAct?' act':''}" onclick="selBlock='${r}';tool='build'" title="${r} (${cnt})">`;
         tbar+=`<canvas width="16" height="16" data-bt="${bt}"></canvas>`;
