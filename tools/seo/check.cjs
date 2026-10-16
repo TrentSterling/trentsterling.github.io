@@ -16,4 +16,8 @@ for (const name of ['crumplecar','hardpoint']) {
   const html = fs.readFileSync(name + '/index.html', 'utf8');
   assert(/<meta\s+name="description"\s+content="[^"]{40,}"/i.test(html), 'Missing meta description: ' + name);
 }
+// Other projects are separate GitHub Pages mounts, not folders in this repo.
+for (const name of ['craftmine2','hearthwild','scrapyard','tinyzombies','vectorrush']) {
+  assert(urls.includes('https://tront.xyz/' + name + '/'), 'Missing published external project: ' + name);
+}
 console.log('SEO smoke checks passed: sitemap URLs, canonicals, and game metadata.');
