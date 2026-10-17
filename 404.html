@@ -1,12 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-tront-theme-editor data-tront-theme-surface="grid">
 <head>
-    <!-- Case-router: GitHub Pages paths are case-sensitive, so /SpaceView/ (old
-         links in the wild) 404s now that the canonical path is /spaceview/.
-         Fix the first path segment's casing against the canonical route list and
-         redirect instantly, preserving the rest of the path, query, and hash.
-         Runs before anything renders. ROUTES = site folders + repo-Pages project
-         mounts; regenerate after adding a project:  ls -d */  in repo root. -->
+    <!-- Keep legacy mixed-case GitHub Pages links working; run before rendering. -->
     <script>
         (function () {
             // Site-repo folders + every repo-Pages project mount (repo names,
@@ -48,238 +43,179 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Page Not Found | tront.xyz</title>
-    <meta name="description" content="The page you're looking for doesn't exist.">
+    <meta name="robots" content="noindex, follow">
+    <meta name="theme-color" content="#0f1218">
+    <title>Page Not Found (404) | Tront</title>
+    <meta name="description" content="That page isn't here. Return to Trent Sterling's games, technical writing, or community.">
     <link rel="icon" href="/favicon.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <script>(function(){var t=localStorage.getItem("tront-theme");if(t&&t!=="dark"){document.documentElement.setAttribute("data-theme",t)}})();</script>
-    <link rel="stylesheet" href="/assets/css/tront-themes.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- The same shared Color Magic and navbar used by Home and Discord. -->
+    <link rel="stylesheet" href="/assets/css/tront-theme-editor.css">
+    <link rel="stylesheet" href="/assets/css/tront-navbar.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        * { box-sizing: border-box; }
+        html { min-height: 100%; }
         body {
             min-height: 100vh;
-            font-family: 'Inter', Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
+            min-height: 100dvh;
+            margin: 0;
+            padding: 76px 16px 20px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-image:
-                linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-            background-size: 50px 50px;
-            overflow: hidden;
+            font-family: 'Inter', system-ui, sans-serif;
+            line-height: 1.55;
         }
-
-        .container {
-            text-align: center;
-            padding: 2rem;
-            max-width: 600px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Animated background glow */
-        .bg-glow {
+        .error-grid {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 600px;
-            height: 600px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, rgba(200, 116, 232, 0.04) 40%, transparent 70%);
-            animation: pulse-glow 4s ease-in-out infinite;
+            inset: 0;
+            background-image:
+                linear-gradient(90deg, var(--te-grid-x, #263447) 1px, transparent 1px),
+                linear-gradient(var(--te-grid-y, #2a2e48) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: .35;
             pointer-events: none;
             z-index: 0;
         }
-        @keyframes pulse-glow {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-            50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+        .error-main {
+            flex: 1;
+            display: grid;
+            place-items: center;
+            position: relative;
+            z-index: 1;
+            width: 100%;
         }
-
-        .logo {
-            width: 80px;
-            height: 80px;
+        .error-panel {
+            width: min(100%, 640px);
+            padding: clamp(28px, 6vw, 52px);
+            text-align: center;
+            border: 1px solid var(--te-line, #56606f);
+            border-top: 3px solid var(--te-accent, #c9d8f0);
+            border-radius: 16px;
+            background: var(--te-panel-fill, #171c25);
+            color: var(--te-ink, #f5f7fa);
+            box-shadow: 0 16px 44px rgba(0, 0, 0, .18);
+            backdrop-filter: blur(var(--te-blur, 6px));
+            -webkit-backdrop-filter: blur(var(--te-blur, 6px));
+        }
+        .error-avatar {
+            display: block;
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border: 2px solid var(--te-line, #56606f);
             border-radius: 50%;
-            border: 3px solid rgba(168, 85, 247, 0.5);
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
-            margin: 0 auto 1.5rem;
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+            margin: 0 auto 12px;
         }
-        .logo:hover {
-            transform: rotate(360deg);
-            box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+        .error-eyebrow {
+            margin: 0;
+            color: var(--te-secondary, #d7c9f0);
+            font: 700 .75rem/1.6 'Fira Code', monospace;
+            letter-spacing: .08em;
+            text-transform: uppercase;
         }
-
         .error-code {
-            font-family: 'Fira Code', monospace;
-            font-size: 8rem;
-            font-weight: 900;
-            line-height: 1;
-            margin-bottom: 0.3rem;
-            background: linear-gradient(135deg, #c874e8, #ff8b3d, #2ee6d7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            background-size: 200% 200%;
-            animation: gradient-shift 3s ease infinite;
+            margin: 0;
+            font: 700 clamp(4.5rem, 13vw, 7rem)/1.12 'Fira Code', monospace;
+            letter-spacing: -.07em;
+            color: var(--te-accent, #c9d8f0);
+            font-variant-numeric: tabular-nums;
         }
-        @keyframes gradient-shift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
         .error-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            color: #e0e0e0;
+            margin: 4px 0 12px;
+            font-size: clamp(1.4rem, 4vw, 2rem);
+            line-height: 1.25;
+            color: var(--te-ink, #f5f7fa);
         }
-
-        .error-message {
-            color: #888;
+        .error-description {
+            max-width: 43ch;
+            margin: 0 auto 28px;
+            color: var(--te-muted, #cad3e0);
             font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 2rem;
         }
-
-        .actions {
+        .error-links {
             display: flex;
-            gap: 0.75rem;
-            justify-content: center;
             flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-
-        .actions a {
+        html[data-tront-theme-editor] .error-panel .error-links a {
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
-            padding: 0.65rem 1.5rem;
-            border-radius: 8px;
+            justify-content: center;
+            min-width: 105px;
+            min-height: 43px;
+            padding: 10px 17px;
+            border: 1px solid var(--te-line, #56606f);
+            border-radius: 9px;
+            background: var(--te-elem, #212833);
+            color: var(--te-ink, #f5f7fa);
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #c0c0c0;
-            background: rgba(30, 30, 30, 0.8);
+            transition: background .16s, transform .16s;
         }
-        .actions a:hover {
-            color: #fff;
-            border-color: rgba(200, 116, 232, 0.5);
-            box-shadow: 0 0 16px rgba(200, 116, 232, 0.3);
-            transform: translateY(-2px);
+        html[data-tront-theme-editor] .error-panel .error-links a:hover {
+            background: var(--te-hover, #2c3541);
+            color: var(--te-ink, #f5f7fa);
+            transform: translateY(-1px);
         }
-        .actions a.primary {
-            background: linear-gradient(135deg, #a855f7, #6366f1);
-            color: #fff;
-            border-color: transparent;
+        html[data-tront-theme-editor] .error-panel .error-links a.primary {
+            background: var(--te-button, linear-gradient(135deg,#334155,#292334));
+            border-color: var(--te-accent, #c9d8f0);
+            color: var(--te-ink, #f5f7fa);
         }
-        .actions a.primary:hover {
-            box-shadow: 0 0 24px rgba(168, 85, 247, 0.5);
+        .error-footer {
+            margin: 26px 0 0;
+            color: var(--te-muted, #cad3e0);
+            font: 500 .74rem/1.7 'Fira Code', monospace;
+            overflow-wrap: anywhere;
         }
-
-        .glitch-line {
-            font-family: 'Fira Code', monospace;
-            color: #444;
-            font-size: 0.75rem;
-            margin-top: 2.5rem;
+        @media (max-width: 480px) {
+            body { padding: 72px 10px 12px; }
+            .error-panel { padding: 28px 18px; }
+            .error-links { gap: 8px; }
+            html[data-tront-theme-editor] .error-panel .error-links a {
+                flex: 1 1 calc(50% - 8px);
+                min-width: 0;
+            }
         }
-
-        /* Navbar (matching main site) */
-        @keyframes background-aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        #magic-navbar-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 60px; z-index: 9999;
-            display: flex; flex-direction: row-reverse;
-            justify-content: center; align-items: center;
-            gap: 1rem; background-color: rgba(18, 18, 22, 0.6);
-            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0 1rem; perspective: 1000px; overflow: hidden;
-        }
-        #magic-navbar-container::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: -1;
-            background-image: linear-gradient(110deg, rgba(200, 116, 232, 0.1), rgba(255, 139, 61, 0.15), rgba(46, 230, 215, 0.1));
-            background-size: 400% 400%; animation: background-aurora 12s ease infinite;
-            opacity: 0; transition: opacity 0.7s ease-out;
-        }
-        #magic-navbar-container:hover::before { opacity: 1; }
-
-        .nav-link {
-            position: relative; display: flex; align-items: center;
-            height: 40px; padding: 0 1.25rem;
-            color: #c0c0c0; text-decoration: none;
-            font-size: 0.95rem; font-weight: 600; font-family: 'Inter', sans-serif;
-            border-radius: 10px; background-color: rgba(40, 40, 45, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 0 0 transparent;
-            transform: perspective(1000px) rotateX(0deg) translateY(0px);
-            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-            overflow: hidden;
-        }
-        .nav-link::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 200%; height: 100%;
-            background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.2) 50%, transparent 60%);
-            transform: translateX(-100%); transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-        .nav-link:hover {
-            color: #fff; background-color: rgba(50, 50, 55, 0.9);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: perspective(1000px) rotateX(10deg) translateY(-4px);
-            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.25), 0 0 20px -5px rgba(200, 116, 232, 0.8), 0 0 20px -5px rgba(255, 139, 61, 0.8);
-        }
-        .nav-link:hover::before { transform: translateX(100%); }
-        .logo-image { height: 30px; width: 30px; border-radius: 50%; margin-right: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.2); transition: transform .8s cubic-bezier(.16,1,.3,1); }
-        .nav-link.home-link { padding-left: 0.5rem; }
-        .nav-link:hover ~ .home-link .logo-image,
-        .home-link:hover .logo-image { animation: spin-once 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
-
-        @media (max-width: 600px) {
-            .error-code { font-size: 5rem; }
-            .error-title { font-size: 1.2rem; }
-            .bg-glow { width: 300px; height: 300px; }
+        @media (prefers-reduced-motion: reduce) {
+            html[data-tront-theme-editor] .error-panel .error-links a { transition: none; }
+            html[data-tront-theme-editor] .error-panel .error-links a:hover { transform: none; }
         }
     </style>
+    <script src="/assets/js/tront-system.js"></script>
+    <script src="/assets/js/tront-theme-editor.js"></script>
 </head>
 <body>
-
-<nav id="magic-navbar-container">
-    <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
-    <a href="https://tront.xyz/discord/" class="nav-link">Discord</a>
-    <a href="/blog/" class="nav-link">Blog</a>
-    <a href="/games/" class="nav-link">Games</a>
-    <a href="/" class="nav-link home-link">
-        <img src="/favicon.png" alt="Tront Logo" class="logo-image">
-        <span>Home</span>
-    </a>
-</nav>
-
-<div class="bg-glow"></div>
-
-<div class="container">
-    <img src="/favicon.png" alt="Tront" class="logo">
-    <div class="error-code">404</div>
-    <div class="error-title">Page Not Found</div>
-    <div class="error-message">
-        Whatever you were looking for isn't here.<br>
-        It might have been moved, deleted, or never existed.
-    </div>
-    <div class="actions">
-        <a href="/" class="primary">Home</a>
-        <a href="/games/">Games</a>
-        <a href="/blog/">Blog</a>
-        <a href="https://tront.xyz/discord/">Discord</a>
-    </div>
-    <div class="glitch-line">// ERR_NOT_FOUND: no voxel data at requested coordinates</div>
-</div>
-
-    <script src="/assets/js/tront-theme.js"></script>
+    <div class="error-grid" aria-hidden="true"></div>
+    <nav id="magic-navbar-container" aria-label="Primary">
+        <button id="tront-theme-btn" class="nav-link" type="button" hidden><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
+        <a href="/discord/" class="nav-link">Discord</a>
+        <a href="/blog/" class="nav-link">Blog</a>
+        <a href="/games/" class="nav-link">Games</a>
+        <a href="/" class="nav-link home-link">
+            <img src="/blog/assets/img/tront.png" alt="Tront Logo" class="logo-image">
+            <span>Home</span>
+        </a>
+    </nav>
+    <main id="main" class="error-main">
+        <section class="error-panel" aria-labelledby="error-title">
+            <img src="/blog/assets/img/tront.png" alt="" class="error-avatar" width="60" height="60">
+            <p class="error-eyebrow">Tront / Route not found</p>
+            <p class="error-code" aria-hidden="true">404</p>
+            <h1 id="error-title" class="error-title">This page isn't here.</h1>
+            <p class="error-description">The link might have moved, or the project may have a new address. You can still browse my games, development notes, and community.</p>
+            <div class="error-links" aria-label="Useful destinations">
+                <a class="primary" href="/">Home</a>
+                <a href="/games/">Games</a>
+                <a href="/blog/">Blog</a>
+                <a href="/discord/">Discord</a>
+            </div>
+            <p class="error-footer">404 / ERR_NOT_FOUND</p>
+        </section>
+    </main>
 </body>
 </html>

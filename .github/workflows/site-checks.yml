@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - index.html
+      - 404.html
       - sitemap-pages.xml
       - hardpoint/**
       - crumplecar/index.html
@@ -69,6 +70,8 @@ jobs:
           mkdir -p .local/theme-review
           echo "NODE_PATH=$RUNNER_TEMP/site-tests/node_modules" >> "$GITHUB_ENV"
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/site-tests/node_modules/playwright" >> "$GITHUB_ENV"
+      - name: Check shared 404 theme and redirect recovery
+        run: node --test tools/seo/404.test.cjs
       - name: Verify sitemap and canonical game metadata
         run: node tools/seo/check.cjs
       - name: Check copy and gallery source preservation
