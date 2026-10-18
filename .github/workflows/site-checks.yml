@@ -175,7 +175,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: TrentSterling/blog
-          ref: 2ae3d69c7874755a0448032750c3f1267413431d
+          ref: ddb16b66b7c6fec28ce8711245db683053c572a0
           path: .local/blog-consumer
           persist-credentials: false
       # Preserve the blog's real historical negative control; the PR base is current.
@@ -213,8 +213,10 @@ jobs:
         run: |
           node --test tools/theme-review/test.cjs tools/theme-review/heading.test.cjs tools/theme-review/sidebar-focus.test.cjs
           bundle exec ruby tools/test_unique_post_urls.rb
+          bundle exec ruby tools/author-profiles/test.rb
           JEKYLL_ENV=production bundle exec jekyll b -d _site/blog
           python3 tools/check_seo.py _site/blog
+          bundle exec ruby tools/author-profiles/check_built.rb _site/blog _site/blog
           mkdir -p _baseline
           cp -R _site/blog _baseline/blog
           JEKYLL_ENV=production bundle exec jekyll b --source "$GITHUB_WORKSPACE/.local/blog-legacy-theme" --config "$GITHUB_WORKSPACE/.local/blog-legacy-theme/_config.yml" -d _legacy/blog
