@@ -10,7 +10,8 @@ const { normalize: normalizeInvites } = require('./discord-invites.cjs');
 const { file: deviceFile, normalize: normalizeDevice } = require('./device-download.cjs');
 const { normalize: normalizeResponsive } = require('./device-responsive.cjs');
 const { normalize: normalizeAuthors, changes: authorChanges } = require('../seo/author-links.cjs');
-const normalize = (html, file) => normalizeAuthors(normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file), file);
+const { normalize: normalizeMinecraft, file: minecraftFile } = require('./minecraft-initial.cjs');
+const normalize = (html, file) => normalizeMinecraft(normalizeAuthors(normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file), file), file);
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 const context = { window: {} };
@@ -43,7 +44,7 @@ test('generated hub nav and static style primary nav share the existing registry
   const style = links(read('style/index.html').match(/<nav class="t-nav t-nav--hub">([\s\S]*?)<\/nav>/)[1]);
   assert.deepEqual(style.slice(0, 4).map(({ label, href }) => ({ label, href: new URL(href, 'https://tront.xyz').href })), hub);
   assert.deepEqual(style.filter(link => link.current).map(link => [link.label, link.href, link.current]), [['Style', '/style/', 'page']]);
-  assert.match(read('minecraft-modding/index.html'), /Tront\.mountNav\(\{ variant: 'product'/);
+  assert.match(read('minecraft-modding/index.html'), /<nav id="nav" class="t-nav t-nav--product" aria-label="Page">/);
   assert.equal(links(Tront.nav({ variant: 'product', links: [{ label: 'Start', href: '#lesson-0' }], crosslink: false })).filter(link => link.current).length, 0);
 });
 
@@ -55,7 +56,7 @@ test('every existing production file is unchanged outside the exact reviewed anc
   for (const file of production) {
     const before = fs.readFileSync(path.join(base, file));
     const after = fs.readFileSync(path.join(root, file));
-    if (changes.some(change => change.file === file) || file === deviceFile || authorChanges.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
+    if (changes.some(change => change.file === file) || file === deviceFile || file === minecraftFile || authorChanges.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
     else assert.deepEqual(after, before, file + ': byte-identical');
   }
   const candidateFiles = execFileSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
