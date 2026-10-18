@@ -97,7 +97,7 @@ function installFrameSampler({intervalMs = 250} = {}) {
 }
 
 function summarizeFrames(trace) {
-  const issues=[], generations=new Map(), byElement=new Map();
+  const issues=[], observations=[], generations=new Map(), byElement=new Map();
   let frames=0,drops=0,coveredPlayerMs=0,previousCensus=null;
   const issue=(kind,row,extra={})=>issues.push({kind,sequence:row?.sequence,id:row?.id,generation:row?.generation,...extra});
   if(!trace.start||!trace.end)issue('missing-measurement-boundary');
@@ -129,8 +129,12 @@ function summarizeFrames(trace) {
     }else{
       const before=generation.last,dt=row.total-before.total,dd=row.dropped-before.dropped;
       if(dt<0||dd<0)issue('counter-regression',row,{previousTotal:before.total,previousDropped:before.dropped});
-      else if(dd>dt)issue('drop-delta-exceeds-total-delta',row,{totalDelta:dt,dropDelta:dd});
       else{
+        // Chromium may count a decoded/queued frame before it is later dropped.
+        // Preserve this timing observation AND both monotonic increments. Only
+        // complete generation/window totals are used for ratio consistency.
+        if(dd>dt)observations.push({kind:'drop-delta-exceeds-total-delta',sequence:row.sequence,
+          previousSequence:before.sequence,id:row.id,generation:row.generation,totalDelta:dt,dropDelta:dd});
         frames+=dt;drops+=dd;generation.frames+=dt;generation.drops+=dd;
         if(before.connected&&before.src&&!before.paused)coveredPlayerMs+=row.at-before.at;
       }
@@ -140,15 +144,18 @@ function summarizeFrames(trace) {
   }
   for(const generation of generations.values()){
     const next=byElement.get(generation.id);
+    if(generation.drops>generation.frames)issue('generation-window-drop-excess',generation.last,{frames:generation.frames,drops:generation.drops});
+    if(generation.frames!==generation.last.total-generation.first.total||generation.drops!==generation.last.dropped-generation.first.dropped)issue('generation-sum-does-not-telescope',generation.last);
     if(next===generation&&generation.last.reason!=='end')issue('missing-final-snapshot',generation.last);
   }
+  if(drops>frames)issue('window-drop-excess',null,{frames,drops});
   if(!frames)issue('no-frame-progress');
   const endpoints=censuses.filter(r=>r.reason==='census:begin'||r.reason==='census:end');
   if(endpoints.length!==2||endpoints.some(r=>r.attached!==12||r.playing!==12))issue('twelve-player-endpoint-workload-not-observed');
   const elapsedMs=trace.start&&trace.end?trace.end.at-trace.start.at:null;
   if(elapsedMs===null||elapsedMs<5000)issue('sample-shorter-than-five-seconds');
   return {status:issues.length?'invalid':'valid',frames,drops,dropPercent:frames?100*drops/frames:null,
-    elapsedMs,coveredPlayerMs,issues,censuses,
+    elapsedMs,coveredPlayerMs,issues,observations,censuses,
     generations:[...generations.values()].map(({first,last,...g})=>({...g,first,last})),
     passesPerformanceGate:issues.length===0&&frames>300&&drops/frames<.10};
 }

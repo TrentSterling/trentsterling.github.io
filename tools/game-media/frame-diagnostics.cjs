@@ -2,9 +2,25 @@
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {execFileSync}=require('node:child_process');
 function read(file){try{return fs.readFileSync(file,'utf8').trim();}catch(error){return {unavailable:error.code};}}
+function cgroupEvidence(membership,reader=read){
+ if(typeof membership!=='string')return {unavailable:'cgroup membership unavailable'};
+ const line=membership.split('\n').find(line=>line.startsWith('0::/'));
+ if(!line)return {unavailable:'unified cgroup membership not reported',membership};
+ const relative=line.slice(3),base='/sys/fs/cgroup';
+ if(relative.split('/').includes('..'))return {unavailable:'invalid cgroup path',membership};
+ let directory=path.posix.resolve(base,'.'+relative);const hierarchy=[];
+ if(directory!==base&&!directory.startsWith(base+'/'))return {unavailable:'cgroup path outside hierarchy',membership};
+ for(let depth=0;depth<16;depth++){
+  hierarchy.push({directory,files:Object.fromEntries(['cpu.max','cpu.stat','cpuset.cpus.effective','cpu.pressure'].map(file=>[file,reader(path.posix.join(directory,file))]))});
+  if(directory===base)return {version:2,membership,hierarchy};
+  directory=path.posix.dirname(directory);
+ }
+ return {version:2,membership,hierarchy,incomplete:'ancestor depth limit'};
+}
 function hostEvidence(root){
  let commit,dirty;try{commit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();dirty=execFileSync('git',['status','--porcelain','--untracked-files=no'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();}catch(error){commit={unavailable:String(error)};}
  return {at:new Date().toISOString(),monotonicMs:performance.now(),commit,dirty,node:process.version,
+  cgroupHierarchy:cgroupEvidence(read('/proc/self/cgroup')),
   platform:os.platform(),release:os.release(),architecture:os.arch(),availableParallelism:os.availableParallelism(),
   cpus:os.cpus().map(cpu=>({model:cpu.model,speed:cpu.speed,times:cpu.times})),loadAverage:os.loadavg(),
   memory:{total:os.totalmem(),free:os.freemem()},processUsage:process.resourceUsage(),
@@ -17,4 +33,4 @@ async function browserEvidence(browser){
  finally{await cdp.detach();}return result;
 }
 function writeReport(root,name,report){fs.mkdirSync(path.join(root,'.local'),{recursive:true});fs.writeFileSync(path.join(root,'.local',name),JSON.stringify(report,null,2));}
-module.exports={hostEvidence,browserEvidence,writeReport};
+module.exports={hostEvidence,browserEvidence,writeReport,cgroupEvidence};
