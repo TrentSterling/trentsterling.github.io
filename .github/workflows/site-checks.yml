@@ -128,6 +128,9 @@ jobs:
       - name: Check legacy landing navbar labels and theme action
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 480s node tools/navigation/legacy-navbar-browser.cjs
+      - name: Check legacy portfolio fallback and keyboard modes
+        if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
+        run: timeout 240s node tools/navigation/games-md-browser.cjs
       - name: Check canonical author metadata and contextual project links
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 300s node tools/seo/author-links-browser.cjs

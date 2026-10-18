@@ -92,12 +92,27 @@
         .join-button:hover{box-shadow:0 6px 20px rgba(0,0,0,.2)}
         footer{text-align:center;padding:4rem 1rem 2rem;color:var(--text-muted);font-size:.9rem;margin-top:2rem;border-top:1px solid var(--border-color)}
         
+        /* Keep this six-control navbar readable without changing its visual order. */
+        @media (max-width: 700px) {
+            body.js-active { padding-top: 102px; }
+            #magic-navbar-container { height: 102px; flex-wrap: wrap-reverse; align-content: center; gap: 6px 5px; padding: 8px 6px; }
+            #magic-navbar-container .nav-link { flex: 0 0 auto; justify-content: center; padding: 0 8px; font-size: 12px; line-height: 1.2; white-space: nowrap; }
+            #magic-navbar-container .logo-image { width: 24px; height: 24px; margin-right: 5px; flex: 0 0 auto; }
+            #magic-navbar-container .theme-label { display: inline; }
+            #magic-navbar-container #js-toggle-button-nav { flex-basis: 100%; }
+        }
+        @media (max-width: 360px) {
+            #magic-navbar-container .nav-link { padding-inline: 7px; }
+            #magic-navbar-container .logo-image, #magic-navbar-container .theme-icon { display: none; }
+        }
+
         /* --- STYLES FOR PRE-ACTIVATION VIEW --- */
         #activation-layer { padding: 2rem; }
         #js-toggle-button { display:block; margin:0 auto 2rem auto; font-family:var(--font-display); font-size:1.2rem; padding:1rem 2rem; cursor:pointer; background-color:var(--accent-purple); color:#fff; border:none; border-radius:8px; transition:background-color .2s; }
         #js-toggle-button:hover { background-color:#8e44ad; }
-        #portfolio-data { display:block; white-space:pre-wrap; font-family:monospace; line-height:1.6; color:#ccc; }
+        #portfolio-data { display:block; white-space:pre-wrap; overflow-wrap:anywhere; font-family:monospace; line-height:1.6; color:#ccc; }
     </style>
+    <noscript><style>body { opacity: 1; } #js-toggle-button { display: none; }</style></noscript>
 </head>
 <body class="js-inactive">
 
@@ -482,6 +497,10 @@ A long-lost Bomberman-style Flash game that featured customizable tanks and aren
                     buildFullInterface();
                     hasBeenBuilt = true;
                 }
+                const visibleToggle = isInterfaceActive
+                    ? document.getElementById('js-toggle-button-nav')
+                    : toggleButton;
+                visibleToggle.focus();
             };
 
             const buildFullInterface = () => {

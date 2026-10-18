@@ -12,6 +12,7 @@ const craftmine2 = require('../game-media/craftmine2-card.cjs');
 const { normalizeYearsForPreservation, normalizeReleasedForPreservation, recovered } = require('./gallery-content.cjs');
 const normalizeGames = html => normalizeYearsForPreservation(normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(isaac.normalizeForPreservation(html))));
 const { normalize: normalizeDiscordInvites } = require('../navigation/discord-invites.cjs');
+const gamesMd = require('../navigation/games-md.cjs');
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
 assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
@@ -31,7 +32,7 @@ const galleryContent = html => normalizeGames(html).slice(html.indexOf('    <inp
 assert.equal(galleryContent(gamesAfter), galleryContent(gamesBefore), 'all filters, cards, widgets, other media links, scripts and footer stay byte-identical outside the exact approved Isaac replacement and four verified year additions and one exact CraftMine 2 card');
 // Include working bytes and untracked additions, not only committed blob IDs.
 const tree = dir => new Map(execFileSync('git', ['-C', dir, 'ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', 'games', 'assets/css/tront-themes.css', 'assets/js/tront-theme.js', 'assets/js/tront-system.js'], { encoding: 'utf8' })
-  .split('\0').filter(Boolean).sort().map(file => [file, isaac.digest(fs.readFileSync(path.join(dir, file)))]));
+  .split('\0').filter(Boolean).sort().map(file => [file, isaac.digest(file === gamesMd.file ? Buffer.from(gamesMd.normalize(fs.readFileSync(path.join(dir, file), 'utf8'), file)) : fs.readFileSync(path.join(dir, file)))]));
 const beforeTree = tree(baseline), afterTree = tree(root);
 beforeTree.delete('games/index.html'); afterTree.delete('games/index.html');
 isaac.assertMedia(root);
