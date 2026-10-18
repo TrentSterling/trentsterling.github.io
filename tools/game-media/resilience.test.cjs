@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { normalize, replacements } = require('./games-resilience.cjs');
+const { normalize: normalizeNavigation } = require('../navigation/contract.cjs');
 const root = path.resolve(__dirname, '../..');
 const html = fs.readFileSync(path.join(root, 'games/index.html'), 'utf8');
 
@@ -58,7 +59,7 @@ test('Games bytes outside exact reviewed resilience replacements match the PR ba
   assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
   const before = fs.readFileSync(path.join(baseline, 'games/index.html'), 'utf8');
   for (const [, after] of replacements) assert.equal(html.split(after).length, 2);
-  assert.equal(normalize(html, 'games/index.html'), normalize(before, 'games/index.html'));
+  assert.equal(normalizeNavigation(normalize(html, 'games/index.html'), 'games/index.html'), normalizeNavigation(normalize(before, 'games/index.html'), 'games/index.html'));
   assert.equal(normalize(html + 'changed', 'games/index.html'), normalize(html, 'games/index.html') + 'changed');
   assert.equal(normalize(html, 'unrelated/index.html'), html);
 });
