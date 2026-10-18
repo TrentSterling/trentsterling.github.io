@@ -81,5 +81,6 @@ test('CI covers shared CSS, both current consumers and independent navigation ga
   assert.ok(workflow.includes('2ae3d69c7874755a0448032750c3f1267413431d'));
   assert.ok(workflow.includes('7f0471eba88b129331ae13404876f621ec62db37'));
   assert.ok(workflow.includes('pngjs@7.0.0'));
+  assert.ok(workflow.includes('BLOG_SHARED_ROOT: ${{ github.workspace }}'), 'current heading tests read candidate shared assets');
   assert.ok(workflow.includes('node tools/theme-review/sidebar-focus.cjs'));
 });

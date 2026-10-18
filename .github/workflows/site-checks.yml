@@ -130,6 +130,7 @@ jobs:
         working-directory: .local/blog-consumer
     env:
       BLOG_BASELINE_ROOT: ${{ github.workspace }}/.local/blog-consumer
+      BLOG_SHARED_ROOT: ${{ github.workspace }}
       BLOG_SCREENSHOTS: ${{ github.workspace }}/.local/blog-review
       THEME_BROWSER_EXECUTABLE: /opt/google/chrome/chrome
     steps:
