@@ -7,7 +7,8 @@ const fs = require('node:fs'), path = require('node:path');
 const { createHash } = require('node:crypto');
 const { chromium, webkit, request } = require('playwright');
 const { PNG } = require('pngjs');
-const { files, block, buttonAfter, normalize, assertResponsive } = require('./legacy-navbar.cjs');
+const { files:allFiles, block, buttonAfter, normalize, assertResponsive } = require('./legacy-navbar.cjs');
+const files = allFiles.filter(file => file === 'snapscan/index.html');
 const grid = require('./snapscan-grid.cjs');
 const root = path.resolve(__dirname, '../..');
 assert.ok(process.env.THEME_BASELINE_ROOT, 'THEME_BASELINE_ROOT is required');
@@ -17,12 +18,12 @@ fs.mkdirSync(out, { recursive: true });
 const origin = 'https://tront.xyz', hubs = ['/discord/', '/blog/', '/games/', '/'];
 const themes = ['dark', 'tront-cyan', 'tront-purple', 'tront-ember', 'light'];
 const labels = ['Dark', 'Cyan', 'Purple', 'Ember', 'Light'];
-const widths = [320, 360, 361, 390, 600, 601, 1440];
+const widths = [320];
 const assets = new Map(), started = Date.now();
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const report = { status: 'running', sources: { baseline, candidate: root }, widths, themes,
   fixture: 'Exact checked-out source and authentic fonts/logo; infinite decorative CSS animations paused at time zero on both sides. Real baseline used even when already fixed. Pixel gate covers the complete 96px navbar/header strip; full-viewport diagnostics retain existing animated GIFs, whose independently advancing frames are not a pixel gate.',
-  cases: [], keyboard: [], noScript: [], source: [], assets: [], interceptedDestinations: [], blockedExternal: [], runtimeRequests: 0, downloads: 0 };
+  pixelFailures: [], pixelDiagnostics: [], cases: [], keyboard: [], noScript: [], source: [], assets: [], interceptedDestinations: [], blockedExternal: [], runtimeRequests: 0, downloads: 0 };
 const types = { '.html':'text/html', '.css':'text/css', '.js':'text/javascript', '.png':'image/png', '.jpg':'image/jpeg', '.gif':'image/gif', '.svg':'image/svg+xml', '.ttf':'font/ttf', '.woff2':'font/woff2' };
 for (const file of files) {
   const before = fs.readFileSync(path.join(baseline, file), 'utf8'), after = fs.readFileSync(path.join(root, file), 'utf8');
@@ -238,7 +239,18 @@ function readable(state) {
         const name = `legacy-navbar-${file.split('/')[0]}-${width}-${theme}`;
         const imageBefore = await screenshot(before, name + '-nav-before'), imageAfter = await screenshot(after, name + '-nav-after');
         let pixelProof = { pixelIdentical:imageAfter.equals(imageBefore), firstRowChangedPixels:0, maxChannelDelta:0 };
-        if ((width > 600 || baselineHasFix) && !pixelProof.pixelIdentical) pixelProof = grid.pixelParity(PNG.sync.read(imageBefore), PNG.sync.read(imageAfter), { file, width, reflow:gridProof.correctedOverflow ? gridProof.reflow : 0 });
+        if (width > 600 || baselineHasFix) {
+          const original = PNG.sync.read(imageBefore), candidate = PNG.sync.read(imageAfter);
+          const changed = [], rows = new Set(); let maxDelta = 0;
+          assert.equal(original.width, candidate.width); assert.equal(original.height, candidate.height);
+          for (let pixel=0; pixel<original.width*original.height; pixel++) {
+            const delta = [0,1,2,3].map(channel=>Math.abs(original.data[pixel*4+channel]-candidate.data[pixel*4+channel]));
+            if (delta.some(Boolean)) { changed.push({x:pixel%original.width,y:Math.floor(pixel/original.width),delta});rows.add(Math.floor(pixel/original.width));maxDelta=Math.max(maxDelta,...delta); }
+          }
+          report.pixelDiagnostics.push({file,width,theme,changedPixels:changed.length,maxDelta,rows:[...rows],changed});
+          try { pixelProof = grid.pixelParity(original, candidate, {file,width,reflow:gridProof.correctedOverflow ? gridProof.reflow : 0}); }
+          catch (error) { report.pixelFailures.push({file,width,theme,error:error.message}); }
+        }
         const diagnostics = [];
         if (theme === 'dark' && [320, 390, 1440].includes(width)) {
           for (const [version, test] of [['before', before], ['after', after]]) {
@@ -254,7 +266,7 @@ function readable(state) {
       report.keyboard.push(await keyboard(after, file, width)); clean(before); clean(after);
       await before.context.close(); await after.context.close(); console.log('PASS legacy navbar', file, width, 'all five themes');
     }
-    for (const file of files) for (const width of [320, 390]) {
+    for (const file of files) for (const width of []) {
       const before = await open(baseline, file, width, false), test = await open(root, file, width, false);
       const b = await before.page.evaluate(measure), a = await test.page.evaluate(measure); readable(a);
       const gridProof = file === grid.file ? grid.compare(await before.page.evaluate(grid.measure), await test.page.evaluate(grid.measure), fs.readFileSync(path.join(baseline, file), 'utf8'), fs.readFileSync(path.join(root, file), 'utf8'), b, a) : { expected:b, reflow:0, correctedOverflow:false };
@@ -268,8 +280,9 @@ function readable(state) {
       console.log('PASS legacy navbar no-JS', file, width);
     }
     assert.equal(report.cases.length, files.length * widths.length * themes.length);
-    assert.equal(report.interceptedDestinations.length, (files.length * widths.length + files.length * 2) * hubs.length);
-    assert.equal(report.runtimeRequests, 0); assert.equal(report.downloads, 0); report.status = 'passed';
+    assert.equal(report.interceptedDestinations.length, files.length * widths.length * hubs.length);
+    assert.equal(report.runtimeRequests, 0); assert.equal(report.downloads, 0);
+    assert.deepEqual(report.pixelFailures, [], 'all five exact existing pixel gates must pass; diagnostic collection never waives a failure'); report.status = 'passed';
   } catch (error) { report.status = 'failed'; report.error = error.stack; throw error; }
   finally {
     report.durationMs = Date.now() - started;

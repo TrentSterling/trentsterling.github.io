@@ -1,0 +1,56 @@
+name: SnapScan raster diagnostic
+on:
+  push:
+    branches: [diagnostic/snapscan-raster]
+permissions:
+  contents: read
+jobs:
+  snapscan-raster:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      THEME_BROWSER_EXECUTABLE: /opt/google/chrome/chrome
+    steps:
+      - name: Read exact diagnostic commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Read actual released base
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: 8925ca3831391eed474f27b51ed8d0b36ce09ff7
+          path: .local/theme-baseline
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install existing pinned browser tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0 pngjs@7.0.0
+          node "$RUNNER_TEMP/site-tests/node_modules/playwright/cli.js" install --with-deps chrome
+          echo "NODE_PATH=$RUNNER_TEMP/site-tests/node_modules" >> "$GITHUB_ENV"
+      - name: Collect every SnapScan theme against the actual base
+        env:
+          THEME_BASELINE_ROOT: ${{ github.workspace }}/.local/theme-baseline
+          THEME_SCREENSHOTS: ${{ github.workspace }}/.local/raster-actual
+        run: timeout 180s node tools/navigation/legacy-navbar-browser.cjs
+      - name: Collect every SnapScan theme against itself
+        if: always()
+        env:
+          THEME_BASELINE_ROOT: ${{ github.workspace }}
+          THEME_SCREENSHOTS: ${{ github.workspace }}/.local/raster-self
+        run: timeout 180s node tools/navigation/legacy-navbar-browser.cjs
+      - name: Retain all diagnostics including failures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: snapscan-raster-diagnostic
+          path: |
+            .local/raster-actual/*.json
+            .local/raster-actual/*.png
+            .local/raster-self/*.json
+            .local/raster-self/*.png
+          include-hidden-files: true
+          retention-days: 7
