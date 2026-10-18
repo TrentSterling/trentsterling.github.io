@@ -142,3 +142,7 @@ base. External requests and navigation are intercepted; no runtime is executed.
 Run with the same baseline/browser/font/output variables as the other gates.
 `NAV_BLOG_LOGO` may point at the already-verified released blog logo; otherwise
 the harness serves the identical repo logo after checking the expected digest.
+
+## DuckToy no-script theme control
+
+`ducktoy-fallback.cjs` permits only one head-local noscript rule hiding the otherwise empty, inert theme button on this landing. Every other source byte and all shared theme/media files remain exact. The focused source and browser gates cover actual/self bases, 320/390/1440px with and without script, unchanged JS pixels and five theme actions, native keyboard links, direct/reload, and a separately reversed blank-button control. No runtime or external destination is loaded.
