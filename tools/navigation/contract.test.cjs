@@ -11,7 +11,8 @@ const { file: deviceFile, normalize: normalizeDevice } = require('./device-downl
 const { normalize: normalizeResponsive } = require('./device-responsive.cjs');
 const { normalize: normalizeAuthors, changes: authorChanges } = require('../seo/author-links.cjs');
 const { normalize: normalizeMinecraft, file: minecraftFile } = require('./minecraft-initial.cjs');
-const normalize = (html, file) => normalizeMinecraft(normalizeAuthors(normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file), file), file);
+const dungeon = require('../game-media/dungeongen-preview.cjs');
+const normalize = (html, file) => dungeon.normalize(normalizeMinecraft(normalizeAuthors(normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file), file), file), file);
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 const context = { window: {} };
@@ -61,8 +62,9 @@ test('every existing production file is unchanged outside the exact reviewed anc
   }
   const candidateFiles = execFileSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
   const newProduction = candidateFiles.filter(file => !files.includes(file) && !file.startsWith('tools/') && !file.startsWith('.github/') && !file.startsWith('.local/'));
-  assert.deepEqual(newProduction, [], 'no unexpected production files');
-  assert.equal(production.filter(file => file.endsWith('.mp4')).length, 98, 'retain all 98 MP4 files');
+  assert.deepEqual(newProduction, files.includes(dungeon.file) ? [] : [dungeon.file], 'only the exact reviewed clip may be new');
+  dungeon.assertReviewedBytes(dungeon.file, fs.readFileSync(path.join(root, dungeon.file)));
+  assert.equal(production.filter(file => file.endsWith('.mp4') && file !== dungeon.file).length, 98, 'retain all 98 earlier MP4 files');
 });
 
 test('exact anchor normalization does not hide unreviewed changes', () => {

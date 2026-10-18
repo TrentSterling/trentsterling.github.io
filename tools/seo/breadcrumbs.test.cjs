@@ -8,6 +8,7 @@ const path = require('node:path');
 const { pages, expected, addition, withoutAddition } = require('./breadcrumbs.cjs');
 const { normalize: normalizeGamesResilience } = require('../game-media/games-resilience.cjs');
 const { normalize: normalizeNavigation } = require('../navigation/contract.cjs');
+const { normalize: normalizeDungeon } = require('../game-media/dungeongen-preview.cjs');
 const { normalize: normalizeAuthors } = require('./author-links.cjs');
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
@@ -61,8 +62,8 @@ for (const page of pages) {
     assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
     const before = fs.readFileSync(path.join(baseline, page.file), 'utf8');
     assert.deepEqual(
-      Buffer.from(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(html, page.file), page.file), page.file), page.file)),
-      Buffer.from(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(before, page.file), page.file), page.file), page.file)),
+      Buffer.from(normalizeDungeon(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(html, page.file), page.file), page.file), page.file), page.file)),
+      Buffer.from(normalizeDungeon(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(before, page.file), page.file), page.file), page.file), page.file)),
       'preserve all existing markup, schema entities, copy, dates, credits, layout, cards and scripts'
     );
   });
