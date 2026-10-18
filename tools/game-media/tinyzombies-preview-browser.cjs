@@ -64,7 +64,17 @@ const measure = card => {
   }
   async function shot(t,name) { await t.page.screenshot({path:path.join(output,'tinyzombies-'+name+'.png')}); }
   async function playing(t) {
-    await t.page.waitForFunction(selector=>{const v=document.querySelector(selector+' video');return v&&!v.paused&&v.currentTime>.4&&v.getVideoPlaybackQuality().totalVideoFrames>5;},selector,{timeout:10000});
+    try {
+      await t.page.waitForFunction(selector=>{const v=document.querySelector(selector+' video');return v&&!v.paused&&v.currentTime>.4&&v.getVideoPlaybackQuality().totalVideoFrames>5;},selector,{timeout:10000});
+    } catch (error) {
+      report.playbackFailure = await t.page.evaluate(selector => ({
+        hidden:document.hidden, filter:document.querySelector('input[name=filter]:checked').id,
+        targetRect:document.querySelector(selector+' .image-container').getBoundingClientRect().toJSON(),
+        viewport:{width:innerWidth,height:innerHeight}, toggle:document.getElementById('preview-toggle').textContent,
+        videos:[...document.querySelectorAll('video')].map(v=>({container:v.parentElement.id,source:v.getAttribute('src'),time:v.currentTime,paused:v.paused,readyState:v.readyState,networkState:v.networkState,error:v.error?.message||null}))
+      }),selector);
+      await shot(t,'playback-failure');console.error('Playback diagnostic:',JSON.stringify(report.playbackFailure));throw error;
+    }
     const result=await t.card.locator('video').evaluate(v=>({time:v.currentTime,frames:v.getVideoPlaybackQuality().totalVideoFrames,width:v.videoWidth,height:v.videoHeight,duration:v.duration,muted:v.muted,loop:v.loop,inline:v.playsInline,hidden:v.getAttribute('aria-hidden'),tabIndex:v.tabIndex,source:v.getAttribute('src')}));
     assert.equal(result.width,640);assert.equal(result.height,360);assert.equal(result.duration,10);
     assert.equal(result.muted,true);assert.equal(result.loop,true);assert.equal(result.inline,true);assert.equal(result.hidden,'true');assert.equal(result.tabIndex,-1);assert.equal(result.source,clipPath+'?v=92b08b1effb8');
@@ -91,8 +101,17 @@ const measure = card => {
       await after.page.reload({waitUntil:'domcontentloaded'});await after.card.scrollIntoViewIfNeeded();await after.page.waitForTimeout(300);
       assert.equal(await after.page.locator('.gameplay-preview[src]').count(),0);assert.equal(await after.page.locator('#preview-toggle').innerText(),'Play previews');
       await after.page.evaluate(()=>document.getElementById('preview-toggle').click());await playing(after);
-      await after.page.evaluate(()=>document.getElementById('filter-tool').click());await after.page.waitForTimeout(200);assert.equal(await after.card.locator('video').count(),0);
-      await after.page.evaluate(()=>document.getElementById('filter-game').click());await after.card.scrollIntoViewIfNeeded();await playing(after);
+      await after.page.locator('label[for=filter-tool]').click();
+      assert.equal(await after.page.locator('#filter-tool').isChecked(),true);
+      assert.equal(await after.card.isVisible(),false);
+      await after.page.waitForFunction(selector=>!document.querySelector(selector+' video'),selector);
+      await after.page.locator('label[for=filter-game]').click();
+      assert.equal(await after.page.locator('#filter-game').isChecked(),true);
+      // A visible anchor need not put 55% of its preview below the fixed navbar.
+      // Center the actual image after the filtered grid reflows, then prove eligibility.
+      await after.card.locator('.image-container').evaluate(e=>e.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+      await after.page.waitForFunction(selector=>{const r=document.querySelector(selector+' .image-container').getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=64&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth;},selector);
+      await playing(after);
       await after.page.locator('h1').scrollIntoViewIfNeeded();await after.page.waitForTimeout(200);assert.equal(await after.card.locator('video').count(),0);
       assert.deepEqual(after.errors,[]);report.cases.push({width,kind:'playback',posterPixelParity:true,playback,keyboardDestination:destination,pauseReload:true,filterRelease:true,offscreenRelease:true});
       await after.context.close();console.log('PASS Tiny Zombies playback',width);
