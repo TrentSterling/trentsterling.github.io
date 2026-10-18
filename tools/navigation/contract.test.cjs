@@ -12,7 +12,7 @@ const { normalize: normalizeResponsive } = require('./device-responsive.cjs');
 const { normalize: normalizeAuthors, changes: authorChanges } = require('../seo/author-links.cjs');
 const { normalize: normalizeMinecraft, file: minecraftFile } = require('./minecraft-initial.cjs');
 const tinyzombies = require('../game-media/tinyzombies-preview.cjs');
-const { normalize: normalizeLegacyNavbar } = require('./legacy-navbar.cjs');
+const { files: legacyNavbarFiles, normalize: normalizeLegacyNavbar } = require('./legacy-navbar.cjs');
 const { file: gamesMdFile, normalize: normalizeGamesMd } = require('./games-md.cjs');
 const normalizeExisting = (html, file) => normalizeLegacyNavbar(tinyzombies.normalize(normalizeMinecraft(normalizeAuthors(normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file), file), file), file), file);
 const normalize = (html, file) => normalizeGamesMd(normalizeExisting(html, file), file);
@@ -60,7 +60,7 @@ test('every existing production file is unchanged outside the exact reviewed anc
   for (const file of production) {
     const before = fs.readFileSync(path.join(base, file));
     const after = fs.readFileSync(path.join(root, file));
-    if (changes.some(change => change.file === file) || file === deviceFile || file === minecraftFile || file === gamesMdFile || authorChanges.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
+    if (changes.some(change => change.file === file) || file === deviceFile || file === minecraftFile || file === gamesMdFile || legacyNavbarFiles.includes(file) || authorChanges.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
     else assert.deepEqual(after, before, file + ': byte-identical');
   }
   const candidateFiles = execFileSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
