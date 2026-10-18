@@ -23,7 +23,7 @@ const cases = pages.map(page => ({ ...page, selector: '#magic-navbar-container',
   { file: 'minecraft-modding/index.html', route: '/minecraft-modding/', current: null, selector: '#nav' }
 ]);
 const started = Date.now();
-const report = { status: 'running', source: 'exact local source; external widgets stubbed; no public deployment claim', cases: [] };
+const report = { status: 'running', startedAt: new Date(started).toISOString(), source: 'exact local source; external widgets stubbed; no public deployment claim', cases: [] };
 const measure = selector => {
   const nav = document.querySelector(selector);
   const box = e => {
@@ -92,7 +92,15 @@ const measure = selector => {
     for (const item of cases) for (const width of [1440, 390, 320]) {
       const before = await open(baseline, item, width), after = await open(root, item, width);
       const entry = { route: item.route, width };
-      const beforeMeasure = await before.page.evaluate(measure, item.selector), afterMeasure = await after.page.evaluate(measure, item.selector);
+      const name = (item.route === '/' ? 'home' : item.route.replace(/[^a-z0-9]/g, '-')) + '-' + width;
+      // Measure the same painted frame captured as evidence. WebKit can retain
+      // pre-theme fallback values in background documents until the first paint.
+      await before.page.bringToFront();
+      await before.page.screenshot({ path: path.join(out, 'nav-' + name + '-before.png'), animations: 'disabled' });
+      const beforeMeasure = await before.page.evaluate(measure, item.selector);
+      await after.page.bringToFront();
+      await after.page.screenshot({ path: path.join(out, 'nav-' + name + '-after.png'), animations: 'disabled' });
+      const afterMeasure = await after.page.evaluate(measure, item.selector);
       try { assert.deepEqual(afterMeasure, beforeMeasure, item.route + ': exact loaded geometry/colors'); }
       catch (error) {
         console.error('Comparison diagnostics', { beforeErrors: before.errors, afterErrors: after.errors, beforeMissing: before.missing, afterMissing: after.missing,
@@ -103,9 +111,6 @@ const measure = selector => {
       if (item.core) assert.ok(afterMeasure.scrollWidth <= width, 'no document-width overflow');
       entry.exactAppearance = true; entry.currentBefore = await state(before.page, item); entry.currentAfter = await state(after.page, item);
       await current(after.page, item);
-      const name = (item.route === '/' ? 'home' : item.route.replace(/[^a-z0-9]/g, '-')) + '-' + width;
-      await before.page.screenshot({ path: path.join(out, 'nav-' + name + '-before.png'), animations: 'disabled' });
-      await after.page.screenshot({ path: path.join(out, 'nav-' + name + '-after.png'), animations: 'disabled' });
       await after.page.reload({ waitUntil: 'networkidle' }); await current(after.page, item);
       entry.directAndReload = true;
       if (item.core) {
@@ -148,7 +153,9 @@ const measure = selector => {
         entry.styleKeyboard = true;
       }
       assert.deepEqual(before.errors, []); assert.deepEqual(after.errors, []); assert.deepEqual(after.missing, []);
-      report.cases.push(entry); console.log('PASS navigation:', item.route, width);
+      report.cases.push(entry);
+      fs.writeFileSync(path.join(out, 'navigation-report.json'), JSON.stringify({ ...report, durationMs: Date.now() - started }, null, 2));
+      console.log('PASS navigation:', item.route, width);
       await before.context.close(); await after.context.close();
     }
     // Static current semantics and real hrefs must work without hydration/script.
@@ -195,6 +202,8 @@ const measure = selector => {
       await test.context.close();
     }
     report.status = 'passed';
+  } catch (error) {
+    report.status = 'failed'; report.error = error.message; throw error;
   } finally {
     report.durationMs = Date.now() - started;
     fs.writeFileSync(path.join(out, 'navigation-report.json'), JSON.stringify(report, null, 2));
