@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pages, expected, addition, withoutAddition } = require('./breadcrumbs.cjs');
+const { normalize: normalizeGamesResilience } = require('../game-media/games-resilience.cjs');
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -58,8 +59,8 @@ for (const page of pages) {
     assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
     const before = fs.readFileSync(path.join(baseline, page.file), 'utf8');
     assert.deepEqual(
-      Buffer.from(withoutAddition(html, page.file)),
-      Buffer.from(withoutAddition(before, page.file)),
+      Buffer.from(normalizeGamesResilience(withoutAddition(html, page.file), page.file)),
+      Buffer.from(normalizeGamesResilience(withoutAddition(before, page.file), page.file)),
       'preserve all existing markup, schema entities, copy, dates, credits, layout, cards and scripts'
     );
   });

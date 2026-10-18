@@ -75,7 +75,7 @@
         @keyframes spin-once{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         *{margin:0;padding:0;box-sizing:border-box}
         html{font-size:max(.85rem,calc(4px + .6vw))}
-        body{font-family:var(--font-body),Arial,sans-serif;background-color:var(--bg-color);color:var(--text-color);padding-top:5rem;position:relative;overflow-x:hidden;opacity:0;visibility:hidden;transition:opacity .4s ease-in-out}
+        body{font-family:var(--font-body),Arial,sans-serif;background-color:var(--bg-color);color:var(--text-color);padding-top:5rem;position:relative;overflow-x:hidden;opacity:1;visibility:visible;transition:opacity .4s ease-in-out}
         body.fonts-loaded{opacity:1;visibility:visible}
         body::before,body::after{content:'';position:fixed;z-index:-2;width:80vmax;height:80vmax;border-radius:50%;filter:blur(150px);opacity:.15;top:50%;left:50%}
         body::before{background-color:var(--accent-purple);transform:translate(-80%,-20%)}
@@ -335,7 +335,7 @@
 
     <script>
         (function(){
-            document.fonts.ready.then(() => { document.body.classList.add('fonts-loaded'); });
+            document.body.classList.add('fonts-loaded');
             document.getElementById('current-year').textContent = new Date().getFullYear();
         })();
 
