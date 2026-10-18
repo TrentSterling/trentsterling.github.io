@@ -15,7 +15,7 @@ fs.mkdirSync(out, { recursive: true });
 const origin = 'https://tront.xyz';
 const assets = new Map();
 const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
-const started = Date.now(), report = { status: 'running', cases: [], interceptedDestinations: [], downloads: 0, runtimeRequests: 0, zoomMethod: 'CSS zoom: 2 reflow stress, not native browser zoom', fontAssets: [] };
+const started = Date.now(), report = { status: 'running', cases: [], interceptedDestinations: [], downloads: 0, runtimeRequests: 0, zoomMethod: 'CSS zoom: 2 reflow stress, not native browser zoom', animationFixture: 'Existing infinite animations paused at time zero on both sources; exact appearance comparisons retained.', fontAssets: [] };
 const measure = () => {
   const box = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return { x:r.x,y:r.y,width:r.width,height:r.height,color:s.color,background:s.background,font:s.font }; };
   return { scrollWidth: document.documentElement.scrollWidth, heading: box(document.querySelector('h1')), nav: box(document.querySelector('nav')), actions: [...document.querySelectorAll('a[href="play/"]')].map(a => ({ href:a.getAttribute('href'), ...box(a) })) };
@@ -45,10 +45,16 @@ const measure = () => {
   await client.dispose();
   const browser = await (process.env.NAV_BROWSER === 'webkit' ? webkit : chromium).launch({ headless: true, executablePath: process.env.NAV_BROWSER_EXECUTABLE || process.env.THEME_BROWSER_EXECUTABLE || undefined });
   async function settle(page) {
-    // WebKit disables animation callbacks in no-script contexts. A screenshot
-    // still synchronizes layout/paint there without enabling page scripts.
-    if (page.__noScript) return;
-    await page.evaluate(async () => { await document.fonts.ready; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
+    // WebKit disables animation callbacks in no-script contexts.
+    if (!page.__noScript) await page.evaluate(async () => { await document.fonts.ready; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
+    // Compare the same phase of the existing decorative gradient animations.
+    // Keep them paused during capture: Playwright's disabled-animation capture
+    // cancels/restarts infinite animations, allowing phase drift before measure.
+    const states = await page.evaluate(() => document.getAnimations().filter(animation => animation.effect.getTiming().iterations === Infinity).map(animation => {
+      animation.pause(); animation.currentTime = 0;
+      return { state: animation.playState, time: animation.currentTime };
+    }));
+    for (const animation of states) { assert.equal(animation.state, 'paused'); assert.equal(animation.time, 0); }
   }
   async function open(source, file, width, zoom = 1, javaScriptEnabled = true) {
     const context = await browser.newContext({ viewport: { width, height: width < 500 ? 844 : 900 }, colorScheme:'dark', reducedMotion:'reduce', javaScriptEnabled, serviceWorkers:'block', acceptDownloads:false });
@@ -72,9 +78,22 @@ const measure = () => {
     const page = await context.newPage(); page.__noScript = !javaScriptEnabled; page.on('pageerror', e => errors.push(e.message)); page.on('download', () => report.downloads++);
     await page.goto(origin + '/' + file.replace('index.html',''), { waitUntil:'networkidle' });
     if (zoom !== 1) await page.evaluate(value => document.documentElement.style.zoom = value, zoom);
-    await settle(page); return { page, context, errors, missing };
+    return { page, context, errors, missing };
   }
-  async function screenshot(page, name) { await page.bringToFront(); await settle(page); return page.screenshot({ path:path.join(out, name + '.png'), animations:'disabled' }); }
+  async function animationParity(before, after) {
+    const declarations = () => document.getAnimations().map(animation => {
+      const target = animation.effect.target, style = getComputedStyle(target), timing = animation.effect.getTiming();
+      return { name: animation.animationName || animation.id, target: { tag:target.tagName,id:target.id,className:target.className },
+        timing: { ...timing, iterations:String(timing.iterations) }, keyframes:animation.effect.getKeyframes(),
+        css: { name:style.animationName,duration:style.animationDuration,delay:style.animationDelay,direction:style.animationDirection,
+          fillMode:style.animationFillMode,iterations:style.animationIterationCount,timingFunction:style.animationTimingFunction,playState:style.animationPlayState } };
+    });
+    // Inspect the original declarations before either page's animations are paused.
+    const original = await before.evaluate(declarations);
+    assert.deepEqual(await after.evaluate(declarations),original,'original animation identities and declarations unchanged');
+    return original;
+  }
+  async function screenshot(page, name) { await page.bringToFront(); await settle(page); return page.screenshot({ path:path.join(out, name + '.png'), animations:'allow' }); }
   async function articleState(page, article) {
     const link = page.locator('.page-footer a[href="' + article.target + '"]');
     assert.equal(await link.textContent(), article.label); assert.equal(await link.getAttribute('target'), null);
@@ -85,6 +104,7 @@ const measure = () => {
   try {
     for (const file of products) for (const width of [1440,390,320]) {
       const before = await open(baseline,file,width), after = await open(root,file,width);
+      const animations = await animationParity(before.page,after.page);
       const name = 'author-' + file.split('/')[0] + '-' + width;
       const imageBefore = await screenshot(before.page,name+'-before'), stateBefore = await before.page.evaluate(measure);
       const imageAfter = await screenshot(after.page,name+'-after');
@@ -93,11 +113,12 @@ const measure = () => {
       assert.equal(await after.page.locator('script[type="application/ld+json"]').evaluateAll(nodes => nodes.map(n=>JSON.parse(n.textContent)).find(v=>v['@type']==='SoftwareApplication').author['@id']),personId);
       await after.page.reload({waitUntil:'networkidle'});
       assert.deepEqual(before.errors,[]);assert.deepEqual(after.errors,[]);assert.deepEqual(before.missing,[]);assert.deepEqual(after.missing,[]);
-      report.cases.push({ file,width,metadataOnlyPixelIdentical:true,directRouteAndReload:true });
+      report.cases.push({ file,width,animations,metadataOnlyPixelIdentical:true,directRouteAndReload:true });
       await before.context.close();await after.context.close();console.log('PASS author identity',file,width);
     }
     for (const article of articles) for (const [width,zoom,javaScriptEnabled] of [[1440,1,true],[375,1,true],[320,1,true],[375,2,true],[320,2,true],[320,1,false]]) {
       const before=await open(baseline,article.file,width,zoom,javaScriptEnabled),after=await open(root,article.file,width,zoom,javaScriptEnabled);
+      const animations = await animationParity(before.page,after.page);
       const name='devlog-'+article.file.split('/')[0]+'-'+width+'-'+zoom+'-'+javaScriptEnabled;
       await screenshot(before.page,name+'-top-before');const beforeMeasure=await before.page.evaluate(measure);
       await screenshot(after.page,name+'-top-after');assert.deepEqual(await after.page.evaluate(measure),beforeMeasure,'existing heading, navigation and primary play controls unchanged');
@@ -118,7 +139,7 @@ const measure = () => {
       await after.page.goBack({waitUntil:'networkidle'});await articleState(after.page,article);
       await after.page.reload({waitUntil:'networkidle'});await articleState(after.page,article);
       assert.deepEqual(before.errors,[]);assert.deepEqual(after.errors,[]);assert.deepEqual(before.missing,[]);assert.deepEqual(after.missing,[]);
-      report.cases.push({file:article.file,width,zoom,javaScriptEnabled,unchangedPrimaryGeometry:true,keyboard:focus,backAndReload:true});
+      report.cases.push({file:article.file,width,zoom,javaScriptEnabled,animations,unchangedPrimaryGeometry:true,keyboard:focus,backAndReload:true});
       await before.context.close();await after.context.close();console.log('PASS contextual devlog',article.file,width,zoom,javaScriptEnabled);
     }
     assert.equal(report.interceptedDestinations.length,12);assert.equal(report.downloads,0);assert.equal(report.runtimeRequests,0);report.status='passed';

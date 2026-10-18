@@ -48,3 +48,24 @@ test('CI watches every new author consumer and exercises the browser links', () 
   assert.ok(workflow.includes('node --test tools/seo/*.test.cjs'));
   assert.ok(workflow.includes('node tools/seo/author-links-browser.cjs'));
 });
+
+test('settled visual comparisons lock the same animation phase without weakening appearance equality', () => {
+  const browser = read('tools/seo/author-links-browser.cjs');
+  assert.ok(browser.includes('animation.pause(); animation.currentTime = 0;'));
+  assert.ok(browser.includes("assert.equal(animation.state, 'paused')"));
+  assert.ok(browser.includes('assert.equal(animation.time, 0)'));
+  assert.ok(browser.includes("animations:'allow'"));
+  assert.ok(browser.includes("assert.deepEqual(await after.evaluate(declarations),original,'original animation identities and declarations unchanged')"));
+  assert.ok(browser.includes("assert.deepEqual(imageAfter,imageBefore,'metadata-only page pixels unchanged')"));
+  assert.ok(browser.includes("assert.deepEqual(await after.page.evaluate(measure),beforeMeasure"));
+});
+
+
+test('production animation declarations remain byte-identical to the actual PR base', () => {
+  const base = process.env.THEME_BASELINE_ROOT;
+  assert.ok(base);
+  for (const change of changes) {
+    const styles = html => [...html.matchAll(/<style\b[^>]*>[\s\S]*?<\/style>/g)].map(match => match[0]);
+    assert.deepEqual(styles(read(change.file)),styles(read(change.file,base)),change.file + ': every original style declaration unchanged');
+  }
+});
