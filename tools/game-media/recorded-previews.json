@@ -7,5 +7,32 @@
     "sha256": "8baaadbd04b219597bbc2a4e800b188b2e716cad797c79df37907406f1bd5c9c",
     "frames": 299,
     "duration": 11.96
+  },
+  {
+    "before": "id=\"preview-machinelearning-recovered-2026\"",
+    "after": "id=\"preview-machinelearning-recovered-2026\" data-preview=\"/games/media/learning-to-climb-2026.mp4?v=927018a19165\"",
+    "file": "games/media/learning-to-climb-2026.mp4",
+    "bytes": 111969,
+    "sha256": "927018a1916548a16474de7a0962924bf2777dd60afc350e5b2dfa265aa189fa",
+    "frames": 262,
+    "duration": 10.48
+  },
+  {
+    "before": "id=\"preview-vectorrush-recovered-2026\"",
+    "after": "id=\"preview-vectorrush-recovered-2026\" data-preview=\"/games/media/vectorrush-2026.mp4?v=f2e03a06f220\"",
+    "file": "games/media/vectorrush-2026.mp4",
+    "bytes": 855685,
+    "sha256": "f2e03a06f22020c919fc6b9d37b8f1940f09ca1cecb0d8dc1cb0ff31f5117d92",
+    "frames": 300,
+    "duration": 12.0
+  },
+  {
+    "before": "id=\"preview-hearthwild-recovered-2026\"",
+    "after": "id=\"preview-hearthwild-recovered-2026\" data-preview=\"/games/media/hearthwild-2026.mp4?v=94bc23f762bb\"",
+    "file": "games/media/hearthwild-2026.mp4",
+    "bytes": 373712,
+    "sha256": "94bc23f762bb853f150cb187292e41a3cb0e3aa09c0c2027bb126c769775f973",
+    "frames": 299,
+    "duration": 11.96
   }
 ]
