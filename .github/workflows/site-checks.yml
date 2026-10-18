@@ -20,6 +20,7 @@ on:
       - snapscan/index.html
       - megabunk/index.html
       - trontcloud/index.html
+      - ducktoy/index.html
       - tools/seo/**
       - discord/**
       - device-history/index.html
@@ -133,6 +134,9 @@ jobs:
       - name: Check legacy portfolio fallback and keyboard modes
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 240s node tools/navigation/games-md-browser.cjs
+      - name: Check DuckToy JavaScript and no-script fallback
+        if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
+        run: timeout 90s node tools/navigation/ducktoy-fallback-browser.cjs
       - name: Check canonical author metadata and contextual project links
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 300s node tools/seo/author-links-browser.cjs
