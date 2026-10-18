@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { personId, products, articles, changes, normalize, jsonLd } = require('./author-links.cjs');
+const { personId, products, articles, projectArticles, changes, normalize, jsonLd } = require('./author-links.cjs');
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 for (const file of products) test(file + ': existing software author resolves to the canonical Person only', () => {
@@ -22,13 +22,40 @@ for (const article of articles) test(article.file + ': contextual published devl
   assert.equal(jsonLd(html).find(value => value['@type'] === 'VideoGame').author['@id'], personId);
   assert.doesNotMatch(footer, /farmvr|HARDPOINT|WIPtutorial/);
 });
-test('all five files preserve every original byte outside their exact reviewed additions', () => {
+for (const article of projectArticles) test(article.file + ': exact published article complements the existing software credit', () => {
+  const html = read(article.file), footer = html.match(/<footer>([\s\S]*?)<\/footer>/)[1];
+  const anchor = '<a href="' + article.target + '"' + (article.color ? ' style="color: ' + article.color + '"' : '') + '>' + article.label + '</a>';
+  assert.equal(html.split(anchor).length, 2, 'one exact article anchor');
+  assert.ok(footer.includes('<p>' + anchor + '</p>'), 'separate footer link, never a nested anchor');
+  assert.ok(footer.includes(article.credit), 'original full credit paragraph remains exact');
+  assert.ok(html.includes('<a href="/blog/" class="nav-link">Blog</a>'), 'generic Blog navigation stays available');
+  assert.equal(jsonLd(html).find(value => value['@type'] === 'SoftwareApplication').author['@id'], personId);
+  assert.equal(jsonLd(html).filter(value => value['@type'] === 'ProfilePage').length, 0);
+  assert.doesNotMatch(footer, /HARDPOINT|WIPtutorial|snapscan-local-ai-pipeline/);
+});
+test('all reviewed files preserve every original byte outside their exact additions', () => {
   const base = process.env.THEME_BASELINE_ROOT;
   assert.ok(base, 'THEME_BASELINE_ROOT must identify the PR base checkout');
   for (const change of changes) {
     const html = read(change.file);
     assert.equal(html.split(change.after).length, 2, change.file + ': one exact addition');
     assert.equal(normalize(html, change.file), normalize(read(change.file, base), change.file));
+  }
+});
+test('new project article additions preserve all schema values and cannot hide changed credits', () => {
+  const base = process.env.THEME_BASELINE_ROOT;
+  assert.ok(base);
+  for (const article of projectArticles) {
+    const html = read(article.file), plain = normalize(html, article.file);
+    assert.deepEqual(jsonLd(html), jsonLd(read(article.file, base)), 'metadata remains unchanged');
+    assert.notEqual(normalize(html.replace(article.credit, article.credit + 'unreviewed credit'), article.file), plain);
+    assert.notEqual(normalize(html.replace(article.target, '/blog/posts/unrelated/'), article.file), plain);
+    assert.notEqual(normalize(html.replace(article.label, 'Unreviewed article'), article.file), plain);
+    if (article.color) {
+      assert.ok(article.file === 'snapscan/index.html' ? html.includes('var(--accent) 0%, ' + article.color + ' 50%') : html.includes('a { color: ' + article.color + ';'), 'new link borrows an existing page color');
+      assert.notEqual(normalize(html.replace('style="color: ' + article.color + '"', 'style="color: #444"'), article.file), plain, 'unreviewed new-link color is not normalized');
+    }
+    assert.equal(normalize(html, 'audiobounce/index.html'), html, 'no unreviewed page is normalized');
   }
 });
 test('normalization rejects duplicates and never hides changed copy, destinations, roles or IDs', () => {

@@ -14,6 +14,10 @@ on:
       - powershellmanager/index.html
       - trontop/index.html
       - ytdl/index.html
+      - runtimecsg/index.html
+      - toaster/index.html
+      - notesdash/index.html
+      - snapscan/index.html
       - tools/seo/**
       - discord/**
       - device-history/index.html
@@ -123,7 +127,7 @@ jobs:
         run: timeout 180s node tools/navigation/device-responsive-browser.cjs
       - name: Check canonical author metadata and contextual project links
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
-        run: timeout 180s node tools/seo/author-links-browser.cjs
+        run: timeout 300s node tools/seo/author-links-browser.cjs
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls
