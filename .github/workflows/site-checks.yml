@@ -18,6 +18,8 @@ on:
       - toaster/index.html
       - notesdash/index.html
       - snapscan/index.html
+      - megabunk/index.html
+      - trontcloud/index.html
       - tools/seo/**
       - discord/**
       - device-history/index.html
@@ -127,7 +129,7 @@ jobs:
         run: timeout 180s node tools/navigation/device-responsive-browser.cjs
       - name: Check legacy landing navbar labels and theme action
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
-        run: timeout 480s node tools/navigation/legacy-navbar-browser.cjs
+        run: timeout 600s node tools/navigation/legacy-navbar-browser.cjs
       - name: Check legacy portfolio fallback and keyboard modes
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 240s node tools/navigation/games-md-browser.cjs

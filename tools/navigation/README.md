@@ -76,10 +76,13 @@ measurements; it makes no first-paint claim.
 
 ## Legacy project navbar labels
 
-RuntimeCSG, Toaster, Notesdash and SnapScan retain their native legacy nav and
+RuntimeCSG, Toaster, Notesdash, SnapScan, MegaBunk and TrontCloud retain their native legacy nav and
 page-specific styling. `legacy-navbar.cjs` permits only the exact Device History-derived
 responsive nav block and `aria-label="Cycle color theme"` on their existing
-five-mode buttons. It never normalizes another page or a changed rule/label.
+five-mode buttons. MegaBunk and TrontCloud keep their existing Tront label;
+MegaBunk also retains its absolute hub hrefs. Neither product runtime nor any
+product copy, counts, metadata, assets or shared styles are changed.
+It never normalizes another page or a changed rule/label.
 The focused browser gate checks mobile text containment, keyboard navigation,
 theme cycling, no-script links and exact desktop parity. Existing author-link
 checks retain strict non-nav and desktop comparisons; only these reviewed mobile

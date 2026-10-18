@@ -123,11 +123,24 @@
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .hero h1 { font-size: 2.2rem; }
         }
+        /* Retain readable primary labels on narrow screens. */
+        @media (max-width: 600px) {
+            #magic-navbar-container { gap: 5px; padding: 0 6px; }
+            #magic-navbar-container .nav-link { flex: 0 0 auto; justify-content: center; padding: 0 9px; font-size: 12px; line-height: 1.2; white-space: nowrap; }
+            #magic-navbar-container .home-link { padding-left: 5px; }
+            #magic-navbar-container .logo-image { width: 24px; height: 24px; margin-right: 5px; flex: 0 0 auto; }
+            #magic-navbar-container .theme-label { display: inline; }
+        }
+        @media (max-width: 360px) {
+            #magic-navbar-container .nav-link { padding-inline: 7px; }
+            #magic-navbar-container .logo-image, #magic-navbar-container .theme-icon { display: none; }
+        }
+
     </style>
 </head>
 <body>
     <nav id="magic-navbar-container">
-        <button id="tront-theme-btn" class="nav-link"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
+        <button id="tront-theme-btn" class="nav-link" aria-label="Cycle color theme"><span class="theme-icon">🌙</span><span class="theme-label"> Dark</span></button>
         <a href="https://tront.xyz/discord/" class="nav-link">Discord</a>
         <a href="https://tront.xyz/blog/" class="nav-link">Blog</a>
         <a href="https://tront.xyz/games/" class="nav-link">Games</a>

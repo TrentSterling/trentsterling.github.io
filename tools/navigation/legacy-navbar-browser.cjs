@@ -7,7 +7,7 @@ const fs = require('node:fs'), path = require('node:path');
 const { createHash } = require('node:crypto');
 const { chromium, webkit, request } = require('playwright');
 const { PNG } = require('pngjs');
-const { files, block, buttonAfter, normalize, assertResponsive } = require('./legacy-navbar.cjs');
+const { files, navigation, block, buttonAfter, normalize, assertResponsive } = require('./legacy-navbar.cjs');
 const grid = require('./snapscan-grid.cjs');
 const root = path.resolve(__dirname, '../..');
 assert.ok(process.env.THEME_BASELINE_ROOT, 'THEME_BASELINE_ROOT is required');
@@ -93,12 +93,12 @@ function measure() {
     primaryControls:[...document.querySelectorAll('a.btn')].map(element => ({ text:element.textContent, href:element.getAttribute('href'), ...appearance(element) })),
     fonts:{ status:document.fonts.status, faces:[...document.fonts].map(font => ({ family:font.family, weight:font.weight, status:font.status })) } };
 }
-function readable(state) {
+function readable(state, file) {
   assert.ok(state.navScrollWidth <= state.width, 'no horizontal navbar overflow');
   assert.equal(state.nav.rect.width, state.width, 'navbar remains exactly viewport-wide');
   assert.equal(state.nav.rect.height, 60); assert.equal(state.controls.length, 5);
-  assert.deepEqual(state.controls.map(control => control.href), [null, ...hubs], 'native DOM/tab order unchanged');
-  assert.deepEqual(state.controls.slice(1).map(control => control.label), ['Discord', 'Blog', 'Games', 'Home']);
+  assert.deepEqual(state.controls.map(control => control.href), [null, ...navigation[file].hrefs], 'native DOM/tab order unchanged');
+  assert.deepEqual(state.controls.slice(1).map(control => control.label), navigation[file].labels);
   assert.equal(state.controls[0].tag, 'BUTTON'); assert.equal(state.controls[0].id, 'tront-theme-btn');
   assert.equal(state.fonts.status, 'loaded'); assert.ok(state.fonts.faces.every(font => font.status !== 'error'));
   assert.ok(state.primaryControls.length, 'real page primary actions are measured');
@@ -195,7 +195,7 @@ function readable(state) {
       assert.equal(theme, test.javaScriptEnabled ? themes[index % 5] : 'dark');
       keys.push({ key, theme });
     }
-    for (const href of hubs) {
+    for (const href of navigation[file].hrefs) {
       await page.keyboard.press('Tab');
       const focus = await page.evaluate(() => {
         const element = document.activeElement, style = getComputedStyle(element);
@@ -207,13 +207,13 @@ function readable(state) {
     for (let index = 0; index < hubs.length; index++) {
       await test.reset();
       for (let step = 0; step < index + 2; step++) await page.keyboard.press('Tab');
-      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), hubs[index]);
+      assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), navigation[file].hrefs[index]);
       const count = test.intercepted.length;
       await Promise.all([page.waitForURL(origin + hubs[index]), page.keyboard.press('Enter')]);
       assert.equal(await page.title(), 'Intercepted navbar destination');
       assert.equal(test.intercepted.length, count + 1); assert.equal(test.intercepted.at(-1), origin + hubs[index]);
     }
-    await test.reset(); await page.reload({ waitUntil:'load' }); await settle(page, test.javaScriptEnabled); readable(await page.evaluate(measure));
+    await test.reset(); await page.reload({ waitUntil:'load' }); await settle(page, test.javaScriptEnabled); readable(await page.evaluate(measure), file);
     assert.deepEqual(test.intercepted, hubs.map(href => origin + href));
     return { file, width, javaScriptEnabled:test.javaScriptEnabled, keys, tabs, nativeEnterDestinations:test.intercepted, directRouteAndReload:true };
   }
@@ -225,8 +225,9 @@ function readable(state) {
       for (const theme of themes) {
         await Promise.all([settle(before.page, true), settle(after.page, true)]);
         const b = await before.page.evaluate(measure), a = await after.page.evaluate(measure);
-        assert.equal(a.theme, theme); assert.equal(b.theme, theme); readable(a);
-        if (baselineHasFix) readable(b);
+        assert.equal(a.theme, theme); assert.equal(b.theme, theme); readable(a, file);
+        if (baselineHasFix) readable(b, file);
+        if (['megabunk/index.html', 'trontcloud/index.html'].includes(file) && !baselineHasFix && [320, 390].includes(width)) assert.throws(() => readable(b, file), 'actual marketing-page baseline reproduces unreadable phone navigation');
         const gridProof = file === grid.file ? grid.compare(await before.page.evaluate(grid.measure), await after.page.evaluate(grid.measure), fs.readFileSync(path.join(baseline, file), 'utf8'), fs.readFileSync(path.join(root, file), 'utf8'), b, a) : { expected:b, reflow:0, correctedOverflow:false };
         const expected = gridProof.expected;
         assert.deepEqual(a.heading, b.heading, 'heading appearance and geometry unchanged');
@@ -256,7 +257,7 @@ function readable(state) {
     }
     for (const file of files) for (const width of [320, 390]) {
       const before = await open(baseline, file, width, false), test = await open(root, file, width, false);
-      const b = await before.page.evaluate(measure), a = await test.page.evaluate(measure); readable(a);
+      const b = await before.page.evaluate(measure), a = await test.page.evaluate(measure); readable(a, file);
       const gridProof = file === grid.file ? grid.compare(await before.page.evaluate(grid.measure), await test.page.evaluate(grid.measure), fs.readFileSync(path.join(baseline, file), 'utf8'), fs.readFileSync(path.join(root, file), 'utf8'), b, a) : { expected:b, reflow:0, correctedOverflow:false };
       assert.equal(a.scrollWidth, gridProof.expected.scrollWidth, 'no-JS overflow only changes by the exact grid correction');
       assert.deepEqual(a.nav.rect, b.nav.rect, 'no-JS outer navbar geometry unchanged');
