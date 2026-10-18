@@ -7,7 +7,8 @@ const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
 const { changes, pages, normalize: normalizeNavigation, links, assertPrimary } = require('./contract.cjs');
 const { normalize: normalizeInvites } = require('./discord-invites.cjs');
-const normalize = (html, file) => normalizeInvites(normalizeNavigation(html, file), file);
+const { file: deviceFile, normalize: normalizeDevice } = require('./device-download.cjs');
+const normalize = (html, file) => normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file);
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 const context = { window: {} };
@@ -44,7 +45,7 @@ test('generated hub nav and static style primary nav share the existing registry
   assert.equal(links(Tront.nav({ variant: 'product', links: [{ label: 'Start', href: '#lesson-0' }], crosslink: false })).filter(link => link.current).length, 0);
 });
 
-test('every existing production file is unchanged outside the exact reviewed navigation and Discord invite anchors', () => {
+test('every existing production file is unchanged outside the exact reviewed navigation, invite and download anchors', () => {
   const base = process.env.THEME_BASELINE_ROOT;
   assert.ok(base, 'THEME_BASELINE_ROOT must identify the PR base checkout');
   const files = execFileSync('git', ['-C', base, 'ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
@@ -52,7 +53,7 @@ test('every existing production file is unchanged outside the exact reviewed nav
   for (const file of production) {
     const before = fs.readFileSync(path.join(base, file));
     const after = fs.readFileSync(path.join(root, file));
-    if (changes.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
+    if (changes.some(change => change.file === file) || file === deviceFile) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
     else assert.deepEqual(after, before, file + ': byte-identical');
   }
   const candidateFiles = execFileSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);

@@ -42,3 +42,17 @@ Discord nav link and canonical still point to `/discord/`. Contracts reject
 self-links and unreviewed invites; browser cases cover widget success, failure,
 and JavaScript disabled. Every invite click is intercepted locally before any
 external request. Current server invite acceptance is not claimed.
+
+## Device History portable download
+
+`device-release.json` records the public GitHub release and portable-asset
+metadata verified for this repair. The two download CTAs identify v0.8.0, the
+published binary, while the v0.8.3 source badge and screenshots stay unchanged.
+Negative controls reject the nonexistent v0.8.3 binary URL and unlabeled binary
+versions. Exact-anchor normalization cannot conceal other production changes.
+
+`device-download-browser.cjs` compares desktop/mobile layouts, keyboard focus,
+direct routes, reload and Back, with JavaScript enabled and disabled. Both link
+clicks are intercepted as inert HTML before leaving the local fixture: no binary
+is downloaded or executed. Run with the same baseline/browser/output variables
+as the navigation browser harness above.

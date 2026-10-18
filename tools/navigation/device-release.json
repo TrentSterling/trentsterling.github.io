@@ -1,0 +1,18 @@
+{
+  "source": "https://api.github.com/repos/TrentSterling/device-history/releases/latest",
+  "verified_at": "2026-10-18T04:18:03Z",
+  "id": 291773427,
+  "html_url": "https://github.com/TrentSterling/device-history/releases/tag/v0.8.0",
+  "tag_name": "v0.8.0",
+  "draft": false,
+  "prerelease": false,
+  "published_at": "2026-03-01T10:03:54Z",
+  "asset": {
+    "id": 364581235,
+    "name": "device-history.exe",
+    "state": "uploaded",
+    "size": 6441472,
+    "digest": "sha256:054fabc9a9e6ce24168f840ecf8b82cc222e9b4f7afa3fd714b62cf993965abb",
+    "browser_download_url": "https://github.com/TrentSterling/device-history/releases/download/v0.8.0/device-history.exe"
+  }
+}
