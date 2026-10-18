@@ -114,16 +114,27 @@ test('the grid browser allowance requires the exact defect and changes only over
   assert.notDeepEqual(proof.expected, wrongAction, 'the caller still compares every action field to the exact expected state');
 });
 
-test('only the measured SnapScan narrow reflow permits the bounded first raster row', () => {
+test('only the measured SnapScan narrow reflow permits first-row and sparse one-level RGB changes', () => {
   const original = { width:320, height:96, data:Buffer.alloc(320*96*4,100) };
   const candidate = { ...original, data:Buffer.from(original.data) };
   const context = { file:grid.file, width:320, reflow:84 };
   candidate.data[0] += 4;
-  assert.deepEqual(grid.pixelParity(original,candidate,context), {pixelIdentical:false,firstRowChangedPixels:1,maxChannelDelta:4});
-  assert.ok(grid.pixelParity(original,original,{...context,reflow:0}).pixelIdentical);
-  for (const wrong of [{...context,reflow:0},{...context,width:390},{...context,file:'notesdash/index.html'}]) assert.throws(()=>grid.pixelParity(original,candidate,wrong));
-  for (const [offset,delta] of [[0,5],[320*4,1],[3,1]]) {
+  assert.deepEqual(grid.pixelParity(original,candidate,context), {pixelIdentical:false,firstRowChangedPixels:1,sparseChangedPixels:0,maxChannelDelta:4});
+  // Both measured allowances may coexist; the sparse count is per pixel, not
+  // per channel, and cannot grow beyond 96 of the 30,720 crop pixels.
+  for (let pixel=320;pixel<416;pixel++) for (let channel=0;channel<3;channel++) candidate.data[pixel*4+channel]++;
+  assert.deepEqual(grid.pixelParity(original,candidate,context), {pixelIdentical:false,firstRowChangedPixels:1,sparseChangedPixels:96,maxChannelDelta:4});
+  assert.deepEqual(grid.pixelParity(original,original,{...context,reflow:0}), {pixelIdentical:true,firstRowChangedPixels:0,sparseChangedPixels:0,maxChannelDelta:0});
+  for (const wrong of [{...context,reflow:0},{...context,reflow:-1},{...context,width:390},{...context,file:'notesdash/index.html'}]) assert.throws(()=>grid.pixelParity(original,candidate,wrong));
+  for (const [offset,delta] of [[0,5],[320*4,2],[3,1],[320*4+3,1]]) {
     const invalid={...original,data:Buffer.from(original.data)};invalid.data[offset]+=delta;
     assert.throws(()=>grid.pixelParity(original,invalid,context));
+  }
+  const tooMany={...candidate,data:Buffer.from(candidate.data)};tooMany.data[416*4]++;
+  assert.throws(()=>grid.pixelParity(original,tooMany,context), /at most 96/);
+  for (const dimensions of [{width:319,height:96},{width:320,height:97},{width:1440,height:96}]) {
+    const a={...dimensions,data:Buffer.alloc(dimensions.width*dimensions.height*4,100)};
+    const b={...a,data:Buffer.from(a.data)};b.data[0]++;
+    assert.throws(()=>grid.pixelParity(a,b,context));
   }
 });

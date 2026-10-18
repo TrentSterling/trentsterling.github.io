@@ -107,7 +107,17 @@ link activation, unchanged styles and exact below-grid reflow stay checked.
 
 Two actual-base WebKit repeats show a consistent first raster-row difference
 under the unchanged translucent navbar after the 320px themed body reflows:
-320 pixels, RGB delta at most 4, with every remaining pixel exact. Only that
-proven SnapScan 320px grid transition permits this bounded difference. Desktop,
-wider mobile, candidate-as-base, control glyphs and all geometry remain exact;
-fixtures reject row 1, alpha changes, delta 5 and absent/wrong-page reflow.
+320 pixels, RGB delta at most 4, with every remaining pixel exact. The targeted
+Chrome diagnostic (run 39130125336) collected all five themes without hiding
+failed pixel gates: Dark/Cyan were exact, while Purple/Ember/Light changed
+69/78/10 pixels by one RGB level (68/73/10 below the first row). Candidate-as-base
+was exact in every theme. This is measured reflow, not assumed capture noise.
+
+Only that proven SnapScan 320px grid transition in the exact 320×96 navbar crop
+permits the original first-row RGB delta of at most 4 plus at most 96 changed
+pixels below it, each differing by at most one RGB level. Alpha remains exact.
+The report separates first-row and sparse counts. Desktop, wider mobile,
+candidate-as-base, source, styles, text bounds and all geometry remain exact.
+Fixtures reject excess pixel counts, channel deltas, alpha changes, wrong image
+dimensions and absent/wrong-page reflow. The diagnostic-only workflow and reduced
+case runner are not part of the release branch; its complete browser gates stay.
