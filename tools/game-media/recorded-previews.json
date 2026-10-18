@@ -34,5 +34,15 @@
     "sha256": "94bc23f762bb853f150cb187292e41a3cb0e3aa09c0c2027bb126c769775f973",
     "frames": 299,
     "duration": 11.96
+  },
+  {
+    "before": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\"",
+    "after": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tiny-zombies-2026.mp4?v=92b08b1effb8\"",
+    "file": "games/media/tiny-zombies-2026.mp4",
+    "bytes": 816270,
+    "sha256": "92b08b1effb89154218c0ee91b291b904da4bee5020dd6e3c53144d0a6b1a932",
+    "frames": 300,
+    "duration": 10.0,
+    "fps": 30
   }
 ]

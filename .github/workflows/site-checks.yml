@@ -37,6 +37,8 @@ on:
       - tools/game-media/isaac-archive.cjs
       - tools/game-media/isaac-archive.test.cjs
       - tools/game-media/server.cjs
+      - tools/game-media/tinyzombies*.cjs
+      - tools/game-media/recorded-previews.*
       - .github/workflows/site-checks.yml
 
 permissions:
@@ -96,6 +98,11 @@ jobs:
         run: timeout 180s node tools/about-discovery/media-decode.cjs
       - name: Test reviewed Isaac archive media contracts
         run: node --test tools/game-media/isaac-archive.test.cjs
+      - name: Test reviewed Tiny Zombies preview and preservation
+        run: node --test tools/game-media/tinyzombies-preview.test.cjs
+      - name: Check Tiny Zombies playback and poster fallbacks
+        if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
+        run: timeout 120s node tools/game-media/tinyzombies-preview-browser.cjs
       - name: Test Games font readiness and source preservation
         run: node --test tools/game-media/resilience.test.cjs
       - name: Test Games stalled-font resilience in the browser
