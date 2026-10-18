@@ -73,11 +73,11 @@ const measure = selector => {
     if (javaScriptEnabled && ['/style/', '/minecraft-modding/'].includes(item.route)) {
       await page.waitForFunction(() => window.Tront && Tront.scale, null, { timeout: 10000 });
     }
-    await page.evaluate(async frames => {
+    if (javaScriptEnabled) await page.evaluate(async () => {
       await Promise.all(['400 16px Inter', '500 16px "Fira Code"', '700 16px "Fira Code"'].map(font => document.fonts.load(font)));
       await document.fonts.ready;
-      if (frames) await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    }, javaScriptEnabled);
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
     return { page, context, errors, missing };
   }
   async function state(page, item) {
@@ -93,8 +93,8 @@ const measure = selector => {
       const before = await open(baseline, item, width), after = await open(root, item, width);
       const entry = { route: item.route, width };
       const name = (item.route === '/' ? 'home' : item.route.replace(/[^a-z0-9]/g, '-')) + '-' + width;
-      // Measure the same painted frame captured as evidence. WebKit can retain
-      // pre-theme fallback values in background documents until the first paint.
+      // Compare the stable painted state captured as evidence. Initial-paint
+      // timing and any preexisting flash require a separate check.
       await before.page.bringToFront();
       await before.page.screenshot({ path: path.join(out, 'nav-' + name + '-before.png'), animations: 'disabled' });
       const beforeMeasure = await before.page.evaluate(measure, item.selector);
@@ -159,12 +159,16 @@ const measure = selector => {
       await before.context.close(); await after.context.close();
     }
     // Static current semantics and real hrefs must work without hydration/script.
+    // No async Font Loading API or animation callbacks are injected into these
+    // disabled-script documents; their actual stylesheet/native links are tested.
+    report.noScript = [];
     for (const item of cases.filter(item => item.core || item.current === 'Style')) {
       const test = await open(root, item, 390, false); await current(test.page, item);
       if (item.current) {
         await Promise.all([test.page.waitForNavigation({ waitUntil: 'networkidle' }), test.page.locator(item.selector + ' a[aria-current="page"]').click()]);
         assert.equal(test.page.url(), origin + item.route); await current(test.page, item);
       }
+      report.noScript.push(item.route); console.log('PASS no-script navigation:', item.route);
       await test.context.close();
     }
     const missing = await open(root, { route: '/navigation-test-missing/' }, 390);
@@ -198,6 +202,7 @@ const measure = selector => {
       assert.equal(popupRequests.length, mode === 'failure' ? 3 : 2);
       await current(test.page, cases[2]);
       report.discordInvites.push({ mode, target: invite, interceptedClicks: popupRequests.length, navbarStillLanding: true });
+      console.log('PASS intercepted Discord actions:', mode);
       await test.page.screenshot({ path: path.join(out, 'discord-invite-' + mode + '.png') });
       await test.context.close();
     }
