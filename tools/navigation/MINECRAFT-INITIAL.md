@@ -29,7 +29,11 @@ Checks cover pixel-identical settled viewports at 320/390/1440px; delayed shared
 script, failed script, no JavaScript, held fonts and failed fonts at 320/1440px;
 native keyboard anchors/More; saved site themes and actual exercise progress;
 and preserved focused-node identity/open More state when delayed JS arrives.
-The explicit pre-fix baseline must still exhibit its missing nav/fallback palette.
+The explicit pre-fix control must still exhibit its missing nav/fallback palette.
+If the actual PR base already contains the repair, it remains compared and
+photographed, while a separate fixture reverses only the three exact reviewed
+regions. Original fixed-base initial states remain equal, and the constructed
+control must reproduce both defects. Its additional videos are clearly labeled.
 No download or Minecraft runtime is launched.
 
 Held-script video is recorded without screenshot, computed-style, or geometry

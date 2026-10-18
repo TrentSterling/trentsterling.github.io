@@ -4,7 +4,7 @@
 process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY='1';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {chromium,webkit,request}=require('playwright');
-const {tokens,options}=require('./minecraft-initial.cjs');
+const {file:htmlFile,tokens,options,css,staticNav,newRuntime,defectControl}=require('./minecraft-initial.cjs');
 const root=path.resolve(__dirname,'../..');assert.ok(process.env.THEME_BASELINE_ROOT);
 const baseline=path.resolve(process.env.THEME_BASELINE_ROOT),out=path.resolve(process.env.THEME_SCREENSHOTS||'.local/theme-review');fs.mkdirSync(out,{recursive:true});
 const origin='https://tront.xyz',routePath='/minecraft-modding/',started=Date.now();
@@ -12,6 +12,11 @@ const report={status:'running',cases:[],note:'Controlled local-source rendering;
 const assets=new Map(),types={'.html':'text/html','.css':'text/css','.js':'text/javascript','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml'};
 const saved={'tront-theme':'tront-cyan','tront-theme-editor-v1':JSON.stringify({version:1,preset:'light',mode:'light'}),'mcmod-exercises':'{"ex1":true}'};
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const candidateHtml=fs.readFileSync(path.join(root,htmlFile),'utf8'),controlHtml=defectControl(candidateHtml);
+const baselineHtml=fs.readFileSync(path.join(baseline,htmlFile),'utf8'),baselineHasFix=[css,staticNav,newRuntime].some(part=>baselineHtml.includes(part));
+if(baselineHasFix)defectControl(baselineHtml);
+report.baselineHasFix=baselineHasFix;
+report.negativeControl=baselineHasFix?'Exact three-region reversal served separately; actual fixed PR base remains compared.':'Actual pre-fix PR base.';
 function measure(){const box=e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return{x:r.x,y:r.y,width:r.width,height:r.height,color:s.color,background:s.backgroundColor,font:s.font};};const root=document.documentElement,nav=document.querySelector('#nav');return{body:box(document.body),nav:box(nav),heading:box(document.querySelector('h1')),links:[...nav.querySelectorAll('a,summary')].map(e=>({href:e.getAttribute('href'),text:e.textContent,...box(e)})),navHTML:nav.innerHTML,mode:root.dataset.mode,theme:root.dataset.theme||null,tokens:Object.fromEntries([...getComputedStyle(root)].filter(k=>k.startsWith('--')).map(k=>[k,getComputedStyle(root).getPropertyValue(k).trim()])),scrollWidth:root.scrollWidth,storage:Object.fromEntries(Object.entries(localStorage))};}
 (async()=>{
  if(process.env.NAV_FONT_CACHE)for(const [url,value]of Object.entries(JSON.parse(fs.readFileSync(process.env.NAV_FONT_CACHE))))assets.set(url,{body:fs.readFileSync(value.file),contentType:value.contentType});
@@ -19,12 +24,12 @@ function measure(){const box=e=>{const r=e.getBoundingClientRect(),s=getComputed
  async function cache(url,type){if(assets.has(url))return;const response=await client.get(url);assert.equal(response.status(),200,url);assets.set(url,{body:await response.body(),contentType:type||response.headers()['content-type']});}
  await cache(cssUrl,'text/css');for(const m of assets.get(cssUrl).body.toString().matchAll(/url\(['"]?([^)'"\s]+)['"]?\)/g))await cache(m[1]);await client.dispose();
  const browser=await(process.env.NAV_BROWSER==='webkit'?webkit:chromium).launch({headless:true,executablePath:process.env.NAV_BROWSER_EXECUTABLE||process.env.THEME_BROWSER_EXECUTABLE||undefined});
- async function open(source,width,kind='normal',video=false){
+ async function open(source,width,kind='normal',video=false,negativeControl=false){
   const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce',serviceWorkers:'block',javaScriptEnabled:kind!=='no-js',acceptDownloads:false,...(video?{recordVideo:{dir:out,size:{width,height:900}}}:{})});
   if(kind!=='no-js')await context.addInitScript(values=>{for(const[k,v]of Object.entries(values))localStorage.setItem(k,v);},saved);
   let released=false;const pending=[],errors=[],missing=[];const targetKind=kind.startsWith('script')?'script':kind.startsWith('fonts')?'fonts':null;
   await context.route('**/*',async route=>{const u=new URL(route.request().url());const type=u.pathname.endsWith('/tront-system.js')?'script':u.hostname==='fonts.gstatic.com'?'fonts':'other';
-   const serve=async()=>{if(kind===type+'-failed')return route.abort();if(assets.has(u.href))return route.fulfill(assets.get(u.href));if(u.origin!==origin)return route.abort();if(/\.(zip|exe)$/.test(u.pathname)){report.downloads++;return route.abort();}let f=path.resolve(source,'.'+u.pathname);assert.ok(f===source||f.startsWith(source+path.sep));if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');if(!fs.existsSync(f)){missing.push(u.pathname);return route.fulfill({status:404,body:'Missing fixture'});}return route.fulfill({body:fs.readFileSync(f),contentType:types[path.extname(f)]||'application/octet-stream'});};
+   const serve=async()=>{if(kind===type+'-failed')return route.abort();if(assets.has(u.href))return route.fulfill(assets.get(u.href));if(u.origin!==origin)return route.abort();if(/\.(zip|exe)$/.test(u.pathname)){report.downloads++;return route.abort();}let f=path.resolve(source,'.'+u.pathname);assert.ok(f===source||f.startsWith(source+path.sep));if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');if(!fs.existsSync(f)){missing.push(u.pathname);return route.fulfill({status:404,body:'Missing fixture'});}return route.fulfill({body:negativeControl&&path.relative(source,f)===htmlFile?controlHtml:fs.readFileSync(f),contentType:types[path.extname(f)]||'application/octet-stream'});};
    if(kind===targetKind+'-held'&&type===targetKind&&!released){pending.push(serve);return;}return serve();});
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('download',()=>report.downloads++);await page.goto(origin+routePath,{waitUntil:'commit'});
   return{page,context,errors,missing,pending,release:async()=>{released=true;await Promise.all(pending.map(fn=>fn()));},video:page.video()};
@@ -53,7 +58,16 @@ function measure(){const box=e=>{const r=e.getBoundingClientRect(),s=getComputed
    if(!hold){await before.page.waitForLoadState('load');await after.page.waitForLoadState('load');}
    if(kind==='fonts-held'){await before.page.waitForLoadState('domcontentloaded');await after.page.waitForLoadState('domcontentloaded');}
    const b=await capture(before,'minecraft-'+kind+'-'+width+'-before',!kind.startsWith('fonts')),a=await capture(after,'minecraft-'+kind+'-'+width+'-after',!kind.startsWith('fonts'));themed(a.state);
-   if(['script-held','script-failed','no-js'].includes(kind)){assert.equal(b.state.nav.height,0,'baseline reproduces missing navigation');assert.equal(b.state.body.background,'rgb(11, 18, 14)','baseline reproduces fallback palette');}
+   let controlState=null;
+   if(['script-held','script-failed','no-js'].includes(kind)){
+    if(baselineHasFix){
+     themed(b.state);assert.deepEqual(a.state,b.state,'already-fixed actual PR base retains identical initial appearance');
+     const control=await open(root,width,kind,false,true);if(!hold)await control.page.waitForLoadState('load');
+     controlState=(await capture(control,'minecraft-'+kind+'-'+width+'-defect-control')).state;
+     if(hold)await control.release();assert.deepEqual(control.errors,[]);assert.deepEqual(control.missing,[]);await control.context.close();
+    }else controlState=b.state;
+    assert.throws(()=>themed(controlState),'defect fixture must fail the positive initial-render contract');assert.equal(controlState.nav.height,0,'negative control reproduces missing navigation');assert.equal(controlState.body.background,'rgb(11, 18, 14)','negative control reproduces fallback palette');
+   }
    else{assert.deepEqual(a.state,b.state,'font loading behavior remains unchanged');}
    let focusPreserved=null,settled=null;
    if(kind==='script-held'){
@@ -67,13 +81,13 @@ function measure(){const box=e=>{const r=e.getBoundingClientRect(),s=getComputed
    }else await keyboard(after.page);
    assert.deepEqual(after.errors,[]);assert.deepEqual(before.errors,[]);assert.deepEqual(after.missing,[]);assert.deepEqual(before.missing,[]);
    if(kind!=='no-js')assert.deepEqual(await after.page.evaluate(()=>Object.fromEntries(Object.entries(localStorage))),saved);
-   report.cases.push({kind,width,initial:a.state,baseline:b.state,settled,focusPreserved});await before.context.close();await after.context.close();console.log('PASS Minecraft initial rendering',kind,width);
+   report.cases.push({kind,width,initial:a.state,baseline:b.state,control:controlState,settled,focusPreserved});await before.context.close();await after.context.close();console.log('PASS Minecraft initial rendering',kind,width);
   }
   // Independent footage: do not inspect styles, geometry or take screenshots
   // during these held-script recordings. Frames can be reviewed without the
   // screenshot synchronization path perturbing first visible content.
   report.videos=[];
-  for(const width of[320,1440])for(const [source,label]of[[baseline,'before'],[root,'after']]){const item=await open(source,width,'script-held',true);await delay(3000);await item.release();await item.page.waitForLoadState('load');await delay(1200);await item.context.close();const file='minecraft-script-held-'+width+'-'+label+'.webm';fs.renameSync(await item.video.path(),path.join(out,file));report.videos.push(file);}
+  for(const width of[320,1440])for(const [source,label,negativeControl]of[[baseline,'before',false],[root,'after',false],...(baselineHasFix?[[root,'defect-control',true]]:[])]){const item=await open(source,width,'script-held',true,negativeControl);await delay(3000);await item.release();await item.page.waitForLoadState('load');await delay(1200);await item.context.close();const file='minecraft-script-held-'+width+'-'+label+'.webm';fs.renameSync(await item.video.path(),path.join(out,file));report.videos.push(file);}
   assert.equal(report.downloads,0);report.status='passed';
  }catch(error){report.status='failed';report.error=error.stack;throw error;}
  finally{report.durationMs=Date.now()-started;fs.writeFileSync(path.join(out,'minecraft-initial-report.json'),JSON.stringify(report,null,2));await browser.close();}

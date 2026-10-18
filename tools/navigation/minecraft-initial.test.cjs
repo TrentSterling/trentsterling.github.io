@@ -2,7 +2,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const {file,tokens,options,css,emptyNav,staticNav,oldRuntime,newRuntime,normalize}=require('./minecraft-initial.cjs');
+const {file,tokens,options,css,emptyNav,staticNav,oldRuntime,newRuntime,normalize,defectControl}=require('./minecraft-initial.cjs');
 const root=path.resolve(__dirname,'../..'),html=fs.readFileSync(path.join(root,file),'utf8');
 const output={},attributes={};
 const context={window:{},document:{documentElement:{style:{setProperty:(key,value)=>output[key]=value},setAttribute:(key,value)=>attributes[key]=value}}};
@@ -36,4 +36,15 @@ test('CI runs initial-render controls and retains observation-free video evidenc
  assert.ok(workflow.includes('node tools/navigation/minecraft-initial-browser.cjs'));
  assert.ok(workflow.includes('install ffmpeg'));
  assert.ok(workflow.includes('.local/theme-review/*.webm'));
+});
+
+test('the reusable negative control reverses only the three reviewed regions and validates its input',()=>{
+ const expected=html.replace(css,'').replace(staticNav,emptyNav).replace(newRuntime,oldRuntime);
+ assert.equal(defectControl(html),expected);
+ for(const part of[css,staticNav,newRuntime]){assert.throws(()=>defectControl(html.replace(part,'')));assert.throws(()=>defectControl(html+part));}
+ assert.equal(defectControl(html+'outside unchanged'),expected+'outside unchanged');
+ const browser=fs.readFileSync(path.join(root,'tools/navigation/minecraft-initial-browser.cjs'),'utf8');
+ assert.ok(browser.includes("assert.deepEqual(a.state,b.state,'already-fixed actual PR base retains identical initial appearance')"));
+ assert.ok(browser.includes("negative control reproduces missing navigation"));
+ assert.ok(browser.includes("negative control reproduces fallback palette"));
 });

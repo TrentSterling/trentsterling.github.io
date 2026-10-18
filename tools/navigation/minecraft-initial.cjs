@@ -62,4 +62,10 @@ function normalize(html, target) {
   for (const part of [css, staticNav, newRuntime]) assert.ok(html.split(part).length <= 2, 'duplicate reviewed Minecraft initial-render addition');
   return html.replace(css, '').replace(staticNav, emptyNav).replace(newRuntime, oldRuntime);
 }
-module.exports = { file, tokens, options, css, emptyNav, staticNav, oldRuntime, newRuntime, normalize };
+function defectControl(html) {
+  for (const part of [css, staticNav, newRuntime]) assert.equal(html.split(part).length, 2, 'control requires each exact reviewed Minecraft region');
+  assert.equal(html.includes(emptyNav), false, 'candidate nav must not already be empty');
+  assert.equal(html.includes(oldRuntime), false, 'candidate must not retain the redundant mount');
+  return normalize(html, file);
+}
+module.exports = { defectControl, file, tokens, options, css, emptyNav, staticNav, oldRuntime, newRuntime, normalize };
