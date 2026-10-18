@@ -3,14 +3,17 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path');
 const { chromium, webkit } = require('playwright');
+const { file: deviceFile, block: responsiveBlock, normalize: normalizeControl, assertResponsive } = require('./device-responsive.cjs');
 const root = path.resolve(__dirname, '../..');
 assert.ok(process.env.THEME_BASELINE_ROOT);
 const baseline = path.resolve(process.env.THEME_BASELINE_ROOT);
 const out = path.resolve(process.env.THEME_SCREENSHOTS || '.local/theme-review'); fs.mkdirSync(out, { recursive: true });
+assertResponsive(fs.readFileSync(path.join(root, deviceFile), 'utf8'));
+const baselineHasFix = fs.readFileSync(path.join(baseline, deviceFile), 'utf8').includes(responsiveBlock);
 const origin = 'https://tront.xyz', product = '/device-history/';
 const hubs = ['/discord/', '/blog/', '/games/', '/'];
 const themes = ['dark', 'tront-cyan', 'tront-purple', 'tront-ember', 'light'];
-const started = Date.now(), report = { status: 'running', cases: [], noScript: [] };
+const started = Date.now(), report = { status: 'running', cases: [], noScript: [], negativeControl: 'Exact reviewed CSS block removed and inline two-column override restored; actual PR base remains the comparison source.' };
 const measure = () => {
   const box = e => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, width: b.width, height: b.height, right: b.right, bottom: b.bottom }; };
   const appearance = e => { const s = getComputedStyle(e); return { box: box(e), font: s.font, color: s.color, background: s.background, border: s.border, padding: s.padding }; };
@@ -35,7 +38,7 @@ const measure = () => {
 };
 (async () => {
   const browser = await (process.env.NAV_BROWSER === 'webkit' ? webkit : chromium).launch({ headless: true, executablePath: process.env.NAV_BROWSER_EXECUTABLE || process.env.THEME_BROWSER_EXECUTABLE || undefined });
-  async function open(source, width, javaScriptEnabled = true) {
+  async function open(source, width, javaScriptEnabled = true, defectControl = false) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, javaScriptEnabled, reducedMotion: 'reduce', serviceWorkers: 'block', acceptDownloads: false });
     const errors = [], intercepted = [];
     await context.route('**/*', route => {
@@ -44,7 +47,9 @@ const measure = () => {
       let file = path.resolve(source, '.' + decodeURIComponent(u.pathname)); assert.ok(file.startsWith(source + path.sep));
       if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
       if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
-      return route.fulfill({ body: fs.readFileSync(file), contentType: ({ '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.svg': 'image/svg+xml' })[path.extname(file)] || 'application/octet-stream' });
+      const bytes = fs.readFileSync(file);
+      const body = defectControl && path.relative(source, file) === deviceFile ? Buffer.from(normalizeControl(bytes.toString(), deviceFile)) : bytes;
+      return route.fulfill({ body, contentType: ({ '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.svg': 'image/svg+xml' })[path.extname(file)] || 'application/octet-stream' });
     });
     const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
     page.on('download', () => { throw new Error('unexpected download'); });
@@ -102,13 +107,15 @@ const measure = () => {
   try {
     for (const width of [320, 360, 361, 390, 480, 481, 600, 601, 640, 641, 768, 1440]) {
       const before = await open(baseline, width), after = await open(root, width);
+      const control = baselineHasFix ? await open(baseline, width, true, true) : before;
       for (const theme of themes) {
-        await Promise.all([settle(before.page), settle(after.page)]);
-        const b = await before.page.evaluate(measure), a = await after.page.evaluate(measure);
+        await Promise.all([...new Set([before, after, control])].map(item => settle(item.page)));
+        const b = await before.page.evaluate(measure), a = await after.page.evaluate(measure), defect = await control.page.evaluate(measure);
+        if (baselineHasFix) readable(b);
         assert.equal(a.theme, theme); readable(a);
         if (width >= 641) assert.deepEqual(a, b, 'desktop geometry, colors and text remain exact');
-        if (width === 320 || width === 390) assert.ok(b.links.some(l => l.text.some(t => !t.fullyInside)), 'baseline reproduces clipped labels');
-        if (width <= 640) assert.equal(b.cards[0].box.y, b.cards[1].box.y, 'baseline reproduces overridden stacking');
+        if (width === 320 || width === 390) assert.ok(defect.links.some(l => l.text.some(t => !t.fullyInside)), 'defect control reproduces clipped labels');
+        if (width <= 640) assert.equal(defect.cards[0].box.y, defect.cards[1].box.y, 'defect control reproduces overridden stacking');
         const entry = { width, theme, labelsReadable: true, codeWidth: a.code.box.width, stacked: width <= 640 };
         if ([320, 390, 641, 768, 1440].includes(width)) {
           const name = `device-responsive-${width}-${theme}`;
@@ -122,9 +129,11 @@ const measure = () => {
         }
         report.cases.push(entry);
         await before.page.locator('#tront-theme-btn').click(); await after.page.locator('#tront-theme-btn').click();
+        if (control !== before) await control.page.locator('#tront-theme-btn').click();
       }
       if ([320, 390, 1440].includes(width)) await keyboard(after, true);
-      assert.deepEqual(before.errors, []); assert.deepEqual(after.errors, []);
+      assert.deepEqual(before.errors, []); assert.deepEqual(after.errors, []); assert.deepEqual(control.errors, []);
+      if (control !== before) await control.context.close();
       await before.context.close(); await after.context.close(); console.log('PASS Device History responsive:', width, 'all five themes');
     }
     for (const width of [320, 390]) {

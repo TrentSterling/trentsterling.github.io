@@ -28,3 +28,17 @@ test('CI runs the bounded responsive browser regression', () => {
   assert.ok(workflow.includes('- device-history/index.html'));
   assert.ok(workflow.includes('node tools/navigation/device-responsive-browser.cjs'));
 });
+
+test('the responsive defect control reverses only the exact reviewed fix', () => {
+  assertResponsive(html);
+  const control = normalize(html, file);
+  assert.equal(control.includes(block), false);
+  assert.equal(control.split(before).length, 2);
+  assert.equal(control.replace(before, after), html.replace(block, ''));
+  assert.throws(() => assertResponsive(control));
+  const browser = fs.readFileSync(path.join(root, 'tools/navigation/device-responsive-browser.cjs'), 'utf8');
+  assert.ok(browser.includes('defect control reproduces clipped labels'));
+  assert.ok(browser.includes('defect control reproduces overridden stacking'));
+  assert.ok(browser.includes('const before = await open(baseline, width)'));
+  assert.ok(browser.includes('desktop viewport pixels identical'));
+});
