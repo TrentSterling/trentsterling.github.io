@@ -80,7 +80,7 @@ jobs:
       - name: Install pinned test tooling and official Chrome
         id: browser-tools
         run: |
-          npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
+          npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0 pngjs@7.0.0
           node "$RUNNER_TEMP/site-tests/node_modules/playwright/cli.js" install --with-deps chrome
           node "$RUNNER_TEMP/site-tests/node_modules/playwright/cli.js" install ffmpeg
           sudo apt-get update
@@ -182,7 +182,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: TrentSterling/blog
-          ref: ddb16b66b7c6fec28ce8711245db683053c572a0
+          ref: 6c930487e3fd2c723017d3780ff62ee4436ff44a
           path: .local/blog-consumer
           persist-credentials: false
       # Preserve the blog's real historical negative control; the PR base is current.

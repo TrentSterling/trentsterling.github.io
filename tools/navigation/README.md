@@ -83,3 +83,41 @@ The focused browser gate checks mobile text containment, keyboard navigation,
 theme cycling, no-script links and exact desktop parity. Existing author-link
 checks retain strict non-nav and desktop comparisons; only these reviewed mobile
 nav-control dimensions are handled by the new responsive contract.
+
+## SnapScan feature-grid containment
+
+SnapScan's existing 300px feature-column minimum exceeded its 272px content area
+at a 320px viewport. The single local declaration now caps that minimum at 100%
+of the grid. `snapscan-grid.cjs` reverse-normalizes only the exact reviewed block
+on this page; source guards reject copy, selector, gap, minimum and duplicate
+mutations. Shared assets remain byte-identical.
+
+The existing navbar and author-link browser gates prove all seven cards and
+text fit at normal 320px-and-up widths, preserve heading/nav/control styles, and keep wider or already-fixed
+base states exact. With the old narrow grid, only its measured overflow and the
+natural grid-height shift of actions below it may differ. The real PR baseline
+is always retained, including self-base mode. Native keyboard/link checks and
+all theme, no-script and desktop pixel assertions remain in place.
+
+The retained CSS-zoom-2 author stress case has only 160 effective layout pixels
+at 320px: existing unbreakable feature words and navbar controls can still
+overflow there. This repair does not claim to resolve that separate extreme
+zoom limitation; its measured remaining extent is recorded and footer focus,
+link activation, unchanged styles and exact below-grid reflow stay checked.
+
+Two actual-base WebKit repeats show a consistent first raster-row difference
+under the unchanged translucent navbar after the 320px themed body reflows:
+320 pixels, RGB delta at most 4, with every remaining pixel exact. The targeted
+Chrome diagnostic (run 39130125336) collected all five themes without hiding
+failed pixel gates: Dark/Cyan were exact, while Purple/Ember/Light changed
+69/78/10 pixels by one RGB level (68/73/10 below the first row). Candidate-as-base
+was exact in every theme. This is measured reflow, not assumed capture noise.
+
+Only that proven SnapScan 320px grid transition in the exact 320×96 navbar crop
+permits the original first-row RGB delta of at most 4 plus at most 96 changed
+pixels below it, each differing by at most one RGB level. Alpha remains exact.
+The report separates first-row and sparse counts. Desktop, wider mobile,
+candidate-as-base, source, styles, text bounds and all geometry remain exact.
+Fixtures reject excess pixel counts, channel deltas, alpha changes, wrong image
+dimensions and absent/wrong-page reflow. The diagnostic-only workflow and reduced
+case runner are not part of the release branch; its complete browser gates stay.

@@ -85,7 +85,7 @@ test('CI covers shared CSS, both current consumers and independent navigation ga
   for (const trigger of ['assets/css/tront-system.css', 'style/**', 'minecraft-modding/**', 'tools/navigation/**']) assert.ok(workflow.includes('- ' + trigger), trigger);
   assert.ok(workflow.includes('node --test tools/navigation/*.test.cjs'));
   assert.ok(workflow.includes('node tools/navigation/browser.cjs'));
-  assert.ok(workflow.includes('ddb16b66b7c6fec28ce8711245db683053c572a0'));
+  assert.ok(workflow.includes('6c930487e3fd2c723017d3780ff62ee4436ff44a'));
   assert.ok(workflow.includes('7f0471eba88b129331ae13404876f621ec62db37'));
   assert.ok(workflow.includes('pngjs@7.0.0'));
   assert.ok(workflow.includes('BLOG_SHARED_ROOT: ${{ github.workspace }}'), 'current heading tests read candidate shared assets');
