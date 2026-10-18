@@ -56,3 +56,19 @@ direct routes, reload and Back, with JavaScript enabled and disabled. Both link
 clicks are intercepted as inert HTML before leaving the local fixture: no binary
 is downloaded or executed. Run with the same baseline/browser/output variables
 as the navigation browser harness above.
+
+## Device History narrow-screen layout
+
+The responsive repair is local to this legacy page. It removes a redundant
+inline two-column declaration that overrode the page's existing 640px stacking
+rule. A bounded 600px/360px navbar block retains readable Home/Games/Blog/Discord
+and theme text; only decorative icons are removed at the narrowest breakpoint.
+Shared styles and runtime remain unchanged.
+
+`device-responsive-browser.cjs` checks every breakpoint edge, all five legacy
+themes, uncut text ranges, 40px-high native controls, direct reload/Back, keyboard
+focus/activation, and no-script links. The baseline must reproduce clipping and
+the failed stacking rule. At 641/768/1440px, both header and install screenshots
+must be pixel-identical to the baseline in all five themes. The harness waits
+for existing finite navbar hover transitions to finish before strict stable-state
+measurements; it makes no first-paint claim.

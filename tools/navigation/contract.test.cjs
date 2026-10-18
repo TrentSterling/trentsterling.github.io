@@ -8,7 +8,8 @@ const { execFileSync } = require('node:child_process');
 const { changes, pages, normalize: normalizeNavigation, links, assertPrimary } = require('./contract.cjs');
 const { normalize: normalizeInvites } = require('./discord-invites.cjs');
 const { file: deviceFile, normalize: normalizeDevice } = require('./device-download.cjs');
-const normalize = (html, file) => normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file);
+const { normalize: normalizeResponsive } = require('./device-responsive.cjs');
+const normalize = (html, file) => normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file);
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 const context = { window: {} };
@@ -45,7 +46,7 @@ test('generated hub nav and static style primary nav share the existing registry
   assert.equal(links(Tront.nav({ variant: 'product', links: [{ label: 'Start', href: '#lesson-0' }], crosslink: false })).filter(link => link.current).length, 0);
 });
 
-test('every existing production file is unchanged outside the exact reviewed navigation, invite and download anchors', () => {
+test('every existing production file is unchanged outside the exact reviewed anchors and page-local responsive changes', () => {
   const base = process.env.THEME_BASELINE_ROOT;
   assert.ok(base, 'THEME_BASELINE_ROOT must identify the PR base checkout');
   const files = execFileSync('git', ['-C', base, 'ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
