@@ -30,7 +30,7 @@ function assertMedia(root) {
     const stream = probe.streams[0];
     assert.equal(stream.codec_name, 'h264'); assert.equal(stream.pix_fmt, 'yuv420p');
     assert.equal(stream.width, 640); assert.equal(stream.height, 360);
-    assert.equal(stream.avg_frame_rate, '25/1');
+    assert.equal(stream.avg_frame_rate, (item.fps ?? 25) + '/1');
     assert.equal(Number(stream.nb_read_frames), item.frames);
     assert.equal(Number(probe.format.duration), item.duration);
     assert.ok(bytes.length < 1000000, 'small gallery preview');
