@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const isaac = require('../game-media/isaac-archive.cjs');
+const recorded = require('../game-media/recorded-previews.cjs');
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
 const { normalizeYearsForPreservation, normalizeReleasedForPreservation, recovered } = require('./gallery-content.cjs');
 const normalizeGames = html => normalizeYearsForPreservation(normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(isaac.normalizeForPreservation(html))));
@@ -47,6 +48,12 @@ for (const [file, expected] of Object.entries(recovered.media)) {
   if (beforeTree.has(file)) assert.equal(beforeTree.get(file), expected.sha256, file+': reviewed recovered baseline media');
   assert.equal(afterTree.get(file), expected.sha256, file+': reviewed recovered release screenshot');
   beforeTree.delete(file); afterTree.delete(file);
+}
+recorded.assertMedia(root);
+for (const item of recorded.previews) {
+  if (beforeTree.has(item.file)) assert.equal(beforeTree.get(item.file), item.sha256, item.file+': reviewed baseline recording');
+  assert.equal(afterTree.get(item.file), item.sha256, item.file+': reviewed new recording');
+  beforeTree.delete(item.file); afterTree.delete(item.file);
 }
 assert.deepEqual(afterTree, beforeTree, 'every other gallery media/behavior/shared legacy file stays byte-identical');
 console.log(`PASS: all page copy, inline layouts, gallery content and ${beforeTree.size} protected files match the PR base outside the exact reviewed Isaac media addition and four verified year additions and one exact CraftMine 2 card.`);
