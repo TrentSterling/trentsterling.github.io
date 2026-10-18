@@ -40,5 +40,7 @@ Held-script video is recorded without screenshot, computed-style, or geometry
 observations during loading. Screenshots alone can perturb WebKit rendering and
 cannot establish a real-user flash duration. The suite therefore makes no exact
 real-user first-paint timing claim. Native font swapping and its existing wrapping
-changes are deliberately retained, including a 320px held-font negative control.
+changes are deliberately retained, with real held/released font requests and readiness checks at both widths.
+The measured wrapping delta must match the actual baseline; it may be zero in
+Chrome even though the recorded WebKit320px case rewraps.
 This patch is not a claim of zero layout shift or a font-loading redesign.

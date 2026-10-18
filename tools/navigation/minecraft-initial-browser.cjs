@@ -47,6 +47,16 @@ function measure(){const box=e=>{const r=e.getBoundingClientRect(),s=getComputed
  }
  function themed(state){for(const[k,v]of Object.entries(tokens))assert.equal(state.tokens[k],v,k);assert.equal(state.body.background,'rgb(1, 20, 5)');assert.equal(state.body.color,'rgb(223, 245, 226)');assert.equal(state.mode,'dark');assert.equal(state.theme,null);assert.ok(state.nav.height>0);assert.ok(state.navHTML.includes('The sword'));}
  async function parity(page){assert.equal(await page.locator('#nav').getAttribute('class'),'t-nav t-nav--product');assert.equal(await page.evaluate(opts=>{const t=document.createElement('template');t.innerHTML=Tront.nav(opts);return document.querySelector('#nav').innerHTML===t.innerHTML;},options),true,'parsed static/runtime DOM parity');}
+ async function fontState(page){return page.evaluate(()=>({status:document.fonts.status,faces:[...document.fonts].map(face=>({family:face.family,weight:face.weight,style:face.style,status:face.status})),checks:['body','h1','#nav .t-nav__link'].map(selector=>{const font=getComputedStyle(document.querySelector(selector)).font;return{selector,font,loaded:document.fonts.check(font,'Minecraft')};})}));}
+ function assertFontsReleased(held,released){
+  assert.equal(held.status,'loading');assert.equal(released.status,'loaded');
+  assert.ok(released.checks.every(check=>check.loaded),'every used font finishes loading');
+  // WebKit may report a held CSS face as error while its request is still
+  // pending, then loaded after release. Require that full unavailable-to-loaded
+  // transition; do not confuse never-requested unloaded weights with requests.
+  const requested=held.faces.filter(face=>face.status==='loading'||face.status==='error');assert.ok(requested.length>0,'held stylesheet faces are actually unavailable');
+  for(const face of requested)assert.ok(released.faces.some(next=>next.family===face.family&&next.weight===face.weight&&next.style===face.style&&next.status==='loaded'),'every held requested face finishes loading');
+ }
  async function keyboard(page){await page.locator('#nav .t-nav__mark').focus();await page.keyboard.press('Tab');const focus=await page.evaluate(()=>{const a=document.activeElement,s=getComputedStyle(a);return{href:a.getAttribute('href'),visible:a.matches(':focus-visible'),outline:s.outlineStyle,width:parseFloat(s.outlineWidth)};});assert.equal(focus.href,'#lesson-0');assert.ok(focus.visible);assert.notEqual(focus.outline,'none');assert.ok(focus.width>0);await Promise.all([page.waitForURL(origin+routePath+'#lesson-0'),page.keyboard.press('Enter')]);await page.goBack({waitUntil:'commit'});return focus;}
  try{
   for(const width of[320,390,1440]){
@@ -68,8 +78,8 @@ function measure(){const box=e=>{const r=e.getBoundingClientRect(),s=getComputed
     }else controlState=b.state;
     assert.throws(()=>themed(controlState),'defect fixture must fail the positive initial-render contract');assert.equal(controlState.nav.height,0,'negative control reproduces missing navigation');assert.equal(controlState.body.background,'rgb(11, 18, 14)','negative control reproduces fallback palette');
    }
-   else{assert.deepEqual(a.state,b.state,'font loading behavior remains unchanged');}
-   let focusPreserved=null,settled=null;
+   else{assert.deepEqual(a.state,b.state,'font loading behavior remains unchanged');assert.deepEqual(a.png,b.png,'font-controlled viewport pixels match the actual base');}
+   let focusPreserved=null,settled=null,fontLoading=null;
    if(kind==='script-held'){
     assert.ok(after.pending.length>0);await after.page.locator('#nav summary').focus();await after.page.keyboard.press('Enter');await after.page.keyboard.press('Tab');await after.page.evaluate(()=>window.__initialNavFocus=document.activeElement);
     assert.equal(await after.page.locator('#nav details').getAttribute('open'),'');await after.release();await after.page.waitForLoadState('load');
@@ -77,11 +87,18 @@ function measure(){const box=e=>{const r=e.getBoundingClientRect(),s=getComputed
     await after.page.locator('#nav summary').focus();await after.page.keyboard.press('Enter');await parity(after.page);await after.page.evaluate(()=>document.activeElement.blur());await after.page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
     settled=(await capture(after,'minecraft-'+kind+'-'+width+'-released')).state;assert.deepEqual(settled.nav,a.state.nav,'no script-induced nav geometry jump');assert.deepEqual(settled.heading,a.state.heading,'no script-induced heading jump');await before.release();
    }else if(kind==='fonts-held'){
-    assert.ok(after.pending.length>0);await after.release();await before.release();await after.page.waitForLoadState('load');await before.page.waitForLoadState('load');const ar=await capture(after,'minecraft-fonts-'+width+'-released'),br=await capture(before,'minecraft-fonts-'+width+'-released-before');themed(ar.state);assert.deepEqual(ar.state,br.state,'font release retains original settled behavior');settled=ar.state;if(width===320)assert.notEqual(a.state.nav.height,settled.nav.height,'known font-swap wrapping remains observable');
+    assert.ok(after.pending.length>0&&before.pending.length>0,'both fixtures hold real font requests');
+    const heldAfter=await fontState(after.page),heldBefore=await fontState(before.page);assert.deepEqual(heldAfter,heldBefore,'held font readiness is identical');
+    await after.release();await before.release();await after.page.waitForLoadState('load');await before.page.waitForLoadState('load');const ar=await capture(after,'minecraft-fonts-'+width+'-released'),br=await capture(before,'minecraft-fonts-'+width+'-released-before');themed(ar.state);assert.deepEqual(ar.state,br.state,'font release retains original settled behavior');assert.deepEqual(ar.png,br.png,'released-font viewport pixels match the actual base');assert.notDeepEqual(ar.png,a.png,'held font negative control changes glyph pixels after release');settled=ar.state;
+    const releasedAfter=await fontState(after.page),releasedBefore=await fontState(before.page);assertFontsReleased(heldAfter,releasedAfter);assertFontsReleased(heldBefore,releasedBefore);assert.deepEqual(releasedAfter,releasedBefore,'released font readiness is identical');
+    // Rewrapping is engine/font-metric dependent. Preserve the actual baseline's
+    // measured delta rather than require Chrome to match WebKit's line breaks.
+    const navDelta=settled.nav.height-a.state.nav.height;assert.equal(navDelta,br.state.nav.height-b.state.nav.height,'font-swap geometry delta remains identical');
+    fontLoading={held:heldAfter,released:releasedAfter,navHeightDelta:navDelta};
    }else await keyboard(after.page);
    assert.deepEqual(after.errors,[]);assert.deepEqual(before.errors,[]);assert.deepEqual(after.missing,[]);assert.deepEqual(before.missing,[]);
    if(kind!=='no-js')assert.deepEqual(await after.page.evaluate(()=>Object.fromEntries(Object.entries(localStorage))),saved);
-   report.cases.push({kind,width,initial:a.state,baseline:b.state,control:controlState,settled,focusPreserved});await before.context.close();await after.context.close();console.log('PASS Minecraft initial rendering',kind,width);
+   report.cases.push({kind,width,initial:a.state,baseline:b.state,control:controlState,settled,focusPreserved,fontLoading});await before.context.close();await after.context.close();console.log('PASS Minecraft initial rendering',kind,width);
   }
   // Independent footage: do not inspect styles, geometry or take screenshots
   // during these held-script recordings. Frames can be reviewed without the

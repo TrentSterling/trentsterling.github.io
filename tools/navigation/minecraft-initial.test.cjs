@@ -48,3 +48,9 @@ test('the reusable negative control reverses only the three reviewed regions and
  assert.ok(browser.includes("negative control reproduces missing navigation"));
  assert.ok(browser.includes("negative control reproduces fallback palette"));
 });
+
+test('held-font checks prove actual loading and retain exact baseline geometry without assuming engine-specific wrapping',()=>{
+ const browser=fs.readFileSync(path.join(root,'tools/navigation/minecraft-initial-browser.cjs'),'utf8');
+ for(const evidence of['both fixtures hold real font requests','held stylesheet faces are actually unavailable','every held requested face finishes loading','held font negative control changes glyph pixels after release','font-controlled viewport pixels match the actual base','released-font viewport pixels match the actual base','every used font finishes loading','held font readiness is identical','released font readiness is identical','font release retains original settled behavior','font-swap geometry delta remains identical'])assert.ok(browser.includes(evidence));
+ assert.doesNotMatch(browser,/assert\.notEqual\(a\.state\.nav\.height/);
+});
