@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { chromium, webkit, request } = require('playwright');
-const { personId, products, articles } = require('./author-links.cjs');
+const { personId, products, articles, projectArticles } = require('./author-links.cjs');
 const root = path.resolve(__dirname, '../..');
 assert.ok(process.env.THEME_BASELINE_ROOT, 'THEME_BASELINE_ROOT is required');
 const baseline = path.resolve(process.env.THEME_BASELINE_ROOT);
@@ -35,6 +35,12 @@ const measure = () => {
   }
   await cache(cssUrl, 'text/css');
   for (const match of assets.get(cssUrl).body.toString().matchAll(/url\(['"]?([^)'"\s]+)['"]?\)/g)) await cache(match[1]);
+  // Cache each additional page's authentic font stylesheet, including the
+  // Notesdash weight subset, rather than silently exercising fallback fonts.
+  for (const article of projectArticles) for (const match of fs.readFileSync(path.join(root, article.file), 'utf8').matchAll(/href="(https:\/\/fonts.googleapis.com\/css2[^"]+)"/g)) {
+    await cache(match[1], 'text/css');
+    for (const font of assets.get(match[1]).body.toString().matchAll(/url\(['"]?([^)'"\s]+)['"]?\)/g)) await cache(font[1]);
+  }
   const logoUrl = origin + '/blog/assets/img/tront.png';
   if (process.env.AUTHOR_BLOG_ROOT) assets.set(logoUrl, { body: fs.readFileSync(path.join(process.env.AUTHOR_BLOG_ROOT, 'assets/img/tront.png')), contentType: 'image/png' });
   else {
@@ -62,7 +68,7 @@ const measure = () => {
     await context.route('**/*', async route => {
       const url = new URL(route.request().url());
       if (assets.has(url.href)) return route.fulfill(assets.get(url.href));
-      if (articles.some(article => url.href === origin + article.target)) {
+      if ([...articles, ...projectArticles].some(article => url.href === origin + article.target)) {
         report.interceptedDestinations.push(url.href);
         return route.fulfill({ contentType:'text/html', body:'<!doctype html><title>Intercepted devlog destination</title><p>Local destination fixture only</p>' });
       }
@@ -100,6 +106,59 @@ const measure = () => {
     assert.equal(await page.locator('a[href="play/"]').count(), 2);
     assert.match(await page.locator('.page-footer p').nth(1).textContent(), /Built by Trent Sterling\./);
     return link;
+  }
+  const measureProject = () => {
+    const box = element => {
+      const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+      return { x:rect.x,y:rect.y,width:rect.width,height:rect.height,color:style.color,background:style.background,font:style.font };
+    };
+    return { scrollWidth:document.documentElement.scrollWidth,heading:box(document.querySelector('h1')),nav:box(document.querySelector('nav')),
+      navControls:[...document.querySelectorAll('nav a, nav button')].map(element => ({ text:element.textContent,href:element.getAttribute('href'),...box(element) })),
+      primaryControls:[...document.querySelectorAll('a.btn')].map(element => ({ text:element.textContent,href:element.getAttribute('href'),...box(element) })) };
+  };
+  async function projectFonts(page, article) {
+    const state = await page.evaluate(() => ({ status:document.fonts.status,
+      body:getComputedStyle(document.body).fontFamily,heading:getComputedStyle(document.querySelector('h1')).fontFamily,
+      footer:getComputedStyle(document.querySelector('footer')).fontFamily,
+      faces:[...document.fonts].map(font => ({ family:font.family.replace(/['"]/g,''),weight:font.weight,status:font.status })) }));
+    assert.equal(state.status,'loaded','normal page fonts have finished loading');
+    assert.ok(state.faces.every(font => font.status !== 'error'),'no failed normal font face');
+    if (article.file === 'notesdash/index.html') for (const family of ['Inter','Fira Code']) {
+      assert.ok(state.faces.some(font => font.family === family && font.status === 'loaded'),family + ' authentic font face loaded');
+      assert.equal(await page.evaluate(family => document.fonts.check('400 16px "' + family + '"'),family),true);
+    }
+    return state;
+  }
+  async function projectArticleState(page, article, credit) {
+    const footer = page.locator('footer'), link = footer.locator('a[href="' + article.target + '"]');
+    const anchor='<a href="' + article.target + '"' + (article.color ? ' style="color: ' + article.color + '"' : '') + '>' + article.label + '</a>';
+    assert.equal(await footer.count(),1);
+    assert.equal(await footer.locator('p').count(),2,'only one contextual footer paragraph added');
+    assert.equal(await footer.locator('p').first().evaluate(element => element.outerHTML),credit,'original rendered footer credit unchanged');
+    assert.equal(await page.locator('a[href="' + article.target + '"]').count(),1,'exactly one native article anchor');
+    assert.equal(await link.evaluate(element => element.outerHTML),anchor);
+    assert.equal(await footer.locator('p').nth(1).evaluate(element => element.outerHTML),'<p>' + anchor + '</p>');
+    assert.equal(await link.getAttribute('target'),null);
+    assert.equal(await link.getAttribute('download'),null);
+    assert.equal(await link.evaluate(element => element.href),origin + article.target);
+    if(article.color) assert.equal(await link.evaluate(element=>getComputedStyle(element).color),'rgb(' + article.color.slice(1).match(/../g).map(value=>parseInt(value,16)).join(', ') + ')','approved scoped article color is rendered');
+    return link;
+  }
+  async function projectContrast(link, article) {
+    const contrast=await link.evaluate(element=>{
+      const rgb=color=>color.match(/[\d.]+/g).map(Number),foreground=getComputedStyle(element).color;
+      let background='';
+      for(let ancestor=element;ancestor;ancestor=ancestor.parentElement) {
+        const color=getComputedStyle(ancestor).backgroundColor,channels=rgb(color);
+        if(channels.length===3 || channels[3]===1) { background=color;break; }
+      }
+      const luminance=color=>rgb(color).slice(0,3).map(channel=>channel/255).map(channel=>channel<=0.04045?channel/12.92:((channel+0.055)/1.055)**2.4)
+        .reduce((sum,channel,index)=>sum+channel*[0.2126,0.7152,0.0722][index],0);
+      const values=[luminance(foreground),luminance(background)].sort((a,b)=>b-a);
+      return {foreground,background,solidBackgroundRatio:(values[0]+0.05)/(values[1]+0.05)};
+    });
+    assert.ok(contrast.solidBackgroundRatio>=4.5,'article link has readable normal-text contrast');
+    return contrast;
   }
   try {
     for (const file of products) for (const width of [1440,390,320]) {
@@ -142,7 +201,65 @@ const measure = () => {
       report.cases.push({file:article.file,width,zoom,javaScriptEnabled,animations,unchangedPrimaryGeometry:true,keyboard:focus,backAndReload:true});
       await before.context.close();await after.context.close();console.log('PASS contextual devlog',article.file,width,zoom,javaScriptEnabled);
     }
-    assert.equal(report.interceptedDestinations.length,12);assert.equal(report.downloads,0);assert.equal(report.runtimeRequests,0);report.status='passed';
+    assert.equal(report.interceptedDestinations.length,12);assert.equal(report.downloads,0);assert.equal(report.runtimeRequests,0);
+    const projectCases = [[1440,1,true],[390,1,true],[320,1,true],[320,2,true],[320,1,false]];
+    for (const article of projectArticles) {
+      for (const source of [baseline,root]) assert.equal(fs.readFileSync(path.join(source,article.file),'utf8').split(article.credit).length,2,'original footer credit source retained exactly once');
+      for (const [width,zoom,javaScriptEnabled] of projectCases) {
+        const before=await open(baseline,article.file,width,zoom,javaScriptEnabled),after=await open(root,article.file,width,zoom,javaScriptEnabled);
+        const animations=await animationParity(before.page,after.page);
+        const name='project-devlog-'+article.file.split('/')[0]+'-'+width+'-'+zoom+'-'+javaScriptEnabled;
+        await screenshot(before.page,name+'-top-before');const beforeMeasure=await before.page.evaluate(measureProject);
+        await screenshot(after.page,name+'-top-after');
+        assert.ok(beforeMeasure.primaryControls.length>0,'real primary actions are measured');
+        assert.deepEqual(await after.page.evaluate(measureProject),beforeMeasure,'existing heading, navigation and primary action geometry unchanged');
+        const fonts=await projectFonts(after.page,article);
+        assert.deepEqual(fonts,await projectFonts(before.page,article),'normal font state unchanged');
+        const baselineLinks=await before.page.locator('footer a[href="' + article.target + '"]').count();
+        assert.ok(baselineLinks===0 || baselineLinks===1,'baseline has zero or one reviewed article link');
+        assert.equal(await before.page.locator('footer p').count(),1+baselineLinks,'baseline has only its original credit and optional reviewed addition');
+        const credit=await before.page.locator('footer p').first().evaluate(element=>element.outerHTML);
+        if(baselineLinks) await projectArticleState(before.page,article,credit);
+        await before.page.locator('footer').evaluate(element=>element.scrollIntoView({behavior:'instant',block:'end'}));
+        await screenshot(before.page,name+'-footer-before');
+        await after.page.bringToFront();
+        await after.page.locator('footer').evaluate(element=>element.scrollIntoView({behavior:'instant',block:'end'}));
+        const link=await projectArticleState(after.page,article,credit);
+        const contrast=await projectContrast(link,article);
+        await after.page.locator('footer p').first().locator('a').focus();await after.page.keyboard.press('Tab');
+        assert.equal(await link.evaluate(element=>document.activeElement===element),true,'native Tab reaches the appended project article');
+        await screenshot(after.page,name+'-footer-after');
+        const focus=await link.evaluate(element=>{
+          const style=getComputedStyle(element),range=document.createRange();range.selectNodeContents(element);
+          const rects=range=>[...range.getClientRects()].map(rect=>({left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:rect.width,height:rect.height}));
+          const footerText=[],walker=document.createTreeWalker(element.closest('footer'),NodeFilter.SHOW_TEXT);
+          while(walker.nextNode()) if(walker.currentNode.textContent.trim() && walker.currentNode.parentElement.tagName!=='SCRIPT') {
+            const textRange=document.createRange();textRange.selectNodeContents(walker.currentNode);footerText.push(...rects(textRange));
+          }
+          return {visible:element.matches(':focus-visible'),outline:style.outlineStyle,outlineWidth:parseFloat(style.outlineWidth),
+            viewport:{width:innerWidth,height:innerHeight},rects:rects(range),footerText};
+        });
+        assert.ok(focus.visible);assert.notEqual(focus.outline,'none');assert.ok(focus.outlineWidth>0);assert.ok(focus.rects.length>0);
+        for(const rect of [...focus.rects,...focus.footerText]) {
+          assert.ok(rect.width>0 && rect.height>0);
+          assert.ok(rect.left>=-1 && rect.right<=width+1,'every wrapped footer text segment is horizontally visible');
+          assert.ok(rect.top>=0 && rect.bottom<=focus.viewport.height+1,'all focused footer text remains in the viewport');
+        }
+        const destinationCount=report.interceptedDestinations.length;
+        await Promise.all([after.page.waitForURL(origin+article.target),after.page.keyboard.press('Enter')]);
+        assert.equal(report.interceptedDestinations.length,destinationCount+1,'native Enter reaches the inert destination exactly once');
+        assert.equal(report.interceptedDestinations.at(-1),origin+article.target);
+        assert.equal(await after.page.title(),'Intercepted devlog destination');
+        await after.page.goBack({waitUntil:'networkidle'});await projectArticleState(after.page,article,credit);
+        await after.page.reload({waitUntil:'networkidle'});await projectArticleState(after.page,article,credit);
+        assert.deepEqual(before.errors,[]);assert.deepEqual(after.errors,[]);assert.deepEqual(before.missing,[]);assert.deepEqual(after.missing,[]);
+        report.cases.push({file:article.file,width,zoom,javaScriptEnabled,animations,unchangedPrimaryGeometry:true,unchangedFooterCredit:true,
+          exactNativeArticle:true,normalFonts:fonts,contrast,keyboard:focus,directRouteAndReload:true,backAndReload:true});
+        await before.context.close();await after.context.close();console.log('PASS project contextual devlog',article.file,width,zoom,javaScriptEnabled);
+      }
+    }
+    assert.equal(report.interceptedDestinations.length,12+projectArticles.length*projectCases.length);
+    assert.equal(report.downloads,0);assert.equal(report.runtimeRequests,0);report.status='passed';
   } catch(error){report.status='failed';report.error=error.stack;throw error;}
   finally{report.durationMs=Date.now()-started;fs.writeFileSync(path.join(out,'author-links-report.json'),JSON.stringify(report,null,2));await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
