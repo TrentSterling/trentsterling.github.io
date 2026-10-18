@@ -10,8 +10,9 @@ hub; and the registry's generated hub/product semantics. Only actual Home,
 Games, and Discord pages mark their matching primary link `aria-current="page"`.
 404 has no current primary link. Style has its own current Style link, and the
 Minecraft product navigation retains in-page lesson links without claiming a
-current page. Legacy landing pages, Games Markdown view, blog markup, and
-vendored project forks are intentionally not rewritten.
+current page. Other page families retain their own navigation. The Games Markdown view
+has a separate bounded usability contract below; blog markup and vendored
+project forks are intentionally not rewritten.
 
 Run from the repository root with a clean checkout of the PR base:
 
@@ -121,3 +122,20 @@ candidate-as-base, source, styles, text bounds and all geometry remain exact.
 Fixtures reject excess pixel counts, channel deltas, alpha changes, wrong image
 dimensions and absent/wrong-page reflow. The diagnostic-only workflow and reduced
 case runner are not part of the release branch; its complete browser gates stay.
+
+## Legacy portfolio fallback and mode controls
+
+`games-md.cjs` permits only the exact no-script visibility override, raw-text
+URL wrapping, page-local six-control phone navbar and mode-focus transfer in
+`games/md/index.html`. Its raw 55-record portfolio is hash-locked, while the
+rest of the page is compared exactly with the real PR base. Main Games, media,
+shared assets, metadata, labels and destinations remain unchanged.
+
+`games-md-browser.cjs` checks direct/reload views with and without JavaScript,
+320/390px and the 700/701px boundary, every legacy theme, native keyboard mode
+and theme actions, full label bounds and settled 1440px desktop pixel parity.
+The original source is retained as a negative control even for an already-fixed
+base. External requests and navigation are intercepted; no runtime is executed.
+Run with the same baseline/browser/font/output variables as the other gates.
+`NAV_BLOG_LOGO` may point at the already-verified released blog logo; otherwise
+the harness serves the identical repo logo after checking the expected digest.
