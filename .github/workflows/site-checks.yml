@@ -18,6 +18,10 @@ on:
       - assets/js/tront-theme*.js
       - assets/js/tront-system.js
       - assets/css/tront-navbar.css
+      - assets/css/tront-system.css
+      - style/**
+      - minecraft-modding/**
+      - tools/navigation/**
       - assets/css/tront-about-discovery.css
       - assets/js/tront-about-discovery.js
       - tools/about-discovery/**
@@ -90,6 +94,11 @@ jobs:
         run: node --test tools/game-media/resilience.test.cjs
       - name: Test Games stalled-font resilience in the browser
         run: timeout 120s node tools/game-media/resilience-browser.cjs
+      - name: Check primary navigation contracts and exact production preservation
+        run: node --test tools/navigation/*.test.cjs
+      - name: Check navigation before and after on current page families
+        if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
+        run: timeout 240s node tools/navigation/browser.cjs
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls
@@ -115,7 +124,7 @@ jobs:
 
   blog-consumer-checks:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: .local/blog-consumer
@@ -133,8 +142,16 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: TrentSterling/blog
-          ref: fcf3292f6f7fa3c062a9820ccea50259a0974394
+          ref: 2ae3d69c7874755a0448032750c3f1267413431d
           path: .local/blog-consumer
+          persist-credentials: false
+      # Preserve the blog's real historical negative control; the PR base is current.
+      - name: Read historical blog theme negative-control fixture
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: TrentSterling/blog
+          ref: 7f0471eba88b129331ae13404876f621ec62db37
+          path: .local/blog-legacy-theme
           persist-credentials: false
       - name: Read shared assets at the PR base for the consumer comparison
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -161,26 +178,31 @@ jobs:
           package-manager-cache: false
       - name: Build the unchanged blog with candidate and released shared assets
         run: |
-          node --test tools/theme-review/test.cjs
+          node --test tools/theme-review/test.cjs tools/theme-review/heading.test.cjs tools/theme-review/sidebar-focus.test.cjs
           bundle exec ruby tools/test_unique_post_urls.rb
           JEKYLL_ENV=production bundle exec jekyll b -d _site/blog
           python3 tools/check_seo.py _site/blog
           mkdir -p _baseline
           cp -R _site/blog _baseline/blog
-          mkdir -p _site/assets/css _site/assets/js _baseline/assets/css _baseline/assets/js
+          JEKYLL_ENV=production bundle exec jekyll b --source "$GITHUB_WORKSPACE/.local/blog-legacy-theme" --config "$GITHUB_WORKSPACE/.local/blog-legacy-theme/_config.yml" -d _legacy/blog
+          mkdir -p _site/assets/css _site/assets/js _baseline/assets/css _baseline/assets/js _legacy/assets/css _legacy/assets/js
           for file in css/tront-theme-editor.css css/tront-navbar.css js/tront-theme-editor.js js/tront-system.js; do
             cp "$GITHUB_WORKSPACE/assets/$file" "_site/assets/$file"
             cp "$GITHUB_WORKSPACE/.local/shared-base/assets/$file" "_baseline/assets/$file"
+            cp "$GITHUB_WORKSPACE/.local/shared-base/assets/$file" "_legacy/assets/$file"
           done
       - name: Install pinned browser tooling and official Chrome
         id: blog-browser-tools
         run: |
-          npm install --prefix "$RUNNER_TEMP/blog-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
+          npm install --prefix "$RUNNER_TEMP/blog-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0 pngjs@7.0.0
           node "$RUNNER_TEMP/blog-tests/node_modules/playwright/cli.js" install --with-deps chrome
           echo "NODE_PATH=$RUNNER_TEMP/blog-tests/node_modules" >> "$GITHUB_ENV"
+      - name: Check current blog mobile sidebar keyboard focus
+        if: ${{ !cancelled() && steps.blog-browser-tools.outcome == 'success' }}
+        run: timeout 180s node tools/theme-review/sidebar-focus.cjs
       - name: Run existing blog child-route and contrast checks
         if: ${{ !cancelled() && steps.blog-browser-tools.outcome == 'success' }}
-        run: timeout 240s node tools/theme-review/browser.cjs
+        run: timeout 600s node tools/theme-review/browser.cjs
       - name: Test rapid modal reuse in the built blog consumer
         if: ${{ !cancelled() && steps.blog-browser-tools.outcome == 'success' }}
         run: timeout 90s node "$GITHUB_WORKSPACE/tools/theme-editor/blog-close.cjs"
