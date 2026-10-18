@@ -13,6 +13,7 @@ on:
       - jennsfarm/index.html
       - tools/seo/**
       - discord/**
+      - device-history/index.html
       - games/**
       - assets/css/tront-theme*.css
       - assets/js/tront-theme*.js
@@ -99,6 +100,9 @@ jobs:
       - name: Check navigation before and after on current page families
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 240s node tools/navigation/browser.cjs
+      - name: Check verified Device History download destinations
+        if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
+        run: timeout 90s node tools/navigation/device-download-browser.cjs
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls
