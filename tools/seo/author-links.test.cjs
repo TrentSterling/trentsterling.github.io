@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { personId, products, articles, projectArticles, changes, normalize, jsonLd } = require('./author-links.cjs');
+const { normalize: normalizeLegacyNavbar } = require('../navigation/legacy-navbar.cjs');
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 for (const file of products) test(file + ': existing software author resolves to the canonical Person only', () => {
@@ -39,7 +40,7 @@ test('all reviewed files preserve every original byte outside their exact additi
   for (const change of changes) {
     const html = read(change.file);
     assert.equal(html.split(change.after).length, 2, change.file + ': one exact addition');
-    assert.equal(normalize(html, change.file), normalize(read(change.file, base), change.file));
+    assert.equal(normalizeLegacyNavbar(normalize(html, change.file), change.file), normalizeLegacyNavbar(normalize(read(change.file, base), change.file), change.file));
   }
 });
 test('new project article additions preserve all schema values and cannot hide changed credits', () => {
@@ -93,6 +94,6 @@ test('production animation declarations remain byte-identical to the actual PR b
   assert.ok(base);
   for (const change of changes) {
     const styles = html => [...html.matchAll(/<style\b[^>]*>[\s\S]*?<\/style>/g)].map(match => match[0]);
-    assert.deepEqual(styles(read(change.file)),styles(read(change.file,base)),change.file + ': every original style declaration unchanged');
+    assert.deepEqual(styles(normalizeLegacyNavbar(read(change.file),change.file)),styles(normalizeLegacyNavbar(read(change.file,base),change.file)),change.file + ': every original style declaration unchanged');
   }
 });

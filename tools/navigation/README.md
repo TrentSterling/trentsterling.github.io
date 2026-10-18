@@ -72,3 +72,14 @@ the failed stacking rule. At 641/768/1440px, both header and install screenshots
 must be pixel-identical to the baseline in all five themes. The harness waits
 for existing finite navbar hover transitions to finish before strict stable-state
 measurements; it makes no first-paint claim.
+
+## Legacy project navbar labels
+
+RuntimeCSG, Toaster, Notesdash and SnapScan retain their native legacy nav and
+page-specific styling. `legacy-navbar.cjs` permits only the exact Device History-derived
+responsive nav block and `aria-label="Cycle color theme"` on their existing
+five-mode buttons. It never normalizes another page or a changed rule/label.
+The focused browser gate checks mobile text containment, keyboard navigation,
+theme cycling, no-script links and exact desktop parity. Existing author-link
+checks retain strict non-nav and desktop comparisons; only these reviewed mobile
+nav-control dimensions are handled by the new responsive contract.
