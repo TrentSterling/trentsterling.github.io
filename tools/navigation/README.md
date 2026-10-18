@@ -83,3 +83,31 @@ The focused browser gate checks mobile text containment, keyboard navigation,
 theme cycling, no-script links and exact desktop parity. Existing author-link
 checks retain strict non-nav and desktop comparisons; only these reviewed mobile
 nav-control dimensions are handled by the new responsive contract.
+
+## SnapScan feature-grid containment
+
+SnapScan's existing 300px feature-column minimum exceeded its 272px content area
+at a 320px viewport. The single local declaration now caps that minimum at 100%
+of the grid. `snapscan-grid.cjs` reverse-normalizes only the exact reviewed block
+on this page; source guards reject copy, selector, gap, minimum and duplicate
+mutations. Shared assets remain byte-identical.
+
+The existing navbar and author-link browser gates prove all seven cards and
+text fit at normal 320px-and-up widths, preserve heading/nav/control styles, and keep wider or already-fixed
+base states exact. With the old narrow grid, only its measured overflow and the
+natural grid-height shift of actions below it may differ. The real PR baseline
+is always retained, including self-base mode. Native keyboard/link checks and
+all theme, no-script and desktop pixel assertions remain in place.
+
+The retained CSS-zoom-2 author stress case has only 160 effective layout pixels
+at 320px: existing unbreakable feature words and navbar controls can still
+overflow there. This repair does not claim to resolve that separate extreme
+zoom limitation; its measured remaining extent is recorded and footer focus,
+link activation, unchanged styles and exact below-grid reflow stay checked.
+
+Two actual-base WebKit repeats show a consistent first raster-row difference
+under the unchanged translucent navbar after the 320px themed body reflows:
+320 pixels, RGB delta at most 4, with every remaining pixel exact. Only that
+proven SnapScan 320px grid transition permits this bounded difference. Desktop,
+wider mobile, candidate-as-base, control glyphs and all geometry remain exact;
+fixtures reject row 1, alpha changes, delta 5 and absent/wrong-page reflow.

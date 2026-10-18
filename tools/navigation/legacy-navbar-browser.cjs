@@ -6,7 +6,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path');
 const { createHash } = require('node:crypto');
 const { chromium, webkit, request } = require('playwright');
+const { PNG } = require('pngjs');
 const { files, block, buttonAfter, normalize, assertResponsive } = require('./legacy-navbar.cjs');
+const grid = require('./snapscan-grid.cjs');
 const root = path.resolve(__dirname, '../..');
 assert.ok(process.env.THEME_BASELINE_ROOT, 'THEME_BASELINE_ROOT is required');
 const baseline = path.resolve(process.env.THEME_BASELINE_ROOT);
@@ -225,15 +227,18 @@ function readable(state) {
         const b = await before.page.evaluate(measure), a = await after.page.evaluate(measure);
         assert.equal(a.theme, theme); assert.equal(b.theme, theme); readable(a);
         if (baselineHasFix) readable(b);
+        const gridProof = file === grid.file ? grid.compare(await before.page.evaluate(grid.measure), await after.page.evaluate(grid.measure), fs.readFileSync(path.join(baseline, file), 'utf8'), fs.readFileSync(path.join(root, file), 'utf8'), b, a) : { expected:b, reflow:0, correctedOverflow:false };
+        const expected = gridProof.expected;
         assert.deepEqual(a.heading, b.heading, 'heading appearance and geometry unchanged');
-        assert.deepEqual(a.primaryControls, b.primaryControls, 'primary action appearance and geometry unchanged');
+        assert.deepEqual(a.primaryControls, expected.primaryControls, 'primary action appearance and geometry unchanged except exact grid reflow below features');
         assert.deepEqual(a.nav.rect, b.nav.rect, 'outer navbar geometry unchanged');
-        assert.equal(a.scrollWidth, b.scrollWidth, 'document overflow is unchanged from the actual baseline');
+        assert.equal(a.scrollWidth, expected.scrollWidth, 'only the exact SnapScan grid overflow correction may differ');
         assert.deepEqual(a.fonts, b.fonts, 'authentic page font state unchanged');
-        if (width > 600 || baselineHasFix) assert.deepEqual(a, b, 'desktop or already-fixed baseline geometry is exact');
+        if (width > 600 || baselineHasFix) assert.deepEqual(a, expected, 'desktop or already-fixed baseline geometry is exact apart from proven grid reflow');
         const name = `legacy-navbar-${file.split('/')[0]}-${width}-${theme}`;
         const imageBefore = await screenshot(before, name + '-nav-before'), imageAfter = await screenshot(after, name + '-nav-after');
-        if (width > 600 || baselineHasFix) assert.ok(imageAfter.equals(imageBefore), 'desktop or already-fixed baseline navbar/header pixels are exact');
+        let pixelProof = { pixelIdentical:imageAfter.equals(imageBefore), firstRowChangedPixels:0, maxChannelDelta:0 };
+        if ((width > 600 || baselineHasFix) && !pixelProof.pixelIdentical) pixelProof = grid.pixelParity(PNG.sync.read(imageBefore), PNG.sync.read(imageAfter), { file, width, reflow:gridProof.correctedOverflow ? gridProof.reflow : 0 });
         const diagnostics = [];
         if (theme === 'dark' && [320, 390, 1440].includes(width)) {
           for (const [version, test] of [['before', before], ['after', after]]) {
@@ -242,7 +247,7 @@ function readable(state) {
         }
         assert.equal(await after.page.getByRole('button', { name:'Cycle color theme', exact:true }).count(), 1);
         report.cases.push({ file, width, theme, baselineHasFix, candidate:a, baseline:b, accessibleName:'Cycle color theme',
-          labelsReadable:true, unchangedPrimaryGeometry:true, preExistingDocumentOverflowPx:Math.max(0, a.scrollWidth - width), pixelIdentical:width > 600 || baselineHasFix, screenshots:[name + '-nav-before.png', name + '-nav-after.png'], diagnosticScreenshots:diagnostics });
+          labelsReadable:true, unchangedPrimarySizeAndStyle:true, gridReflowPx:gridProof.reflow, correctedGridOverflow:gridProof.correctedOverflow, preExistingDocumentOverflowPx:Math.max(0, a.scrollWidth - width), pixelGateRequired:width > 600 || baselineHasFix, ...pixelProof, screenshots:[name + '-nav-before.png', name + '-nav-after.png'], diagnosticScreenshots:diagnostics });
         // Use native keys rather than script-injected palette state or mouse hover.
         for (const test of [before, after]) { await test.page.locator('#tront-theme-btn').focus(); await test.page.keyboard.press('Enter'); }
       }
@@ -252,12 +257,13 @@ function readable(state) {
     for (const file of files) for (const width of [320, 390]) {
       const before = await open(baseline, file, width, false), test = await open(root, file, width, false);
       const b = await before.page.evaluate(measure), a = await test.page.evaluate(measure); readable(a);
-      assert.equal(a.scrollWidth, b.scrollWidth, 'no-JS document overflow is unchanged from the actual baseline');
+      const gridProof = file === grid.file ? grid.compare(await before.page.evaluate(grid.measure), await test.page.evaluate(grid.measure), fs.readFileSync(path.join(baseline, file), 'utf8'), fs.readFileSync(path.join(root, file), 'utf8'), b, a) : { expected:b, reflow:0, correctedOverflow:false };
+      assert.equal(a.scrollWidth, gridProof.expected.scrollWidth, 'no-JS overflow only changes by the exact grid correction');
       assert.deepEqual(a.nav.rect, b.nav.rect, 'no-JS outer navbar geometry unchanged');
       assert.deepEqual(a.heading, b.heading, 'no-JS heading geometry unchanged');
-      assert.deepEqual(a.primaryControls, b.primaryControls, 'no-JS primary action geometry unchanged');
+      assert.deepEqual(a.primaryControls, gridProof.expected.primaryControls, 'no-JS primary actions only shift by exact grid reflow');
       report.noScript.push({ ...await keyboard(test, file, width), documentScrollWidth:{ baseline:b.scrollWidth, candidate:a.scrollWidth },
-        navbarScrollWidth:a.navScrollWidth, preExistingDocumentOverflowPx:Math.max(0, a.scrollWidth - width) });
+        navbarScrollWidth:a.navScrollWidth, gridReflowPx:gridProof.reflow, correctedGridOverflow:gridProof.correctedOverflow, preExistingDocumentOverflowPx:Math.max(0, a.scrollWidth - width) });
       clean(before); clean(test); await before.context.close(); await test.context.close();
       console.log('PASS legacy navbar no-JS', file, width);
     }

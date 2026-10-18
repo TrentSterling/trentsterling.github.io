@@ -1,5 +1,6 @@
 'use strict';
 const assert = require('node:assert/strict');
+const snapscanGrid = require('./snapscan-grid.cjs');
 // Exact page-local Device History geometry with 6px outer padding for wider labels.
 // This helper is test-only; production keeps native static links and its theme cycle.
 const files = ["runtimecsg/index.html", "toaster/index.html", "notesdash/index.html", "snapscan/index.html"];
@@ -10,7 +11,7 @@ function normalize(html, file) {
   if (!files.includes(file)) return html;
   assert.ok(html.split(block).length <= 2, 'duplicate reviewed legacy navbar block');
   assert.ok(html.split(buttonAfter).length <= 2, 'duplicate reviewed cycle button');
-  return html.replace(block, '').replace(buttonAfter, buttonBefore);
+  return snapscanGrid.normalize(html.replace(block, '').replace(buttonAfter, buttonBefore), file);
 }
 function assertResponsive(html) {
   assert.equal(html.split(block).length, 2, 'one exact page-local responsive block');
