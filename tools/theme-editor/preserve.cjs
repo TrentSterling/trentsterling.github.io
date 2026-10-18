@@ -7,13 +7,14 @@ const { execFileSync } = require('node:child_process');
 const isaac = require('../game-media/isaac-archive.cjs');
 const recorded = require('../game-media/recorded-previews.cjs');
 const { withoutAddition: withoutBreadcrumbAddition } = require('../seo/breadcrumbs.cjs');
+const { normalize: normalizeGamesResilience } = require('../game-media/games-resilience.cjs');
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
 const { normalizeYearsForPreservation, normalizeReleasedForPreservation, recovered } = require('./gallery-content.cjs');
 const normalizeGames = html => normalizeYearsForPreservation(normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(isaac.normalizeForPreservation(html))));
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
 assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
-const read = (dir, file) => withoutBreadcrumbAddition(fs.readFileSync(path.join(dir, file), 'utf8'), file);
+const read = (dir, file) => normalizeGamesResilience(withoutBreadcrumbAddition(fs.readFileSync(path.join(dir, file), 'utf8'), file), file);
 const blocks = (html, tag) => [...html.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, 'gi'))].map(match => match[1]);
 const copy = html => html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 for (const file of ['index.html', 'discord/index.html', 'games/index.html']) {

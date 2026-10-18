@@ -23,6 +23,8 @@ on:
       - tools/about-discovery/**
       - tools/theme-editor/**
       - tools/game-media/verify.cjs
+      - tools/game-media/games-resilience.cjs
+      - tools/game-media/resilience*.cjs
       - tools/game-media/isaac-archive.cjs
       - tools/game-media/isaac-archive.test.cjs
       - tools/game-media/server.cjs
@@ -84,6 +86,10 @@ jobs:
         run: timeout 180s node tools/about-discovery/media-decode.cjs
       - name: Test reviewed Isaac archive media contracts
         run: node --test tools/game-media/isaac-archive.test.cjs
+      - name: Test Games font readiness and source preservation
+        run: node --test tools/game-media/resilience.test.cjs
+      - name: Test Games stalled-font resilience in the browser
+        run: timeout 120s node tools/game-media/resilience-browser.cjs
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls
