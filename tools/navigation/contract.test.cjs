@@ -9,7 +9,8 @@ const { changes, pages, normalize: normalizeNavigation, links, assertPrimary } =
 const { normalize: normalizeInvites } = require('./discord-invites.cjs');
 const { file: deviceFile, normalize: normalizeDevice } = require('./device-download.cjs');
 const { normalize: normalizeResponsive } = require('./device-responsive.cjs');
-const normalize = (html, file) => normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file);
+const { normalize: normalizeAuthors, changes: authorChanges } = require('../seo/author-links.cjs');
+const normalize = (html, file) => normalizeAuthors(normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file), file);
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 const context = { window: {} };
@@ -54,7 +55,7 @@ test('every existing production file is unchanged outside the exact reviewed anc
   for (const file of production) {
     const before = fs.readFileSync(path.join(base, file));
     const after = fs.readFileSync(path.join(root, file));
-    if (changes.some(change => change.file === file) || file === deviceFile) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
+    if (changes.some(change => change.file === file) || file === deviceFile || authorChanges.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
     else assert.deepEqual(after, before, file + ': byte-identical');
   }
   const candidateFiles = execFileSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);

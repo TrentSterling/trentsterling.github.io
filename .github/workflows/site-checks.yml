@@ -11,6 +11,9 @@ on:
       - crumplecar/index.html
       - colony/index.html
       - jennsfarm/index.html
+      - powershellmanager/index.html
+      - trontop/index.html
+      - ytdl/index.html
       - tools/seo/**
       - discord/**
       - device-history/index.html
@@ -106,6 +109,9 @@ jobs:
       - name: Check Device History narrow-screen labels and install layout
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 180s node tools/navigation/device-responsive-browser.cjs
+      - name: Check canonical author metadata and contextual project links
+        if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
+        run: timeout 180s node tools/seo/author-links-browser.cjs
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls
