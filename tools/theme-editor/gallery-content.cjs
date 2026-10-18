@@ -32,6 +32,7 @@ expectedCards.splice(1 + released.cards.length, 0, ...recovered.cards.map(card =
 expectedCards.splice(1, 0, craftmine2.expectedCard); // Demigod stays first; every historical card retains its relative position.
 const currentMissingYearHrefs = expectedCards.filter(card => !card.yearSpans.length).map(card => card.href);
 function normalizeReleasedForPreservation(html) {
+    html = require('../game-media/recorded-previews.cjs').normalizeForPreservation(html);
     // These exact cards already exist on master. Remove them only for the
     // 117-card historical browser comparison; raw candidate checks retain all four.
     for (const entry of [...released.cards, ...recovered.cards, ...(recovered.retiredCards || [])]) {
