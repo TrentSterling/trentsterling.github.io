@@ -55,7 +55,7 @@ concurrency:
 jobs:
   browser-checks:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 20
     env:
       THEME_BROWSER_EXECUTABLE: /opt/google/chrome/chrome
       THEME_BASELINE_ROOT: ${{ github.workspace }}/.local/theme-baseline
@@ -125,6 +125,9 @@ jobs:
       - name: Check Device History narrow-screen labels and install layout
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 180s node tools/navigation/device-responsive-browser.cjs
+      - name: Check legacy landing navbar labels and theme action
+        if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
+        run: timeout 480s node tools/navigation/legacy-navbar-browser.cjs
       - name: Check canonical author metadata and contextual project links
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 300s node tools/seo/author-links-browser.cjs

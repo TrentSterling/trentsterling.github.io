@@ -6,7 +6,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { chromium, webkit, request } = require('playwright');
-const { personId, products, articles, projectArticles } = require('./author-links.cjs');
+const { personId, products, articles, projectArticles, normalize: normalizeAuthor } = require('./author-links.cjs');
+const legacyNavbar = require('../navigation/legacy-navbar.cjs');
 const root = path.resolve(__dirname, '../..');
 assert.ok(process.env.THEME_BASELINE_ROOT, 'THEME_BASELINE_ROOT is required');
 const baseline = path.resolve(process.env.THEME_BASELINE_ROOT);
@@ -212,7 +213,21 @@ const measure = () => {
         await screenshot(before.page,name+'-top-before');const beforeMeasure=await before.page.evaluate(measureProject);
         await screenshot(after.page,name+'-top-after');
         assert.ok(beforeMeasure.primaryControls.length>0,'real primary actions are measured');
-        assert.deepEqual(await after.page.evaluate(measureProject),beforeMeasure,'existing heading, navigation and primary action geometry unchanged');
+        const afterMeasure=await after.page.evaluate(measureProject);
+        let reviewedMobileNavbar=false;
+        if(width<=600 && legacyNavbar.files.includes(article.file) && !fs.readFileSync(path.join(baseline,article.file),'utf8').includes(legacyNavbar.block)) {
+          const original=fs.readFileSync(path.join(baseline,article.file),'utf8'),candidate=fs.readFileSync(path.join(root,article.file),'utf8');
+          legacyNavbar.assertResponsive(candidate);
+          assert.equal(normalizeAuthor(legacyNavbar.normalize(candidate,article.file),article.file),
+            normalizeAuthor(legacyNavbar.normalize(original,article.file),article.file),'only exact reviewed navbar and author additions');
+          // The focused legacy-navbar suite proves every changed glyph/box.
+          // Here only mobile control x/width/font may differ; native labels,
+          // hrefs, order, heights, colors and all non-nav geometry stay exact.
+          const stable=state=>({...state,navControls:state.navControls.map(({x,width,font,...control})=>control)});
+          assert.deepEqual(stable(afterMeasure),stable(beforeMeasure),'reviewed mobile navbar retains controls, outer nav, heading and primary actions');
+          assert.equal(await after.page.getByRole('button',{name:'Cycle color theme',exact:true}).count(),1);
+          reviewedMobileNavbar=true;
+        } else assert.deepEqual(afterMeasure,beforeMeasure,'existing heading, navigation and primary action geometry unchanged');
         const fonts=await projectFonts(after.page,article);
         assert.deepEqual(fonts,await projectFonts(before.page,article),'normal font state unchanged');
         const baselineLinks=await before.page.locator('footer a[href="' + article.target + '"]').count();
@@ -254,7 +269,7 @@ const measure = () => {
         await after.page.reload({waitUntil:'networkidle'});await projectArticleState(after.page,article,credit);
         assert.deepEqual(before.errors,[]);assert.deepEqual(after.errors,[]);assert.deepEqual(before.missing,[]);assert.deepEqual(after.missing,[]);
         report.cases.push({file:article.file,width,zoom,javaScriptEnabled,animations,unchangedPrimaryGeometry:true,unchangedFooterCredit:true,
-          exactNativeArticle:true,normalFonts:fonts,contrast,keyboard:focus,directRouteAndReload:true,backAndReload:true});
+          exactNativeArticle:true,reviewedMobileNavbar,normalFonts:fonts,contrast,keyboard:focus,directRouteAndReload:true,backAndReload:true});
         await before.context.close();await after.context.close();console.log('PASS project contextual devlog',article.file,width,zoom,javaScriptEnabled);
       }
     }
