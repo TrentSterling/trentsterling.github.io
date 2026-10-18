@@ -3,8 +3,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'C:/trontstack/tmp/card-refresh/tools/node_modules/playwright');
 const {createServer,root} = require('./server.cjs');
-const results=[];
-const check=(name,value,detail)=>{assert.ok(value,name+' '+JSON.stringify(detail||''));results.push({name,detail});console.log('PASS',name,detail?JSON.stringify(detail):'');};
+const {runWide}=require('./frame-wide.cjs');
+const {writeReport,hostEvidence}=require('./frame-diagnostics.cjs');
+const wideOnly=process.argv.includes('--wide-only');
+const results=[];let suiteError=null;
+const check=(name,value,detail)=>{results.push({name,passed:!!value,detail});assert.ok(value,name+' '+JSON.stringify(detail||''));console.log('PASS',name,detail?JSON.stringify(detail):'');};
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function state(page){return page.evaluate(()=>({attached:document.querySelectorAll('.gameplay-preview[src]').length,playing:[...document.querySelectorAll('.gameplay-preview')].filter(v=>!v.paused).length,visible:[...document.querySelectorAll('.gameplay-preview')].every(v=>{const r=v.getBoundingClientRect();return r.bottom>64&&r.top<innerHeight&&r.width>0;}),sources:[...document.querySelectorAll('.gameplay-preview')].map(v=>v.getAttribute('src')),stats:[...document.querySelectorAll('.gameplay-preview')].map(v=>({time:v.currentTime,total:v.getVideoPlaybackQuality().totalVideoFrames,dropped:v.getVideoPlaybackQuality().droppedVideoFrames}))}));}
 async function context(browser,options={}){
@@ -14,8 +17,12 @@ async function context(browser,options={}){
 }
 (async()=>{
  const server=createServer();await new Promise(r=>server.listen(8967,'127.0.0.1',r));
- const browser=await chromium.launch({channel:'chrome',headless:true});
+ fs.mkdirSync(path.join(root,'.local'),{recursive:true});
+ let browser;const hostBefore=hostEvidence(root);
  try{
+  browser=await chromium.launch({...(process.env.GALLERY_BROWSER_EXECUTABLE?{executablePath:process.env.GALLERY_BROWSER_EXECUTABLE}:{channel:'chrome'}),headless:true});
+  let s;
+  if(!wideOnly){
   const c=await context(browser),page=await c.newPage(),errors=[],requests=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
   await page.goto('http://127.0.0.1:8967/games/');await page.waitForTimeout(600);
@@ -23,7 +30,7 @@ async function context(browser,options={}){
   check('Gallery does not request GIFs',!requests.some(u=>/\.gif(?:\?|$)/.test(u)));
   check('Initial video sources stay bounded and visible',(await state(page)).attached<=12&&(await state(page)).visible);
   await page.locator('[data-preview]').first().scrollIntoViewIfNeeded();await page.waitForTimeout(2200);
-  let s=await state(page);check('Desktop starts autoplay without hover and caps it at twelve',s.playing>0&&s.attached<=12&&s.visible,s);
+  s=await state(page);check('Desktop starts autoplay without hover and caps it at twelve',s.playing>0&&s.attached<=12&&s.visible,s);
   check('Decoded video advances',s.stats.some(v=>v.total>5&&v.time>0),s.stats);
   const craftmine2=page.locator('#preview-craftmine2-2026');
   check('CraftMine 2 is the second card with its own public destination',await page.locator('.grid .item').nth(1).getAttribute('href')==='https://tront.xyz/craftmine2/');
@@ -65,16 +72,9 @@ async function context(browser,options={}){
   check('No page JavaScript errors',errors.length===0,errors);
   await c.close();
 
-  const wide=await context(browser,{viewport:{width:2560,height:1440}}),wp=await wide.newPage();
-  const media=await wide.newCDPSession(wp),decoders={};await media.send('Media.enable');
-  media.on('Media.playerPropertiesChanged',e=>{for(const p of e.properties)if(/decoder|resolution|codec/i.test(p.name)){(decoders[e.playerId]??={})[p.name]=p.value;}});
-  await wp.goto('http://127.0.0.1:8967/games/');await wp.locator('#preview-slopeloop-2026').scrollIntoViewIfNeeded();await wp.waitForTimeout(2000);
-  const wideBefore=await state(wp);await wp.waitForTimeout(5000);const wideAfter=await state(wp);
-  const frames=wideAfter.stats.reduce((n,v,i)=>n+v.total-(wideBefore.stats[i]?.total||0),0),drops=wideAfter.stats.reduce((n,v,i)=>n+v.dropped-(wideBefore.stats[i]?.dropped||0),0);
-  check('A large desktop runs more than three previews within the twelve-slot cap',wideAfter.playing>3&&wideAfter.attached<=12&&wideAfter.visible,wideAfter);
-  check('Expanded desktop playback advances with fewer than ten percent dropped frames',frames>300&&drops/frames<.10,{frames,drops,dropPercent:100*drops/frames});
-  fs.writeFileSync(path.join(root,'.local/gallery-playback-load.json'),JSON.stringify({before:wideBefore,after:wideAfter,frames,drops,dropPercent:100*drops/frames,decoders},null,2));
-  await wp.screenshot({path:path.join(root,'.local/gallery-wide.png')});await wide.close();
+  }
+  await runWide({browser,context,state,root,check,mode:wideOnly?'fresh-browser-wide':'original-full-suite'});
+  if(wideOnly)return;
 
   const mobile=await context(browser,{viewport:{width:390,height:844},isMobile:true,hasTouch:true});const mp=await mobile.newPage();
   await mp.goto('http://127.0.0.1:8967/games/');await mp.locator('[data-preview]').first().scrollIntoViewIfNeeded();await mp.waitForTimeout(1500);
@@ -107,5 +107,6 @@ async function context(browser,options={}){
   check('No JavaScript still shows usable cards',await np.locator('.grid .item').first().isVisible()&&await np.locator('video').count()===0);await nojs.close();
   fs.writeFileSync(path.join(root,'.local/gallery-verification.json'),JSON.stringify({at:new Date().toISOString(),results},null,2));
   console.log('COMPLETE all '+results.length+' gallery checks passed');
- }finally{await browser.close();await new Promise(r=>server.close(r));}
+ }catch(error){suiteError=error.stack;throw error;}
+ finally{writeReport(root,'gallery-verification.json',{at:new Date().toISOString(),mode:wideOnly?'fresh-browser-wide':'original-full-suite',status:suiteError?'failed':'passed',error:suiteError,hostBefore,hostAfter:hostEvidence(root),results});if(browser)await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});
