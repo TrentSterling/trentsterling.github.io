@@ -80,7 +80,7 @@ jobs:
       - name: Install pinned test tooling and official Chrome
         id: browser-tools
         run: |
-          npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
+          npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0 pngjs@7.0.0
           node "$RUNNER_TEMP/site-tests/node_modules/playwright/cli.js" install --with-deps chrome
           node "$RUNNER_TEMP/site-tests/node_modules/playwright/cli.js" install ffmpeg
           sudo apt-get update

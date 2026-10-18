@@ -66,6 +66,7 @@ test('CI retains all four consumer triggers and runs focused browser proof', () 
   assert.ok(workflow.includes('- tools/navigation/**'));
   assert.ok(workflow.includes('node --test tools/navigation/*.test.cjs'));
   assert.ok(workflow.includes('node tools/navigation/legacy-navbar-browser.cjs'));
+  assert.ok(workflow.includes('npm install --prefix "$RUNNER_TEMP/site-tests" --no-save --package-lock=false --ignore-scripts playwright@1.62.0 pngjs@7.0.0'), 'main browser job installs the exact PNG decoder required by its pixel gate');
 });
 
 const grid = require('./snapscan-grid.cjs');
