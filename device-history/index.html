@@ -59,6 +59,19 @@
         #magic-navbar-container .nav-link.home-link { padding-left: 0.5rem; }
         #magic-navbar-container .nav-link:hover ~ .home-link .logo-image, #magic-navbar-container .home-link:hover .logo-image { animation: spin-once 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
 
+        /* Device History: retain readable primary labels on narrow screens. */
+        @media (max-width: 600px) {
+            #magic-navbar-container { gap: 5px; padding: 0 8px; }
+            #magic-navbar-container .nav-link { flex: 0 0 auto; justify-content: center; padding: 0 9px; font-size: 12px; line-height: 1.2; white-space: nowrap; }
+            #magic-navbar-container .home-link { padding-left: 5px; }
+            #magic-navbar-container .logo-image { width: 24px; height: 24px; margin-right: 5px; flex: 0 0 auto; }
+            #magic-navbar-container .theme-label { display: inline; }
+        }
+        @media (max-width: 360px) {
+            #magic-navbar-container .nav-link { padding-inline: 7px; }
+            #magic-navbar-container .logo-image, #magic-navbar-container .theme-icon { display: none; }
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
             background: var(--bg);
@@ -482,7 +495,7 @@
     <!-- INSTALL -->
     <section class="section" id="install">
         <h2>Download &amp; Install</h2>
-        <div class="install-options" style="grid-template-columns:1fr 1fr;">
+        <div class="install-options">
             <div class="install-card" style="border-color:rgba(168,85,247,0.3);">
                 <h3 style="color:var(--accent);">Download .exe</h3>
                 <a href="https://github.com/TrentSterling/device-history/releases/download/v0.8.0/device-history.exe" class="btn btn-primary" style="display:block;text-align:center;background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.3);color:#d4b0ff;margin-bottom:4px;">&#11015; Portable .exe v0.8.0 (~7 MB)</a>

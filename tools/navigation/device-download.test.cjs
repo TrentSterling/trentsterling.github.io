@@ -3,7 +3,9 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { file, url, changes, release, normalize, assertDownloads } = require('./device-download.cjs');
+const { file, url, changes, release, normalize: normalizeDownloads, assertDownloads } = require('./device-download.cjs');
+const { normalize: normalizeResponsive } = require('./device-responsive.cjs');
+const normalize = (html, file) => normalizeResponsive(normalizeDownloads(html, file), file);
 const root = path.resolve(__dirname, '../..');
 const html = fs.readFileSync(path.join(root, file), 'utf8');
 test('both downloads identify the actual published portable binary and explicit version', () => {
@@ -18,7 +20,7 @@ test('unpublished destinations and ambiguous binary labels are rejected', () => 
     assert.throws(() => assertDownloads(html.replace(change.after, change.after.replace('/v0.8.0/', '/v0.8.3/'))));
   }
 });
-test('every byte outside two reviewed download anchors matches the PR base', () => {
+test('every byte outside reviewed download anchors and page-local responsive changes matches the PR base', () => {
   assert.ok(process.env.THEME_BASELINE_ROOT);
   const before = fs.readFileSync(path.join(process.env.THEME_BASELINE_ROOT, file), 'utf8');
   assert.equal(normalize(html, file), normalize(before, file));

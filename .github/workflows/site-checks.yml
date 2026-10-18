@@ -103,6 +103,9 @@ jobs:
       - name: Check verified Device History download destinations
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 90s node tools/navigation/device-download-browser.cjs
+      - name: Check Device History narrow-screen labels and install layout
+        if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
+        run: timeout 180s node tools/navigation/device-responsive-browser.cjs
       - name: Test theme math and state contracts
         run: node --test tools/theme-editor/test.cjs
       - name: Test rendered themes and native browser controls
