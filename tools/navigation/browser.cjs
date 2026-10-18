@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium, webkit, request } = require('playwright');
 const { pages } = require('./contract.cjs');
+const { invite } = require('./discord-invites.cjs');
 const root = path.resolve(__dirname, '../..');
 const baseline = path.resolve(process.env.THEME_BASELINE_ROOT || '');
 assert.ok(process.env.THEME_BASELINE_ROOT, 'THEME_BASELINE_ROOT is required');
@@ -69,6 +70,9 @@ const measure = selector => {
     });
     const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
     await page.goto(origin + item.route, { waitUntil: 'networkidle' });
+    if (javaScriptEnabled && ['/style/', '/minecraft-modding/'].includes(item.route)) {
+      await page.waitForFunction(() => window.Tront && Tront.scale, null, { timeout: 10000 });
+    }
     await page.evaluate(async frames => {
       await Promise.all(['400 16px Inter', '500 16px "Fira Code"', '700 16px "Fira Code"'].map(font => document.fonts.load(font)));
       await document.fonts.ready;
@@ -89,7 +93,13 @@ const measure = selector => {
       const before = await open(baseline, item, width), after = await open(root, item, width);
       const entry = { route: item.route, width };
       const beforeMeasure = await before.page.evaluate(measure, item.selector), afterMeasure = await after.page.evaluate(measure, item.selector);
-      assert.deepEqual(afterMeasure, beforeMeasure, item.route + ': exact loaded geometry/colors');
+      try { assert.deepEqual(afterMeasure, beforeMeasure, item.route + ': exact loaded geometry/colors'); }
+      catch (error) {
+        console.error('Comparison diagnostics', { beforeErrors: before.errors, afterErrors: after.errors, beforeMissing: before.missing, afterMissing: after.missing,
+          before: await before.page.evaluate(() => ({ ready: document.readyState, fonts: document.fonts.status, style: document.documentElement.style.cssText })),
+          after: await after.page.evaluate(() => ({ ready: document.readyState, fonts: document.fonts.status, style: document.documentElement.style.cssText })) });
+        throw error;
+      }
       if (item.core) assert.ok(afterMeasure.scrollWidth <= width, 'no document-width overflow');
       entry.exactAppearance = true; entry.currentBefore = await state(before.page, item); entry.currentAfter = await state(after.page, item);
       await current(after.page, item);
@@ -158,6 +168,32 @@ const measure = selector => {
     await missing.page.reload({ waitUntil: 'networkidle' }); await current(missing.page, cases[3]);
     report.missingRouteRecovery = 'no false current page, Home recovery, Back, direct refresh';
     await missing.context.close();
+    report.discordInvites = [];
+    for (const mode of ['success', 'failure', 'no-script']) {
+      const test = await open(root, cases[2], 390, mode !== 'no-script', mode === 'failure');
+      const popupRequests = [];
+      // Intercept before click: inspect the exact target without sending any
+      // request to Discord, accepting an invite, or communicating externally.
+      await test.context.route(invite, route => {
+        popupRequests.push(route.request().url());
+        return route.fulfill({ contentType: 'text/html', body: '<title>Local invite target fixture</title>' });
+      });
+      const calls = test.page.locator('a.cta-button');
+      assert.equal(await calls.count(), 2);
+      if (mode === 'failure') await test.page.getByText('join directly', { exact: true }).waitFor();
+      const actions = mode === 'failure' ? test.page.locator('a.cta-button, #widget-container a') : calls;
+      assert.equal(await actions.count(), mode === 'failure' ? 3 : 2);
+      for (let i = 0; i < await actions.count(); i++) {
+        assert.equal(await actions.nth(i).getAttribute('href'), invite);
+        const [popup] = await Promise.all([test.page.waitForEvent('popup'), actions.nth(i).click()]);
+        await popup.waitForURL(invite); await popup.close();
+      }
+      assert.equal(popupRequests.length, mode === 'failure' ? 3 : 2);
+      await current(test.page, cases[2]);
+      report.discordInvites.push({ mode, target: invite, interceptedClicks: popupRequests.length, navbarStillLanding: true });
+      await test.page.screenshot({ path: path.join(out, 'discord-invite-' + mode + '.png') });
+      await test.context.close();
+    }
     report.status = 'passed';
   } finally {
     report.durationMs = Date.now() - started;

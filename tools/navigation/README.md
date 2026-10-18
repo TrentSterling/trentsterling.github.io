@@ -33,3 +33,12 @@ invitation actions are never executed. Local evidence is written to
 `THEME_SCREENSHOTS` or `.local/theme-review`, and CI retains it as artifacts.
 These checks do not claim public deployment availability or an exhaustive site
 audit.
+
+## Discord Join links
+
+The two Join CTAs and widget-error fallback restore the exact public invite that
+existed before commit `6113180d2fe9b095496ed2a693fe34984381f3ba`. The primary
+Discord nav link and canonical still point to `/discord/`. Contracts reject
+self-links and unreviewed invites; browser cases cover widget success, failure,
+and JavaScript disabled. Every invite click is intercepted locally before any
+external request. Current server invite acceptance is not claimed.
