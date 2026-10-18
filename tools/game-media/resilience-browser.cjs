@@ -12,7 +12,7 @@ const baseline = process.env.THEME_BASELINE_ROOT;
 assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
 const output = process.env.THEME_SCREENSHOTS || path.join(root, '.local/theme-review');
 fs.mkdirSync(output, { recursive: true });
-const report = { fonts: [], normalAppearance: [] };
+const report = { fonts: [], normalAppearance: [], keyboard: [] };
 const origin = 'https://tront.xyz';
 const fontCssUrl = fs.readFileSync(path.join(root, 'games/index.html'), 'utf8')
   .match(/href="(https:\/\/fonts.googleapis.com\/css2[^"\s]+)"/)[1];
@@ -60,8 +60,8 @@ const measure = () => {
   await client.dispose();
   const browserType = process.env.GAMES_TEST_BROWSER === 'webkit' ? webkit : chromium;
   const browser = await browserType.launch({ headless: true, executablePath: process.env.GAMES_BROWSER_EXECUTABLE || process.env.THEME_BROWSER_EXECUTABLE });
-  async function open(source, width, { held = false, reducedMotion = 'no-preference', javaScriptEnabled = true } = {}) {
-    const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion, javaScriptEnabled });
+  async function open(source, width, { held = false, reducedMotion = 'no-preference', javaScriptEnabled = true, height = 900 } = {}) {
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion, javaScriptEnabled });
     await context.addInitScript(() => localStorage.setItem('tront-previews-paused', 'true'));
     const pending = [], errors = [], missing = [];
     await context.route('**/*', async route => {
@@ -145,8 +145,66 @@ const measure = () => {
       report.fonts.push({ javaScriptEnabled, failedFontsRemainReadable: true });
       await test.context.close();
     }
+    for (const [width, height] of [[1440, 900], [390, 844], [320, 568]]) {
+      for (const reducedMotion of ['no-preference', 'reduce']) {
+        const test = await open(root, width, { height, reducedMotion });
+        const page = test.page;
+        await page.evaluate(() => document.fonts.ready); await readable(test);
+        const expected = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('input[name="filter"]')].map(input => [input.id, document.querySelectorAll(input.id === 'filter-all' ? '.grid .item' : '.grid .item.tag-' + input.id.slice(7)).length])));
+        const ids = Object.keys(expected), originalHash = await page.evaluate(() => location.hash);
+        assert.equal(expected['filter-all'], 128); assert.equal(expected['filter-vr'], 6);
+        const checked = async id => {
+          try {
+            await page.waitForFunction(id => document.querySelector('#' + id).checked, id, { timeout: 2000 });
+          } catch (error) {
+            console.error('Filter diagnostic:', id, await page.evaluate(() => ({ active: document.activeElement.id, checked: [...document.querySelectorAll('input[name="filter"]')].filter(e => e.checked).map(e => e.id) })));
+            throw error;
+          }
+          await page.waitForTimeout(80); // allow the keyboard-focus scroll frame
+          const state = await page.evaluate(() => {
+            const input = document.activeElement, label = document.querySelector('label[for="' + input.id + '"]');
+            const r = label.getBoundingClientRect(), s = getComputedStyle(label);
+            return { id: input.id, focused: input.matches(':focus'), count: [...document.querySelectorAll('.grid .item')].filter(e => e.getClientRects().length).length,
+              label: { top: r.top, bottom: r.bottom, left: r.left, right: r.right, outline: s.outlineStyle, outlineWidth: s.outlineWidth }, navBottom: document.querySelector('#magic-navbar-container').getBoundingClientRect().bottom, width: innerWidth, height: innerHeight, hash: location.hash };
+          });
+          assert.equal(state.id, id); assert.equal(state.count, expected[id]);
+          assert.equal(state.focused, true); assert.equal(state.label.outline, 'solid'); assert.equal(state.label.outlineWidth, '3px');
+          assert.ok(state.label.top >= state.navBottom && state.label.bottom <= state.height, 'focused label is visible below the fixed navbar: ' + JSON.stringify(state));
+          assert.ok(state.label.left >= 0 && state.label.right <= state.width);
+          assert.equal(state.hash, originalHash);
+          return state;
+        };
+        await page.locator('.home-link').focus(); await page.keyboard.press('Tab'); await checked('filter-all');
+        const cycle = [];
+        // Preserve each browser's native radio-group behavior at the ends.
+        for (let i = 1; i < ids.length; i++) { await page.keyboard.press('ArrowRight'); cycle.push(await checked(ids[i])); }
+        for (let i = ids.length - 2; i >= 0; i--) { await page.keyboard.press('ArrowLeft'); await checked(ids[i]); }
+        await page.keyboard.press('ArrowDown'); await checked('filter-vr');
+        await page.keyboard.press('ArrowUp'); await checked('filter-all');
+        await page.locator('#filter-vr').focus(); await page.keyboard.press('Space'); await checked('filter-vr');
+        await page.keyboard.press('Shift+Tab'); assert.equal(await page.evaluate(() => document.activeElement.classList.contains('home-link')), true);
+        await page.keyboard.press('Tab'); await checked('filter-vr');
+        await page.screenshot({ path: path.join(output, `games-filter-focus-${width}-${reducedMotion}.png`) });
+        for (const [id, count] of Object.entries(expected)) {
+          await page.locator('label[for="' + id + '"]').click();
+          assert.equal(await page.locator('.grid .item:visible').count(), count);
+        }
+        report.keyboard.push({ width, height, reducedMotion, counts: expected, forwardAndReverseTraversal: true, spaceSelects: true, tabReturnsToSelected: true, hashUnchanged: true, focusLabelsVisible: true, cycle });
+        assert.deepEqual(test.errors, []); await test.context.close();
+      }
+    }
+    const noScript = await open(root, 390, { height: 844, javaScriptEnabled: false });
+    await noScript.page.evaluate(() => document.fonts.ready); await readable(noScript);
+    await noScript.page.locator('label[for="filter-vr"]').click();
+    assert.equal(await noScript.page.locator('.grid .item:visible').count(), 6);
+    await noScript.page.locator('#filter-game-jam').focus(); await noScript.page.keyboard.press('Space');
+    assert.equal(await noScript.page.locator('#filter-game-jam').isChecked(), true);
+    assert.equal(await noScript.page.locator('.grid .item:visible').count(), await noScript.page.locator('.grid .item.tag-game-jam').count());
+    await noScript.page.locator('label[for="filter-all"]').click(); await readable(noScript);
+    report.noScriptFiltering = 'native pointer and Space selection work without script';
+    await noScript.context.close();
     report.status = 'passed';
-    console.log('PASS: Games stays readable during held/failed fonts and preserves loaded desktop/mobile geometry.');
+    console.log('PASS: Games font resilience, unchanged loaded geometry, native keyboard filters, visible focus and no-script filtering.');
   } finally {
     fs.writeFileSync(path.join(output, 'games-resilience-report.json'), JSON.stringify(report, null, 2));
     await browser.close();

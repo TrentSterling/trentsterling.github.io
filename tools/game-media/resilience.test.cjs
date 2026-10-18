@@ -36,6 +36,23 @@ test('Games body is visible before any script or font-dependent animation runs',
   assert.match(bodyRule, /(?:^|;)visibility:visible(?:;|$)/);
 });
 
+test('Games uses native, visually hidden category radios with visible label focus', () => {
+  const ids = ['all', 'vr', 'game-jam', 'tool', 'prototype', 'mod', 'game', 'flash-game'];
+  const rule = html.match(/\.filter-controls\{([^}]+)\}/)[1];
+  assert.doesNotMatch(rule, /display:none|visibility:hidden/);
+  assert.match(rule, /position:fixed/);
+  assert.match(rule, /clip:rect\(0,0,0,0\)/);
+  for (const id of ids) {
+    assert.ok(html.includes('type="radio" name="filter" id="filter-' + id + '"'));
+    assert.ok(html.includes('#filter-' + id + ':focus~.main-container .filter-nav label[for=filter-' + id + ']'));
+  }
+  const script = html.match(/<script id="gallery-filter-focus">([\s\S]*?)<\/script>/)[1];
+  assert.match(script, /input\.addEventListener\('focus'/);
+  assert.match(script, /document\.activeElement !== input/);
+  assert.match(script, /scrollIntoView\(\{block:'nearest',inline:'nearest'\}\)/);
+  assert.doesNotMatch(script, /preventDefault|keydown|location|checked\s*=/);
+});
+
 test('Games bytes outside exact reviewed resilience replacements match the PR base', () => {
   const baseline = process.env.THEME_BASELINE_ROOT;
   assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
