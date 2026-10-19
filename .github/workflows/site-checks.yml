@@ -9,6 +9,7 @@ on:
       - sitemap-pages.xml
       - hardpoint/**
       - crumplecar/index.html
+      - tools/crumplecar/**
       - colony/index.html
       - jennsfarm/index.html
       - powershellmanager/index.html
@@ -95,6 +96,8 @@ jobs:
           echo "PLAYWRIGHT_MODULE=$RUNNER_TEMP/site-tests/node_modules/playwright" >> "$GITHUB_ENV"
       - name: Check 404 recovery and additive breadcrumb metadata
         run: node --test tools/seo/*.test.cjs
+      - name: Check CrumpleCar suspension render attachments
+        run: CRUMPLECAR_BASELINE="$THEME_BASELINE_ROOT/crumplecar/index.html" node --test tools/crumplecar/*.test.cjs
       - name: Verify sitemap and canonical game metadata
         run: node tools/seo/check.cjs
       - name: Check copy and gallery source preservation
