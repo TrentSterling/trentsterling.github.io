@@ -5,8 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
+const refresh = require('./six-game-refresh.cjs');
 const previews = require('./recorded-previews.json');
 function normalizeForPreservation(html) {
+    html = refresh.normalizeForPreservation(html);
   for (const item of previews) {
     if (!html.includes(item.before)) continue;
     assert.equal(html.split(item.before).length - 1, 1, 'exactly one target container');
@@ -16,7 +18,7 @@ function normalizeForPreservation(html) {
   return html;
 }
 function assertMedia(root) {
-  const html = fs.readFileSync(path.join(root, 'games/index.html'), 'utf8');
+  const html = refresh.normalizeForPreservation(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'));
   normalizeForPreservation(html);
   for (const item of previews) {
     assert.ok(html.includes(item.after + '>'), 'reviewed preview is attached');

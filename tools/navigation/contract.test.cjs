@@ -12,11 +12,12 @@ const { normalize: normalizeResponsive } = require('./device-responsive.cjs');
 const { normalize: normalizeAuthors, changes: authorChanges } = require('../seo/author-links.cjs');
 const { normalize: normalizeMinecraft, file: minecraftFile } = require('./minecraft-initial.cjs');
 const tinyzombies = require('../game-media/tinyzombies-preview.cjs');
+const refresh = require('../game-media/six-game-refresh.cjs');
 const { files: legacyNavbarFiles, normalize: normalizeLegacyNavbar } = require('./legacy-navbar.cjs');
 const { file: gamesMdFile, normalize: normalizeGamesMd } = require('./games-md.cjs');
 const normalizeExisting = (html, file) => normalizeLegacyNavbar(tinyzombies.normalize(normalizeMinecraft(normalizeAuthors(normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file), file), file), file), file);
 const { file: ducktoyFile, normalize: normalizeDucktoy } = require('./ducktoy-fallback.cjs');
-const normalize = (html, file) => normalizeDucktoy(normalizeGamesMd(normalizeExisting(html, file), file), file);
+const normalize = (html, file) => normalizeDucktoy(normalizeGamesMd(normalizeExisting(refresh.normalizeForPreservation(html, file), file), file), file);
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 const context = { window: {} };
@@ -66,7 +67,9 @@ test('every existing production file is unchanged outside the exact reviewed anc
   }
   const candidateFiles = execFileSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
   const newProduction = candidateFiles.filter(file => !files.includes(file) && !file.startsWith('tools/') && !file.startsWith('.github/') && !file.startsWith('.local/'));
-  assert.deepEqual(newProduction, files.includes(tinyzombies.file) ? [] : [tinyzombies.file], 'only the exact reviewed clip may be new');
+  const approvedNew = [...Object.keys(refresh.files), tinyzombies.file].filter(file => !files.includes(file));
+  assert.deepEqual(newProduction.sort(), approvedNew.sort(), 'only exact reviewed clips, posters and provenance may be new');
+  for (const file of Object.keys(refresh.files)) refresh.assertReviewedBytes(file, fs.readFileSync(path.join(root, file)));
   tinyzombies.assertReviewedBytes(tinyzombies.file, fs.readFileSync(path.join(root, tinyzombies.file)));
   assert.equal(production.filter(file => file.endsWith('.mp4') && file !== tinyzombies.file).length, 98, 'retain all 98 earlier MP4 files');
 });

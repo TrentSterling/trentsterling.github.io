@@ -54,7 +54,8 @@ test('the six-control page retains its order, action labels, JS startup and exac
   assert.ok(html.includes("body.classList.add('loaded');"));
   assert.equal((html.match(/flex-wrap: wrap-reverse/g) || []).length, 1);
   for (const file of ['games/index.html', 'assets/css/tront-themes.css', 'assets/js/tront-theme.js', 'assets/js/tront-system.js']) {
-    assert.equal(read(file), read(file, process.env.THEME_BASELINE_ROOT), file + ': unchanged');
+    const refresh = require('../game-media/six-game-refresh.cjs');
+    assert.equal(refresh.normalizeForPreservation(read(file), file), refresh.normalizeForPreservation(read(file, process.env.THEME_BASELINE_ROOT), file), file + ': unchanged outside exact six-card media release');
   }
   const workflow = read('.github/workflows/site-checks.yml');
   for (const trigger of ['games/**', 'tools/navigation/**']) assert.ok(workflow.includes('- ' + trigger));

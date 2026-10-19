@@ -47,6 +47,7 @@ on:
       - tools/game-media/server.cjs
       - tools/game-media/tinyzombies*.cjs
       - tools/game-media/recorded-previews.*
+      - tools/game-media/six-game-refresh*
       - .github/workflows/site-checks.yml
 
 permissions:
@@ -144,7 +145,7 @@ jobs:
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 300s node tools/seo/author-links-browser.cjs
       - name: Test theme math and state contracts
-        run: node --test tools/theme-editor/test.cjs
+        run: node --test tools/theme-editor/test.cjs tools/game-media/six-game-refresh.test.cjs
       - name: Test rendered themes and native browser controls
         if: ${{ !cancelled() && steps.browser-tools.outcome == 'success' }}
         run: timeout 300s node tools/theme-editor/browser.cjs
