@@ -1,0 +1,15 @@
+{
+  "baselineWasmSha256": "ae0bbd36b54465b4cfd3b854232e9f5363b635b7d6b164047ce5bfb0a0baf5e7",
+  "tunedWasmSha256": "9c4d7e262bdad4563843a63cda4e72242572050a1a872e9231a77b0338e22bea",
+  "sourceRevision": "f5c7ca2e3e66f55fc40b0a3f92b36285996a7179",
+  "sixSecondSpeedKmh": {
+    "normalBefore": 126.4441636582,
+    "normalAfter": 137.8155076588,
+    "boostBefore": 151.9263061553,
+    "boostAfter": 160.0293685937
+  },
+  "mediumImpactCrushMeters": {
+    "before": 0.305,
+    "after": 0.396
+  }
+}
