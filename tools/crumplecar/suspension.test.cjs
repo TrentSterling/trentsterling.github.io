@@ -68,7 +68,12 @@ if(process.env.CRUMPLECAR_BASELINE){
    assert.deepEqual(Array.from(g.motion.out),output);
   });
  }
- test('embedded physics bytes are identical to the baseline',()=>assert.equal(script.match(/atob\('([^']+)'\)/)[1],baseline.match(/atob\('([^']+)'\)/)[1]));
+ test('embedded physics matches the reviewed release hashes',()=>{
+  const crypto=require('node:crypto'),release=JSON.parse(fs.readFileSync(path.join(__dirname,'physics-release.json'),'utf8'));
+  const hash=s=>crypto.createHash('sha256').update(Buffer.from(s.match(/atob\('([^']+)'\)/)[1],'base64')).digest('hex');
+  assert.ok([release.baselineWasmSha256,release.tunedWasmSha256].includes(hash(baseline)));
+  assert.equal(hash(script),release.tunedWasmSha256);
+ });
 }
 test('stationary spindle bridges link joint through the solid brake disc and hub',()=>{
  const section=script.slice(script.indexOf('// Non-spinning caliper render attachment'),script.indexOf(' b.part=0;b.ao=1;b.detail=1;'));

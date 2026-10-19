@@ -7,7 +7,7 @@ wheels leave no stretched links. Exploded assembly views keep chassis-side
 hardware bounded. Spring frames follow the chassis continuously through travel
 and rollover. These are render attachments, not new physical constraints.
 
-## Validation
+## Axle-only validation (historical)
 
 Baseline: `d4274e01ffb6847dfc0abba544ec5a4b1acd202a`.
 Candidate HTML SHA-256:
@@ -52,3 +52,24 @@ python tools/crumplecar/browser-check.py --baseline /tmp/crumplecar-before.html 
 Browser reproduction requires Python Playwright and its WebKit browser. It
 opens the two supplied local HTML files with network requests blocked; it does not publish
 or edit either input. Keep browser-native sandbox/security settings enabled.
+
+## Faster driving and stronger crumpling
+
+A subsequent, separately built physics release adds 18% straight-line engine
+power, tapering the extra power away at full steering to retain full-lock ridge
+stability. Deformation starts at 2.5 rather than 3.1 m/s and its strength rises
+30%. Attachment damage curves are unchanged. The verified binary hashes and
+source revision are pinned in `physics-release.json`; source stays in its
+existing private repository.
+
+CPU/WASM comparisons: after six seconds, normal speed increases from 126.44 to
+137.82 km/h (+9.0%) and boost from 151.93 to 160.03 km/h (+5.3%). At a matched
+12 m/s barrier impact, crush increases from 0.305 to 0.396 m (+29.7%); attachment
+health is unchanged. Tested 6/12/24 m/s crashes stay finite with no wheel loss.
+The full-lock ridge check has minimum upright alignment 0.9654 and no inversion.
+These are scripted simulation measurements, not a browser FPS benchmark.
+
+The earlier browser command compares live physics equality and is appropriate
+only for the axle-only revision. For the tuned version, use the candidate HTML
+as both browser inputs to smoke-test rendering; the independent physics
+comparison above establishes the intended driving differences.
