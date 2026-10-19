@@ -286,6 +286,12 @@ export class Game {
         wasm.game_set_grid(this.__wbg_ptr, on);
     }
     /**
+     * @param {boolean} held
+     */
+    set_manual_aim(held) {
+        wasm.game_set_manual_aim(this.__wbg_ptr, held);
+    }
+    /**
      * @param {string} id
      */
     set_peer_id(id) {
