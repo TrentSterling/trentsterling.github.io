@@ -1,0 +1,18 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path');
+const refresh=require('./four-game-refresh.cjs');
+const root=path.resolve(__dirname,'../..'),html=fs.readFileSync(path.join(root,'games/index.html'),'utf8');
+const {entries}=refresh.release;
+test('the exact frozen Tiny Zombies predecessor survives layered historical normalization',()=>{const card=require('./tinyzombies-preview.cjs').originalCard;assert.equal(refresh.normalizeForPreservation(card),card);assert.throws(()=>refresh.normalizeForPreservation(card.replace('tiny squad','changed squad')),/exact reviewed/);});
+test('exactly four current media cards are present',()=>{assert.equal(entries.length,4);assert.equal(new Set(entries.map(e=>e.previewId)).size,4);refresh.assertCurrent(html);});
+test('exact old and new cards normalize only new to old',()=>{for(const e of entries){assert.equal(refresh.normalizeForPreservation(e.after),e.before);assert.equal(refresh.normalizeForPreservation(e.before),e.before);}});
+test('normalization is idempotent and does not touch unrelated files',()=>{const normalized=refresh.normalizeForPreservation(html);assert.equal(refresh.normalizeForPreservation(normalized),normalized);assert.equal(refresh.normalizeForPreservation(html,'other.html'),html);});
+test('normalization preserves all bytes outside four approved media substitutions',()=>{let expected=html;for(const e of entries)expected=expected.replace(e.after,e.before);assert.equal(refresh.normalizeForPreservation(html),expected);assert.equal(refresh.normalizeForPreservation(html+'unreviewed'),expected+'unreviewed');});
+test('changed copy, year, tags, alt text and destination are rejected',()=>{for(const e of entries)for(const mutate of [s=>s.replace('<h3','changed<h3'),s=>s.replace('(2026)','(2025)'),s=>s.replace('tag-game','tag-changed'),s=>s.replace('alt="','alt="changed '),s=>s.replace('href="'+e.href+'"','href="/changed/"')]){assert.notEqual(mutate(e.after),e.after);assert.throws(()=>refresh.normalizeForPreservation(mutate(e.after)),/exact reviewed/);}});
+test('wrong video or poster hash, dimensions and loading policy are rejected',()=>{for(const e of entries)for(const token of [e.media[0].sha256.slice(0,12),e.media[1].sha256.slice(0,12),'width="640"','height="360"','loading="lazy"','decoding="async"'])assert.throws(()=>refresh.normalizeForPreservation(e.after.replace(token,'changed')),/exact reviewed/);});
+test('duplicate old, new and mixed cards are rejected',()=>{for(const e of entries)for(const pair of [e.before+e.before,e.after+e.after,e.before+e.after])assert.throws(()=>refresh.normalizeForPreservation(pair),/at most one/);});
+test('current assertion rejects missing cards and historical media',()=>{for(const e of entries){assert.throws(()=>refresh.assertCurrent(html.replace(e.after,'')),/exact current/);assert.throws(()=>refresh.assertCurrent(html.replace(e.after,e.before)),/exact current/);}});
+test('reviewed bytes reject corruption, truncation and unknown assets',()=>{for(const [name]of Object.entries(refresh.files)){const bytes=fs.readFileSync(path.join(root,name)),changed=Buffer.from(bytes);changed[10]^=1;refresh.assertReviewedBytes(name,bytes);assert.throws(()=>refresh.assertReviewedBytes(name,changed),/exact reviewed content/);assert.throws(()=>refresh.assertReviewedBytes(name,bytes.subarray(1)),/reviewed byte count/);assert.throws(()=>refresh.assertReviewedBytes(name+'.other',bytes),/only exact reviewed/);}});
+test('all four new videos and posters fully decode and match exact hashes and format specs',()=>{refresh.assertMedia(root);});

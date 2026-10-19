@@ -1,0 +1,86 @@
+{
+  "base": "6fe08d117ffb3ccca8d31f013c41336bd9920d50",
+  "entries": [
+    {
+      "slug": "jetgame",
+      "previewId": "preview-jetgame-2026",
+      "href": "https://tront.xyz/jetgame/",
+      "before": "<a id=\"card-jetgame\" href=\"https://tront.xyz/jetgame/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #82c8e8;\"><div class=\"image-container\" id=\"preview-jetgame-2026\"><img class=\"bg-image\" src=\"/games/media/jetgame-2026-205642102cce.png\" alt=\"Jet Game flying above a desert airfield\" loading=\"lazy\" decoding=\"async\" width=\"1440\" height=\"900\"></div><div class=\"card-content\"><h3 class=\"card-title\">Jet Game <span>(2026)</span></h3><p class=\"blurb\">Fight on foot, drive armed vehicles and fly jets across a streamed desert. Rescue survivors and bring them home.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span><span class=\"tag\">WebGPU</span></div></div></a>",
+      "after": "<a id=\"card-jetgame\" href=\"https://tront.xyz/jetgame/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #82c8e8;\"><div class=\"image-container\" id=\"preview-jetgame-2026\" data-preview=\"/games/media/jetgame-5070-20261019.mp4?v=7da980a2beb6\"><img class=\"bg-image\" src=\"/games/media/jetgame-5070-20261019.webp?v=515c3504f4de\" alt=\"Jet Game flying above a desert airfield\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Jet Game <span>(2026)</span></h3><p class=\"blurb\">Fight on foot, drive armed vehicles and fly jets across a streamed desert. Rescue survivors and bring them home.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span><span class=\"tag\">WebGPU</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/jetgame-5070-20261019.mp4",
+          "bytes": 487299,
+          "sha256": "7da980a2beb6ac4eafb53f50d53bcfe48f547f9ca6395279e8eb349fd2b26ec5"
+        },
+        {
+          "path": "games/media/jetgame-5070-20261019.webp",
+          "bytes": 8874,
+          "sha256": "515c3504f4de4624f51a782dcd7177f89ae3fa496cfa7529a8899d92549b6c95"
+        }
+      ]
+    },
+    {
+      "slug": "hearthwild",
+      "previewId": "preview-hearthwild-recovered-2026",
+      "href": "https://tront.xyz/hearthwild/",
+      "before": "<a id=\"card-hearthwild\" href=\"https://tront.xyz/hearthwild/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #b6c994;\"><div class=\"image-container\" id=\"preview-hearthwild-recovered-2026\" data-preview=\"/games/media/hearthwild-2026.mp4?v=94bc23f762bb\"><img class=\"bg-image\" src=\"/games/media/hearthwild-recovered-2026.webp?v=3a71f29a3287\" alt=\"Hearthwild living island and giant companion\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"600\"></div><div class=\"card-content\"><h3 class=\"card-title\">Hearthwild <span>(2026)</span></h3><p class=\"blurb\">Shape a living island with a physical god hand, elemental powers, village building and a trainable giant companion.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "after": "<a id=\"card-hearthwild\" href=\"https://tront.xyz/hearthwild/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #b6c994;\"><div class=\"image-container\" id=\"preview-hearthwild-recovered-2026\" data-preview=\"/games/media/hearthwild-5070-20261019.mp4?v=598bba6afadf\"><img class=\"bg-image\" src=\"/games/media/hearthwild-5070-20261019.webp?v=658c668c911a\" alt=\"Hearthwild living island and giant companion\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Hearthwild <span>(2026)</span></h3><p class=\"blurb\">Shape a living island with a physical god hand, elemental powers, village building and a trainable giant companion.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/hearthwild-5070-20261019.mp4",
+          "bytes": 976067,
+          "sha256": "598bba6afadfe260144f4cd1c655d48969056c256d0f55a5887e0b714b26f5f7"
+        },
+        {
+          "path": "games/media/hearthwild-5070-20261019.webp",
+          "bytes": 45976,
+          "sha256": "658c668c911abb80d0a517f3c591cc49c264dfd28c7959605e144252f7b2a224"
+        }
+      ]
+    },
+    {
+      "slug": "crumplecar",
+      "previewId": "preview-crumplecar-2026",
+      "href": "https://tront.xyz/crumplecar/",
+      "before": "<a id=\"card-crumplecar\" href=\"https://tront.xyz/crumplecar/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #ee8c34;\"><div class=\"image-container\" id=\"preview-crumplecar-2026\" data-preview=\"/games/media/crumplecar-2026.mp4?v=074e84e6563b\"><img class=\"bg-image\" src=\"/games/media/crumplecar-2026.webp?v=d07c11f2a255\" alt=\"CRUMPLECAR driving through the crash yard\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">CRUMPLECAR <span>(2026)</span></h3><p class=\"blurb\">Explore open roads, launch off ramps and crumple your car in a driving playground. Keep the damage, repair in place, or enter a race or demolition derby.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "after": "<a id=\"card-crumplecar\" href=\"https://tront.xyz/crumplecar/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #ee8c34;\"><div class=\"image-container\" id=\"preview-crumplecar-2026\" data-preview=\"/games/media/crumplecar-5070-20261019.mp4?v=22196d14e406\"><img class=\"bg-image\" src=\"/games/media/crumplecar-5070-20261019.webp?v=a4218687a0e6\" alt=\"CRUMPLECAR driving through the crash yard\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">CRUMPLECAR <span>(2026)</span></h3><p class=\"blurb\">Explore open roads, launch off ramps and crumple your car in a driving playground. Keep the damage, repair in place, or enter a race or demolition derby.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/crumplecar-5070-20261019.mp4",
+          "bytes": 952818,
+          "sha256": "22196d14e40649252a09cd3b87a3abb828946a2d1e50922a23c4963b1c94a27f"
+        },
+        {
+          "path": "games/media/crumplecar-5070-20261019.webp",
+          "bytes": 21596,
+          "sha256": "a4218687a0e6f8b91e4c1c60997f72a1199c151a60809aced7a3fe39685d82fa"
+        }
+      ]
+    },
+    {
+      "slug": "tinyzombies",
+      "previewId": "preview-tiny-zombies-2026",
+      "href": "https://tront.xyz/tinyzombies/",
+      "before": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tiny-zombies-2026.mp4?v=92b08b1effb8\"><img class=\"bg-image\" src=\"/games/media/tiny-zombies-2026.png?v=e7ea5b211d4b\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "after": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tinyzombies-5070-20261019.mp4?v=62f636425f3e\"><img class=\"bg-image\" src=\"/games/media/tinyzombies-5070-20261019.webp?v=42c1a257bb91\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/tinyzombies-5070-20261019.mp4",
+          "bytes": 1404176,
+          "sha256": "62f636425f3e496ec380da7275fce11dd7a003cdc2b3d8ffc5e8b54a06853e5f"
+        },
+        {
+          "path": "games/media/tinyzombies-5070-20261019.webp",
+          "bytes": 48578,
+          "sha256": "42c1a257bb91ea01cf61b024a5c42c3547d9300c4cbc8583039d8f6b807549b5"
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "path": "games/media/four-game-5070-20261019.json",
+    "bytes": 4040,
+    "sha256": "07a613292c57f6b3ea5addd6c87846e2eb02fd111008835ff15197658f73609b"
+  }
+}

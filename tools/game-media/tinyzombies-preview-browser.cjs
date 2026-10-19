@@ -12,7 +12,11 @@ fs.mkdirSync(output, { recursive: true });
 const report = { status: 'running', cases: [], browser: process.env.GAMES_TEST_BROWSER || 'chromium' };
 const started = Date.now(), origin = 'https://tront.xyz', destination = 'https://tront.xyz/tinyzombies/';
 const selector = '.grid a[href="' + destination + '"]';
-const clipPath = '/games/media/tiny-zombies-2026.mp4';
+const reviewed = require('./four-game-refresh.cjs').release.entries.find(entry => entry.slug === 'tinyzombies');
+const clipPath = '/' + reviewed.media[0].path;
+const clipUrl = clipPath + '?v=' + reviewed.media[0].sha256.slice(0,12);
+const posterUrl = '/' + reviewed.media[1].path + '?v=' + reviewed.media[1].sha256.slice(0,12);
+const oldPosterUrl = reviewed.before.match(/src="([^"]+)"/)[1];
 const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.mp4': 'video/mp4' };
 const cached = process.env.GAMES_FONT_CACHE ? JSON.parse(fs.readFileSync(process.env.GAMES_FONT_CACHE, 'utf8')) : {};
 const assets = new Map();
@@ -46,6 +50,8 @@ const measure = card => {
       if (url.href === destination) { destinations.push(url.href); return route.fulfill({contentType:'text/html',body:'Destination intercepted for verification.'}); }
       if (url.hostname === 'discord.com') return route.fulfill({json:{name:'TrontDev',presence_count:0,members:[]}});
       if (url.origin !== origin) return route.abort();
+      // Use the exact reviewed poster on both sides so pixel parity still tests every layout and text pixel.
+      if (source === baseline && url.pathname === new URL(oldPosterUrl, origin).pathname) return route.fulfill({body:fs.readFileSync(path.join(root,reviewed.media[1].path)),contentType:'image/webp'});
       if (url.pathname.endsWith('.mp4')) requested.push(url.pathname);
       if (failMedia && url.pathname === clipPath) return route.abort('failed');
       let file = path.resolve(source,'.'+decodeURIComponent(url.pathname));
@@ -76,8 +82,8 @@ const measure = card => {
       await shot(t,'playback-failure');console.error('Playback diagnostic:',JSON.stringify(report.playbackFailure));throw error;
     }
     const result=await t.card.locator('video').evaluate(v=>({time:v.currentTime,frames:v.getVideoPlaybackQuality().totalVideoFrames,width:v.videoWidth,height:v.videoHeight,duration:v.duration,muted:v.muted,loop:v.loop,inline:v.playsInline,hidden:v.getAttribute('aria-hidden'),tabIndex:v.tabIndex,source:v.getAttribute('src')}));
-    assert.equal(result.width,640);assert.equal(result.height,360);assert.equal(result.duration,10);
-    assert.equal(result.muted,true);assert.equal(result.loop,true);assert.equal(result.inline,true);assert.equal(result.hidden,'true');assert.equal(result.tabIndex,-1);assert.equal(result.source,clipPath+'?v=92b08b1effb8');
+    assert.equal(result.width,1280);assert.equal(result.height,720);assert.equal(result.duration,10);
+    assert.equal(result.muted,true);assert.equal(result.loop,true);assert.equal(result.inline,true);assert.equal(result.hidden,'true');assert.equal(result.tabIndex,-1);assert.equal(result.source,clipUrl);
     const count=await t.page.locator('.gameplay-preview[src]').count();assert.ok(count<=(t.page.viewportSize().width<=700?2:12));
     return {...result,attached:count};
   }
@@ -86,7 +92,9 @@ const measure = card => {
       const before=await open(baseline,width,{paused:true}), after=await open(root,width,{paused:true});
       await before.page.bringToFront();await shot(before,'before-'+width);
       await after.page.bringToFront();await shot(after,'poster-'+width);
-      assert.deepEqual(await after.card.evaluate(measure),await before.card.evaluate(measure),'poster/copy/geometry '+width);
+      const previous = await before.card.evaluate(measure);
+      assert.ok([oldPosterUrl,posterUrl].includes(previous.poster),'exact reviewed baseline poster');
+      assert.deepEqual(await after.card.evaluate(measure),{...previous,poster:posterUrl},'reviewed poster/copy/geometry '+width);
       const beforePng=await before.card.screenshot({animations:'disabled'}),afterPng=await after.card.screenshot({animations:'disabled'});
       assert.deepEqual(afterPng,beforePng,'exact poster card pixels '+width);
       await before.context.close();

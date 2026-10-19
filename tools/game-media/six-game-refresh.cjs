@@ -6,11 +6,14 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
 const release = require('./six-game-refresh-20261019.json');
-const files = Object.fromEntries([...release.entries.flatMap(entry => entry.media), release.provenance].map(file => [file.path, file]));
+const four = require('./four-game-refresh.cjs');
+const ownFiles = Object.fromEntries([...release.entries.flatMap(entry => entry.media), release.provenance].map(file => [file.path, file]));
+const files = {...ownFiles, ...four.files};
 const cards = html => [...html.matchAll(/<a\b[^>]*class="item\b[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
 const matches = (html, entry) => cards(html).filter(card => card.includes('id="'+entry.previewId+'"') || card.includes('href="'+entry.href+'"'));
 function normalizeForPreservation(html, file = 'games/index.html') {
   if (file !== 'games/index.html') return html;
+  html = four.normalizeForPreservation(html, file);
   for (const entry of release.entries) {
     const found = matches(html, entry);
     assert.ok(found.length <= 1, 'at most one exact reviewed refresh card; historical markup stays exact');
@@ -21,6 +24,7 @@ function normalizeForPreservation(html, file = 'games/index.html') {
   return html;
 }
 function assertCurrent(html) {
+  four.assertCurrent(html);
   assert.deepEqual(release.entries.map(entry => entry.slug), ['craftmine2','vectorrush','scrapyard','megabutt','dustline','lastrun'], 'exact six reviewed media sets');
   for (const entry of release.entries) {
     assert.deepEqual(entry.media.map(file => path.extname(file.path)), ['.mp4','.webp']);
@@ -32,6 +36,7 @@ function assertCurrent(html) {
   for (const entry of release.entries) assert.deepEqual(matches(html, entry), [entry.after], entry.slug+': one exact current media card');
 }
 function assertReviewedBytes(name, bytes) {
+  if (Object.hasOwn(four.files, name)) return four.assertReviewedBytes(name, bytes);
   assert.ok(Object.hasOwn(files, name), 'only exact reviewed refresh media and provenance');
   // Git text checkouts can use CRLF; only this fixed provenance file is canonicalized.
   if (name === release.provenance.path) bytes = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'));
@@ -43,7 +48,7 @@ function assertMedia(root) {
   for (const [name] of Object.entries(files)) {
     const file = path.join(root, name), bytes = fs.readFileSync(file);
     assertReviewedBytes(name, bytes);
-    if (name === release.provenance.path) continue;
+    if (name === release.provenance.path || name === four.release.provenance.path) continue;
     execFileSync('ffmpeg', ['-v','error','-xerror','-nostdin','-i',file,'-f','null','-'], {stdio:'pipe'});
     const probe = JSON.parse(execFileSync('ffprobe', ['-v','error','-count_frames','-show_streams','-show_format','-of','json',file]));
     assert.equal(probe.streams.length, 1, name+': one silent video/image stream');

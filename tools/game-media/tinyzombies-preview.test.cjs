@@ -8,13 +8,13 @@ const d = require('./tinyzombies-preview.cjs');
 const recorded = require('./recorded-previews.cjs');
 const refresh = require('./six-game-refresh.cjs');
 const root = path.resolve(__dirname, '../..');
-// Apply only the later exact six-card media release before this historical contract.
+// Apply only the later exact reviewed media releases before this historical contract.
 const html = refresh.normalizeForPreservation(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'));
 const base = process.env.THEME_BASELINE_ROOT;
 
 test('only card 11 gains the exact reviewed preview; all other page bytes stay unchanged', () => {
   assert.ok(base);
-  assert.equal(d.normalize(html), d.normalize(fs.readFileSync(path.join(base, 'games/index.html'), 'utf8')));
+  assert.equal(d.normalize(html), d.normalize(refresh.normalizeForPreservation(fs.readFileSync(path.join(base, 'games/index.html'), 'utf8'))));
   const cards = [...html.matchAll(/<a\b[^>]*class="item\b[^>]*>[\s\S]*?<\/a>/g)].map(m => m[0]);
   assert.equal(cards.length, 128);
   assert.equal(cards[10], d.approvedCard);
@@ -43,7 +43,7 @@ test('recording manifest is an exact additive allowance, anchored to this card',
   assert.equal(item.duration, 10);
   assert.ok(item.before.includes('href="https://tront.xyz/tinyzombies/"'));
   assert.equal(recorded.normalizeForPreservation(d.approvedCard), d.originalCard);
-  assert.throws(() => recorded.normalizeForPreservation(d.approvedCard + d.approvedCard), /exactly one/);
+  assert.throws(() => recorded.normalizeForPreservation(d.approvedCard + d.approvedCard), /exactly one|at most one/);
 });
 test('exact frozen bytes reject corruption and every recorded clip fully decodes within unchanged limits', () => {
   const bytes = fs.readFileSync(path.join(root, d.file)); d.assertReviewedBytes(d.file, bytes);
