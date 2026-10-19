@@ -1,7 +1,7 @@
 import init,{boot} from './pkg/dustline.js';
 const canvas=document.getElementById('world'),keys=new Set(),params=new URLSearchParams(location.search);
 const seed=(Number(params.get('seed'))||73421)>>>0,placeKey=`dustline-places-${seed}`;
-let game,network,previous=0,netSend=0,audio,osc,gain,drag=false,fire=false,telemetry,lastEvents,noiseBuffer,bestWritten=0;
+let game,network,previous=0,netSend=0,audio,osc,gain,pointerActive=false,fire=false,telemetry,lastEvents,noiseBuffer,bestWritten=0;
 const frameTimes=[],errors=[];
 window.addEventListener('error',e=>errors.push(e.message));window.addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
 function resize(){const dpr=Math.min(devicePixelRatio,1.5);canvas.width=Math.round(innerWidth*dpr);canvas.height=Math.round(innerHeight*dpr);game?.resize(canvas.width,canvas.height);}
@@ -33,15 +33,25 @@ async function join(room){if(!game)return;if(room)game.set_room(room);try{networ
 function leave(){network?.disconnect();game.set_remotes('[]');game.network_status('Solo drive. Bots remain available.');params.delete('room');history.replaceState(null,'',`?${params}`);}
 async function bridge(action){if(action==='join')await join();if(action==='leave')leave();if(action==='invite'){const url=new URL(location.href);url.searchParams.set('room',game.room()||'global');url.searchParams.set('seed',seed);try{await navigator.clipboard.writeText(url.href);game.network_status('Invite copied.');}catch{game.network_status('Clipboard unavailable; copy the address bar.');}}}
 // Recentring the camera must not cancel held driving, boost or fire controls.
-function command(action){if(!game)return;if(action!=='pulse'&&action!=='chase'){keys.clear();fire=false;}bridge(game.command(action));try{localStorage.setItem(placeKey,game.places_json());}catch{}}
+function endPointerGesture(){pointerActive=false;fire=false;game?.set_manual_aim(false);}
+function command(action){if(!game)return;if(action!=='pulse'&&action!=='chase'){keys.clear();endPointerGesture();}bridge(game.command(action));try{localStorage.setItem(placeKey,game.places_json());}catch{}}
 const keyCommands={KeyQ:'pulse',KeyN:'new-run',Escape:'menu',KeyV:'swap',KeyF:'recover',KeyE:'eject',KeyB:'bots',KeyM:'mark',KeyC:'chase',KeyO:'showroom',KeyX:'breakup',KeyT:'playback'};
 window.addEventListener('keydown',e=>{if(!game)return;if(game.text_key(e.key)){e.preventDefault();return;}if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(keyCommands[e.code]&&!e.repeat){e.preventDefault();command(keyCommands[e.code]);return;}if(game.paused)return;keys.add(e.code);audioStart();});
-window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();fire=false;drag=false;});
-document.addEventListener('visibilitychange',()=>{keys.clear();fire=false;previous=0;});
+window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();endPointerGesture();});
+document.addEventListener('visibilitychange',()=>{keys.clear();endPointerGesture();previous=0;});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.focus();canvas.setPointerCapture(e.pointerId);audioStart();if(!game)return;const r=canvas.getBoundingClientRect();const action=game.ui_click((e.clientX-r.left)*canvas.width/r.width,(e.clientY-r.top)*canvas.height/r.height);if(action){bridge(action);try{localStorage.setItem(placeKey,game.places_json());}catch{}return;}if(game.paused)return;if(e.button===2||e.button===1)drag=true;else fire=true;});
-canvas.addEventListener('pointermove',e=>{if(drag){game?.orbit(-e.movementX*.004,0);game?.orbit_pitch(e.movementY*.004);}});
-canvas.addEventListener('pointerup',e=>{if(e.button===2||e.button===1)drag=false;else fire=false;});canvas.addEventListener('pointercancel',()=>{drag=false;fire=false;});
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.focus();canvas.setPointerCapture(e.pointerId);audioStart();if(!game)return;const r=canvas.getBoundingClientRect();const action=game.ui_click((e.clientX-r.left)*canvas.width/r.width,(e.clientY-r.top)*canvas.height/r.height);if(action){endPointerGesture();bridge(action);try{localStorage.setItem(placeKey,game.places_json());}catch{}return;}if(game.paused){endPointerGesture();return;}pointerActive=true;fire=(e.buttons&1)!==0;game.set_manual_aim((e.buttons&2)!==0);});
+canvas.addEventListener('pointermove',e=>{
+ if(!pointerActive)return;
+ // Chorded presses/releases arrive as pointermove even without physical motion.
+ fire=(e.buttons&1)!==0;
+ if((e.buttons&2)===0)game?.set_manual_aim(false);
+ if((e.buttons&6)!==0&&(e.movementX!==0||e.movementY!==0)){
+  game?.set_manual_aim((e.buttons&2)!==0);game?.orbit(-e.movementX*.004,0);game?.orbit_pitch(e.movementY*.004);
+ }
+});
+canvas.addEventListener('pointerup',endPointerGesture);canvas.addEventListener('pointercancel',endPointerGesture);
+canvas.addEventListener('lostpointercapture',endPointerGesture);
 canvas.addEventListener('wheel',e=>{e.preventDefault();game?.orbit(0,e.deltaY*.015);},{passive:false});window.addEventListener('resize',resize);
 function tick(now){const dt=previous?(now-previous)/1000:1/60;previous=now;frameTimes.push(dt*1000);if(frameTimes.length>600)frameTimes.shift();
   try{if(network)game.set_remotes(JSON.stringify(network.sample()));game.boost=keys.has('ShiftLeft')||keys.has('ShiftRight');game.firing=fire||keys.has('KeyJ');game.drive(Math.min(dt,.1),keys.has('KeyW')||keys.has('ArrowUp'),keys.has('KeyS')||keys.has('ArrowDown'),Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')),keys.has('Space'),keys.has('KeyR'));telemetry=JSON.parse(game.telemetry());}
