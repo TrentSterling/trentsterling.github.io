@@ -55,7 +55,7 @@ function assertReviewedBytes(name, bytes) {
     assert.equal(digest(bytes), expected.sha256, `${name}: exact reviewed content`);
 }
 function assertMedia(root) {
-    const html = fs.readFileSync(path.join(root, 'games/index.html'), 'utf8');
+    const html = require('./six-game-refresh.cjs').normalizeForPreservation(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'));
     normalizeForPreservation(html);
     assert.ok(html.includes(approvedCard), 'the approved Isaac preview is integrated');
     assertSource(html); // Frozen card-content contract plus the independently reviewed year overlay.

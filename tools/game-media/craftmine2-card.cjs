@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const {execFileSync} = require('node:child_process');
+const refresh = require('./six-game-refresh.cjs');
 const approvedCard = "<a href=\"https://tront.xyz/craftmine2/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game\" style=\"--highlight-color: #70bdd0;\"><div class=\"image-container\" id=\"preview-craftmine2-2026\" data-preview=\"/games/media/craftmine2-2026.mp4?v=e8e901625625\"><img class=\"bg-image\" src=\"/games/media/craftmine2-2026.webp?v=8ef0e86dbb3e\" alt=\"CraftMine 2 (2026) waterfall and rocket gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">CraftMine 2 <span>(2026)</span></h3><p class=\"blurb\">A new browser voxel sandbox with shimmering water, sunlit cliffs, and terrain you can blast apart. Explore the valley, build something, or reach for the rocket launcher.</p><div class=\"tags\"><span class=\"tag\">Game</span></div></div></a>";
 const expectedCard = Object.freeze({"href":"https://tront.xyz/craftmine2/","classes":["item","tag-game"],"titleHtml":"CraftMine 2 <span>(2026)</span>","titleText":"CraftMine 2 (2026)","yearSpans":["(2026)"],"blurbHtml":"A new browser voxel sandbox with shimmering water, sunlit cliffs, and terrain you can blast apart. Explore the valley, build something, or reach for the rocket launcher.","blurbText":"A new browser voxel sandbox with shimmering water, sunlit cliffs, and terrain you can blast apart. Explore the valley, build something, or reach for the rocket launcher.","tagsHtml":"<span class=\"tag\">Game</span>","tags":["Game"]});
 // Live deployed CraftMine 2 capture, 2026-10-14. Two original-speed cuts:
@@ -32,6 +33,7 @@ const files = Object.freeze({
 });
 const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 function normalizeForPreservation(html) {
+    html = refresh.normalizeForPreservation(html);
     const cards = [...html.matchAll(/<a\b[^>]*class="item\b[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
     const matches = cards.filter(card => /craftmine2|CraftMine 2/.test(card));
     assert.ok(matches.length <= 1, 'at most one approved CraftMine 2 addition');
@@ -45,7 +47,7 @@ function assertReviewedBytes(name, bytes) {
     assert.equal(digest(bytes), files[name].sha256, name+': exact reviewed content');
 }
 function assertMedia(root) {
-    const html = fs.readFileSync(path.join(root,'games/index.html'),'utf8');
+    const html = refresh.normalizeForPreservation(fs.readFileSync(path.join(root,'games/index.html'),'utf8'));
     normalizeForPreservation(html);
     assert.ok(html.includes(approvedCard), 'the new card is present');
     for (const name of Object.keys(files)) assertReviewedBytes(name, fs.readFileSync(path.join(root,name)));

@@ -1,0 +1,124 @@
+{
+  "base": "15cfab48bd73acd0afa589879bec3bed8641e55e",
+  "entries": [
+    {
+      "slug": "craftmine2",
+      "previewId": "preview-craftmine2-2026",
+      "href": "https://tront.xyz/craftmine2/",
+      "before": "<a href=\"https://tront.xyz/craftmine2/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game\" style=\"--highlight-color: #70bdd0;\"><div class=\"image-container\" id=\"preview-craftmine2-2026\" data-preview=\"/games/media/craftmine2-2026.mp4?v=e8e901625625\"><img class=\"bg-image\" src=\"/games/media/craftmine2-2026.webp?v=8ef0e86dbb3e\" alt=\"CraftMine 2 (2026) waterfall and rocket gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">CraftMine 2 <span>(2026)</span></h3><p class=\"blurb\">A new browser voxel sandbox with shimmering water, sunlit cliffs, and terrain you can blast apart. Explore the valley, build something, or reach for the rocket launcher.</p><div class=\"tags\"><span class=\"tag\">Game</span></div></div></a>",
+      "after": "<a href=\"https://tront.xyz/craftmine2/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game\" style=\"--highlight-color: #70bdd0;\"><div class=\"image-container\" id=\"preview-craftmine2-2026\" data-preview=\"/games/media/craftmine2-5070-20261019.mp4?v=df92ca09c105\"><img class=\"bg-image\" src=\"/games/media/craftmine2-5070-20261019.webp?v=0e3670824881\" alt=\"CraftMine 2 (2026) waterfall and rocket gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">CraftMine 2 <span>(2026)</span></h3><p class=\"blurb\">A new browser voxel sandbox with shimmering water, sunlit cliffs, and terrain you can blast apart. Explore the valley, build something, or reach for the rocket launcher.</p><div class=\"tags\"><span class=\"tag\">Game</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/craftmine2-5070-20261019.mp4",
+          "bytes": 1463967,
+          "sha256": "df92ca09c105ed175968399918ad09a4397242532497ee522bc9a2a3a14659b5"
+        },
+        {
+          "path": "games/media/craftmine2-5070-20261019.webp",
+          "bytes": 35816,
+          "sha256": "0e3670824881820ba52639bdf9582a137837c69c8d663a055b271299b306bca8"
+        }
+      ]
+    },
+    {
+      "slug": "vectorrush",
+      "previewId": "preview-vectorrush-recovered-2026",
+      "href": "https://tront.xyz/vectorrush/",
+      "before": "<a id=\"card-vectorrush\" href=\"https://tront.xyz/vectorrush/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #93bbd7;\"><div class=\"image-container\" id=\"preview-vectorrush-recovered-2026\" data-preview=\"/games/media/vectorrush-2026.mp4?v=f2e03a06f220\"><img class=\"bg-image\" src=\"/games/media/vectorrush-recovered-2026.webp?v=4d1e8075e13d\" alt=\"Vector Rush mech arena combat\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"600\"></div><div class=\"card-content\"><h3 class=\"card-title\">Vector Rush <span>(2026)</span></h3><p class=\"blurb\">Dash, jump and trade missiles, beam fire and saber combos in a fast third-person mech arena.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "after": "<a id=\"card-vectorrush\" href=\"https://tront.xyz/vectorrush/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #93bbd7;\"><div class=\"image-container\" id=\"preview-vectorrush-recovered-2026\" data-preview=\"/games/media/vectorrush-5070-20261019.mp4?v=5edb1fa53b38\"><img class=\"bg-image\" src=\"/games/media/vectorrush-5070-20261019.webp?v=2cc680c83d54\" alt=\"Vector Rush mech arena combat\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Vector Rush <span>(2026)</span></h3><p class=\"blurb\">Dash, jump and trade missiles, beam fire and saber combos in a fast third-person mech arena.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/vectorrush-5070-20261019.mp4",
+          "bytes": 1614835,
+          "sha256": "5edb1fa53b385f8a35ab7cd3e3d3adcdba629e00f0a3d852c43c00e05fa4805a"
+        },
+        {
+          "path": "games/media/vectorrush-5070-20261019.webp",
+          "bytes": 27970,
+          "sha256": "2cc680c83d54d89f841431835edd97998acd812943ff561e2825a971d079d90e"
+        }
+      ]
+    },
+    {
+      "slug": "scrapyard",
+      "previewId": "preview-scrapyard-recovered-2026",
+      "href": "https://tront.xyz/scrapyard/",
+      "before": "<a id=\"card-scrapyard\" href=\"https://tront.xyz/scrapyard/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #d7ae75;\"><div class=\"image-container\" id=\"preview-scrapyard-recovered-2026\" data-preview=\"/games/media/scrapyard-shutdown-2026.mp4?v=8baaadbd04b2\"><img class=\"bg-image\" src=\"/games/media/scrapyard-recovered-2026.webp?v=0f741fda5d9c\" alt=\"SCRAPYARD SHUTDOWN industrial first-person robot combat\" loading=\"lazy\" decoding=\"async\" width=\"960\" height=\"540\"></div><div class=\"card-content\"><h3 class=\"card-title\">SCRAPYARD SHUTDOWN <span>(2026)</span></h3><p class=\"blurb\">Fight through a robot-occupied industrial yard with a rifle and charged wrench. Disable three breakers, then reach the shutdown terminal.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "after": "<a id=\"card-scrapyard\" href=\"https://tront.xyz/scrapyard/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #d7ae75;\"><div class=\"image-container\" id=\"preview-scrapyard-recovered-2026\" data-preview=\"/games/media/scrapyard-5070-20261019.mp4?v=04e553a7f0e9\"><img class=\"bg-image\" src=\"/games/media/scrapyard-5070-20261019.webp?v=f72b997b8d28\" alt=\"SCRAPYARD SHUTDOWN industrial first-person robot combat\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">SCRAPYARD SHUTDOWN <span>(2026)</span></h3><p class=\"blurb\">Fight through a robot-occupied industrial yard with a rifle and charged wrench. Disable three breakers, then reach the shutdown terminal.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/scrapyard-5070-20261019.mp4",
+          "bytes": 725850,
+          "sha256": "04e553a7f0e91dac614f34173c348cbec837bf020f8dff966504f22518cac955"
+        },
+        {
+          "path": "games/media/scrapyard-5070-20261019.webp",
+          "bytes": 18312,
+          "sha256": "f72b997b8d28ac41f18bc7bbb1fdd54e7df3592d0c1e6c84639198d8cb1be922"
+        }
+      ]
+    },
+    {
+      "slug": "megabutt",
+      "previewId": "preview-megabutt-2026",
+      "href": "https://tront.xyz/megabutt/",
+      "before": "<a id=\"card-megabutt\" href=\"https://tront.xyz/megabutt/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #f59d66;\"><div class=\"image-container\" id=\"preview-megabutt-2026\"><img class=\"bg-image\" src=\"/games/media/megabutt-2026-d6bc419c0f4a.png\" alt=\"MEGABUTT survival combat on a terraced island\" loading=\"lazy\" decoding=\"async\" width=\"1600\" height=\"900\"></div><div class=\"card-content\"><h3 class=\"card-title\">MEGABUTT <span>(2026)</span></h3><p class=\"blurb\">Fight through hordes on a terraced island, collect cores, and build a loadout of orbit blades, chain lightning, and explosive novas.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span><span class=\"tag\">WebGPU</span></div></div></a>",
+      "after": "<a id=\"card-megabutt\" href=\"https://tront.xyz/megabutt/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #f59d66;\"><div class=\"image-container\" id=\"preview-megabutt-2026\" data-preview=\"/games/media/megabutt-5070-20261019.mp4?v=dc9ad7d37162\"><img class=\"bg-image\" src=\"/games/media/megabutt-5070-20261019.webp?v=fb85fdda2b2a\" alt=\"MEGABUTT survival combat on a terraced island\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">MEGABUTT <span>(2026)</span></h3><p class=\"blurb\">Fight through hordes on a terraced island, collect cores, and build a loadout of orbit blades, chain lightning, and explosive novas.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span><span class=\"tag\">WebGPU</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/megabutt-5070-20261019.mp4",
+          "bytes": 1616016,
+          "sha256": "dc9ad7d37162dda3ea803edc2ef1cc05aeba8725c5f56656b60223f820d0183a"
+        },
+        {
+          "path": "games/media/megabutt-5070-20261019.webp",
+          "bytes": 53712,
+          "sha256": "fb85fdda2b2a9163833b22bf828f9c6a3e853702cdea43fbb4182483f563f74e"
+        }
+      ]
+    },
+    {
+      "slug": "dustline",
+      "previewId": "preview-dustline-2026",
+      "href": "https://tront.xyz/dustline/",
+      "before": "<a id=\"card-dustline\" href=\"https://tront.xyz/dustline/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #e8ba88;\"><div class=\"image-container\" id=\"preview-dustline-2026\"><img class=\"bg-image\" src=\"/games/media/dustline-2026-ea519ffa3a93.png\" alt=\"Dustline armed buggy driving through desert dunes\" loading=\"lazy\" decoding=\"async\" width=\"1600\" height=\"900\"></div><div class=\"card-content\"><h3 class=\"card-title\">Dustline <span>(2026)</span></h3><p class=\"blurb\">Drive armed buggies and motorcycles across a streamed desert. Raid convoys, fight zombies, collect salvage and reach extraction.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span><span class=\"tag\">WebGPU</span></div></div></a>",
+      "after": "<a id=\"card-dustline\" href=\"https://tront.xyz/dustline/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #e8ba88;\"><div class=\"image-container\" id=\"preview-dustline-2026\" data-preview=\"/games/media/dustline-5070-20261019.mp4?v=a3e4f3e1e292\"><img class=\"bg-image\" src=\"/games/media/dustline-5070-20261019.webp?v=67325ea3856a\" alt=\"Dustline armed buggy driving through desert dunes\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Dustline <span>(2026)</span></h3><p class=\"blurb\">Drive armed buggies and motorcycles across a streamed desert. Raid convoys, fight zombies, collect salvage and reach extraction.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span><span class=\"tag\">WebGPU</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/dustline-5070-20261019.mp4",
+          "bytes": 1617883,
+          "sha256": "a3e4f3e1e29275ae4e9c8b6bb82206cca1d820e16df98ba750a91c12c4a5de72"
+        },
+        {
+          "path": "games/media/dustline-5070-20261019.webp",
+          "bytes": 24096,
+          "sha256": "67325ea3856a26e0044f8783751caa9664dcffd4ca9aa0c9b3e74f91c7db5c63"
+        }
+      ]
+    },
+    {
+      "slug": "lastrun",
+      "previewId": "preview-lastrun-2026",
+      "href": "https://tront.xyz/lastrun/",
+      "before": "<a id=\"card-lastrun\" href=\"https://tront.xyz/lastrun/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #8bd8ed;\"><div class=\"image-container\" id=\"preview-lastrun-2026\"><img class=\"bg-image\" src=\"/games/media/lastrun-2026-c52029fd8f4a.png\" alt=\"LAST_RUN downhill skiing with a shotgun through snowy mountain terrain\" loading=\"lazy\" decoding=\"async\" width=\"1280\" height=\"720\"></div><div class=\"card-content\"><h3 class=\"card-title\">LAST_RUN <span>(2026)</span></h3><p class=\"blurb\">Ski downhill through zombie crowds, blast a route with your shotgun and keep your momentum across a streaming mountain.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "after": "<a id=\"card-lastrun\" href=\"https://tront.xyz/lastrun/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #8bd8ed;\"><div class=\"image-container\" id=\"preview-lastrun-2026\" data-preview=\"/games/media/lastrun-5070-20261019.mp4?v=c2202e9102d7\"><img class=\"bg-image\" src=\"/games/media/lastrun-5070-20261019.webp?v=a4f363054319\" alt=\"LAST_RUN downhill skiing with a shotgun through snowy mountain terrain\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">LAST_RUN <span>(2026)</span></h3><p class=\"blurb\">Ski downhill through zombie crowds, blast a route with your shotgun and keep your momentum across a streaming mountain.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "media": [
+        {
+          "path": "games/media/lastrun-5070-20261019.mp4",
+          "bytes": 1750191,
+          "sha256": "c2202e9102d76244b38d09f85bad11d32e0f9751f08a0d1870b5c9e134578bf6"
+        },
+        {
+          "path": "games/media/lastrun-5070-20261019.webp",
+          "bytes": 26708,
+          "sha256": "a4f363054319d66991a772ed2a1967fc169e40986b956c05410fe816777d068c"
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "path": "games/media/six-game-5070-20261019.json",
+    "bytes": 5587,
+    "sha256": "dfe9fe4b179c83d2d131a29d7eb9107b883c5b0ecb4db3129caac4ffb26f1907"
+  }
+}

@@ -8,7 +8,7 @@ const { normalize, replacements } = require('./games-resilience.cjs');
 const { normalize: normalizeNavigation } = require('../navigation/contract.cjs');
 const { normalize: normalizeTinyZombies } = require('./tinyzombies-preview.cjs');
 const root = path.resolve(__dirname, '../..');
-const html = fs.readFileSync(path.join(root, 'games/index.html'), 'utf8');
+const html = require('./six-game-refresh.cjs').normalizeForPreservation(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'));
 
 test('Games becomes readable immediately without reading the Font Loading API', () => {
   const block = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]

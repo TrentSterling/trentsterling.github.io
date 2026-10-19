@@ -6,8 +6,10 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const d = require('./tinyzombies-preview.cjs');
 const recorded = require('./recorded-previews.cjs');
+const refresh = require('./six-game-refresh.cjs');
 const root = path.resolve(__dirname, '../..');
-const html = fs.readFileSync(path.join(root, 'games/index.html'), 'utf8');
+// Apply only the later exact six-card media release before this historical contract.
+const html = refresh.normalizeForPreservation(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'));
 const base = process.env.THEME_BASELINE_ROOT;
 
 test('only card 11 gains the exact reviewed preview; all other page bytes stay unchanged', () => {

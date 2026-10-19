@@ -10,6 +10,7 @@ const systemSource = fs.readFileSync(path.join(base, 'assets/js/tront-system.js'
 const editorSource = fs.readFileSync(path.join(base, 'assets/js/tront-theme-editor.js'), 'utf8');
 const galleryContent = require('./gallery-content.cjs');
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
+const refresh = require('../game-media/six-game-refresh.cjs');
 const plain = value => JSON.parse(JSON.stringify(value));
 
 test('all 117 cards preserve pre-theme copy and original years plus four verified year additions', () => {
@@ -588,7 +589,7 @@ test('CraftMine 2 media matches reviewed hashes, decodes fully, and meets the co
 });
 
 test('four concurrent master cards keep their exact released content and order', () => {
-    const html = fs.readFileSync(path.join(base,'games/index.html'),'utf8');
+    const html = refresh.normalizeForPreservation(fs.readFileSync(path.join(base,'games/index.html'),'utf8'));
     const released = galleryContent.released.cards;
     assert.equal(released.length,4);
     assert.deepEqual(galleryContent.expectedCards.slice(2,6),released.map(entry=>galleryContent.readCards(entry.markup)[0]));
