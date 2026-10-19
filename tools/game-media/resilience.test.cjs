@@ -58,7 +58,7 @@ test('Games uses native, visually hidden category radios with visible label focu
 test('Games bytes outside exact reviewed resilience replacements match the PR base', () => {
   const baseline = process.env.THEME_BASELINE_ROOT;
   assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
-  const before = fs.readFileSync(path.join(baseline, 'games/index.html'), 'utf8');
+  const before = require('./six-game-refresh.cjs').normalizeForPreservation(fs.readFileSync(path.join(baseline, 'games/index.html'), 'utf8'));
   for (const [, after] of replacements) assert.equal(html.split(after).length, 2);
   assert.equal(normalizeTinyZombies(normalizeNavigation(normalize(html, 'games/index.html'), 'games/index.html')), normalizeTinyZombies(normalizeNavigation(normalize(before, 'games/index.html'), 'games/index.html')));
   assert.equal(normalize(html + 'changed', 'games/index.html'), normalize(html, 'games/index.html') + 'changed');

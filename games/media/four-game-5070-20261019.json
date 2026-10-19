@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-19",
+  "source": "Real native-input gameplay captured from public builds on RTX 5070 Ti; original captures retained privately; no synthetic or interpolated frames.",
+  "recipe": "libx264 slow CRF29 maxrate1300k bufsize2600k; 1280x720 30fps 10 seconds; explicit scale out_range=tv and color_range=tv; yuv420p silent faststart threads2; real master frame posters libwebp q86 640x360",
+  "games": [
+    {
+      "slug": "jetgame",
+      "sourceMasterSha256": "43fc239416c9bba7d18e54f695e05be8fcbb1d3c87c6b0a2481dcc3e11cc2e89",
+      "inpointSeconds": 3,
+      "posterMasterSecond": 7,
+      "content": "Real public flight and fire; no crash claim.",
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "pixelFormat": "yuv420p",
+      "colorRange": "tv",
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/jetgame-5070-20261019.mp4",
+          "bytes": 487299,
+          "sha256": "7da980a2beb6ac4eafb53f50d53bcfe48f547f9ca6395279e8eb349fd2b26ec5"
+        },
+        {
+          "path": "games/media/jetgame-5070-20261019.webp",
+          "bytes": 8874,
+          "sha256": "515c3504f4de4624f51a782dcd7177f89ae3fa496cfa7529a8899d92549b6c95"
+        }
+      ]
+    },
+    {
+      "slug": "hearthwild",
+      "sourceMasterSha256": "3a28baae40ada37f850d46f0715008b08087db57ddce334444179a583d5cd8e3",
+      "inpointSeconds": 10,
+      "posterMasterSecond": 14,
+      "content": "Native creature interaction with Mossback at normal game speed.",
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "pixelFormat": "yuv420p",
+      "colorRange": "tv",
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/hearthwild-5070-20261019.mp4",
+          "bytes": 976067,
+          "sha256": "598bba6afadfe260144f4cd1c655d48969056c256d0f55a5887e0b714b26f5f7"
+        },
+        {
+          "path": "games/media/hearthwild-5070-20261019.webp",
+          "bytes": 45976,
+          "sha256": "658c668c911abb80d0a517f3c591cc49c264dfd28c7959605e144252f7b2a224"
+        }
+      ]
+    },
+    {
+      "slug": "crumplecar",
+      "sourceMasterSha256": "7ca80ce40fdcf6355788bd3bbfe274a0c24f60362e45e596a31ac603bb602246",
+      "inpointSeconds": 0,
+      "posterMasterSecond": 4,
+      "content": "Native driving and impact recorded through WebGL2 fallback.",
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "pixelFormat": "yuv420p",
+      "colorRange": "tv",
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/crumplecar-5070-20261019.mp4",
+          "bytes": 952818,
+          "sha256": "22196d14e40649252a09cd3b87a3abb828946a2d1e50922a23c4963b1c94a27f"
+        },
+        {
+          "path": "games/media/crumplecar-5070-20261019.webp",
+          "bytes": 21596,
+          "sha256": "a4218687a0e6f8b91e4c1c60997f72a1199c151a60809aced7a3fe39685d82fa"
+        }
+      ]
+    },
+    {
+      "slug": "tinyzombies",
+      "sourceMasterSha256": "3bcbbc274b94194e633da49c252479bb1544c6c4e280a79f1a388ffd1f016725",
+      "inpointSeconds": 4,
+      "posterMasterSecond": 8,
+      "content": "Native shelter-exit squad combat, not a huge-horde showcase.",
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "pixelFormat": "yuv420p",
+      "colorRange": "tv",
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/tinyzombies-5070-20261019.mp4",
+          "bytes": 1404176,
+          "sha256": "62f636425f3e496ec380da7275fce11dd7a003cdc2b3d8ffc5e8b54a06853e5f"
+        },
+        {
+          "path": "games/media/tinyzombies-5070-20261019.webp",
+          "bytes": 48578,
+          "sha256": "42c1a257bb91ea01cf61b024a5c42c3547d9300c4cbc8583039d8f6b807549b5"
+        }
+      ]
+    }
+  ]
+}

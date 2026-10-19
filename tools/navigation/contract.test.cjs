@@ -71,7 +71,7 @@ test('every existing production file is unchanged outside the exact reviewed anc
   assert.deepEqual(newProduction.sort(), approvedNew.sort(), 'only exact reviewed clips, posters and provenance may be new');
   for (const file of Object.keys(refresh.files)) refresh.assertReviewedBytes(file, fs.readFileSync(path.join(root, file)));
   tinyzombies.assertReviewedBytes(tinyzombies.file, fs.readFileSync(path.join(root, tinyzombies.file)));
-  assert.equal(production.filter(file => file.endsWith('.mp4') && file !== tinyzombies.file).length, 98, 'retain all 98 earlier MP4 files');
+  assert.equal(production.filter(file => file.endsWith('.mp4') && file !== tinyzombies.file && !Object.hasOwn(refresh.files, file)).length, 98, 'retain all 98 earlier MP4 files outside the exact hash-checked refreshes');
 });
 
 test('exact anchor normalization does not hide unreviewed changes', () => {

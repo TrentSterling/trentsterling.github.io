@@ -63,8 +63,8 @@ for (const page of pages) {
     assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
     const before = fs.readFileSync(path.join(baseline, page.file), 'utf8');
     assert.deepEqual(
-      Buffer.from(normalizeSixGameRefresh(normalizeTinyZombies(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(html, page.file), page.file), page.file), page.file), page.file), page.file)),
-      Buffer.from(normalizeSixGameRefresh(normalizeTinyZombies(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(before, page.file), page.file), page.file), page.file), page.file), page.file)),
+      Buffer.from(normalizeTinyZombies(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(normalizeSixGameRefresh(html, page.file), page.file), page.file), page.file), page.file), page.file)),
+      Buffer.from(normalizeTinyZombies(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(normalizeSixGameRefresh(before, page.file), page.file), page.file), page.file), page.file), page.file)),
       'preserve all existing markup, schema entities, copy, dates, credits, layout, cards and scripts'
     );
   });
