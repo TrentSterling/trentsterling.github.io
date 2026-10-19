@@ -615,11 +615,11 @@ struct Part { model:mat4x4f, info:vec4f };
 @group(0) @binding(0) var<uniform> g:Globals;
 @group(0) @binding(1) var<storage,read> parts:array<Part>;
 @group(0) @binding(2) var<storage,read> nodes:array<vec4f>;
-struct In { @location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec4f,@location(3) ids:vec4f,@location(4) weights:vec4f,@location(5) meta:vec4f };
+struct In { @location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec4f,@location(3) ids:vec4f,@location(4) weights:vec4f,@location(5) vertexMeta:vec4f };
 struct Out { @builtin(position) clip:vec4f,@location(0) world:vec3f,@location(1) n:vec3f,@location(2) c:vec4f,@location(3) info:vec4f,@location(4) restWorld:vec3f,@location(5) local:vec4f };
-fn deform(a:In)->vec4f {let part=parts[u32(a.meta.x)];var delta=vec4f(0.0);if(part.info.y>0.0){let base=u32(part.info.x)*190u;delta=nodes[base+u32(a.ids.x)]*a.weights.x+nodes[base+u32(a.ids.y)]*a.weights.y+nodes[base+u32(a.ids.z)]*a.weights.z+nodes[base+u32(a.ids.w)]*a.weights.w;}if(part.info.w>.5&&a.p.y>-.14){delta.y=(a.p.y+.14)*(-.88*part.info.z);}return delta;}
-@vertex fn vs(a:In)->Out {let part=parts[u32(a.meta.x)];let d=deform(a);let p=part.model*vec4f(a.p+d.xyz,1.0);var o:Out;o.clip=g.vp*p;o.world=p.xyz;var normal=a.n;if(a.meta.x>=${SUSPENSION_PART_BASE}.0){normal.y/=max(dot(part.model[1].xyz,part.model[1].xyz),.000001);}if(part.info.w>.5&&a.p.y>-.14){normal.y/=(1.-.88*part.info.z);}o.n=normalize((part.model*vec4f(normal,0.0)).xyz);o.c=a.c;o.info=vec4f(a.meta.y,d.w,a.meta.x,a.meta.z);o.restWorld=(part.model*vec4f(a.p,1.0)).xyz;o.local=vec4f(a.p,a.meta.w);return o;}
-@vertex fn shadow_vs(a:In)->@builtin(position) vec4f {let d=deform(a);return g.light*parts[u32(a.meta.x)].model*vec4f(a.p+d.xyz,1.0);}
+fn deform(a:In)->vec4f {let part=parts[u32(a.vertexMeta.x)];var delta=vec4f(0.0);if(part.info.y>0.0){let base=u32(part.info.x)*190u;delta=nodes[base+u32(a.ids.x)]*a.weights.x+nodes[base+u32(a.ids.y)]*a.weights.y+nodes[base+u32(a.ids.z)]*a.weights.z+nodes[base+u32(a.ids.w)]*a.weights.w;}if(part.info.w>.5&&a.p.y>-.14){delta.y=(a.p.y+.14)*(-.88*part.info.z);}return delta;}
+@vertex fn vs(a:In)->Out {let part=parts[u32(a.vertexMeta.x)];let d=deform(a);let p=part.model*vec4f(a.p+d.xyz,1.0);var o:Out;o.clip=g.vp*p;o.world=p.xyz;var normal=a.n;if(a.vertexMeta.x>=${SUSPENSION_PART_BASE}.0){normal.y/=max(dot(part.model[1].xyz,part.model[1].xyz),.000001);}if(part.info.w>.5&&a.p.y>-.14){normal.y/=(1.-.88*part.info.z);}o.n=normalize((part.model*vec4f(normal,0.0)).xyz);o.c=a.c;o.info=vec4f(a.vertexMeta.y,d.w,a.vertexMeta.x,a.vertexMeta.z);o.restWorld=(part.model*vec4f(a.p,1.0)).xyz;o.local=vec4f(a.p,a.vertexMeta.w);return o;}
+@vertex fn shadow_vs(a:In)->@builtin(position) vec4f {let d=deform(a);return g.light*parts[u32(a.vertexMeta.x)].model*vec4f(a.p+d.xyz,1.0);}
 fn hash(p:vec3f)->f32{return fract(sin(dot(p,vec3f(127.1,311.7,74.7)))*43758.5453);}
 fn soilNoise(p:vec2f)->f32{let i=floor(p);let f=fract(p);let u=f*f*(3.-2.*f);return mix(mix(hash(vec3f(i,0.)),hash(vec3f(i+vec2f(1.,0.),0.)),u.x),mix(hash(vec3f(i+vec2f(0.,1.),0.)),hash(vec3f(i+vec2f(1.,1.),0.)),u.x),u.y);}
 fn tone(v:vec3f)->vec3f {let a=v*(2.51*v+vec3f(.03));let b=v*(2.43*v+vec3f(.59))+vec3f(.14);return pow(clamp(a/b,vec3f(0),vec3f(1)),vec3f(.454545));}
@@ -643,8 +643,8 @@ fn landShade(p:vec3f,n:vec3f,signal:vec4f)->vec3f {
  let dunes=1.-smoothstep(88.,130.,length(p.xz-vec2f(55.,-194.)));soil=mix(soil,sand,dunes);
  let layer=i32(signal.a+.5);let road=groundTex(p,n,layer);
  let rw=smoothstep(.06,.94,signal.r+(road.a-soil.a)*.22);soil=mix(soil,road,rw);
- let macro=.90+soilNoise(p.xz*.017)*.20;
- return pow(soil.rgb*macro,vec3f(2.2));
+ let macroVariation=.90+soilNoise(p.xz*.017)*.20;
+ return pow(soil.rgb*macroVariation,vec3f(2.2));
 }
 fn cloud(r:vec3f)->f32{let a=sin(r.x*8.2+r.z*3.1+sin(r.z*9.2))*.48+sin(r.z*13.3-r.x*7.9)*.26+sin(r.z*25.+r.x*14.)*.11;return smoothstep(.22,.62,a)*smoothstep(.04,.27,r.y);}
 fn environment(r:vec3f,rough:f32)->vec3f{
