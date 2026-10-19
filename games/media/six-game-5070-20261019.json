@@ -1,0 +1,158 @@
+{
+  "date": "2026-10-19",
+  "source": "Real native-input gameplay captured from public builds on RTX 5070 Ti; original captures retained privately; no synthetic or interpolated frames.",
+  "recipe": "libx264 slow CRF29 maxrate1300k bufsize2600k 1280x720 30fps 10s yuv420p silent faststart threads2; real JPEG posters libwebp q86 640x360",
+  "colorRangeAdjustment": "Explicit scale out_range=tv and color_range=tv because FFmpeg 8 inherits pc metadata and reports yuvj420p even with pix_fmt=yuv420p; explicit conversion ensures actual yuv420p limited range, no level clipping.",
+  "games": [
+    {
+      "slug": "craftmine2",
+      "sourceMasterSha256": "f12647213512953b627fe4eafcbcc2cf23ce1acf2b64a3bec428566df5be870d",
+      "sourcePosterSha256": "57002afb9fcf92092662197681e9503e46c9a802051141a69299097e342e3452",
+      "inpointSeconds": 4,
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/craftmine2-5070-20261019.mp4",
+          "bytes": 1463967,
+          "sha256": "df92ca09c105ed175968399918ad09a4397242532497ee522bc9a2a3a14659b5"
+        },
+        {
+          "path": "games/media/craftmine2-5070-20261019.webp",
+          "bytes": 35816,
+          "sha256": "0e3670824881820ba52639bdf9582a137837c69c8d663a055b271299b306bca8"
+        }
+      ]
+    },
+    {
+      "slug": "vectorrush",
+      "sourceMasterSha256": "c5e3b1c2b374e868adcf73915e912971cdbfccd7c3f991c13fd3b77c72077478",
+      "sourcePosterSha256": "a688139f223266b51b9048ef17986630f073f4430f037b0ebcc95676a793046b",
+      "inpointSeconds": 3,
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/vectorrush-5070-20261019.mp4",
+          "bytes": 1614835,
+          "sha256": "5edb1fa53b385f8a35ab7cd3e3d3adcdba629e00f0a3d852c43c00e05fa4805a"
+        },
+        {
+          "path": "games/media/vectorrush-5070-20261019.webp",
+          "bytes": 27970,
+          "sha256": "2cc680c83d54d89f841431835edd97998acd812943ff561e2825a971d079d90e"
+        }
+      ]
+    },
+    {
+      "slug": "scrapyard",
+      "sourceMasterSha256": "4e991ec7eec685e7fe871de3d33faca3409df717dfa2ef16411297377ceb33d9",
+      "sourcePosterSha256": "b7e1288c7bb50ba443ded6c21db95bc0c95130f92bea82a4ac2c4afd79a1d671",
+      "inpointSeconds": 8,
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/scrapyard-5070-20261019.mp4",
+          "bytes": 725850,
+          "sha256": "04e553a7f0e91dac614f34173c348cbec837bf020f8dff966504f22518cac955"
+        },
+        {
+          "path": "games/media/scrapyard-5070-20261019.webp",
+          "bytes": 18312,
+          "sha256": "f72b997b8d28ac41f18bc7bbb1fdd54e7df3592d0c1e6c84639198d8cb1be922"
+        }
+      ]
+    },
+    {
+      "slug": "megabutt",
+      "sourceMasterSha256": "d4a66d48b18aac822a10df7f0b2b4e44d8a267d670fdddd2f2e2f96292dc679e",
+      "sourcePosterSha256": "51b72a3a7b45f9bd983d9c5c1e71e3cf26b436f5229a88121c8fc81b40c0f1b2",
+      "inpointSeconds": 6,
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/megabutt-5070-20261019.mp4",
+          "bytes": 1616016,
+          "sha256": "dc9ad7d37162dda3ea803edc2ef1cc05aeba8725c5f56656b60223f820d0183a"
+        },
+        {
+          "path": "games/media/megabutt-5070-20261019.webp",
+          "bytes": 53712,
+          "sha256": "fb85fdda2b2a9163833b22bf828f9c6a3e853702cdea43fbb4182483f563f74e"
+        }
+      ]
+    },
+    {
+      "slug": "dustline",
+      "sourceMasterSha256": "12b28fe4b38c4d1ed48c8a7d179d27dfdc80920619ba776f0e127e12f3a67d20",
+      "sourcePosterSha256": "4e38f01c810a5fec4ea6f175f6bbb5dd57d440dd094a4d2a1fc2decd14fd630f",
+      "inpointSeconds": 0,
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/dustline-5070-20261019.mp4",
+          "bytes": 1617883,
+          "sha256": "a3e4f3e1e29275ae4e9c8b6bb82206cca1d820e16df98ba750a91c12c4a5de72"
+        },
+        {
+          "path": "games/media/dustline-5070-20261019.webp",
+          "bytes": 24096,
+          "sha256": "67325ea3856a26e0044f8783751caa9664dcffd4ca9aa0c9b3e74f91c7db5c63"
+        }
+      ]
+    },
+    {
+      "slug": "lastrun",
+      "sourceMasterSha256": "ce912246a8f284d52641d1c0675b0332562bce9b6cc941bf9f10a31d43459cb3",
+      "sourcePosterSha256": "5c24c59695eab5d95c72989e42c7e86335be34cbbc2f272cbf97f366b8d6c816",
+      "inpointSeconds": 3,
+      "duration": 10,
+      "width": 1280,
+      "height": 720,
+      "fps": 30,
+      "frames": 300,
+      "audioStreams": 0,
+      "fullDecode": "passed",
+      "files": [
+        {
+          "path": "games/media/lastrun-5070-20261019.mp4",
+          "bytes": 1750191,
+          "sha256": "c2202e9102d76244b38d09f85bad11d32e0f9751f08a0d1870b5c9e134578bf6"
+        },
+        {
+          "path": "games/media/lastrun-5070-20261019.webp",
+          "bytes": 26708,
+          "sha256": "a4f363054319d66991a772ed2a1967fc169e40986b956c05410fe816777d068c"
+        }
+      ]
+    }
+  ]
+}
