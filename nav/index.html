@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101827"><title>Tront Navigator · Get me home</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#101827;color:#f5f7ff}main{max-width:620px;margin:auto;padding:24px 18px 50px}h1{font-size:30px;margin:12px 0 4px}p{color:#aebbd0;line-height:1.5}.pill{display:inline-block;background:#1d3145;color:#70e8cb;border-radius:20px;padding:7px 12px;font-size:12px;font-weight:800;letter-spacing:.08em}.panel{background:#192538;border:1px solid #314158;border-radius:20px;padding:20px;margin-top:20px}label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:#b6c7de;font-weight:800;margin-bottom:8px}input{width:100%;border:1px solid #455874;border-radius:12px;background:#101827;color:white;padding:16px;font:inherit;font-size:18px}button{border:0;border-radius:13px;padding:17px 15px;font:inherit;font-weight:800;display:block;text-align:center;width:100%;cursor:pointer;background:#6fe8c7;color:#082321;margin-top:12px}button.secondary{background:#2c4058;color:#eaf5ff}button:disabled{opacity:.65}.status{padding:13px;border-radius:12px;background:#101c2c;color:#d5e3f3;font-size:14px;margin-top:12px;overflow-wrap:anywhere}.map{height:260px;width:100%;border:0;border-radius:14px;margin-top:15px;background:#101827}.hint{font-size:13px}#coords{font-variant-numeric:tabular-nums}#accuracy{color:#70e8cb}footer{color:#8294ab;text-align:center;font-size:12px;margin-top:25px}
+</style></head><body><main><span class="pill">TRONT / NAVIGATOR</span><h1>Get me home. 🏠</h1><p>GPS first. No guessing where the hell you are.</p>
+<section class="panel"><label>01 / Current location</label><button id="locate">📍 Use my phone's GPS</button><div class="status" id="status" role="status" aria-live="polite">Waiting for location permission.</div><div class="hint" id="coords"></div><div class="hint" id="accuracy"></div><iframe id="map" class="map" title="Your location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" hidden></iframe></section>
+<section class="panel"><label for="destination">02 / Where to?</label><input id="destination" value="SW 12th St, Oklahoma City, OK" autocomplete="street-address" spellcheck="false"><p class="hint">Edit the destination if SW 12th is in another city, or add a house number/cross street.</p><button id="go">🚗 Navigate with Google Maps</button><button class="secondary" id="copy">Copy GPS coordinates</button></section>
+<footer>Works over HTTPS · GPS stays in your browser · Don't operate while driving</footer></main>
+<script>
+let position=null;const $=id=>document.getElementById(id);
+function status(s){$('status').textContent=s}
+function locate(){
+if(!navigator.geolocation){status('Geolocation unavailable in this browser.');return}
+status('Requesting GPS permission…');$('locate').disabled=true;
+navigator.geolocation.getCurrentPosition(p=>{
+position=p.coords;const {latitude:lat,longitude:lon,accuracy}=position;
+status('✓ GPS locked. You are here.');$('coords').textContent=lat.toFixed(6)+', '+lon.toFixed(6);
+$('accuracy').textContent='Accuracy: approximately '+Math.round(accuracy)+' meters';
+$('map').src='https://www.openstreetmap.org/export/embed.html?bbox='+(lon-.008)+'%2C'+(lat-.006)+'%2C'+(lon+.008)+'%2C'+(lat+.006)+'&layer=mapnik&marker='+lat+'%2C'+lon;
+$('map').hidden=false;$('locate').disabled=false;$('locate').textContent='↻ Refresh GPS location';
+},e=>{status(({1:'Location permission denied. Enable location for this website in browser settings.',2:'Could not determine location. Try outdoors.',3:'GPS timed out. Try again.'})[e.code]||e.message);$('locate').disabled=false},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
+function navigate(){const dest=$('destination').value.trim();if(!dest){status('Enter a destination first.');return}
+const params=new URLSearchParams({api:'1',destination:dest,travelmode:'driving'});
+if(position)params.set('origin',position.latitude+','+position.longitude);
+window.location.href='https://www.google.com/maps/dir/?'+params.toString();}
+$('locate').addEventListener('click',locate);$('go').addEventListener('click',navigate);
+$('copy').addEventListener('click',async()=>{if(!position){status("Tap Use my phone's GPS first.");return}
+const s=position.latitude+', '+position.longitude;try{await navigator.clipboard.writeText(s);status('GPS coordinates copied.')}catch{status('Your GPS: '+s)}});
+</script></body></html>
