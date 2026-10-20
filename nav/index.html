@@ -1,31 +1,66 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101827"><title>Tront Navigator · Get me home</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101827"><meta name="robots" content="noindex,nofollow"><title>Tront Navigator — Get Me Home</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
-*{box-sizing:border-box}body{margin:0;background:#101827;color:#f5f7ff}main{max-width:620px;margin:auto;padding:24px 18px 50px}h1{font-size:30px;margin:12px 0 4px}p{color:#aebbd0;line-height:1.5}.pill{display:inline-block;background:#1d3145;color:#70e8cb;border-radius:20px;padding:7px 12px;font-size:12px;font-weight:800;letter-spacing:.08em}.panel{background:#192538;border:1px solid #314158;border-radius:20px;padding:20px;margin-top:20px}label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:#b6c7de;font-weight:800;margin-bottom:8px}input{width:100%;border:1px solid #455874;border-radius:12px;background:#101827;color:white;padding:16px;font:inherit;font-size:18px}button{border:0;border-radius:13px;padding:17px 15px;font:inherit;font-weight:800;display:block;text-align:center;width:100%;cursor:pointer;background:#6fe8c7;color:#082321;margin-top:12px}button.secondary{background:#2c4058;color:#eaf5ff}button:disabled{opacity:.65}.status{padding:13px;border-radius:12px;background:#101c2c;color:#d5e3f3;font-size:14px;margin-top:12px;overflow-wrap:anywhere}.map{height:260px;width:100%;border:0;border-radius:14px;margin-top:15px;background:#101827}.hint{font-size:13px}#coords{font-variant-numeric:tabular-nums}#accuracy{color:#70e8cb}footer{color:#8294ab;text-align:center;font-size:12px;margin-top:25px}
-</style></head><body><main><span class="pill">TRONT / NAVIGATOR</span><h1>Get me home. 🏠</h1><p>GPS first. No guessing where the hell you are.</p>
-<section class="panel"><label>01 / Current location</label><button id="locate">📍 Use my phone's GPS</button><div class="status" id="status" role="status" aria-live="polite">Waiting for location permission.</div><div class="hint" id="coords"></div><div class="hint" id="accuracy"></div><iframe id="map" class="map" title="Your location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" hidden></iframe></section>
-<section class="panel"><label for="destination">02 / Where to?</label><input id="destination" value="SW 12th St, Oklahoma City, OK" autocomplete="street-address" spellcheck="false"><p class="hint">Edit the destination if SW 12th is in another city, or add a house number/cross street.</p><button id="go">🚗 Navigate with Google Maps</button><button class="secondary" id="copy">Copy GPS coordinates</button></section>
-<footer>Works over HTTPS · GPS stays in your browser · Don't operate while driving</footer></main>
-<script>
-let position=null;const $=id=>document.getElementById(id);
-function status(s){$('status').textContent=s}
-function locate(){
-if(!navigator.geolocation){status('Geolocation unavailable in this browser.');return}
-status('Requesting GPS permission…');$('locate').disabled=true;
-navigator.geolocation.getCurrentPosition(p=>{
-position=p.coords;const {latitude:lat,longitude:lon,accuracy}=position;
-status('✓ GPS locked. You are here.');$('coords').textContent=lat.toFixed(6)+', '+lon.toFixed(6);
-$('accuracy').textContent='Accuracy: approximately '+Math.round(accuracy)+' meters';
-$('map').src='https://www.openstreetmap.org/export/embed.html?bbox='+(lon-.008)+'%2C'+(lat-.006)+'%2C'+(lon+.008)+'%2C'+(lat+.006)+'&layer=mapnik&marker='+lat+'%2C'+lon;
-$('map').hidden=false;$('locate').disabled=false;$('locate').textContent='↻ Refresh GPS location';
-},e=>{status(({1:'Location permission denied. Enable location for this website in browser settings.',2:'Could not determine location. Try outdoors.',3:'GPS timed out. Try again.'})[e.code]||e.message);$('locate').disabled=false},{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#f8fbff}main{max-width:560px;margin:auto;padding:20px 16px 60px}
+header{font-size:12px;color:#77efc9;font-weight:900;letter-spacing:.12em}h1{font-size:clamp(40px,10vw,56px);letter-spacing:-.055em;line-height:1;margin:22px 0 12px}
+p{color:#bfd0e5;line-height:1.45}.card{background:#1e2b3e;border:1px solid #40536d;border-radius:22px;padding:18px;margin:16px 0}
+label{display:block;font-size:12px;font-weight:900;letter-spacing:.1em;color:#bfd2e9;margin-bottom:10px}
+button{width:100%;min-height:63px;border:0;border-radius:15px;padding:15px 12px;font:inherit;font-size:20px;font-weight:900;touch-action:manipulation;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid #ffde80;outline-offset:3px}button:disabled{opacity:.65}
+.gps{background:#81f2ca;color:#09281f}.go{background:#ffdb76;color:#302304;min-height:87px;font-size:25px}.minor{background:#3b526e;color:white;font-size:15px;min-height:49px}
+input{background:#0b1727;color:#fff;width:100%;min-height:65px;border:2px solid #7790b0;border-radius:14px;padding:14px;font:inherit;font-size:20px}
+input::placeholder{color:#9eacc2}.status{margin:13px 0 8px;background:#102033;border-radius:13px;padding:15px;font-size:17px;line-height:1.4}
+.sub{font-size:13px;color:#a5bfd9;overflow-wrap:anywhere}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+footer{font-size:12px;text-align:center;color:#99abc3;margin-top:25px;line-height:1.5}
+</style></head><body><main>
+<header>TRONT.XYZ / NAV · LOST MODE</header>
+<h1>GET ME<br>HOME. 🏠</h1>
+<p>Wrong way? Pull over, confirm your destination, and launch turn-by-turn directions. Google Maps reroutes if you miss a turn.</p>
+<section class="card">
+<label>1 · WHERE AM I?</label>
+<button class="gps" id="locate">📍 TURN ON LIVE GPS</button>
+<div class="status" id="status" role="status" aria-live="polite">Tap the green button, then allow location.</div>
+<div class="sub" id="accuracy"></div>
+<div class="row"><button class="minor" id="refresh">↻ REFRESH GPS</button><button class="minor" id="stop">STOP GPS</button></div>
+</section>
+<section class="card">
+<label for="destination">2 · ENTER YOUR DESTINATION</label>
+<input id="destination" placeholder="Full address, city and ZIP" autocomplete="off" spellcheck="false" enterkeyhint="go">
+<p class="sub">Enter the exact address. “SW 12th” alone might send you to the wrong town.</p>
+<button class="go" id="navigate">🚗 NAVIGATE NOW</button>
+<p class="sub">Opens Google Maps using your phone's current location for live navigation.</p>
+</section>
+<footer>No address or GPS saved to this page, GitHub, or our servers. Google Maps receives your destination when you tap Navigate. Location permission stays under your control. Don't interact while driving.</footer>
+</main><script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+let watchId=null,lastPosition=null;
+const status=message=>$('status').textContent=message;
+const stop=()=>{if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}$('locate').textContent='📍 TURN ON LIVE GPS';};
+function start(){
+if(!window.isSecureContext){status('GPS needs HTTPS. Open https://tront.xyz/nav/');return;}
+if(!navigator.geolocation){status('This browser does not support GPS.');return;}
+stop();status('Getting satellite/GPS fix… allow precise location.');
+$('locate').textContent='📍 GPS ACTIVE · TAP TO RESTART';
+watchId=navigator.geolocation.watchPosition(p=>{
+lastPosition=p.coords;const a=Math.round(p.coords.accuracy);
+status('✅ GPS ACTIVE — location updated.');$('accuracy').textContent='Accuracy: about '+a+' m · '+new Date(p.timestamp).toLocaleTimeString()+'.';
+},err=>{
+status(({1:'GPS permission denied. Enable location access in browser and phone settings.',2:'GPS unavailable. Move into the open and retry.',3:'GPS timeout. Try again.'})[err.code]||'GPS error. Retry.');if(err.code===1)stop();
+},{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
 }
-function navigate(){const dest=$('destination').value.trim();if(!dest){status('Enter a destination first.');return}
-const params=new URLSearchParams({api:'1',destination:dest,travelmode:'driving'});
-if(position)params.set('origin',position.latitude+','+position.longitude);
-window.location.href='https://www.google.com/maps/dir/?'+params.toString();}
-$('locate').addEventListener('click',locate);$('go').addEventListener('click',navigate);
-$('copy').addEventListener('click',async()=>{if(!position){status("Tap Use my phone's GPS first.");return}
-const s=position.latitude+', '+position.longitude;try{await navigator.clipboard.writeText(s);status('GPS coordinates copied.')}catch{status('Your GPS: '+s)}});
+$('locate').addEventListener('click',start);
+$('refresh').addEventListener('click',start);
+$('stop').addEventListener('click',()=>{stop();lastPosition=null;status('GPS stopped.');$('accuracy').textContent='';});
+$('navigate').addEventListener('click',()=>{
+const destination=$('destination').value.trim();
+if(!destination){status('⚠️ Enter a complete destination address first.');$('destination').focus();return;}
+if(!lastPosition){status('⚠️ First tap TURN ON LIVE GPS and wait for GPS ACTIVE.');return;}
+const qs=new URLSearchParams({api:'1',destination,travelmode:'driving',dir_action:'navigate'});
+// Intentionally omit origin; Maps uses up-to-date device GPS and handles rerouting.
+window.location.href='https://www.google.com/maps/dir/?'+qs.toString();
+});
+$('destination').addEventListener('keydown',e=>{if(e.key==='Enter'){$('navigate').click();}});
+})();
 </script></body></html>
