@@ -86,7 +86,9 @@ let browser;
   const base = 'http://127.0.0.1:' + server.address().port;
   browser = await chromium.launch({ headless: true,
     ...(process.env.THEME_BROWSER_EXECUTABLE ? { executablePath: process.env.THEME_BROWSER_EXECUTABLE } : { channel: 'chrome' }),
-    args: ['--mute-audio', '--enable-unsafe-webgpu', ...(process.platform === 'win32' ? ['--use-angle=d3d11'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] });
+    // Honor Chrome's WebGPU adapter blocklist; unsupported runners use the
+    // unchanged runtime's WebGL2 fallback instead of forcing a failing device.
+    args: ['--mute-audio', ...(process.platform === 'win32' ? ['--use-angle=d3d11'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] });
   const cdp = await browser.newBrowserCDPSession();
   const system = await cdp.send('SystemInfo.getInfo');
   report.environment = { node: process.version, platform: process.platform, browser: browser.version(), gpu: system.gpu };
