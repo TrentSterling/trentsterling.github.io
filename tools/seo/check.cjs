@@ -5,6 +5,9 @@ const assert = require('node:assert/strict');
 const xml = fs.readFileSync('sitemap-pages.xml', 'utf8');
 const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
 assert.equal(new Set(urls).size, urls.length, 'Duplicate sitemap URLs');
+assert(urls.includes('https://tront.xyz/craftmine/'), 'Missing canonical CraftMine landing page');
+assert(!urls.includes('https://tront.xyz/craftmine/play/'), 'CraftMine play canonicalizes to /craftmine/ and must stay out of the sitemap');
+assert(!urls.some(url => /\/aqua-empire\/game\.html/.test(url)), 'Aqua runtime canonicalizes to /aqua-empire/ and must stay out of the sitemap');
 for (const name of ['calm','colony','crumplecar','hardpoint','jennsfarm','machinelearning','megabunk']) {
   const url = 'https://tront.xyz/' + name + '/';
   assert(urls.includes(url), 'Missing sitemap URL: ' + url);
