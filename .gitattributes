@@ -1,3 +1,4 @@
 # Preserve the tested web runtime payloads byte-for-byte on every platform.
 megabutt/** -text
 dustline/** -text
+aqua-empire/game.html -text
