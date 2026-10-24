@@ -37,11 +37,17 @@ kbd{font:inherit;color:var(--ink);white-space:nowrap}
 .save-note{padding:1.75rem 2rem;margin:0 0 3rem;background:#0b3948;border-left:3px solid var(--aqua)}
 .save-note h2{font-size:1.2rem}
 .save-note p{margin:.7rem 0 0;max-width:90ch;font-size:.9rem}
+.launch-status{margin-top:2rem;padding:1.25rem;border-left:3px solid var(--gold);background:#0b3948}
+.launch-status h2{font-size:1.25rem}
+.launch-actions{display:flex;flex-wrap:wrap;gap:.75rem 1.5rem;margin-bottom:0}
+.launch-actions a{display:inline-flex;align-items:center;min-height:44px}
 footer{display:flex;justify-content:space-between;gap:1rem;border-top:1px solid #37616b;padding:1.4rem 0 2rem;color:var(--muted);font-size:.85rem}
 [hidden]{display:none!important}
 body.playing{height:100%;overflow:hidden}
 body.playing #introduction{display:none}
 #player iframe{position:fixed;inset:0;width:100%;height:100%;border:0;background:var(--deep)}
-@media(max-width:760px){.hero,.guide{grid-template-columns:minmax(0,1fr);gap:2rem}.hero{padding:2.6rem 0 2.5rem}h1{font-size:clamp(2.2rem,13vw,3.3rem);overflow-wrap:anywhere}h1 span{display:inline}.intro{max-width:55ch}.guide{padding:2rem 0}.site-header,main,footer{width:calc(100% - 2rem)}nav{gap:1rem}.save-note{padding:1.4rem}.controls>div{grid-template-columns:4.6rem minmax(0,1fr);gap:.75rem}dd{overflow-wrap:anywhere}}
+#player iframe.starting{visibility:hidden;pointer-events:none}
+.player-guide{position:fixed;z-index:1;top:max(.5rem,env(safe-area-inset-top));left:50%;transform:translateX(-50%);max-width:calc(100% - 1rem);min-height:44px;padding:.5rem .9rem;background:var(--deep);border:1px solid var(--gold);border-radius:6px;font-size:.85rem;text-align:center}
+@media(max-width:760px){.hero,.guide{grid-template-columns:minmax(0,1fr);gap:2rem}.hero{padding:2.6rem 0 2.5rem}h1{font-size:clamp(2.2rem,13vw,3.3rem);overflow-wrap:anywhere}h1 span{display:inline}.intro{max-width:55ch}.guide{padding:2rem 0}.site-header,main,footer{width:calc(100% - 2rem)}nav{gap:1rem}.save-note{padding:1.4rem}.controls>div{grid-template-columns:minmax(0,1fr);gap:.25rem}}
 @media(max-width:380px){nav{font-size:.8rem;gap:.8rem}.wordmark{font-size:1.1rem}footer{flex-direction:column;gap:.5rem}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}

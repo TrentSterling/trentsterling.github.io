@@ -103,6 +103,8 @@ jobs:
         run: CRUMPLECAR_BASELINE="$THEME_BASELINE_ROOT/crumplecar/index.html" node --test tools/crumplecar/*.test.cjs
       - name: Verify sitemap and canonical game metadata
         run: node tools/seo/check.cjs
+      - name: Check Aqua intro recovery and keyboard return
+        run: timeout 180s node tools/seo/aqua-intro-browser.cjs
       - name: Check copy and gallery source preservation
         run: node tools/theme-editor/preserve.cjs
       - name: Test opt-in About discovery component contracts
@@ -167,6 +169,7 @@ jobs:
             .local/theme-review/*.png
             .local/theme-review/*.json
             .local/theme-review/*.webm
+            .local/aqua-intro-review/**
             .local/gallery-*.png
             .local/gallery-verification.json
             .local/gallery-playback-load.json

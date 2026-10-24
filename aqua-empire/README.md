@@ -6,6 +6,17 @@ same-origin frame. The standalone file owns all gameplay, menus, graphics,
 settings and save handling. The shell does not read or write aquarium saves.
 Other query parameters, including `webgl=1`, are forwarded to the game.
 
+The introduction stays usable during startup. The shell waits for the existing
+runtime's `Running` diagnostic and hidden boot screen before showing the game.
+A failed document, renderer failure, or 30-second startup timeout restores the
+guide with retry and standalone-game links. A frame load event alone is not
+treated as successful initialization. The shell also watches the runtime's
+existing failure panel after startup.
+
+Back to guide is available on the title screen and while paused; `Alt+G` returns
+from inside the canvas. The return link is hidden during active play so it does
+not cover controls or alter the game's viewport. No focus calls are introduced.
+
 `game.html` is the exact published Aqua Empire 2.5.2 standalone HTML:
 
 - 3,848,758 bytes
@@ -36,10 +47,19 @@ From the repository root:
 ```text
 node tools/seo/check.cjs
 node --test tools/seo/aqua-intro.test.cjs
+node tools/seo/aqua-intro-browser.cjs
 ```
 
 The full existing SEO suite also needs `THEME_BASELINE_ROOT` pointing to a base
 checkout with committed LF bytes, as in the site-checks workflow.
+
+The committed browser regression runs in site CI with the existing Playwright
+and pngjs installations. `PLAYWRIGHT_MODULE` can identify a local installation,
+`NODE_PATH` can identify its supporting modules, and
+`AQUA_REVIEW_OUT` selects its private screenshot/report directory. The tests use
+muted headless Chrome and keyboard input only, including renderer/document
+failures, recovery/retry, direct entry, in-page return, matched simulation/pixels, and
+full-width control descriptions at 320px and 390px with 100% and 200% text.
 
 Browser acceptance includes keyboard entry, desktop and touch feeding, unchanged
 viewport dimensions, saved-aquarium continuation, JSON export/import, Back/Forward,

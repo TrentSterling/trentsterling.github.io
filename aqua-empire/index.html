@@ -9,6 +9,11 @@
     <nav aria-label="Site"><a href="/games/">More games</a><a href="#controls">How to play</a></nav>
   </header>
   <main id="about">
+    <section id="launch-status" class="launch-status" aria-labelledby="launch-title" hidden>
+      <h2 id="launch-title" role="status">Opening your aquarium...</h2>
+      <p id="launch-message">The guide stays available while the game starts.</p>
+      <p class="launch-actions"><a id="retry-game" href="?play=1">Try again</a><a id="direct-game" href="game.html">Open standalone game</a><a class="guide-link" href="./">Stay on the guide</a></p>
+    </section>
     <section class="hero" aria-labelledby="game-title">
       <div class="hero-copy">
         <p class="eyebrow">An aquarium game by Trent Sterling</p>
@@ -40,11 +45,11 @@
     <aside class="save-note" aria-labelledby="save-title">
       <h2 id="save-title">Your aquarium stays with you.</h2>
       <p>Progress saves in this browser. Choose Continue in the game to return to your tank. To keep a backup or move to another browser, open Menu, then Aquarium saves, and export or import your aquarium.</p>
-      <p>The game needs JavaScript and WebGPU or WebGL2. The keyboard operates menus and shop controls; feeding and aiming use a mouse or touchscreen. Use your browser's Back button to return to this guide after playing.</p>
+      <p>The game needs JavaScript and WebGPU or WebGL2. The keyboard operates menus and shop controls; feeding and aiming use a mouse or touchscreen. Back to guide is available on the title screen and while paused. <kbd>Alt+G</kbd> also returns here from the game.</p>
     </aside>
     <noscript><p class="save-note">JavaScript is off. The guide and screenshot are available, but the aquarium needs JavaScript to run.</p></noscript>
   </main>
   <footer><span>Made by <a href="/">Trent Sterling</a></span><a href="/games/">Find another game &#8594;</a></footer>
 </div>
-<div id="player" hidden></div>
+<div id="player" hidden><a id="return-guide" class="guide-link player-guide" href="./" aria-keyshortcuts="Alt+G" hidden>Back to guide <span aria-hidden="true">(Alt+G)</span></a></div>
 </body></html>
