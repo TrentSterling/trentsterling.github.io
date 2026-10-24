@@ -87,6 +87,10 @@ let browser;
   browser = await chromium.launch({ headless: true,
     ...(process.env.THEME_BROWSER_EXECUTABLE ? { executablePath: process.env.THEME_BROWSER_EXECUTABLE } : { channel: 'chrome' }),
     args: ['--mute-audio', '--enable-unsafe-webgpu', ...(process.platform === 'win32' ? ['--use-angle=d3d11'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] });
+  const cdp = await browser.newBrowserCDPSession();
+  const system = await cdp.send('SystemInfo.getInfo');
+  report.environment = { node: process.version, platform: process.platform, browser: browser.version(), gpu: system.gpu };
+  console.log('AQUA_ENVIRONMENT ' + JSON.stringify(report.environment));
   async function context(options = {}) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, ...options });
     ctx.on('page', page => {
@@ -231,6 +235,24 @@ let browser;
   await ctx.close(); report.passed = true;
 })().catch(async error => {
   report.passed = false; report.error = error.stack; console.error(error); process.exitCode = 1;
+  // Distinguish a runner/runtime startup failure from the same-origin wrapper.
+  // This is diagnostic evidence only; it cannot turn a failing check into a pass.
+  if (browser && checks.length === 0) {
+    const control = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    try {
+      const base = 'http://127.0.0.1:' + server.address().port;
+      await control.addInitScript(init);
+      await control.route('**/*', route => route.request().url().startsWith(base) ? route.continue() : route.abort());
+      const page = await control.newPage(), errors = [];
+      page.on('pageerror', e => errors.push(e.message));
+      await page.goto(base + '/aqua-empire/game.html?x=hello+world');
+      await page.waitForFunction(() => window.AQUAQA && document.getElementById('boot').hidden, null, { timeout: 45000 });
+      report.standaloneControl = { state: await diagnostic(page), errors };
+      await page.screenshot({ path: path.join(out, 'standalone-startup-control.png'), timeout: 5000 });
+    } catch (controlError) { report.standaloneControl = { error: controlError.message }; }
+    finally { await control.close(); }
+    console.error('AQUA_STANDALONE_CONTROL ' + JSON.stringify(report.standaloneControl));
+  }
   report.failurePages = [];
   for (const ctx of browser?.contexts() || []) {
     for (const page of ctx.pages()) {
