@@ -11,6 +11,21 @@ const out = path.resolve(process.env.AQUA_REVIEW_OUT || path.join(root, '.local/
 fs.mkdirSync(out, { recursive: true });
 const checks = [];
 const report = { checkedUtc: new Date().toISOString(), checks };
+const events = report.browserEvents = [];
+function event(type, detail) {
+  if (events.length < 100) events.push({ type, detail });
+}
+async function diagnostic(q) {
+  return q.evaluate(() => ({
+    url: location.href,
+    playing: document.body.classList.contains('playing'),
+    launchTitle: document.getElementById('launch-title')?.textContent,
+    launchMessage: document.getElementById('launch-message')?.textContent,
+    bootHidden: document.getElementById('boot')?.hidden,
+    failure: document.getElementById('failure')?.hidden === false ? document.getElementById('failure').textContent : null,
+    game: window.AQUA_DIAGNOSTICS?.()
+  }));
+}
 function check(name, ok, detail) {
   checks.push({ name, pass: !!ok, ...(detail === undefined ? {} : { detail }) });
   console.log((ok ? 'PASS ' : 'FAIL ') + name);
@@ -45,6 +60,9 @@ async function game(page) {
   const element = await page.waitForSelector('iframe', { state: 'attached' });
   const frame = await element.contentFrame();
   await frame.waitForFunction(() => window.AQUAQA && document.getElementById('boot').hidden, null, { timeout: 45000 });
+  const boot = await diagnostic(frame);
+  event('boot', boot);
+  console.log('AQUA_BOOT ' + JSON.stringify(boot));
   await page.waitForFunction(() => document.body.classList.contains('playing'));
   await frame.evaluate(() => { AQUAQA.setManual(); AQUAQA.render(); });
   return frame;
@@ -71,6 +89,13 @@ let browser;
     args: ['--mute-audio', '--enable-unsafe-webgpu', ...(process.platform === 'win32' ? ['--use-angle=d3d11'] : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'])] });
   async function context(options = {}) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, ...options });
+    ctx.on('page', page => {
+      page.on('pageerror', error => event('pageerror', error.message));
+      page.on('console', message => {
+        if (['error', 'warning'].includes(message.type())) event(message.type(), message.text());
+      });
+      page.on('requestfailed', request => event('requestfailed', { url: request.url(), error: request.failure()?.errorText }));
+    });
     await ctx.addInitScript(init);
     await ctx.route('**/*', route => route.request().url().startsWith(base) ? route.continue() : route.abort());
     return ctx;
@@ -204,7 +229,21 @@ let browser;
   page = await ctx.newPage(); await page.goto(base + '/aqua-empire/?play=1');
   check('No-JS direct Play retains the guide and explanation', await page.locator('h1').isVisible() && await page.locator('noscript').isVisible());
   await ctx.close(); report.passed = true;
-})().catch(error => { report.passed = false; report.error = error.stack; console.error(error); process.exitCode = 1; })
+})().catch(async error => {
+  report.passed = false; report.error = error.stack; console.error(error); process.exitCode = 1;
+  report.failurePages = [];
+  for (const ctx of browser?.contexts() || []) {
+    for (const page of ctx.pages()) {
+      const states = [];
+      for (const frame of page.frames()) {
+        try { states.push(await diagnostic(frame)); } catch (failure) { states.push({ error: failure.message }); }
+      }
+      report.failurePages.push(states);
+      try { await page.screenshot({ path: path.join(out, 'failure-' + report.failurePages.length + '.png'), timeout: 5000 }); } catch {}
+    }
+  }
+  console.error('AQUA_FAILURE ' + JSON.stringify({ events, pages: report.failurePages }));
+})
   .finally(async () => {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));
