@@ -1,0 +1,104 @@
+{
+  "index.html": {
+    "beforeSha256": "00b51d664cb776d43df0165976625d9f09968329eb5f0e57a7846a42f73d912a",
+    "afterSha256": "c9190bf8603b421db3218fa9a5e4767a6a9c076e7bf248553e88e67fc75a2b94",
+    "replacements": [
+      {
+        "before": "content=\"I'm Trent Sterling (Tront), a game developer with over 15 years of experience, specializing in Unity, C#, and multiplayer networking.\"",
+        "after": "content=\"Games and tools by Trent Sterling (Tront), a Unity and network programmer working on Project Demigod, VR, multiplayer systems, and browser experiments.\"",
+        "count": 3
+      },
+      {
+        "before": "<p>I'm Trent Sterling (Tront), a game developer with over 15 years of experience, specializing in Unity, C#, and multiplayer networking. I've worked on everything from Minecraft mods to Garry's Mod gamemodes and educational games.</p>",
+        "after": "<p>I'm Trent Sterling, usually Tront online. I've been making games since 2009, with most of my work in Unity, C#, and multiplayer networking. I've also worked on mods, educational games, and a growing collection of browser experiments.</p>",
+        "count": 1
+      },
+      {
+        "before": "Since 2025 I've been the Network Programmer + Unity Generalist on",
+        "after": "Since 2025 I've worked as a contract Network Programmer and Unity Generalist on",
+        "count": 1
+      },
+      {
+        "before": "working in Photon Fusion on Quest and PC VR. On my own stuff I build on Epic Online Services (eos-native: P2P, voice, lobbies, host migration).",
+        "after": "using Photon Fusion on Quest and PC VR. For my own projects, I build <a href=\"/blog/posts/eos-native/\">eos-native</a> on Epic Online Services for P2P networking, voice, lobbies, and host migration.",
+        "count": 1
+      },
+      {
+        "before": "My focus is on creating solid gameplay, efficient networking, and high-performance VR experiences at 120hz. I also work on shaders and procedural generation.",
+        "after": "I spend a lot of time on how games feel, what they send over the network, and how much work they ask of the GPU. That takes me into gameplay systems, VR optimization, shaders, and procedural generation.",
+        "count": 1
+      },
+      {
+        "before": "smooth, immersive VR at 120Hz+, Quest + PC VR.",
+        "after": "Quest and PC VR, including work toward 120Hz+ performance targets.",
+        "count": 1
+      },
+      {
+        "before": "I started with Halo CE/2 modding and later worked on Minecraft mods and Garry's Mod gamemodes. These early experiences taught me game mechanics, scripting, and community-driven development.",
+        "after": "I started with Halo CE/2 modding, then Minecraft mods and Garry's Mod gamemodes. Working on games people could change and play together got me into scripting, game mechanics, and community development.",
+        "count": 1
+      },
+      {
+        "before": "I've since focused on indie game development and multiplayer games, especially VR performance optimization and network traffic optimization for smoother gameplay.",
+        "after": "That led me into indie games and multiplayer work, and eventually VR.",
+        "count": 1
+      },
+      {
+        "before": "<a class=\"blog\" href=\"/blog\" target=\"_blank\">Tront Dev Blog</a><p class=\"blurb\">My development journey: Unity, C#, VR, networking insights, and project updates.</p>",
+        "after": "<a class=\"blog\" href=\"/blog/\" target=\"_blank\">Tront Dev Blog</a><p class=\"blurb\">Development notes, tutorials, and project updates, from the old Flash experiments to current Unity, VR, and networking work.</p>",
+        "count": 1
+      },
+      {
+        "before": "Game developer with over 15 years of experience, specializing in Unity, C#, and multiplayer networking. Network Programmer + Unity Generalist on Project Demigod (Photon Fusion); Epic Online Services on his own projects.",
+        "after": "Game developer since 2009, working in Unity, C#, and multiplayer networking. Contract Network Programmer and Unity Generalist on Project Demigod using Photon Fusion; Epic Online Services on his own projects.",
+        "count": 1
+      },
+      {
+        "before": "\"dateModified\": \"2026-09-26T22:06:46-05:00\",",
+        "after": "\"dateModified\": \"2026-10-28\",",
+        "count": 1
+      }
+    ]
+  },
+  "games/index.html": {
+    "beforeSha256": "113e13b552ea5c5e2345d1c6faa1b7e1a007e36067d7fd3054d0287021008561",
+    "afterSha256": "e574a13da8cc3c1d2488e4ae422c86d34998458b94868274d4a6707cf4f8672a",
+    "replacements": [
+      {
+        "before": "Production work, games, experiments, and tools by Trent Sterling (Tront), Network Programmer and Unity Generalist on Project Demigod. Building in Unity, C#, VR, multiplayer, and GPU systems since 2009. Most of the browser games here are one self-contained HTML file: nothing to install, nothing to download.",
+        "after": "These are games I've worked on and tools I've built, from my contract work on Project Demigod to multiplayer experiments and weekend prototypes. Many run straight in your browser. For the development notes, see <a href=\"/blog/\">my blog</a>; the <a href=\"https://github.com/TrentSterling\">public code is on GitHub</a>.",
+        "count": 1
+      },
+      {
+        "before": "Leave a mark. Grab a dummy, slam it, and drag it through blood that stays. A physics playground with contact smears, wall splashes, and dripping stains.",
+        "after": "Grab a dummy, slam it, and drag it through blood that stays. This physics playground leaves contact smears, wall splashes, and dripping stains behind.",
+        "count": 1
+      },
+      {
+        "before": "3.2 km. One good line. Chain downhill landings, collect burst charge and beat your personal best through Sunfall Causeway. A browser momentum runner inspired by HASTE.",
+        "after": "A browser momentum runner inspired by HASTE. Chain downhill landings and collect burst charge across the 3.2 km Sunfall Causeway to beat your personal best.",
+        "count": 1
+      },
+      {
+        "before": "A little ocean. A big empire. Feed a shoal into a ridiculous aquarium economy, protect the nursery, fight the Broodship, hatch the Crown Fish. Then keep your empire.",
+        "after": "Feed your shoal and grow a ridiculous aquarium economy while protecting the nursery. Fight the Broodship, hatch the Crown Fish, and keep building your empire afterward.",
+        "count": 1
+      },
+      {
+        "before": "A little forest. A very busy axe. Sweep a giant axe over a floating island and fell the grove in one swoop: pumpkin blasts, chain lightning, busy beavers. Then axe it all again tomorrow.",
+        "after": "Sweep a giant axe across a floating island, with pumpkin blasts, chain lightning, and busy beavers helping you fell the grove. There is always more to chop tomorrow.",
+        "count": 1
+      },
+      {
+        "before": "Shared ink. Bad landings. Draw tracks in ink, ride them, crash beautifully. A physics sketchbook you can play alone or in a room where everyone draws and rides the same sheet.",
+        "after": "Draw tracks in ink and try to ride them without crashing. Play this physics sketchbook alone or join a room where everyone draws and rides on the same sheet.",
+        "count": 1
+      },
+      {
+        "before": "Small tanks. Big grudges. Turn-based artillery with destructible terrain and 400 wild weapons: quick battles against the CPU, hot-seat, or online with a public quick join.",
+        "after": "Turn-based tank artillery with destructible terrain and 400 wild weapons. Play a quick battle against the CPU, share a hot-seat game, or use public quick join to play online.",
+        "count": 1
+      }
+    ]
+  }
+}

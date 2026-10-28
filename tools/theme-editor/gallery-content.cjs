@@ -1,9 +1,15 @@
-/* Frozen pre-theme copy plus explicitly reviewed year additions. No runtime mutation. */
+/* Frozen pre-theme copy plus exact reviewed copy/year additions. No runtime mutation. */
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const baseline = require('./gallery-content-baseline.json');
+const reviewedBlurbs = require('../seo/copy-review.json')['games/index.html'].replacements
+    .filter(entry => !entry.after.includes('<'));
+function expectedWithReviewedCopy(card, expected) {
+    const entry = reviewedBlurbs.find(entry => entry.before === expected.blurbHtml && entry.after === card.blurbHtml);
+    return entry ? { ...expected, blurbHtml: entry.after, blurbText: entry.after } : expected;
+}
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
 const released = require('./gallery-released-20261014.json');
 const recovered = require('./gallery-recovered-20261014.json');
@@ -75,14 +81,14 @@ function readCards(html) {
 }
 function assertCards(cards) {
     assert.equal(cards.length, expectedCards.length, 'all historical and approved release cards are preserved');
-    cards.forEach((card, i) => assert.deepEqual(card, expectedCards[i], `card ${i + 1}: full title, approved year, description, tags, categories and link are preserved`));
+    cards.forEach((card, i) => assert.deepEqual(card, expectedWithReviewedCopy(card, expectedCards[i]), `card ${i + 1}: full title, approved year, reviewed description, tags, categories and link are preserved`));
     assert.deepEqual(cards.filter(card => !card.yearSpans.length).map(card => card.href), currentMissingYearHrefs,
         'any year omission or repair must be reviewed explicitly');
 }
 function assertSource(html) { assertCards(readCards(html)); }
 function assertHistoricalCards(cards) {
     assert.equal(cards.length, baseline.cards.length, 'all 117 historical cards remain present and preserved');
-    cards.forEach((card, i) => assert.deepEqual(card, baseline.cards[i], `historical card ${i + 1}: full title, original year, description, tags, categories and link are preserved`));
+    cards.forEach((card, i) => assert.deepEqual(card, expectedWithReviewedCopy(card, baseline.cards[i]), `historical card ${i + 1}: full title, original year, reviewed description, tags, categories and link are preserved`));
     assert.deepEqual(cards.filter(card => !card.yearSpans.length).map(card => card.href), baseline.knownMissingYearHrefs,
         'the historical comparison retains exactly the original four year omissions');
 }

@@ -10,7 +10,8 @@ const { createServer } = require('../game-media/server.cjs');
 const { assertRendered: assertGalleryContent, baseline: galleryBaseline, recovered: recoveredGallery, normalizeYearsForPreservation, normalizeReleasedForPreservation } = require('./gallery-content.cjs');
 const isaacArchive = require('../game-media/isaac-archive.cjs');
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
-const normalizeComparison = html => normalizeYearsForPreservation(normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(isaacArchive.normalizeForPreservation(html))));
+const { normalize: normalizeCopy } = require('../seo/copy-review.cjs');
+const normalizeComparison = html => normalizeYearsForPreservation(normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(isaacArchive.normalizeForPreservation(normalizeCopy(html, 'games/index.html')))));
 const server = createServer();
 const baselineRoot = process.env.THEME_BASELINE_ROOT;
 // The complete original checkout supplies its own unchanged server and assets.
@@ -22,7 +23,7 @@ const diagnosticsDir = screenshots || path.resolve('.local/theme-review');
 const closeLifecycle = [];
 const nativeGalleryReview = [];
 const approvedGalleryReview = [];
-const comparisonNormalization = 'Comparison-only HTML restores exactly the CraftMine 2 addition, four already-published master cards, four approved year spans and the reviewed Isaac media container to historical markup. Raw candidate audits and screenshots remain unchanged and require all 122 years.';
+const comparisonNormalization = 'Comparison-only HTML restores the exact hash-pinned reviewed copy, CraftMine 2 addition, four already-published master cards, four approved year spans and reviewed Isaac media container to historical markup. Raw candidate audits and screenshots still require the reviewed copy and every current card and year.';
 
 // Native close is queued. Normal flows await the event; rapid flows deliberately do not.
 async function installCloseTrace(page) {
