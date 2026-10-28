@@ -7,6 +7,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium, webkit, request } = require('playwright');
+const { normalize: normalizeCopy } = require('../seo/copy-review.cjs');
+const galleryCount = require('../theme-editor/gallery-content.cjs').expectedCards.length;
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
 assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
@@ -60,7 +62,7 @@ const measure = () => {
   await client.dispose();
   const browserType = process.env.GAMES_TEST_BROWSER === 'webkit' ? webkit : chromium;
   const browser = await browserType.launch({ headless: true, executablePath: process.env.GAMES_BROWSER_EXECUTABLE || process.env.THEME_BROWSER_EXECUTABLE });
-  async function open(source, width, { held = false, reducedMotion = 'no-preference', javaScriptEnabled = true, height = 900 } = {}) {
+  async function open(source, width, { held = false, reducedMotion = 'no-preference', javaScriptEnabled = true, height = 900, comparison = false } = {}) {
     const context = await browser.newContext({ viewport: { width, height }, reducedMotion, javaScriptEnabled });
     await context.addInitScript(() => localStorage.setItem('tront-previews-paused', 'true'));
     const pending = [], errors = [], missing = [];
@@ -76,7 +78,10 @@ const measure = () => {
       assert.ok(file.startsWith(path.resolve(source) + path.sep));
       if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
       if (!fs.existsSync(file)) { missing.push(url.pathname); return route.fulfill({ status: 404, body: 'Missing local test asset' }); }
-      return route.fulfill({ body: fs.readFileSync(file), contentType: types[path.extname(file)] || 'application/octet-stream' });
+      const body = fs.readFileSync(file);
+      // Only historical geometry uses the exact reviewed copy normalization.
+      // Stalled fonts, keyboard filters and no-script cases use raw candidate HTML.
+      return route.fulfill({ body: comparison && url.pathname === '/games/' ? normalizeCopy(body.toString('utf8'), 'games/index.html') : body, contentType: types[path.extname(file)] || 'application/octet-stream' });
     });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
@@ -92,7 +97,7 @@ const measure = () => {
     }
     const result = await test.page.evaluate(() => ({ fontStatus: document.fonts.status, width: innerWidth, scrollWidth: document.documentElement.scrollWidth, visibleCards: [...document.querySelectorAll('.grid .item')].filter(e => e.getClientRects().length).length }));
     assert.ok(result.scrollWidth <= result.width, 'no horizontal overflow');
-    assert.equal(result.visibleCards, 128);
+    assert.equal(result.visibleCards, galleryCount);
     assert.deepEqual(test.errors, [], 'no page errors');
     assert.deepEqual(test.missing, [], 'all local assets available');
     return result;
@@ -112,12 +117,12 @@ const measure = () => {
     await old.context.close();
 
     for (const width of [1440, 390, 320]) {
-      const before = await open(baseline, width), after = await open(root, width);
+      const before = await open(baseline, width, { comparison: true }), after = await open(root, width, { comparison: true });
       await before.page.evaluate(() => document.fonts.ready);
       await after.page.evaluate(() => document.fonts.ready);
       await readable(before); await readable(after);
       assert.deepEqual(await after.page.evaluate(measure), await before.page.evaluate(measure), 'loaded appearance/geometry unchanged at ' + width);
-      report.normalAppearance.push({ width, exactComputedGeometry: true });
+      report.normalAppearance.push({ width, exactComputedGeometry: true, copy: 'exact hash-pinned historical comparison; raw copy checked separately' });
       await after.page.screenshot({ path: path.join(output, `games-loaded-${width}.png`) });
       await before.context.close(); await after.context.close();
 
@@ -152,7 +157,7 @@ const measure = () => {
         await page.evaluate(() => document.fonts.ready); await readable(test);
         const expected = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('input[name="filter"]')].map(input => [input.id, document.querySelectorAll(input.id === 'filter-all' ? '.grid .item' : '.grid .item.tag-' + input.id.slice(7)).length])));
         const ids = Object.keys(expected), originalHash = await page.evaluate(() => location.hash);
-        assert.equal(expected['filter-all'], 128); assert.equal(expected['filter-vr'], 6);
+        assert.equal(expected['filter-all'], galleryCount); assert.equal(expected['filter-vr'], 6);
         const checked = async id => {
           try {
             await page.waitForFunction(id => document.querySelector('#' + id).checked, id, { timeout: 2000 });
