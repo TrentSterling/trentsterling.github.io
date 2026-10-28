@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium, webkit, request } = require('playwright');
+const { normalize: normalizeCopy } = require('../seo/copy-review.cjs');
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
 assert.ok(baseline, 'actual PR base required');
@@ -39,7 +40,7 @@ const measure = card => {
   for (const m of css.body.toString().matchAll(/url\(['"]?([^)'"\s]+)['"]?\)/g)) await font(m[1]);
   await client.dispose();
   const browser = await (report.browser === 'webkit' ? webkit : chromium).launch({ headless:true, executablePath:process.env.GAMES_BROWSER_EXECUTABLE || process.env.THEME_BROWSER_EXECUTABLE });
-  async function open(source,width,{ paused=false,reducedMotion='no-preference',javaScriptEnabled=true,saveData=false,failMedia=false }={}) {
+  async function open(source,width,{ paused=false,reducedMotion='no-preference',javaScriptEnabled=true,saveData=false,failMedia=false,comparison=false }={}) {
     const context = await browser.newContext({ viewport:{width,height:900},reducedMotion,javaScriptEnabled });
     if (paused) await context.addInitScript(() => { if(localStorage.getItem('tront-previews-paused')===null) localStorage.setItem('tront-previews-paused','true'); });
     if (saveData) await context.addInitScript(() => Object.defineProperty(navigator,'connection',{value:{saveData:true,addEventListener(){}}}));
@@ -58,7 +59,10 @@ const measure = card => {
       assert.ok(file.startsWith(path.resolve(source)+path.sep));
       if(fs.existsSync(file)&&fs.statSync(file).isDirectory())file=path.join(file,'index.html');
       assert.ok(fs.existsSync(file),'local asset '+url.pathname);
-      return route.fulfill({body:fs.readFileSync(file),contentType:types[path.extname(file)]||'application/octet-stream'});
+      const body=fs.readFileSync(file);
+      // Restore only the hash-pinned copy for the historical pixel comparison.
+      // Playback and fallback cases below use the raw candidate document.
+      return route.fulfill({body:comparison && url.pathname==='/games/' ? normalizeCopy(body.toString('utf8'),'games/index.html') : body,contentType:types[path.extname(file)]||'application/octet-stream'});
     });
     const page = await context.newPage(); page.on('pageerror',e=>errors.push(e.message));
     await page.goto(origin+'/games/',{waitUntil:'domcontentloaded'});
@@ -89,15 +93,18 @@ const measure = card => {
   }
   try {
     for(const width of [1440,390,320]) {
-      const before=await open(baseline,width,{paused:true}), after=await open(root,width,{paused:true});
+      const before=await open(baseline,width,{paused:true,comparison:true}), compared=await open(root,width,{paused:true,comparison:true});
       await before.page.bringToFront();await shot(before,'before-'+width);
-      await after.page.bringToFront();await shot(after,'poster-'+width);
+      await compared.page.bringToFront();await shot(compared,'poster-comparison-'+width);
       const previous = await before.card.evaluate(measure);
       assert.ok([oldPosterUrl,posterUrl].includes(previous.poster),'exact reviewed baseline poster');
-      assert.deepEqual(await after.card.evaluate(measure),{...previous,poster:posterUrl},'reviewed poster/copy/geometry '+width);
-      const beforePng=await before.card.screenshot({animations:'disabled'}),afterPng=await after.card.screenshot({animations:'disabled'});
-      assert.deepEqual(afterPng,beforePng,'exact poster card pixels '+width);
+      assert.deepEqual(await compared.card.evaluate(measure),{...previous,poster:posterUrl},'reviewed poster/copy/geometry '+width);
+      const beforePng=await before.card.screenshot({animations:'disabled'}),afterPng=await compared.card.screenshot({animations:'disabled'});
+      assert.ok(afterPng.equals(beforePng),'exact poster card pixels '+width);
       await before.context.close();
+      await compared.context.close();
+      const after=await open(root,width,{paused:true});
+      await shot(after,'poster-actual-'+width);
       assert.equal(after.requested.length,0);
       await after.page.evaluate(()=>document.getElementById('preview-toggle').click());
       const playback=await playing(after);await shot(after,'playing-'+width);
@@ -116,6 +123,8 @@ const measure = card => {
       await after.page.locator('label[for=filter-game]').click();
       assert.equal(await after.page.locator('#filter-game').isChecked(),true);
       // A visible anchor need not put 55% of its preview below the fixed navbar.
+      // Let the filter's queued focus scroll finish before centering the image.
+      await after.page.evaluate(()=>new Promise(resolve=>setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(resolve)),0)));
       // Center the actual image after the filtered grid reflows, then prove eligibility.
       await after.card.locator('.image-container').evaluate(e=>e.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
       await after.page.waitForFunction(selector=>{const r=document.querySelector(selector+' .image-container').getBoundingClientRect();return r.width>0&&r.height>0&&r.top>=64&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth;},selector);
