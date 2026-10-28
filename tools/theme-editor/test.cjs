@@ -11,6 +11,7 @@ const editorSource = fs.readFileSync(path.join(base, 'assets/js/tront-theme-edit
 const galleryContent = require('./gallery-content.cjs');
 const craftmine2 = require('../game-media/craftmine2-card.cjs');
 const refresh = require('../game-media/six-game-refresh.cjs');
+const { normalize: normalizeCopy } = require('../seo/copy-review.cjs');
 const plain = value => JSON.parse(JSON.stringify(value));
 
 test('all 117 cards preserve pre-theme copy and original years plus four verified year additions', () => {
@@ -36,7 +37,7 @@ test('content contract rejects year deletion, blurb simplification, tag loss and
     }
 });
 test('approved year normalization recovers the complete frozen historical card record', () => {
-    const html = fs.readFileSync(path.join(base, 'games/index.html'), 'utf8');
+    const html = normalizeCopy(fs.readFileSync(path.join(base, 'games/index.html'), 'utf8'), 'games/index.html');
     const historical = galleryContent.normalizeYearsForPreservation(galleryContent.normalizeReleasedForPreservation(craftmine2.normalizeForPreservation(html)));
     assert.deepEqual(galleryContent.readCards(historical), galleryContent.baseline.cards);
     assert.equal(galleryContent.normalizeYearsForPreservation(historical), historical, 'historical titles remain untouched');

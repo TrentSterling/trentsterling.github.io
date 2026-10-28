@@ -7,8 +7,9 @@ const vm = require('node:vm');
 const { normalize, replacements } = require('./games-resilience.cjs');
 const { normalize: normalizeNavigation } = require('../navigation/contract.cjs');
 const { normalize: normalizeTinyZombies } = require('./tinyzombies-preview.cjs');
+const { normalize: normalizeCopy } = require('../seo/copy-review.cjs');
 const root = path.resolve(__dirname, '../..');
-const html = require('./six-game-refresh.cjs').normalizeForPreservation(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'));
+const html = require('./six-game-refresh.cjs').normalizeForPreservation(normalizeCopy(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'), 'games/index.html'));
 
 test('Games becomes readable immediately without reading the Font Loading API', () => {
   const block = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
@@ -58,7 +59,7 @@ test('Games uses native, visually hidden category radios with visible label focu
 test('Games bytes outside exact reviewed resilience replacements match the PR base', () => {
   const baseline = process.env.THEME_BASELINE_ROOT;
   assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
-  const before = require('./six-game-refresh.cjs').normalizeForPreservation(fs.readFileSync(path.join(baseline, 'games/index.html'), 'utf8'));
+  const before = require('./six-game-refresh.cjs').normalizeForPreservation(normalizeCopy(fs.readFileSync(path.join(baseline, 'games/index.html'), 'utf8'), 'games/index.html'));
   for (const [, after] of replacements) assert.equal(html.split(after).length, 2);
   assert.equal(normalizeTinyZombies(normalizeNavigation(normalize(html, 'games/index.html'), 'games/index.html')), normalizeTinyZombies(normalizeNavigation(normalize(before, 'games/index.html'), 'games/index.html')));
   assert.equal(normalize(html + 'changed', 'games/index.html'), normalize(html, 'games/index.html') + 'changed');
