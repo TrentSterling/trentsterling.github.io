@@ -11,6 +11,7 @@ const { normalize: normalizeNavigation } = require('../navigation/contract.cjs')
 const { normalize: normalizeTinyZombies } = require('../game-media/tinyzombies-preview.cjs');
 const { normalize: normalizeAuthors } = require('./author-links.cjs');
 const { normalizeForPreservation: normalizeSixGameRefresh } = require('../game-media/six-game-refresh.cjs');
+const { normalize: normalizeCopy } = require('./copy-review.cjs');
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
@@ -63,8 +64,8 @@ for (const page of pages) {
     assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
     const before = fs.readFileSync(path.join(baseline, page.file), 'utf8');
     assert.deepEqual(
-      Buffer.from(normalizeTinyZombies(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(normalizeSixGameRefresh(html, page.file), page.file), page.file), page.file), page.file), page.file)),
-      Buffer.from(normalizeTinyZombies(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(normalizeSixGameRefresh(before, page.file), page.file), page.file), page.file), page.file), page.file)),
+      Buffer.from(normalizeTinyZombies(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(normalizeSixGameRefresh(normalizeCopy(html, page.file), page.file), page.file), page.file), page.file), page.file), page.file)),
+      Buffer.from(normalizeTinyZombies(normalizeAuthors(normalizeNavigation(normalizeGamesResilience(withoutAddition(normalizeSixGameRefresh(normalizeCopy(before, page.file), page.file), page.file), page.file), page.file), page.file), page.file)),
       'preserve all existing markup, schema entities, copy, dates, credits, layout, cards and scripts'
     );
   });

@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const { normalize: normalizeCopy } = require('../seo/copy-review.cjs');
 const isaac = require('../game-media/isaac-archive.cjs');
 const recorded = require('../game-media/recorded-previews.cjs');
 const { withoutAddition: withoutBreadcrumbAddition } = require('../seo/breadcrumbs.cjs');
@@ -17,13 +18,13 @@ const gamesMd = require('../navigation/games-md.cjs');
 const root = path.resolve(__dirname, '../..');
 const baseline = process.env.THEME_BASELINE_ROOT;
 assert.ok(baseline, 'THEME_BASELINE_ROOT must identify a checkout of the PR base');
-const read = (dir, file) => normalizeDiscordInvites(normalizeGamesResilience(withoutBreadcrumbAddition(fs.readFileSync(path.join(dir, file), 'utf8'), file), file), file);
+const read = (dir, file) => normalizeDiscordInvites(normalizeGamesResilience(withoutBreadcrumbAddition(normalizeCopy(fs.readFileSync(path.join(dir, file), 'utf8'), file), file), file), file);
 const blocks = (html, tag) => [...html.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, 'gi'))].map(match => match[1]);
 const copy = html => html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 for (const file of ['index.html', 'discord/index.html', 'games/index.html']) {
   const before = read(baseline, file), after = read(root, file);
   const normalize = file === 'games/index.html' ? normalizeGames : value => value;
-  assert.equal(copy(normalize(after)), copy(normalize(before)), `${file}: every existing text node is preserved except the exact approved Isaac media placeholder and four verified year additions and one exact CraftMine 2 card`);
+  assert.equal(copy(normalize(after)), copy(normalize(before)), `${file}: copy is preserved outside the exact copy-review manifest and prior media/year additions`);
   assert.deepEqual(blocks(after, 'style'), blocks(before, 'style'), `${file}: inline layout CSS is preserved`);
   const nonTheme = html => blocks(html, 'script').filter(s => s.trim() && !s.includes('localStorage.getItem("tront-theme")'));
   assert.deepEqual(nonTheme(after), nonTheme(before), `${file}: non-theme scripts are preserved`);
@@ -67,4 +68,4 @@ for (const file of Object.keys(refresh.files)) {
   beforeTree.delete(file); afterTree.delete(file);
 }
 assert.deepEqual(afterTree, beforeTree, 'every other gallery media/behavior/shared legacy file stays byte-identical');
-console.log(`PASS: all page copy, inline layouts, gallery content and ${beforeTree.size} protected files match the PR base outside the exact reviewed Isaac media addition and four verified year additions and one exact CraftMine 2 card.`);
+console.log(`PASS: inline layouts, gallery behavior/media and ${beforeTree.size} protected files match the PR base; copy differs only by the exact copy-review manifest, alongside prior media/year allowances.`);
