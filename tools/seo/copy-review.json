@@ -62,7 +62,7 @@
   },
   "games/index.html": {
     "beforeSha256": "113e13b552ea5c5e2345d1c6faa1b7e1a007e36067d7fd3054d0287021008561",
-    "afterSha256": "e574a13da8cc3c1d2488e4ae422c86d34998458b94868274d4a6707cf4f8672a",
+    "afterSha256": "ce9a5d82d37e6b954a75e391c610c58104a0846bd792f58db19476f41934a982",
     "replacements": [
       {
         "before": "Production work, games, experiments, and tools by Trent Sterling (Tront), Network Programmer and Unity Generalist on Project Demigod. Building in Unity, C#, VR, multiplayer, and GPU systems since 2009. Most of the browser games here are one self-contained HTML file: nothing to install, nothing to download.",
@@ -98,6 +98,17 @@
         "before": "Small tanks. Big grudges. Turn-based artillery with destructible terrain and 400 wild weapons: quick battles against the CPU, hot-seat, or online with a public quick join.",
         "after": "Turn-based tank artillery with destructible terrain and 400 wild weapons. Play a quick battle against the CPU, share a hot-seat game, or use public quick join to play online.",
         "count": 1
+      },
+      {
+        "before": "Just a bunch of tiny zombies. A Unity horde experiment from the winter of 2014.",
+        "after": "Just a bunch of tiny zombies. A Unity horde experiment.",
+        "count": 1
+      }
+    ],
+    "previousVersions": [
+      {
+        "afterSha256": "e574a13da8cc3c1d2488e4ae422c86d34998458b94868274d4a6707cf4f8672a",
+        "replacementCount": 7
       }
     ]
   }
