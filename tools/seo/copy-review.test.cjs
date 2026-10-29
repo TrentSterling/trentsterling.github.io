@@ -13,4 +13,13 @@ for (const [file, entry] of Object.entries(reviewed)) test(file + ': copy except
     assert.equal(normalize(changed, file), changed);
   }
   assert.equal(normalize(current, 'unrelated.html'), current);
+  for (const version of entry.previousVersions || []) {
+    let previous = current;
+    for (const { before, after } of entry.replacements.slice(version.replacementCount).reverse()) {
+      previous = previous.split(after).join(before);
+    }
+    assert.equal(hash(previous), version.afterSha256);
+    assert.equal(hash(normalize(previous, file)), entry.beforeSha256);
+    assert.equal(normalize(previous + '<p>Extra copy</p>', file), previous + '<p>Extra copy</p>');
+  }
 });
