@@ -1,0 +1,9 @@
+# Dustline audio provenance
+
+The original files are supplied here as base64-encoded Ogg Vorbis for lossless transfer through the source repository's text interface. At runtime each is decoded to its original Ogg bytes and decoded once by Web Audio. All sources are CC0 1.0; attribution is retained for clarity.
+
+- `engine.ogg.b64`: GGBotNet, Car Engine Loop, recorded car effects pack, https://opengameart.org/content/car-sound-effects-pack-low-quality. Original Ogg preserved unchanged. SHA-256 decoded Ogg: d0f8b89066792ccf23895f6d5bbc7fb1a0363691324b72c921099e57828fec96.
+- `shot.ogg.b64`: The Free Firearm Sound Library (recordists Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney), edited excerpt by yegors, via https://github.com/yegors/hard-lines/blob/main/public/audio/README.md and https://opengameart.org/content/the-free-firearm-sound-library; source https://raw.githubusercontent.com/yegors/hard-lines/main/public/audio/p226-report-0.wav. Converted to mono 24 kHz Ogg Vorbis with FFmpeg quality 3. SHA-256 decoded Ogg: 80217961369857ca97de1453658d479b0ca565801bad142dbfd8aa0a35a409c6.
+- `metal.ogg.b64`: BLACK LODGE GAMES, LLC, `dull_metal_collision_01_44k_32bit_stereo.wav`, https://opengameart.org/content/27-metal-audio-samples-sfx. Converted to mono 24 kHz Ogg Vorbis with FFmpeg quality 3. SHA-256 decoded Ogg: 9a8f17b11670a14162d20d1626c877b1539fa61f540a442e4ce7cdf702e6bddc.
+
+Recorded engine, weapon and metal impacts replace the respective synthetic sounds. Metal also acts as a temporary salvage and cash cue. Shockpulse and contract win retain simple synthesized placeholders until fitting recorded or designed effects are available. No zombie or collision events were inferred beyond existing telemetry. Sound quality, gain and loop seams require human listening in a playable browser before release.
