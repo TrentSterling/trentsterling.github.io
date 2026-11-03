@@ -242,7 +242,7 @@
         dialog.className = 'te-dialog';
         dialog.setAttribute('aria-labelledby', 'te-title');
         dialog.innerHTML = '<div class="te-heading"><div><h2 id="te-title">Theme</h2></div><button type="button" class="te-close" data-action="close" aria-label="Close theme editor">×</button></div>' +
-            '<div class="te-presets"><label for="te-preset">Palette</label><select id="te-preset" name="preset">' + PRESETS.map(function (p) { return '<option value="' + p.id + '">' + p.name + '</option>'; }).join('') + (gallery ? '<option value="gallery-original">Original gallery</option>' : '') + '<option value="custom" disabled>Custom</option></select><button type="button" data-action="magic">ColorMagic</button></div>' +
+            '<div class="te-presets"><label for="te-preset">Palette</label><select id="te-preset" name="preset">' + PRESETS.map(function (p) { return '<option value="' + p.id + '">' + p.name + '</option>'; }).join('') + (gallery ? '<option value="gallery-original">Original gallery</option>' : '') + '<option value="custom">Custom</option></select><button type="button" data-action="magic" title="Generate a random color palette">ColorMagic</button></div>' +
             '<fieldset class="te-mode"><legend>Appearance</legend><label><input type="radio" name="mode" value="dark"> Dark</label><label><input type="radio" name="mode" value="light"> Light</label></fieldset>' +
             '<div class="te-preview" role="img" aria-label="Your selected gradient colors"></div>' +
             '<section class="te-details" aria-labelledby="te-gradient-title"><h3 id="te-gradient-title">Gradient</h3><div class="te-tuning">' +
@@ -338,7 +338,13 @@
         dialog.addEventListener('input', function (event) { updateInput(event.target); });
         dialog.addEventListener('change', function (event) {
             var input = event.target;
-            if (input.name === 'preset') { commit(input.value === 'gallery-original' && gallery ? originalGallery() : preset(input.value)); return; }
+            if (input.name === 'preset') {
+                // Custom edits the current palette; it must not fall back to Midnight.
+                var selected = input.value === 'custom' ? clone(state)
+                    : input.value === 'gallery-original' && gallery ? originalGallery() : preset(input.value);
+                if (input.value === 'custom') selected.preset = 'custom';
+                commit(selected); return;
+            }
             if (input.name === 'mode') { var next = clone(state); next.mode = input.value; next.preset = 'custom'; commit(next); return; }
             updateInput(input);
             if (draftStart) { remember(draftStart); draftStart = null; sync(); }
