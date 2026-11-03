@@ -1,0 +1,98 @@
+name: Review Jenns Cafe description
+on:
+  push:
+    branches: [fix/jenns-cafe-copy-20261102]
+    paths: [.github/workflows/cafe-copy-review.yml]
+permissions:
+  contents: write
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install existing media-test dependency
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y ffmpeg > /tmp/ffmpeg-install.log
+      - name: Correct only the historical gallery description and review record
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/cafe-copy-base" HEAD
+          echo "THEME_BASELINE_ROOT=$RUNNER_TEMP/cafe-copy-base" >> "$GITHUB_ENV"
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, hashlib
+          old = 'Cafe game prototype from 2017. The itch page still says the build is incoming.'
+          new = 'A restaurant-building prototype I made for Jennifer, inspired by The Sims and Diner Dash. Arrange furniture, stack props, and save your cafe layout.'
+          p = Path('games/index.html')
+          before = p.read_bytes().decode('utf-8')
+          target = '<p class="blurb">' + old + '</p>'
+          replacement = '<p class="blurb">' + new + '</p>'
+          assert before.count(target) == 1
+          after = before.replace(target, replacement)
+          assert after.replace(replacement, target) == before
+          review_path = Path('tools/seo/copy-review.json')
+          review = json.loads(review_path.read_text())
+          entry = review['games/index.html']
+          digest = lambda s: hashlib.sha256(s.encode('utf-8')).hexdigest()
+          assert digest(before) == entry['afterSha256'], 'Review snapshot changed; reconcile instead of bypassing protection.'
+          entry.setdefault('previousVersions', []).append({'afterSha256':entry['afterSha256'],'replacementCount':len(entry['replacements'])})
+          entry['replacements'].append({'before':old,'after':new,'count':1})
+          entry['afterSha256'] = digest(after)
+          p.write_bytes(after.encode('utf-8'))
+          review_path.write_text(json.dumps(review,indent=2,ensure_ascii=False)+'\n')
+          PY
+          mkdir -p tools/seo
+          cat > tools/seo/jenns-cafe-copy.test.cjs <<'JS'
+          'use strict';
+          const {test}=require('node:test');
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const {normalize}=require('./copy-review.cjs');
+          const root=path.resolve(__dirname,'../..');
+          test('historical cafe copy describes building, not itch metadata or an unimplemented service loop',()=>{
+            const html=fs.readFileSync(path.join(root,'games/index.html'),'utf8');
+            const old='Cafe game prototype from 2017. The itch page still says the build is incoming.';
+            const replacement='A restaurant-building prototype I made for Jennifer, inspired by The Sims and Diner Dash. Arrange furniture, stack props, and save your cafe layout.';
+            assert.equal(html.split(replacement).length-1,1);
+            assert.ok(!html.includes(old));
+            const card=[...html.matchAll(/<a\b[^>]*class="item\b[^>]*>[\s\S]*?<\/a>/g)].map(m=>m[0]).find(s=>s.includes('https://trent.itch.io/jenns-cafe'));
+            assert.ok(card);
+            assert.ok(card.includes("Jenn's Cafe <span>(2017)</span>"));
+            assert.ok(card.includes('preview-jenn-s-cafe-2017'));
+            assert.ok(card.includes(replacement));
+            assert.ok(!/manage staff|customer satisfaction|build is incoming/i.test(card));
+            if(process.env.THEME_BASELINE_ROOT){
+              const original=fs.readFileSync(path.join(process.env.THEME_BASELINE_ROOT,'games/index.html'),'utf8');
+              assert.equal(normalize(html,'games/index.html'),normalize(original,'games/index.html'));
+            }
+          });
+          JS
+      - name: Verify existing copy and content preservation
+        run: |
+          node --test tools/theme-editor/test.cjs
+          node tools/theme-editor/preserve.cjs
+          node --test tools/seo/*.test.cjs
+          git diff --check
+          python3 - <<'PY'
+          import subprocess
+          changed=set(subprocess.check_output(['git','diff','--name-only'],text=True).splitlines())
+          assert changed=={'games/index.html','tools/seo/copy-review.json'}, changed
+          PY
+      - name: Save tested copy files on this isolated branch only
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add games/index.html tools/seo/copy-review.json tools/seo/jenns-cafe-copy.test.cjs
+          git commit -m "Describe Jenn's Cafe building prototype instead of itch-page status" -m "Source: TrentSterling/blog _posts/2017-01-06-jenns-cafe.md. Preserve the 2017 entry, media, links, other descriptions and all live layouts. Do not conflate it with the 2026 cafe project."
+          git push origin HEAD:fix/jenns-cafe-copy-20261102
+          git show --stat --oneline HEAD
+          git ls-files --stage games/index.html tools/seo/copy-review.json tools/seo/jenns-cafe-copy.test.cjs
