@@ -217,7 +217,11 @@ class Navigation{
    if(w.kind==='door'&&!w.locked){const {dir,x,z}=unpack(k);for(const t of [0,1]){const xx=x+(dir==='h'?t:0),zz=z+(dir==='v'?t:0);fill({x0:xx-.07-RAD,x1:xx+.07+RAD,z0:zz-.07-RAD,z1:zz+.07+RAD});}}
    else fill(wallBounds(k,RAD));
   }
-  for(const o of m.objects)if(!defs[o.def].passable)fill(bounds(o,RAD));
+  for(const o of m.objects)if(!defs[o.def].passable){if(o.def==='roundtable'){
+   // A circular top needs circular clearance; its bounding square prevented a
+   // server reaching the open corner between two dining chairs.
+   const r=defs[o.def].w/2+RAD;for(let z=Math.max(0,Math.floor((o.z-r)*RES));z<Math.min(ND,Math.ceil((o.z+r)*RES));z++)for(let x=Math.max(0,Math.floor((o.x-r)*RES));x<Math.min(NW,Math.ceil((o.x+r)*RES));x++)if(Math.hypot((x+.5)/RES-o.x,(z+.5)/RES-o.z)<=r)b[z*NW+x]=1;
+  }else fill(bounds(o,RAD));}
   this.version++;
  }
  index(x,z){if(x<0||z<0||x>=W||z>=D)return -1;return Math.floor(z*RES)*NW+Math.floor(x*RES);}
@@ -265,7 +269,7 @@ Object.assign(defs,{
  bed:{...defs.bed,name:'Linen bed',cat:'Bedroom',w:1.55,d:2.1,h:.58,color:'#72bba8',slots:[[-1.1,0],[1.1,0]]},
  fridge:{...defs.fridge,cat:'Kitchen',w:.72,d:.7,h:1.83,color:'#5ca996',slots:[[0,.93]]},
  counter:{...defs.counter,cat:'Kitchen',name:'Cane-front service counter',w:1.35,d:.68,h:.91,color:'#d26955'},
- sink:{...defs.sink,cat:'Bathroom',w:.95,d:.72,h:.9,color:'#62a59b',slots:[[0,.88]]},
+ sink:{...defs.sink,cat:'Bathroom',w:.95,d:.72,h:.9,color:'#62a59b',slots:[[0,.67]]},
  toilet:{...defs.toilet,cat:'Bathroom',w:.42,d:.69,h:.77,color:'#f1e8d6',slots:[[0,.85]]},
  shower:{...defs.shower,cat:'Bathroom',w:.9,d:.9,h:2.05,color:'#7fb7af'},
  computer:{...defs.computer,cat:'Home',w:1.3,d:.66,h:1.18},
@@ -275,7 +279,7 @@ Object.assign(defs,{
  plant:{...defs.plant,cat:'Decor',name:'Rubber plant',w:.65,d:.65,color:'#508d60'},
  lamp:{...defs.lamp,cat:'Decor',name:'Paper floor lamp',color:'#eed79d'},
  rug:{...defs.rug,cat:'Decor',name:'Raspberry rug',color:'#ca537e'},
- espresso:{name:'Coffee station',cat:'Kitchen',w:1.4,d:.8,h:1.59,color:'#5cacac',service:true,slots:[[0,1.0],[-1.02,.28],[1.02,.28]]},
+ espresso:{name:'Coffee station',cat:'Kitchen',w:1.4,d:.8,h:1.59,color:'#5cacac',service:true,slots:[[0,.69]]},
  cake:{name:'Cake display',cat:'Kitchen',w:1.1,d:.68,h:1.3,color:'#d576a1'},
  roundtable:{name:'Marble bistro table',cat:'Tables',w:1.04,d:1.04,h:.875,color:'#edb763',dining:true},
  bench:{name:'Window bench',cat:'Seating',w:1.6,d:.58,h:.7,color:'#ab81b2',seat:.45,slots:[[0,.8]],need:'fun',rate:6,duration:10,verb:'Taking a break',use:'Sit'},
@@ -1978,20 +1982,28 @@ function updateMotion(a,dt,running,alpha=1,preview=false){
  else{a.rx=mix(a.prevX,a.x,alpha);a.rz=mix(a.prevZ,a.z,alpha);let yaw=angleMix(a.prevYaw,a.yaw,alpha),old=m.yaw;m.yaw=angleMix(m.yaw,yaw,1-Math.exp(-dt*12));a.ryaw=m.yaw;m.turn=mix(m.turn,clamp(angleDelta(old,m.yaw)/Math.max(dt,.001),-2,2),1-Math.exp(-dt*6));a.renderStep=mix(a.prevStep??a.step,a.step,alpha);let velocity=running?(a.walkVelocity||0):0;a.moveBlend=mix(a.moveBlend||0,clamp(velocity/1.6,0,1),1-Math.exp(-dt*7));}
  m.clock+=poseDt;m.poseDt=poseDt;m.poseFrame=(m.poseFrame||0)+1;let seated=['seated','waiting','eating','residentSit'].includes(a.phase),s=objectById(a.seatId);
  if(seated&&s)m.seat={...s};m.sit=mix(m.sit,seated?1:0,1-Math.exp(-poseDt*7));if(m.sit<.001&&!seated)m.seat=null;
- for(let[k,target]of[['drink',a.phase==='eating'],['handoff',a.phase==='serving'?smooth01(a.timer/.8):0],['carry',['delivering','serving'].includes(a.phase)],['brew',a.phase==='brewing'],['serve',a.phase==='serving'],['wash',a.phase==='residentUse'&&['sink','shower','tub'].includes(objectById(a.useId)?.def)]])m[k]=mix(m[k]||0,Number(target),1-Math.exp(-poseDt*8));
+ const order=a.phase==='brewing'?actorById(a.job):null,prepared=!!(a.phase==='brewing'&&order&&a.timer>brewDuration(order,a)-.45),carrying=['delivering','serving'].includes(a.phase)||prepared;
+ for(let[k,target]of[['drink',a.phase==='eating'],['handoff',a.phase==='serving'?smooth01(a.timer/.8):0],['carry',carrying],['brew',a.phase==='brewing'],['serve',a.phase==='serving'],['wash',a.phase==='residentUse'&&['sink','shower','tub'].includes(objectById(a.useId)?.def)]])m[k]=mix(m[k]||0,Number(target),1-Math.exp(-poseDt*8));
+ if(carrying){m.trayExit=0;m.traySeen=true;}else m.trayExit=(m.trayExit||0)+poseDt;m.trayVisible=!!m.traySeen&&(carrying||m.trayExit<.35);if(!m.trayVisible)m.traySeen=false;
+ if(a.phase==='serving')m.traySplit=smooth01(clamp((a.timer-.28)/.20,0,1));else if(carrying)m.traySplit=mix(m.traySplit||0,0,1-Math.exp(-poseDt*12));
+
 }
 function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
  const out=[],L=a.look,H=L.height/1.83,B=L.build,m=motionFor(a),t=m.clock,sit=m.sit,o=m.seat,x=preview?0:a.rx,z=preview?0:a.rz;
  let rootYaw=preview?(a.previewYaw||0):a.ryaw,baseX=x,baseZ=z;
  if(o&&!preview){baseX=mix(x,o.x,sit);baseZ=mix(z,o.z,sit);rootYaw=angleMix(rootYaw,o.rot*Math.PI/2,sit);}
  const root=qEuler(0,rootYaw,0),stride=a.renderStep??0,moving=(a.moveBlend||0)*(1-sit),bob=(1-Math.cos(stride*2))*.011*moving;
- const seatHeight=o?(defs[o.def].seat||.46):.46,hipY=mix(.918-.048*moving+bob*.5,(seatHeight+.003-.058)/H+.14,sit),sway=Math.sin(stride)*.015*moving;
+ const contact=preview?null:actorContact(a,heldOrder),contactBlend=contact?.weight||0;
+ if(m.contactFrame!==m.poseFrame){const k=1-Math.exp(-Math.min(.05,m.poseDt||0)*14);m.contactLean=mix(m.contactLean||0,(contact?.lean||0)*contactBlend,k);m.contactCrouch=mix(m.contactCrouch||0,(contact?.crouch||0)*contactBlend,k);m.contactFrame=m.poseFrame;}
+ const seatHeight=o?(defs[o.def].seat||.46):.46,hipY=mix(.918-.048*moving+bob*.5,(seatHeight+.003-.058)/H+.14,sit)-(m.contactCrouch||0),sway=Math.sin(stride)*.015*moving;
  const world=p=>{let v=qrot(root,[p[0]*B*H,p[1]*H,p[2]*H]);return [baseX+v[0],v[1]+.058,baseZ+v[2]];};
+ const local=p=>{const v=qrot([-root[0],-root[1],-root[2],root[3]],[p[0]-baseX,p[1]-.058,p[2]-baseZ]);return[v[0]/(B*H),v[1]/H,v[2]/H];};
+ a.propSockets={};
  const emit=(type,p,s,c,rot=null,style=0)=>{let w=world(p);out.push(shape(type,...w,s[0]*B*H,s[1]*H,s[2]*H,c,{q:rot?qmul(root,rot):root,style,entity:{type:'actor',id:a.id}}));};
  const link=(key,p,q,r,depth,col,style=0)=>{const a0=world(p),b0=world(q);out.push(shape(key,...a0,r*B*H,Math.hypot(...vsub(b0,a0)),depth*H,col,{q:between(a0,b0),style,entity:{type:'actor',id:a.id}}));};
  const skin=L.skin,shirt=L.shirt,hair=L.hair,colors={skin,hair,shirt,apron:L.apron,apronshade:tint(L.apron,.94),stitch:tint(L.apron,1.08),nails:tint(skin,1.10),inner:tint(skin,.82),lip:'#aa6970',liplight:'#bc7c80',lash:tint(hair,.62),hairlight:tint(hair,1.055),hairdark:tint(hair,.90),shirtlight:tint(shirt,1.13),shoe:'#d3bfa2'};
  const part=(key,p,q=null,style=0)=>{for(let g of JennArt[key]){let c=g.color[0]==='$'?colors[g.color.slice(1)]:g.color;emit(g.key,p,[1,1,1],c||'#ffffff',q,style);}};
- const weight=Math.sin(t*.83+a.id.length)*.007*(1-moving)*(1-sit),lean=m.brew*.055+m.serve*.035+Math.sin(Math.PI*sit)*.1;
+ const weight=Math.sin(t*.83+a.id.length)*.007*(1-moving)*(1-sit),lean=m.brew*.055+m.serve*.035+Math.sin(Math.PI*sit)*.1+(m.contactLean||0);
  const twist=Math.sin(stride)*.08*moving-m.turn*.023,bodyQ=qEuler(lean,twist,-sway*.8-weight);
  const upper=p=>{let q=qrot(bodyQ,[p[0],p[1]-hipY,p[2]]);return[q[0]+weight,q[1]+hipY,q[2]];};
  if(a.phase==='sleep'&&!preview){let bed=objectById(a.useId);if(bed){let p=localToWorld(bed,0,-.66),sleepQ=qEuler(Math.PI/2,bed.rot*Math.PI/2,0);out.push(shape('jnFace',p[0],.645,p[1],H*B,H,H,skin,{q:sleepQ,style:16}));for(let g of JennArt['jnHair_'+L.hairStyle])out.push(shape(g.key,p[0],.645,p[1],H*B,H,H,g.color[0]==='$'?colors[g.color.slice(1)]:g.color,{q:sleepQ,style:18}));p=localToWorld(bed,0,0);out.push(shape('round',p[0],.65,p[1],.46,.15,1.0,L.apron,{yaw:bed.rot*Math.PI/2}));return out;}}
@@ -2017,20 +2029,33 @@ function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
  }
  const heldDrink=preview?(stagePose==='carry'?{orderId:'preview'}:null):heldOrder;
  const ware=(p,q,order)=>{Crockery.cup.forEach((g,i)=>{emit(g.key,p,[1/(B*H),1/H,1/H],g.color,q,g.style||0);Object.assign(out.at(-1),{propKind:'cup',propRoot:i===0,propOrder:order.orderId,propHolder:preview?'preview':a.id});});};
+ const carryWeight=m.trayVisible&&!['delivering','serving'].includes(a.phase)?1:m.carry;
  const hands=[];if(window.cafePoseDebug){a.armPose=[];a.poseFrame={bodyQ,hipY,weight,B,H};}m.arms||=[{},{}];
  for(let side of[-1,1]){
   let sw=Math.sin(stride+(side===1?0:Math.PI))*moving,shoulder=upper([side*.169,hipY+.408,-.004]);
   let hand=[side*(.217+Math.abs(sw)*.018),hipY-.112+Math.abs(sw)*.035,sw*.19+.02];
   hand=blend3(hand,[side*.112,hipY+.096,.258],sit);
-  let serving=m.handoff||0,trayZ=.305+serving*.13*m.serve;
-  hand=blend3(hand,[side*.19,hipY+.142,trayZ],m.carry);
+  let serving=m.handoff||0,trayZ=.325;
+  hand=blend3(hand,[side*.19,hipY+.142,trayZ],carryWeight);
   let reach=.5+.5*Math.sin(t*3.8+side);hand=blend3(hand,[side*(.14+reach*.025),hipY+.17+reach*.07,.294+reach*.075],Math.max(m.brew,m.wash));
   let sip=0;if(m.drink>.001&&side===1){sip=Math.pow(Math.max(0,Math.sin(t*1.3)),2)*sit*m.drink;hand=blend3(hand,[.10,hipY+.62,.164],sip);}
-  const metric=p=>[p[0]*B,p[1],p[2]],unmetric=p=>[p[0]/B,p[1],p[2]],solved=armSolve(metric(shoulder),metric(hand),side,bodyQ,m.arms[side<0?0:1],m.poseDt??1/60,m.poseFrame||0);hand=unmetric(solved.hand);let elbow=unmetric(solved.elbow);
+  // World-space sockets are resolved through the same bounded arm solver as all poses.
+  // The hidden editor/preview keeps its authored generic poses.
+  let cupQ=null,cupTarget=null;
+  if(m.trayVisible&&side===-1)hand=blend3(hand,[-mix(.19,.30,m.traySplit||0),hipY+.142,.325],carryWeight);
+  if(contact?.hands?.[side<0?0:1]&&!(side===-1&&m.trayVisible))hand=blend3(hand,local(contact.hands[side<0?0:1]),contactBlend);
+  if(contact?.cup&&side===1){
+   const c=contact.cup;cupQ=qmul([-root[0],-root[1],-root[2],root[3]],c.q);
+   let target=[...c.p];if(c.drink){const rest=world([.11,hipY+.30,.30]),mouth=world([.10,hipY+.57,.18]);rest[1]=Math.max(rest[1],c.floor+.10);target=blend3(c.p,blend3(rest,mouth,sip),c.drink);cupQ=qmul(cupQ,qEuler(-sip*.30*c.drink,0,0));}
+   const palm=qrot(qEuler(-Math.PI/2,.10,.08),[0,-.045*H,0]),handle=qrot(cupQ,[.083,.047,0]);cupTarget=local(target);hand=blend3(hand,cupTarget.map((v,i)=>v+(handle[i]-palm[i])/(i===0?B*H:H)),contactBlend);
+  }
+  const requestedHand=world(hand),metric=p=>[p[0]*B,p[1],p[2]],unmetric=p=>[p[0]/B,p[1],p[2]],solved=armSolve(metric(shoulder),metric(hand),side,bodyQ,m.arms[side<0?0:1],m.poseDt??1/60,m.poseFrame||0);hand=unmetric(solved.hand);let elbow=unmetric(solved.elbow);
   link('jnSleeve',shoulder,elbow,.060,.062,shirt,17);link('jnCuff',shoulder,elbow,.060,.062,tint(shirt,1.10),17);link('jnForearm',elbow,hand,.045,.046,skin,19);emit('sphere',elbow,[.045,.045,.044],skin,null,19);
   let hQ=armWrist(qEuler(-mix(.05,Math.PI/2,Math.max(m.carry,m.brew,m.wash,sit*.85)),side*.10,side*.08),solved.elbow,solved.hand);if(window.cafePoseDebug)a.armPose.push({...solved,side,wrist:hQ,worldShoulder:world(shoulder),worldElbow:world(elbow),worldHand:world(hand)});
   part('jnHand'+(side<0?'L':'R'),hand,hQ,19);hands.push(hand);
-  if(a.phase==='eating'&&heldDrink&&side===1){const cupQ=qEuler(-sip*.30,0,0),grip=qrot(hQ,[0,-.045*H,0]),handle=qrot(cupQ,[.083,.047,0]),offset=grip.map((v,i)=>v-handle[i]);ware([hand[0]+offset[0]/(B*H),hand[1]+offset[1]/H,hand[2]+offset[2]/H],cupQ,heldDrink);}
+  if(side===1&&(heldDrink||m.trayVisible)){const cq=cupQ||qEuler(-sip*.30,0,0),palm=qrot(hQ,[0,-.045*H,0]),handle=qrot(cq,[.083,.047,0]),p=hand.map((v,i)=>v+(palm[i]-handle[i])/(i===0?B*H:H));a.propSockets.handCup={p:world(p),q:qmul(root,cq)};a.propSockets.palm=world(hand.map((v,i)=>v+palm[i]/(i===0?B*H:H)));}
+  if(window.cafePoseDebug&&contact)a.armPose.at(-1).contactTarget=contact.hands?.[side<0?0:1]||(side===1&&cupTarget?requestedHand:null);
+  if(a.phase==='eating'&&heldDrink&&!heldDrink.managed&&side===1){const cupQ=qEuler(-sip*.30,0,0),grip=qrot(hQ,[0,-.045*H,0]),handle=qrot(cupQ,[.083,.047,0]),offset=grip.map((v,i)=>v-handle[i]);ware([hand[0]+offset[0]/(B*H),hand[1]+offset[1]/H,hand[2]+offset[2]/H],cupQ,heldDrink);}
  }
  let headBase=upper([0,hipY+.694,.004]),look=m.brew*-.10+Math.sin(t*.62+a.id.length)*.065*(1-moving),headQ=qmul(bodyQ,qEuler(m.brew*.12-m.serve*.05,look,Math.sin(t*.7)*.012));
  const face=p=>{let v=qrot(headQ,p);return headBase.map((x,i)=>x+v[i]);};
@@ -2051,7 +2076,13 @@ function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
  fp('jnLips',[0,0,0],null,19);
  fp('jnHair_'+(['ponytail','short','bob','curls'].includes(L.hairStyle)?L.hairStyle:'ponytail'),[0,0,0],null,18);
  if(L.glasses){for(let side of[-1,1]){fe('torus',[side*.059,.027,.127],[.039,.008,.033],'#52483c',qEuler(Math.PI/2,side*.28,0),11);}fe('capsule',[0,.031,.138],[.003,.043,.003],'#52483c',qEuler(0,0,Math.PI/2),11);}
- if(m.carry>.02){let hz=(hands[0][2]+hands[1][2])/2+.065,hy=(hands[0][1]+hands[1][1])/2+.0;emit('cylinder',[0,hy+.027,hz],[.26,.017,.18],'#774258',qEuler(0,0,Math.sin(stride)*moving*.012),0);if(heldDrink)ware([.02,hy+.036,hz],null,heldDrink);}
+ if(m.trayVisible){const split=m.traySplit||0,hx=mix(0,hands[0][0]-.06,split),hz=mix((hands[0][2]+hands[1][2])/2,hands[0][2],split)+.065,hy=mix((hands[0][1]+hands[1][1])/2,hands[0][1],split);
+  a.propSockets.trayCup={p:world([hx+.02,hy+.036,hz]),q:root};
+  // Do not reveal a cold/restarted tray inside the apron while the arms arrive.
+  // Real orders prepare this support pose during the last 0.45 s of brewing.
+  if(hz>.36&&(split>.01||Math.abs(hands[0][1]-hands[1][1])<.08)){emit('cylinder',[hx,hy+.027,hz],[.26,.017,.18],'#774258',qEuler(0,0,Math.sin(stride)*moving*.012),0);if(heldDrink&&!heldDrink.managed)ware([hx+.02,hy+.036,hz],null,heldDrink);}
+ }
+
  if(!preview){out.push(shape('disc',baseX,.063,baseZ,.32,.01,.24,'#3c3039',{style:3}));if(selected)out.push(shape('torus',baseX,.078,baseZ,.30,.055,.30,'#f78fc0',{style:4}));}
  return out;
 }
@@ -2082,13 +2113,52 @@ function diningPair(m,seat,table){
 function drinkOwnership(){const result=[];for(const c of customers){if(!diningValid(c))continue;
  if(c.phase==='eating'){result.push({orderId:c.id,holder:'customer',actorId:c.id,seatId:c.seatId,tableId:c.tableId});continue;}
  if(c.phase!=='waiting')continue;const a=staff.filter(a=>a.job===c.id&&['delivering','serving'].includes(a.phase)&&!interactionProblem(a)).sort((a,b)=>a.id.localeCompare(b.id))[0];if(!a)continue;
- result.push({orderId:c.id,holder:a.phase==='serving'&&a.timer>=.55?'table':'server',actorId:a.phase==='serving'&&a.timer>=.55?null:a.id,seatId:c.seatId,tableId:c.tableId});}return result;}
-function tablewareShapes(kind,x,y,z,orderId,holder){return Crockery[kind].map((p,i)=>({...shape(p.key,x,y,z,1,1,1,p.color,{style:p.style||0}),propKind:kind,propRoot:i===0,propOrder:orderId,propHolder:holder}));}
-function tableSetting(table,seat){const d=defs[table.def],[x,z]=worldToLocal(table,seat.x,seat.z),limitX=Math.max(.1,d.w/2-.20),limitZ=Math.max(.1,d.d/2-.20);
- if(d===defs.roundtable){const t=Math.min(limitX,limitZ)/Math.max(.001,Math.hypot(x,z));return localToWorld(table,x*t,z*t);}
- // Keep lateral spacing for guests sharing one edge; only inset the edge-normal axis.
- return Math.abs(x)/(d.w/2)>Math.abs(z)/(d.d/2)?localToWorld(table,Math.sign(x)*limitX,clamp(z,-limitZ,limitZ)):localToWorld(table,clamp(x,-limitX,limitX),Math.sign(z)*limitZ);
+ result.push({orderId:c.id,holder:a.phase==='serving'&&a.timer>=ServiceTiming.release?'table':'server',actorId:a.phase==='serving'&&a.timer>=ServiceTiming.release?null:a.id,serverId:a.id,seatId:c.seatId,tableId:c.tableId});}return result;}
+function tablewareShapes(kind,x,y,z,orderId,holder,q=null){return Crockery[kind].map((p,i)=>({...shape(p.key,x,y,z,1,1,1,p.color,{style:p.style||0,q}),propKind:kind,propRoot:i===0,propOrder:orderId,propHolder:holder}));}
+function tableSetting(table,seat){const d=defs[table.def],[x,z]=worldToLocal(table,seat.x,seat.z),limitX=Math.max(.1,d.w/2-.12),limitZ=Math.max(.1,d.d/2-.12),right=rotate2(.16,0,seat.rot-table.rot);
+ let p;if(d===defs.roundtable){const r=Math.min(limitX,limitZ),len=Math.max(.001,Math.hypot(x,z));p=[x*r/len+right[0],z*r/len+right[1]];const t=Math.min(1,r/Math.hypot(...p));p=p.map(v=>v*t);}
+ else p=Math.abs(x)/(d.w/2)>Math.abs(z)/(d.d/2)?[Math.sign(x)*limitX,clamp(z+right[1],-limitZ,limitZ)]:[clamp(x+right[0],-limitX,limitX),Math.sign(z)*limitZ];
+ return localToWorld(table,...p);
 }
+// Presentation is deliberately transient: orders/reservations remain the single
+// gameplay authority, and a room edit or load cannot resurrect a detached prop.
+const cupPresentation=new Map();
+const ServiceTiming={grip:.28,reach:.94,release:1.12,finish:1.48,pickup:.90};
+function poseMix(a,b,t){let q=b.q;if(a.q.reduce((v,x,i)=>v+x*q[i],0)<0)q=q.map(v=>-v);const r=blend3(a.q,q,t),len=Math.hypot(...r);return{p:blend3(a.p,b.p,t),q:r.map(v=>v/len)};}
+function tableCupPose(drink){const table=objectById(drink.tableId),seat=objectById(drink.seatId);if(!table||!seat)return null;const p=tableSetting(table,seat);return{p:[p[0],(defs[table.def].surface??.76)+.016,p[1]],q:qEuler(0,seat.rot*Math.PI/2,0)};}
+function actorContact(a,drink){const m=motionFor(a),targetId=a.stationId||a.useId,station=targetId?objectById(targetId):null;
+ if(station&&((a.phase==='brewing'&&sameTarget(a.stationId,a.stationStamp))||(a.phase==='residentUse'&&station.def==='sink'))){
+  const hands=[-1,1].map(side=>{const espresso=station.def==='espresso',p=localToWorld(station,espresso?-side*.235:-side*.12,espresso?.37:.24);return[p[0],espresso?1.19:.94,p[1]];});
+  return{hands,weight:Math.max(m.brew,m.wash)*(station.def==='espresso'?1-m.carry:1),lean:.12,crouch:0};
+ }
+ if(!drink?.managed)return null;const table=tableCupPose(drink);if(!table)return null;
+ if(a.role==='customer'&&a.phase==='eating'){
+  const pickup=smooth01(clamp((a.timer-ServiceTiming.pickup)/.65,0,1));return{cup:{...table,drink:pickup,floor:table.p[1]},weight:1,lean:mix(.38,.06,pickup),crouch:0};
+ }
+ if(a.phase==='serving'){
+  const reach=smooth01(clamp((a.timer-ServiceTiming.grip)/.66,0,1)),state=cupPresentation.get(drink.orderId),start=state?.tray||a.propSockets?.trayCup||table;
+  const cup=poseMix(start,table,reach);cup.p[1]+=Math.sin(Math.PI*reach)*.12;
+  return{cup,weight:smooth01(clamp(a.timer/.20,0,1)),lean:.33*reach,crouch:.12*reach};
+ }
+ return null;
+}
+function presentedDrinks(drinks,dt){const out=[];for(const d of drinks){let state=cupPresentation.get(d.orderId),table=tableCupPose(d),server=actorById(d.serverId),customer=actorById(d.orderId),a=server||customer,frame=motionFor(a).poseFrame;
+ const tray=server?.propSockets?.trayCup,hand=(d.holder==='customer'?customer:server)?.propSockets?.handCup;
+ if(!state){state={pose:tray||table,table,tray:tray||table,lastFrame:frame};cupPresentation.set(d.orderId,state);}state.table=table;
+ let target=table,holder='table';
+ if(server?.phase==='delivering'){target=tray||state.pose;state.tray=target;holder=server.id;}
+ else if(server?.phase==='serving'){
+  if(server.timer<ServiceTiming.grip){target=tray||state.pose;state.tray=target;holder=server.id;}
+  else if(server.timer<ServiceTiming.release){target=poseMix(state.tray,hand||state.pose,smooth01(clamp((server.timer-ServiceTiming.grip)/.18,0,1)));holder=server.id;}
+  else target=poseMix(hand||state.pose,table,smooth01(clamp((server.timer-ServiceTiming.release)/.25,0,1)));
+ }
+ else if(d.holder==='customer'&&customer.timer>ServiceTiming.pickup){target=poseMix(table,hand||table,smooth01(clamp((customer.timer-ServiceTiming.pickup)/.2,0,1)));holder=customer.id;}
+ // Bound a skipped/reversed phase too; normal animation follows its physical socket.
+ if(state.lastFrame!==frame){const step=Math.min(.05,Math.max(0,motionFor(a).poseDt||0)),distance=Math.hypot(...vsub(target.p,state.pose.p)),amount=distance?Math.min(1,1.8*step/distance):1;state.pose=server?.phase==='delivering'?target:poseMix(state.pose,target,amount);state.lastFrame=frame;}
+ state.holder=holder;out.push(...tablewareShapes('cup',...state.pose.p,d.orderId,holder,state.pose.q));
+ if(d.holder!=='server')out.push(...tablewareShapes('saucer',table.p[0],table.p[1]-.014,table.p[2],d.orderId,'table'));
+ }return out;}
+
 function seatCandidates(shopId=null){const tables=model.objects.filter(o=>defs[o.def].dining&&(!shopId||shopForObject(o)===shopId));return model.objects.filter(o=>['chair','bench'].includes(o.def)&&(!shopId||shopForObject(o)===shopId)).map(seat=>{
  const candidates=tables.filter(table=>shopForObject(table)===shopForObject(seat)&&diningPair(model,seat,table)).sort((a,b)=>Math.hypot(a.x-seat.x,a.z-seat.z)-Math.hypot(b.x-seat.x,b.z-seat.z));
  return candidates.length?{seat,table:candidates[0]}:null;
@@ -2159,7 +2229,9 @@ function sendHome(a,reason='See you next time!'){
  if(path)setRoute(a,path,'leaving',reason);else{a.path=[];a.goal=null;a.phase='exiting';a.timer=0;a.task='Exit blocked — please add a door';}
 }
 function spawnGuest(){let available=shops().filter(s=>s.open!==false);if(!available.length||customers.length>=Math.min(16,available.length*5+3))return null;let id=cafe.nextId++,r=()=>Math.floor(rng()*8),a=makeActor('guest-'+String(id).padStart(4,'0'),guestNames[(id-1)%guestNames.length],'customer',14.75+(id%3)*.25,23.8, {skin:skins[id%skins.length],hair:hairs[(id*3)%hairs.length],shirt:swatches[r()],pants:['#455970','#665166','#536354'][id%3],height:1.61+rng()*.23,build:.88+rng()*.2,hairStyle:['bob','curls','short','ponytail'][id%4],outfit:'casual',glasses:id%5===0});let shop=available[(id-1)%available.length];a.shopId=shop.id;a.order={...menu[id%3]};if(shop.kind==='tea')a.order={name:id%2?'Jasmine tea':'Matcha latte',price:id%2?7:9,brew:2.8};if(shop.kind==='bakery')a.order={name:id%2?'Coffee & pastry':'Tea & cake',price:12,brew:3.6};a.wait=0;a.phase='arriving';a.task='Looking for a seat';customers.push(a);if(!chooseSeat(a)){a.phase='queue';a.task='Waiting for a free seat';a.timer=0;}return a;}
-function findStation(a){let best=null;for(let o of model.objects.filter(o=>defs[o.def].service&&(!a.shopId||shopForObject(o)===a.shopId))){if(staff.some(s=>s!==a&&s.stationId===o.id&&['toStation','brewing'].includes(s.phase)))continue;let rt=accessRoute(a,o);if(rt&&(!best||rt.len<best.len))best={...rt,object:o};}return best;}
+function findStation(a){let best=null;for(let o of model.objects.filter(o=>defs[o.def].service&&(!a.shopId||shopForObject(o)===a.shopId))){if(staff.some(s=>s!==a&&s.stationId===o.id&&['toStation','brewing'].includes(s.phase)))continue;let rt=stationRoute(a,o);if(rt&&(!best||rt.len<best.len))best={...rt,object:o};}return best;}
+
+function stationRoute(a,o){let best=null;for(const x of[0,-.06,.06]){const goal=localToWorld(o,x,o.def==='sink'?.67:.69),path=routeTo(a,goal,.18);if(!path||!nav.line(path.at(-1),goal))continue;path.push(goal);let len=0,prev=[a.x,a.z];for(const q of path){len+=Math.hypot(q[0]-prev[0],q[1]-prev[1]);prev=q;}if(!best||len<best.len)best={path,len,goal:path.at(-1)};}return best;}
 
 function serveJob(a){
  let target=customers.filter(c=>c.phase==='waiting'&&(!a.shopId||c.shopId===a.shopId)&&!staff.some(s=>s.job===c.id)).sort((a,b)=>Number(b.id===serviceGame.priority)-Number(a.id===serviceGame.priority)||b.wait-a.wait)[0];
@@ -2169,11 +2241,19 @@ function serveJob(a){
  a.job=target.id;a.stationId=station.object.id;a.stationStamp=targetStamp(station.object);
  setRoute(a,station.path,'toStation','Making '+target.order.name.toLowerCase());return true;
 }
-function deliverGoal(a,c){let seat=objectById(c.seatId);if(!seat||!diningValid(c))return null;return accessRoute(a,seat);}
+function deliverGoal(a,c){let seat=objectById(c.seatId);if(!seat||!diningValid(c))return null;const table=objectById(c.tableId),p=tableSetting(table,seat),choices=[];
+ // Search nearby navigation cells, not the chair's approach slot. This also works
+ // for a rotated/round table or when a neighbouring chair blocks the closest edge.
+ const cx=Math.floor(p[0]*RES),cz=Math.floor(p[1]*RES);
+ for(let iz=cz-3;iz<=cz+3;iz++)for(let ix=cx-3;ix<=cx+3;ix++){
+  const goal=[(ix+.5)/RES,(iz+.5)/RES],distance=Math.hypot(goal[0]-p[0],goal[1]-p[1]);if(distance>.76||distance<.28||!nav.free(...goal)||Math.hypot(goal[0]-seat.x,goal[1]-seat.z)<.57)continue;
+  const path=nav.path([a.x,a.z],goal);if(!path)continue;let len=0,prev=[a.x,a.z];for(const v of path){len+=Math.hypot(v[0]-prev[0],v[1]-prev[1]);prev=v;}choices.push({path,len,goal,score:len+distance*12});
+ }return choices.sort((a,b)=>a.score-b.score)[0]||null;}
+
 function beginResidentUse(a,o){
  if(!a||!o||objectById(o.id)!==o||!defs[o.def]?.need)return false;
  if(seatOwners.has(o.id)&&seatOwners.get(o.id)!==a.id)return false;
- let rt=accessRoute(a,o);if(!rt)return false;
+ let rt=o.def==='sink'?stationRoute(a,o):accessRoute(a,o);if(!rt)return false;
  cancelInteraction(a,'Using object',0);a.useId=o.id;a.useStamp=targetStamp(o);
  seatOwners.set(o.id,a.id);setRoute(a,rt.path,'residentRoute','Going to '+defs[o.def].name.toLowerCase());return true;
 }
@@ -2214,10 +2294,10 @@ function coreStepSimulation(dt){cafe.seconds+=dt;time+=dt;for(let a of allActors
  customers=customers.filter(a=>a.phase!=='gone');
  for(let a of staff){a.timer+=dt;a.needs.energy=Math.max(10,a.needs.energy-dt*.018);a.needs.hunger=Math.max(8,a.needs.hunger-dt*.02);a.needs.fun=Math.max(10,a.needs.fun-dt*.05);a.needs.hygiene=Math.max(10,(a.needs.hygiene??82)-dt*.03);a.needs.bladder=Math.max(10,(a.needs.bladder??84)-dt*.04);
   const problem=interactionProblem(a);if(problem){cancelInteraction(a,problem);continue;}
-  if(a.phase==='toStation'){if(moveActor(a,dt)){a.phase='brewing';a.timer=0;a.task='Brewing '+(actorById(a.job)?.order.name||'coffee').toLowerCase();let o=objectById(a.stationId);if(o)a.yaw=Math.atan2(o.x-a.x,o.z-a.z);}}
+  if(a.phase==='toStation'){if(moveActor(a,dt)){a.phase='brewing';a.timer=0;a.task='Brewing '+(actorById(a.job)?.order.name||'coffee').toLowerCase();let o=objectById(a.stationId);if(o)a.yaw=(o.rot+2)*Math.PI/2;}}
   else if(a.phase==='brewing'){let c=actorById(a.job);if(!c){a.phase='idle';continue;}if(a.timer>brewDuration(c,a)){let rt=deliverGoal(a,c);if(rt){a.stationId=null;a.stationStamp=null;setRoute(a,rt.path,'delivering','Bringing '+c.name+' their order');}else{a.task='Table access blocked';if(a.timer>12)cancelInteraction(a,'Table access blocked',2);}}}
-  else if(a.phase==='delivering'){let c=actorById(a.job);if(!c){a.phase='idle';continue;}if(moveActor(a,dt)){a.phase='serving';a.timer=0;a.task='Serving '+c.name;let o=objectById(c.seatId);if(o)a.yaw=Math.atan2(o.x-a.x,o.z-a.z);}}
-  else if(a.phase==='serving'){if(a.timer>.7){let c=actorById(a.job);if(c&&c.phase==='waiting'){c.phase='eating';c.timer=0;c.task='Enjoying '+c.order.name.toLowerCase();sfx('serve');}a.job=null;a.stationId=null;a.phase='idle';a.cooldown=.25;a.task='Ready for orders';}}
+  else if(a.phase==='delivering'){let c=actorById(a.job);if(!c){a.phase='idle';continue;}if(moveActor(a,dt)){a.phase='serving';a.timer=0;a.task='Serving '+c.name;let table=tableCupPose({tableId:c.tableId,seatId:c.seatId});if(table){const handle=qrot(table.q,[.083,.047,0]);a.yaw=Math.atan2(table.p[0]+handle[0]-a.x,table.p[2]+handle[2]-a.z)-.28;}}}
+  else if(a.phase==='serving'){if(a.timer>ServiceTiming.finish){let c=actorById(a.job);if(c&&c.phase==='waiting'){c.phase='eating';c.timer=0;c.task='Enjoying '+c.order.name.toLowerCase();sfx('serve');}a.job=null;a.stationId=null;a.phase='idle';a.cooldown=.25;a.task='Ready for orders';}}
   else if(a.phase==='manualWalk'){if(moveActor(a,dt)){a.phase='idle';a.cooldown=4;a.task='Arrived';}}
   else if(a.phase==='residentRoute'){if(moveActor(a,dt)){let o=objectById(a.useId);if(!o||seatOwners.get(o.id)!==a.id){cancelInteraction(a,'Object unavailable');continue;}let d=defs[o.def];a.seatId=o.id;a.timer=0;a.sitBlend=0;a.yaw=o.rot*Math.PI/2;if(o.def==='bed')a.phase='sleep';else if(['sofa','chair','bench','toilet'].includes(o.def))a.phase='residentSit';else{a.phase='residentUse';a.yaw=Math.atan2(o.x-a.x,o.z-a.z);}a.task=d.verb||'Taking a break';seatOwners.set(o.id,a.id);}}
   else if(['sleep','residentSit','residentUse'].includes(a.phase)){a.sitBlend=Math.min(1,(a.sitBlend||0)+dt*3);let o=objectById(a.useId);if(!o){cancelInteraction(a,'Object removed');continue;}let d=defs[o.def],need=d.need;if(a.needs[need]!==undefined)a.needs[need]=Math.min(100,a.needs[need]+dt*(d.rate||4));if(a.timer>(d.duration||10)&&(!a.breakNeed||a.needs[need]>=a.breakTarget||a.timer>45)){let wash=o.def==='toilet';cancelInteraction(a,'Finished',a.role==='barista'?.5:6);if(wash){for(let sink of model.objects.filter(q=>q.def==='sink'&&shopForObject(q)===a.shopId))if(beginResidentUse(a,sink))break;}}}
@@ -2332,7 +2412,7 @@ function loadData(data){
  const next=prepareImport(data);
  if(mode==='people')closeDesigner(false);
  model=next.model;staff=next.staff;cafe=next.cafe;serviceGame=next.serviceGame;pourSession=null;roomData=next.rooms;nav=next.nav;
- customers=[];seatOwners.clear();events=[];particles=[];history=[];redoHistory=[];
+ customers=[];seatOwners.clear();cupPresentation.clear();events=[];particles=[];history=[];redoHistory=[];
  selected=null;selectedActor=staff[0].id;selectedPreview=null;gesture=null;ghost=null;movingId=null;pointer=null;keys.clear();
  accum=0;time=cafe.seconds;dirtyStatic=true;
  closeModal();setMode('build');resetCamera();renderRoster();updateHUD();
@@ -2398,8 +2478,9 @@ function outlinedBox(out,b,c,width=.027,y=.09){let ps=[[b.x0,y,b.z0],[b.x1,y,b.z
 function dynamicShapes(t,dt){if(mode==='people'){if(stageAuto)stageYaw+=dt*.36;selectedPreview.previewYaw=stageYaw;selectedPreview.previewWalk=stagePose==='walk';selectedPreview.phase=stagePose==='sit'?'residentSit':stagePose==='carry'?'delivering':stagePose==='brew'?'brewing':'idle';updateMotion(selectedPreview,dt,true,1,true);let out=characterShapes(selectedPreview,t,false,true);
  if(stagePose==='sit'||motionFor(selectedPreview).sit>.02){let q=qEuler(0,stageYaw,0);for(let s of furniture({id:'preview-chair',def:'chair',x:0,z:0,rot:0})){let pos=qrot(q,[s.x,s.y,s.z]);out.push({...s,x:pos[0],y:pos[1],z:pos[2],q:qmul(q,qEuler(s.rx||0,s.yaw||0,s.rz||0))});}}
  return out;}
- let out=[],drinks=drinkOwnership(),held=new Map(drinks.filter(d=>d.actorId).map(d=>[d.actorId,d]));roomDrawOverlays(out);for(let a of allActors())out.push(...characterShapes(a,t,a.id===selectedActor,false,held.get(a.id)));
- for(const drink of drinks)if(drink.holder==='table'||drink.holder==='customer'){const table=objectById(drink.tableId),seat=objectById(drink.seatId),p=tableSetting(table,seat),surface=defs[table.def].surface??.76;out.push(...tablewareShapes('saucer',p[0],surface+.002,p[1],drink.orderId,'table'));if(drink.holder==='table')out.push(...tablewareShapes('cup',p[0],surface+.016,p[1],drink.orderId,'table'));}
+ let out=[],drinks=drinkOwnership(),active=new Set(drinks.map(d=>d.orderId)),held=new Map();for(const id of cupPresentation.keys())if(!active.has(id))cupPresentation.delete(id);
+ for(const d of drinks){const actorId=d.serverId||d.actorId;if(actorId)held.set(actorId,{...d,managed:true});}
+ roomDrawOverlays(out);for(let a of allActors())out.push(...characterShapes(a,t,a.id===selectedActor,false,held.get(a.id)));out.push(...presentedDrinks(drinks,dt));
  for(let a of staff)if(a.phase==='brewing'){let o=objectById(a.stationId);if(o)for(let i=0;i<2;i++){let p=localToWorld(o,i?-.26:.26,.32);out.push(shape('shiftSteam',p[0]+Math.sin(t+i)*.018,1.20,p[1],1,.80+Math.sin(t*1.8+i)*.12,1,'#f2ede0',{yaw:rig.theta+Math.sin(t+i)*.2,style:26}));}}
  if(ghost){let reason=validatePlacement(model,ghost,movingId);out.push(...furniture(ghost).map(s=>({...s,color:reason?'#db727e':s.color})));outlinedBox(out,bounds(ghost,.06),reason?'#ff8295':'#8cf0c9',.024);for(const slot of defs[ghost.def].slots||[]){const p=localToWorld(ghost,...slot);outlinedBox(out,{x0:p[0]-.24,x1:p[0]+.24,z0:p[1]-.24,z1:p[1]+.24},'#edcf86',.015,.075);}let f=localToWorld(ghost,0,defs[ghost.def].d/2+.22);out.push(shape('sphere',f[0],.13,f[1],.06,.035,.06,'#fff2ab',{style:4}));}
  if(gesture?.start&&!gesture.roomEdit&&['wall','room'].includes(tool)){let a=gesture.start,b=gesture.end||a,col=gesture.error?'#f47783':'#99eaca',lines=tool==='room'?[[a,[b[0],a[1]]],[[b[0],a[1]],b],[b,[a[0],b[1]]],[[a[0],b[1]],a]]:[[a,b]];for(let [p,q]of lines){let dx=Math.abs(q[0]-p[0]),dz=Math.abs(q[1]-p[1]);if(dx+dz)out.push(shape('box',(p[0]+q[0])/2,.33,(p[1]+q[1])/2,dx||.12,.60,dz||.12,col));}}
@@ -2976,7 +3057,7 @@ function roomContext(r){$('contextKind').textContent='ROOM · '+r.area+' m²';$(
  }host.appendChild(list);
 }
 
-window.cafeDemo={drinkOwnership,placement:validatePlacement,clearAccess,diningPair,doorClearance,roomEditor:RoomEditor,roomPlan:planRoomEdit,roomApply:applyRoomPlan,roomSelect,roomInfo,roomLinks,roomConnect,game:{get state(){return serviceGame},rules:ShiftRules,start:startShift,sandbox:enterSandbox,hire:hireEmployee,duty:setDuty,assign:assignEmployee,upgrade:buyUpgrade,prioritize:prioritizeOrder,biscuit:offerBiscuit,startPour,finishPour,pourPosition,get pour(){return pourSession},showResults:showShiftResults},artBuildId:"anatomical-poses-21",baseArtBuildId:"home-repair-14",cancelInteraction,interactionProblem,prepareImport,get reservations(){return [...seatOwners]},repairedArt:RepairedArt,characterArt:JennArt,atelierArt:AtelierArt,atelierTexture:atelierArtwork,trioArt:TrioArt,trioTexture:trioArtwork,heroArt:HeroArt,heroTexture:heroArtwork,shapeObject:furniture,modelGeometry:Geometry,signSpec:MenuBoardSpec,signTexture:menuArtwork,generate:generateLayout,audit:layoutAudit,rebuild:installLayout,openRebuild,shops,assignShops:hydrateStaff,objectAccess:accessRoute,beginUse:beginResidentUse,updateMotion,curveRoute,makeActor,poseTests:()=>motionChecks(),get model(){return model},get cafe(){return cafe},get staff(){return staff},get customers(){return customers},get rooms(){return roomData},get nav(){return nav},get renderer(){return view},get camera(){return rig},get state(){return {mode,tool,paused,speed,selected,history:history.length,renderFailed}},get preview(){return selectedPreview},tests:kernelChecks,step:dt=>stepSimulation(dt),pause:v=>{paused=v},setMode,setTool,commit,undo,redo,save:saveData,load:loadData,studio:openDesigner,applyPerson:()=>closeDesigner(true),project:(x,y,z)=>rig.project(x,y,z),seatCandidates,findStation,spawn:spawnGuest,shapeCharacter:characterShapes,focus:focusCamera,pickAt:pick,hitAt:pickHit,cameraTests:cameraChecks};
+window.cafeDemo={drinkOwnership,placement:validatePlacement,clearAccess,diningPair,doorClearance,roomEditor:RoomEditor,roomPlan:planRoomEdit,roomApply:applyRoomPlan,roomSelect,roomInfo,roomLinks,roomConnect,game:{get state(){return serviceGame},rules:ShiftRules,start:startShift,sandbox:enterSandbox,hire:hireEmployee,duty:setDuty,assign:assignEmployee,upgrade:buyUpgrade,prioritize:prioritizeOrder,biscuit:offerBiscuit,startPour,finishPour,pourPosition,get pour(){return pourSession},showResults:showShiftResults},artBuildId:"interaction-contacts-01",baseArtBuildId:"home-repair-14",cancelInteraction,interactionProblem,prepareImport,get reservations(){return [...seatOwners]},repairedArt:RepairedArt,characterArt:JennArt,atelierArt:AtelierArt,atelierTexture:atelierArtwork,trioArt:TrioArt,trioTexture:trioArtwork,heroArt:HeroArt,heroTexture:heroArtwork,shapeObject:furniture,modelGeometry:Geometry,signSpec:MenuBoardSpec,signTexture:menuArtwork,generate:generateLayout,audit:layoutAudit,rebuild:installLayout,openRebuild,shops,assignShops:hydrateStaff,objectAccess:accessRoute,beginUse:beginResidentUse,updateMotion,curveRoute,makeActor,poseTests:()=>motionChecks(),get model(){return model},get cafe(){return cafe},get staff(){return staff},get customers(){return customers},get rooms(){return roomData},get nav(){return nav},get renderer(){return view},get camera(){return rig},get state(){return {mode,tool,paused,speed,selected,history:history.length,renderFailed}},get preview(){return selectedPreview},tests:kernelChecks,step:dt=>stepSimulation(dt),pause:v=>{paused=v},setMode,setTool,commit,undo,redo,save:saveData,load:loadData,studio:openDesigner,applyPerson:()=>closeDesigner(true),project:(x,y,z)=>rig.project(x,y,z),seatCandidates,findStation,spawn:spawnGuest,shapeCharacter:characterShapes,focus:focusCamera,pickAt:pick,hitAt:pickHit,cameraTests:cameraChecks};
 boot();
 initService();
 
