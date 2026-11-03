@@ -1,0 +1,90 @@
+name: Stage Robot Life public runtime
+on:
+  push:
+    branches: [deploy/robotlife-counter-life]
+    paths: ['.github/workflows/import-robotlife-runtime.yml']
+permissions:
+  contents: write
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Import only the hash-verified, approved public game files
+        env:
+          PUBLIC_RUNTIME_URL: 'https://sdmntprcentralus.oaiusercontent.com/files/00000000-356c-81f5-85ea-d26ccaa20e86/raw?se=2026-11-03T19%3A30%3A44Z&sp=r&sv=2026-02-06&sr=b&scid=1d729bf4-6ac3-59f0-aeb0-3667e355d900&skoid=de71a0d5-fb02-4fce-be69-9296aced242b&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-03T13%3A38%3A19Z&ske=2026-11-04T13%3A38%3A19Z&sks=b&skv=2026-02-06&sig=q7KuNrQTu7BecoVRhW/eM7nqZw/txdn/9NcChSNJqhQ%3D'
+        run: |
+          python3 - <<'PY'
+          import os,io,json,hashlib,zipfile,urllib.request
+          from pathlib import Path
+          # This temporary URL contains only the intentionally public runtime,
+          # notices and manifest. It cannot access the private development repo.
+          with urllib.request.urlopen(os.environ['PUBLIC_RUNTIME_URL'],timeout=60) as response:
+              data=response.read(2000000)
+          assert hashlib.sha256(data).hexdigest()=='5ae248f49d420f377a3ef714195d4aa96793599a993e4bd34d3873072ecb0267'
+          out=Path('robotlife');assert not out.exists(),'Existing route must be reviewed before replacement'
+          with zipfile.ZipFile(io.BytesIO(data)) as z:
+              assert sorted(z.namelist())==['LICENSES.txt','build.json','index.html']
+              html=z.read('index.html')
+              assert hashlib.sha256(html).hexdigest()=='81e55f87ad6986c776c079e073e35919b3df0e74f97858234eeb5193a96609d0'
+              meta=json.loads(z.read('build.json'))
+              assert meta['sourceCommit']=='4d9568d0b86e4f90e880ef03985699bb3af3fc6e'
+              out.mkdir()
+              for name in z.namelist():(out/name).write_bytes(z.read(name))
+          print('Imported exact verified game:',len(html),'bytes')
+          PY
+      - name: Checkpoint runtime files without touching other site content
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- robotlife
+          git commit -m 'Add verified Counter Life playable at /robotlife/'
+          git push origin HEAD:deploy/robotlife-counter-life
+      - name: Install browser verifier
+        run: |
+          python3 -m pip install playwright==1.57.0
+          python3 -m playwright install --with-deps chromium
+      - name: Test the actual hosted-path runtime
+        run: |
+          python3 - <<'PY'
+          import os,json,functools,threading,http.server,hashlib
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+          class Handler(http.server.SimpleHTTPRequestHandler):
+              def log_message(self,*args):pass
+          server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(Handler,directory=str(Path.cwd())))
+          threading.Thread(target=server.serve_forever,daemon=True).start()
+          output=Path('.robotlife-evidence');output.mkdir()
+          errors=[];warnings=[]
+          with sync_playwright() as p:
+              env=dict(os.environ);env.pop('DISPLAY',None)
+              with p.chromium.launch(headless=True,env=env,args=['--use-angle=swiftshader','--enable-unsafe-swiftshader']) as browser:
+                  page=browser.new_page(viewport={'width':1280,'height':800})
+                  page.on('pageerror',lambda e:errors.append(str(e)))
+                  page.on('console',lambda m:warnings.append(m.text) if m.type in ['warning','error'] else None)
+                  response=page.goto(f'http://127.0.0.1:{server.server_port}/robotlife',wait_until='load')
+                  assert response.status==200 and page.url.endswith('/robotlife/')
+                  page.wait_for_function('window.__ROBOTLIFE_READY__',timeout=60000)
+                  assert page.locator('button,input,textarea,select').count()==0
+                  info=page.evaluate("()=>{__robotLife.render();const u=__robotLife.ui;return {scale:u.scale,b:u.snapshot().buttons.find(b=>b.action.kind==='do'&&b.action.value==='diner')};}")
+                  b=info['b'];assert b and b['enabled']
+                  page.mouse.click((b['x']+b['w']/2)*info['scale'],(b['y']+b['h']/2)*info['scale'])
+                  page.wait_for_timeout(1000)
+                  assert page.evaluate('__robotLife.validate().nonFinite.length===0')
+                  page.screenshot(path=str(output/'diner.png'))
+                  report={'passed':not errors,'errors':errors,'warnings':warnings,'path':page.url,'sha256':hashlib.sha256(Path('robotlife/index.html').read_bytes()).hexdigest(),'checks':['path redirect and HTTP 200','game initialized','no HTML controls','GPU Visit diner button','finite physics']}
+                  (output/'report.json').write_text(json.dumps(report,indent=2))
+                  assert not errors,errors
+                  print(json.dumps(report))
+          server.shutdown()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: robotlife-staging-check
+          path: .robotlife-evidence/
+          include-hidden-files: true
+          retention-days: 14
