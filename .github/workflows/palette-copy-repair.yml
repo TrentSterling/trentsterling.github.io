@@ -1,0 +1,244 @@
+name: Isolated palette and project-copy repair
+on:
+  push:
+    branches: [fix/palette-and-project-copy-20261102]
+    paths: [.github/workflows/palette-copy-repair.yml]
+permissions:
+  contents: write
+jobs:
+  repair-and-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Apply exact, scoped source edits
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, re
+          def sha(text): return hashlib.sha256(text.encode('utf-8')).hexdigest()
+          def once(text, before, after):
+              assert text.count(before) == 1, f'Expected one match: {before[:100]!r}; found {text.count(before)}'
+              return text.replace(before, after)
+          protected = {p: Path(p).read_bytes() for p in ['index.html', 'discord/index.html', 'assets/css/tront-navbar.css']}
+          p = Path('assets/js/tront-theme-editor.js')
+          source = p.read_text()
+          Path('/tmp/editor-before.js').write_text(source)
+          source = once(source, '<option value="custom" disabled>Custom</option>', '<option value="custom">Custom</option>')
+          source = once(source,
+              "if (input.name === 'preset') { commit(input.value === 'gallery-original' && gallery ? originalGallery() : preset(input.value)); return; }",
+              """if (input.name === 'preset') {
+                          // Custom edits the current palette; it must not fall back to Midnight.
+                          var selected = input.value === 'custom' ? clone(state)
+                              : input.value === 'gallery-original' && gallery ? originalGallery() : preset(input.value);
+                          if (input.value === 'custom') selected.preset = 'custom';
+                          commit(selected); return;
+                      }""")
+          source = once(source, 'data-action="magic">ColorMagic</button>', 'data-action="magic" title="Generate a random color palette">ColorMagic</button>')
+          p.write_text(source)
+          replacements = [
+              ('Cyberpunk hacking game in VR: jack into systems, navigate virtual spaces, avoid ICE. Neon grids and data streams on Quest 2.',
+               'HackerPunk is a multiplayer VR shooter with vehicles, weapons, spatial voice chat, and hookshot grappling in a cyberpunk world.'),
+              ('Top-down co-op zombie escape. Four survivors, huge hordes, smart AI squadmates, one red safehouse door. Play online with whoever is there or share a room code with friends.',
+               'Guide four survivors through zombie hordes to a safehouse in this top-down co-op game, with AI squadmates fighting alongside you. You can play with whoever is online or share a room code with friends.'),
+              ('First-person sequel to my 2015 jam mining game. Dig beneath your backyard, sell what you find, upgrade the cutter, follow the signal deeper. Early prototype.',
+               'This early first-person prototype follows up on my 2015 jam mining game. Dig beneath your backyard, sell what you find, and upgrade your cutter as you follow a signal deeper underground.'),
+              ('Tower defense against 100,000 zombies simulated as a fluid, entirely on GPU compute. Giants, lasers, WebGPU right in the browser.',
+               'This browser tower-defense prototype uses WebGPU compute to simulate 100,000 zombies as a fluid, with giants and lasers in the mix.'),
+              ('6DOF procedural mine crawler. Descend through biomes hunting keycards, dodging hazards, managing shield and energy.',
+               'Explore procedural mines with six degrees of freedom as you search for keycards across different biomes, avoid hazards, and manage your shield and energy.'),
+              ('Cozy multiplayer hangout around a campfire. P2P peer sync, procedural critters, WASD to walk, chat, and pet the wildlife.',
+               'Hang out around a multiplayer campfire, chat with other players, and pet the procedural wildlife. It uses peer-to-peer synchronization, with WASD controls for walking.'),
+              ('The front row is ammo. Sidestep a swing, bank discs off the wall, and turn the next hit into a chain reaction. Play a five-round run, try builds in Sandbox, or test your browser with eight honest benchmarks.',
+               'Use the front row as ammo, dodge swings, and bank discs off walls to set off chain reactions in a five-round run. Sandbox mode lets you try different builds, and eight benchmarks let you test browser performance.'),
+              ('Paint emitters and surfaces, explore soft shadows, and inspect the math behind a highlight. Seven interactive scenes, contextual editors, and ray-tested comparisons, based on LTC research.',
+               'Explore soft shadows and highlights by painting emitters and surfaces across seven interactive scenes. Contextual editors and ray-tested comparisons let you inspect the math behind the LTC lighting research.'),
+              ('Outnumbered? Send dudes. Hold the core through three sieges, turn kills into reinforcements, unlock Titans. 200,000 fighters simulated on the GPU, blood that stays on the ground. WebGPU.',
+               'Defend the core through three sieges by turning kills into reinforcements and unlocking Titans. The WebGPU simulation handles 200,000 fighters and leaves blood on the ground.'),
+              ('The city is ammunition. Voxel destruction sandbox: grab a building with the God Hand, rip it off its supports and throw it through the one next door. Rockets, bomb rain, real rigid-body collapses.',
+               'Use the God Hand to tear buildings off their supports and throw them into their neighbors in this voxel destruction sandbox. Rockets and bomb rain give you more ways to bring the rigid-body structures down.'),
+              ('Multiplayer ragdoll sandbox. Grab a limb, wind up, let go. One shared room, four players over WebRTC, 31 tools, and one Buddy who never learns.',
+               'Up to four players can join a shared WebRTC room and use 31 tools to grab, swing, and fling Buddy around in this ragdoll sandbox. After all that, Buddy still never learns.'),
+              ('Vector materials for voxel blocks: contours in data textures, evaluated in the shader. Zoom forever, no bitmap blur.',
+               'This voxel-material experiment stores contours in data textures and evaluates them in the shader, so the surfaces stay sharp as you zoom in rather than blurring like a bitmap.'),
+              ('Streamed Surface Nets terrain sandbox. Carve and build in the same frame, plant forests, wake volcanoes, dig up a fossil.',
+               'Carve and build streamed Surface Nets terrain in the same frame, plant forests, wake volcanoes, and dig up fossils in this sandbox.'),
+              ('Video, MP3, or both. Pick a quality and folder in a compact Rust app with custom window chrome, editable themes, and bundled download tools. One portable Windows EXE.',
+               'Save videos, MP3 audio, or both with a compact Rust app that lets you choose the quality and destination folder. It includes editable themes, custom window chrome, and bundled download tools in one portable Windows executable.'),
+              ('Bit-packed splat maps in WebGL2: blending 32+ terrain textures through one sampler. Tutorial + live demo.',
+               'This tutorial and live WebGL2 demo show how bit-packed splat maps let you blend 32 or more terrain textures through one sampler.'),
+              ('Procedural creature sandbox: primitive shapes fused into seamless toon critters by an SDF blend-shell vertex shader. Walks, hops, flies, all procedural.',
+               'Build creatures from primitive shapes that an SDF blend-shell vertex shader joins into a seamless toon body. Their walking, hopping, and flight are procedural too.'),
+              ('3D browser farming game with Animal Crossing world curvature. Procedural textures and audio, click-to-play farming, auto-save.',
+               'Grow a farm in a 3D browser game with click-to-play controls and an Animal Crossing-style curved world. It uses procedural textures and audio, and saves your progress automatically.'),
+              ('A fast disk space visualizer inspired by SpaceMonger. Squarified treemaps, smooth camera, lazy LOD. Built with Rust + egui. Single portable .exe.',
+               'Explore disk usage through squarified treemaps, with a smooth camera and lazy level-of-detail rendering. Inspired by SpaceMonger, SpaceView is built with Rust and egui and runs as a single portable Windows executable.'),
+              ('Cozy farming sim in VR: plant, water, harvest and sell with your own hands. Stardew Valley meets Quest. Never reached a releasable state.',
+               'Plant, water, harvest, and sell crops with your own hands in a Quest farming sim inspired by Stardew Valley. I never got it to a releasable state.'),
+              ('VR brawler on Quest 2. You punch dudes, they ragdoll. Physics-based combat that never stops being satisfying.',
+               'Punch dudes and watch them ragdoll in this physics-based VR brawler for Quest 2.')
+          ]
+          p = Path('games/index.html')
+          original = p.read_text()
+          updated = original
+          review_path = Path('tools/seo/copy-review.json')
+          review = json.loads(review_path.read_text())
+          entry = review['games/index.html']
+          assert sha(original) == entry['afterSha256'], 'Gallery differs from its reviewed snapshot; reconcile before editing.'
+          entry.setdefault('previousVersions', []).append({'afterSha256': entry['afterSha256'], 'replacementCount': len(entry['replacements'])})
+          for before, after in replacements:
+              assert '<' not in before + after and '&' not in after
+              assert not any(r['after'] == before for r in entry['replacements']), 'Do not overwrite an earlier reviewed phrase.'
+              updated = once(updated, '<p class="blurb">' + before + '</p>', '<p class="blurb">' + after + '</p>')
+              assert updated.count(after) == 1
+              entry['replacements'].append({'before': before, 'after': after, 'count': 1})
+          scrub = lambda html: re.sub(r'<p class="blurb">[\s\S]*?</p>', '<p class="blurb"></p>', html)
+          assert scrub(updated) == scrub(original), 'Only description text may change in the gallery.'
+          entry['afterSha256'] = sha(updated)
+          p.write_text(updated)
+          review_path.write_text(json.dumps(review, indent=2, ensure_ascii=False) + '\n')
+          for filename, before in protected.items():
+              assert Path(filename).read_bytes() == before, filename + ' changed unexpectedly'
+          print(f'Updated picker and {len(replacements)} descriptions; homepage, Discord HTML and navbar CSS untouched.')
+          PY
+      - name: Check existing contracts
+        run: |
+          node --check assets/js/tront-theme-editor.js
+          node --test tools/theme-editor/test.cjs
+          node tools/theme-editor/preserve.cjs
+          node --test tools/seo/*.test.cjs
+      - name: Add focused native-browser regression
+        run: |
+          cat > tools/theme-editor/custom-palette.browser.cjs <<'JS'
+          /* Run with NODE_PATH pointing to Playwright; no live site writes or external requests. */
+          'use strict';
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const http = require('node:http');
+          const { chromium } = require('playwright');
+          const root = path.resolve(__dirname, '../..');
+          const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
+          const server = http.createServer((req, res) => {
+            try {
+              let pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+              if (pathname.endsWith('/')) pathname += 'index.html';
+              const file = path.resolve(root, '.' + pathname);
+              if (!file.startsWith(root + path.sep)) { res.writeHead(403).end(); return; }
+              const data = fs.readFileSync(file);
+              res.writeHead(200, { 'Content-Type': mime[path.extname(file)] || 'application/octet-stream' });
+              res.end(data);
+            } catch (_) { res.writeHead(404).end(); }
+          });
+          (async () => {
+            await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+            const origin = 'http://127.0.0.1:' + server.address().port;
+            const browser = await chromium.launch({ headless: true, executablePath: process.env.THEME_BROWSER_EXECUTABLE || '/opt/google/chrome/chrome', args: ['--no-sandbox'] });
+            const reports = [];
+            try {
+              for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+                for (const route of ['/', '/discord/', '/games/']) {
+                  const context = await browser.newContext({ viewport });
+                  const page = await context.newPage();
+                  await page.route('**/*', r => r.request().url().startsWith(origin + '/') && !/\.(mp4|webm)(\?|$)/.test(r.request().url()) ? r.continue() : r.abort());
+                  await page.goto(origin + route, { waitUntil: 'domcontentloaded' });
+                  await page.locator('#tront-theme-btn').click();
+                  const select = page.locator('#te-preset');
+                  const key = route === '/games/' ? 'tront-theme-gallery-v1' : 'tront-theme-editor-v1';
+                  const state = () => page.evaluate(k => JSON.parse(localStorage.getItem(k)), key);
+                  const options = () => select.locator('option').evaluateAll(nodes => nodes.map(n => ({ value: n.value, label: n.textContent.trim(), disabled: n.disabled })));
+                  const initial = await options();
+                  assert.equal(initial.find(o => o.value === 'custom').disabled, false, 'Custom must be enabled before ColorMagic');
+                  assert(initial.every(o => o.label && o.value), 'All options must have visible names and values');
+                  await select.selectOption('cyan');
+                  const cyan = await state();
+                  await select.focus();
+                  await select.press('End');
+                  await select.press('Enter');
+                  assert.equal(await select.inputValue(), 'custom', 'Custom must be keyboard-selectable');
+                  const custom = await state();
+                  assert.deepEqual(custom, { ...cyan, preset: 'custom' }, 'Selecting Custom must preserve every current setting');
+                  await page.locator('[data-action="magic"]').click();
+                  assert.equal(await select.inputValue(), 'custom');
+                  const randomized = await state();
+                  assert.notDeepEqual(randomized.pegs.map(p => p.color), custom.pegs.map(p => p.color));
+                  assert.deepEqual(await options(), initial, 'ColorMagic must not append blank or duplicate options');
+                  await page.locator('[data-action="undo"]').click();
+                  assert.deepEqual(await state(), custom, 'Undo restores the exact pre-magic custom palette');
+                  await page.locator('#te-color-0').evaluate(input => {
+                    input.value = '#123456';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                  });
+                  assert.equal((await state()).pegs[0].color, '#123456');
+                  assert.equal(await select.inputValue(), 'custom');
+                  const edited = await state();
+                  await page.reload({ waitUntil: 'domcontentloaded' });
+                  await page.locator('#tront-theme-btn').click();
+                  assert.deepEqual(await state(), edited, 'Custom choices survive reload');
+                  assert.equal(await select.inputValue(), 'custom');
+                  assert.deepEqual(await options(), initial, 'Reload retains named, selectable options');
+                  await page.locator('[data-action="reset"]').click();
+                  assert.equal(await select.inputValue(), route === '/games/' ? 'gallery-original' : 'dark');
+                  await page.locator('[data-action="undo"]').click();
+                  assert.deepEqual(await state(), edited, 'Reset remains undoable');
+                  await select.selectOption('light');
+                  const light = await state();
+                  await select.selectOption('custom');
+                  assert.deepEqual(await state(), { ...light, preset: 'custom' }, 'Custom preserves light appearance too');
+                  const screenshotDir = process.env.THEME_SCREENSHOTS;
+                  if (screenshotDir) {
+                    fs.mkdirSync(screenshotDir, { recursive: true });
+                    await page.screenshot({ path: path.join(screenshotDir, (route === '/' ? 'home' : route.replaceAll('/', '')) + '-' + viewport.width + '.png') });
+                  }
+                  reports.push({ page: route, width: viewport.width, result: 'passed' });
+                  await context.close();
+                }
+              }
+              console.log(JSON.stringify({ checks: 'Custom selection, keyboard access, ColorMagic labels, manual edits, persistence, undo/reset, light appearance', reports }, null, 2));
+            } finally {
+              await browser.close();
+              await new Promise(resolve => server.close(resolve));
+            }
+          })().catch(error => { console.error(error); server.close(); process.exitCode = 1; });
+          JS
+          node --check tools/theme-editor/custom-palette.browser.cjs
+      - name: Prepare pinned browser tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/palette-browser" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
+          if [ ! -x /opt/google/chrome/chrome ]; then
+            node "$RUNNER_TEMP/palette-browser/node_modules/playwright/cli.js" install --with-deps chrome
+          fi
+          echo "NODE_PATH=$RUNNER_TEMP/palette-browser/node_modules" >> "$GITHUB_ENV"
+          echo "THEME_BROWSER_EXECUTABLE=/opt/google/chrome/chrome" >> "$GITHUB_ENV"
+      - name: Prove the regression fails before the fix and passes after it
+        run: |
+          cp assets/js/tront-theme-editor.js /tmp/editor-after.js
+          cp /tmp/editor-before.js assets/js/tront-theme-editor.js
+          if node tools/theme-editor/custom-palette.browser.cjs > /tmp/palette-before.log 2>&1; then
+            cp /tmp/editor-after.js assets/js/tront-theme-editor.js
+            cat /tmp/palette-before.log
+            echo 'Regression unexpectedly passed against the old source.'
+            exit 1
+          fi
+          grep 'Custom must be enabled before ColorMagic' /tmp/palette-before.log
+          cp /tmp/editor-after.js assets/js/tront-theme-editor.js
+          node tools/theme-editor/custom-palette.browser.cjs
+      - name: Save only the tested repair files on the isolated branch
+        run: |
+          git diff --check
+          git diff --exit-code -- index.html discord/index.html assets/css/tront-navbar.css
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/js/tront-theme-editor.js games/index.html tools/seo/copy-review.json tools/theme-editor/custom-palette.browser.cjs
+          git commit -m 'Fix Custom palette selection and review 20 project descriptions'
+          git push origin HEAD:fix/palette-and-project-copy-20261102
+          git show --stat --oneline HEAD
+          git ls-files --stage assets/js/tront-theme-editor.js games/index.html tools/seo/copy-review.json tools/theme-editor/custom-palette.browser.cjs
