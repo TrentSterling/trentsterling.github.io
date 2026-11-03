@@ -1,0 +1,277 @@
+name: Verify original-homepage small fixes
+on:
+  push:
+    branches: [fix/og-home-small-fixes-20261103]
+    paths: [.github/workflows/og-home-small-fixes.yml]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Prepare comparison checkout and browser tooling
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/home-baseline" HEAD
+          echo "THEME_BASELINE_ROOT=$RUNNER_TEMP/home-baseline" >> "$GITHUB_ENV"
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y ffmpeg
+          npm install --prefix "$RUNNER_TEMP/home-browser" --no-save --package-lock=false --ignore-scripts playwright@1.62.0
+          echo "NODE_PATH=$RUNNER_TEMP/home-browser/node_modules" >> "$GITHUB_ENV"
+          echo "HOME_CHROME=/opt/google/chrome/chrome" >> "$GITHUB_ENV"
+          if [ ! -x /opt/google/chrome/chrome ]; then
+            node "$RUNNER_TEMP/home-browser/node_modules/playwright/cli.js" install --with-deps chrome
+          fi
+      - name: Create homepage-only social card from the existing square portrait
+        run: |
+          mkdir -p tools/homepage-refinement assets/og
+          cat > tools/homepage-refinement/og-card.html <<'HTML'
+          <!doctype html>
+          <html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Tront homepage share card</title><style>
+          *{box-sizing:border-box}html,body{width:1200px;height:630px;margin:0}body{font-family:Arial,sans-serif;text-align:center;color:#f5f7fa;background-color:#171c25;background-image:linear-gradient(#53627e1c 1px,transparent 1px),linear-gradient(90deg,#53627e1c 1px,transparent 1px),linear-gradient(135deg,#242b3a,#211f2f);background-size:50px 50px,50px 50px,cover;display:flex;align-items:center;justify-content:center}main{width:1100px}img{width:110px;height:110px;object-fit:cover;display:block;margin:0 auto 27px;border-radius:0}h1{font-size:61px;line-height:1.1;margin:0 0 16px;font-weight:700;letter-spacing:-1.7px}h1 span{font-weight:400;color:#c8cad9}h2{font-size:30px;margin:0;font-weight:400;color:#e0e2e9}p{font-size:25px;margin:29px 0 0;color:#bdc8db}.url{font-size:26px;margin-top:36px;color:#c9c2e5}
+          </style></head><body><main><img src="../../blog/assets/img/tront.png" alt="Tront's square avatar"><h1>Trent Sterling <span>(Tront)</span></h1><h2>Game Developer &amp; Creator</h2><p>Unity, C#, VR &amp; multiplayer</p><p class="url">tront.xyz</p></main></body></html>
+          HTML
+          cat > tools/homepage-refinement/render-og.cjs <<'JS'
+          'use strict';
+          const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+          const {chromium}=require('playwright');
+          const root=path.resolve(__dirname,'../..');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:process.env.HOME_CHROME||undefined,args:['--no-sandbox']});
+            try {
+              const page=await browser.newPage({viewport:{width:1200,height:630},deviceScaleFactor:1});
+              await page.route('**/*',r=>r.abort());
+              const portrait=fs.readFileSync(path.join(root,'blog/assets/img/tront.png')).toString('base64');
+              const html=fs.readFileSync(path.join(__dirname,'og-card.html'),'utf8').replace('../../blog/assets/img/tront.png','data:image/png;base64,'+portrait);
+              await page.setContent(html);
+              await page.waitForFunction(()=>document.images[0].complete&&document.images[0].naturalWidth>0);
+              await page.evaluate(()=>document.fonts.ready);
+              const png=await page.screenshot();
+              const digest=crypto.createHash('sha256').update(png).digest('hex').slice(0,12);
+              const file='assets/og/home-'+digest+'.png';
+              fs.mkdirSync(path.join(root,'assets/og'),{recursive:true});fs.writeFileSync(path.join(root,file),png);
+              fs.writeFileSync(path.join(__dirname,'og-path.txt'),file+'\n');
+              console.log(file,png.length);
+            } finally {await browser.close();}
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          JS
+          node tools/homepage-refinement/render-og.cjs
+      - name: Apply exact homepage fixes without changing Blog or the layout
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, re
+          root=Path('.')
+          p=root/'index.html'; original=p.read_text(); source=original; changes=[]
+          def edit(before,after):
+              global source
+              assert source.count(before)==1, (before[:120], source.count(before))
+              source=source.replace(before,after)
+              changes.append({'before':before,'after':after,'count':1})
+          before='        .about-me p, .about-me li { font-size: 1rem; margin-bottom: 0.25rem; line-height: 1.35; }'
+          edit(before,before+'\n        .about-me p { margin-bottom: 0.5rem; line-height: 1.45; }')
+          widget=re.search(r'const widgetHTML = `([\s\S]+?)`;', source).group(1)
+          svg=re.search(r'<svg[\s\S]*?</svg>',widget).group(0)
+          invite='https://discord.gg/0hyoWZyM6y7kkFCN'
+          fallback='''                    <h3 class="widget-header">
+                                  '''+svg+'''
+                                  <span>Trent's Cool Developer Spot</span>
+                              </h3>
+                              <p class="widget-description">A developer's backchannel for game tech, VR, AI, LLMs, and hardware like ESP8266/32. Active since 2015. <a href="/discord/" target="_blank">Read More</a></p>
+                              <p class="widget-loading" role="status">Live status unavailable.</p>
+                              <a href="'''+invite+'''" target="_blank" rel="noopener noreferrer" class="join-button">Join Discord</a>'''
+          edit('                    <div class="widget-loading">Loading Discord Status...</div>',fallback)
+          edit('''            const widgetContainer = document.getElementById('discord-widget-container');
+          
+                      const fetchWidgetData = async () => {
+                          try {
+                              const response = await fetch(WIDGET_URL + '?cache_bust=' + new Date().getTime());
+                              if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
+                              const data = await response.json();
+                              renderWidget(data);
+                          } catch (error) {
+                              widgetContainer.innerHTML = `<div class="widget-loading">Discord widget failed to load.</div>`;
+                          }
+                      };''','''            const widgetContainer = document.getElementById('discord-widget-container');
+                      // Static fallback stays useful even before JavaScript or when Discord is unavailable.
+                      const fallbackMarkup = widgetContainer.innerHTML;
+                      const fallbackInvite = widgetContainer.querySelector('.join-button').href;
+                      const fallbackName = widgetContainer.querySelector('.widget-header span').textContent;
+                      const showFallback = () => { widgetContainer.innerHTML = fallbackMarkup; };
+                      const safeInvite = (value) => {
+                          try {
+                              const url = new URL(value);
+                              const invitePath = url.hostname === 'discord.gg' ? /^\\/[A-Za-z0-9-]+\\/?$/
+                                  : /^(www\\.)?discord\\.com$/.test(url.hostname) ? /^\\/invite\\/[A-Za-z0-9-]+\\/?$/ : null;
+                              return url.protocol === 'https:' && !url.username && !url.password && !url.port
+                                  && invitePath && invitePath.test(url.pathname) ? url.href : fallbackInvite;
+                          } catch (_) { return fallbackInvite; }
+                      };
+          
+                      const fetchWidgetData = async () => {
+                          const controller = new AbortController();
+                          const timeout = setTimeout(() => controller.abort(), 8000);
+                          widgetContainer.querySelector('[role="status"]').textContent = 'Loading Discord status...';
+                          try {
+                              const response = await fetch(WIDGET_URL + '?cache_bust=' + new Date().getTime(), { signal: controller.signal });
+                              if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
+                              renderWidget(await response.json());
+                          } catch (_) {
+                              showFallback();
+                          } finally {
+                              clearTimeout(timeout);
+                          }
+                      };''')
+          edit('''                if (!data || !data.presence_count || !data.instant_invite) {
+                              widgetContainer.innerHTML = `<div class="widget-loading">Discord widget failed to load.</div>`;
+                              return;
+                          }
+                          const { name, presence_count, members, instant_invite } = data;''','''                // Zero is a valid online count; unknown counts must never masquerade as zero.
+                          if (!data || !Number.isSafeInteger(data.presence_count) || data.presence_count < 0) {
+                              showFallback();
+                              return;
+                          }
+                          const presence_count = data.presence_count;
+                          const name = typeof data.name === 'string' && data.name.trim() ? data.name : fallbackName;
+                          const members = Array.isArray(data.members) ? data.members : [];
+                          const instant_invite = safeInvite(data.instant_invite);''')
+          edit('<span>${name}</span>', '<span></span>')
+          edit('''                widgetContainer.innerHTML = widgetHTML;
+          
+                          const constellation''','''                widgetContainer.innerHTML = widgetHTML;
+                          widgetContainer.querySelector('.widget-header span').textContent = name;
+                          widgetContainer.querySelector('.join-button').href = instant_invite;
+          
+                          const constellation''')
+          edit("                const onlineMembers = members.filter(m => m.status !== 'offline');", "                const onlineMembers = members.filter(m => m && m.status !== 'offline' && typeof m.avatar_url === 'string' && /^https:\\/\\//i.test(m.avatar_url));")
+          edit('''                update();
+                      };
+                      fetchWidgetData();''','''                if (avatars.length) update();
+                      };
+                      fetchWidgetData();''')
+          image_file=(root/'tools/homepage-refinement/og-path.txt').read_text().strip()
+          assert re.fullmatch(r'assets/og/home-[a-f0-9]{12}\.png',image_file)
+          url='https://tront.xyz/'+image_file
+          edit('    <meta property="og:image" content="https://tront.xyz/blog/assets/img/og-image.png">','    <meta property="og:image" content="'+url+'">\n    <meta property="og:image:alt" content="Trent Sterling (Tront), Game Developer &amp; Creator. Unity, C#, VR and multiplayer. tront.xyz">')
+          edit('    <meta name="twitter:image" content="https://tront.xyz/blog/assets/img/og-image.png">','    <meta name="twitter:image" content="'+url+'">\n    <meta name="twitter:image:alt" content="Trent Sterling (Tront), Game Developer &amp; Creator. Unity, C#, VR and multiplayer. tront.xyz">')
+          manifest=root/'tools/seo/copy-review.json'; review=json.loads(manifest.read_text());e=review['index.html']
+          sha=lambda s:hashlib.sha256(s.encode()).hexdigest()
+          assert sha(original)==e['afterSha256'], 'Homepage changed since its last reviewed version.'
+          e.setdefault('previousVersions',[]).append({'afterSha256':e['afterSha256'],'replacementCount':len(e['replacements'])})
+          e['replacements']+=changes;e['afterSha256']=sha(source)
+          p.write_text(source);manifest.write_text(json.dumps(review,indent=2,ensure_ascii=False)+'\n')
+          for ident in ['about','blog','projects','social']:
+              pattern=r'<div class="section" id="'+ident+r'">[\s\S]*?(?=\n            <div class="section"|\n        </main>)'
+              assert re.search(pattern,original).group()==re.search(pattern,source).group(),ident
+          assert re.search(r'<nav[\s\S]*?</nav>',original).group()==re.search(r'<nav[\s\S]*?</nav>',source).group()
+          print(f'Applied {len(changes)} exact homepage changes; biography, Blog, directory, socials and navbar markup preserved.')
+          PY
+      - name: Add scoped browser regression
+        run: |
+          cat > tools/homepage-refinement/browser.cjs <<'JS'
+          /* Actual homepage served over HTTP; Discord responses are isolated fixtures. */
+          'use strict';
+          const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+          const {chromium}=require('playwright');
+          const root=path.resolve(__dirname,'../..');
+          const invite='https://discord.gg/0hyoWZyM6y7kkFCN';
+          const normal={name:"Trent's Cool Developer Spot",presence_count:54,instant_invite:invite,members:[{status:'online',avatar_url:'https://cdn.discordapp.com/embed/avatars/0.png'}]};
+          const cases=[['online',normal,54],['zero',{...normal,presence_count:0,members:[]},0],['missing-invite',{presence_count:0},0],['missing-members',{...normal,members:null},54],['missing-count',{members:[]},null],['null',null,null],['negative',{presence_count:-1},null],['invalid-count',{presence_count:'0'},null],['bad-json',{},null],['http-error',{},null],['offline',{},null],['timeout',{},null],['untrusted-fields',{...normal,name:'<img src=x onerror="window.injected=true">',instant_invite:'javascript:alert(1)',members:[null,{}, {status:'offline',avatar_url:'https://example.com/x'}]},54]];
+          const mime={'.js':'text/javascript','.css':'text/css','.png':'image/png','.html':'text/html','.webp':'image/webp'};
+          const server=http.createServer((req,res)=>{
+            const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
+            const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
+            if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404).end();return;}
+            res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'});res.end(fs.readFileSync(file));
+          });
+          (async()=>{
+            await new Promise(r=>server.listen(0,'127.0.0.1',r));
+            const origin='http://127.0.0.1:'+server.address().port;
+            const browser=await chromium.launch({headless:true,executablePath:process.env.HOME_CHROME||undefined,args:['--no-sandbox']});
+            const results=[];
+            try{
+              for(const [name,data,count] of cases){
+                const ctx=await browser.newContext({viewport:{width:1440,height:1000}});const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+                await page.route('**/*',async r=>{
+                  const url=r.request().url();
+                  if(url.startsWith(origin+'/'))return r.continue();
+                  if(!url.startsWith('https://discord.com/api/guilds/'))return r.abort();
+                  if(name==='offline')return r.abort();
+                  if(name==='timeout'){await new Promise(resolve=>setTimeout(resolve,9000));try{await r.abort();}catch{}return;}
+                  return r.fulfill({status:name==='http-error'?503:200,contentType:'application/json',body:name==='bad-json'?'{broken':JSON.stringify(data)});
+                });
+                await page.goto(origin,{waitUntil:'domcontentloaded'});
+                const widget=page.locator('#discord-widget-container');
+                if(name==='timeout'){
+                  assert.equal(await widget.locator('.join-button').getAttribute('href'),invite);
+                  assert.equal(await widget.locator('[role=status]').textContent(),'Loading Discord status...');
+                }
+                if(count===null)await page.waitForFunction(()=>document.querySelector('#discord-widget-container [role=status]')?.textContent==='Live status unavailable.',{},{timeout:11000});
+                else await page.waitForFunction(n=>document.querySelector('.online-count')?.textContent===String(n),count);
+                assert.equal(await widget.locator('.join-button').getAttribute('href'),invite);
+                assert.equal(await widget.locator('.widget-description').count(),1);
+                assert.equal(await widget.locator('.widget-header').count(),1);
+                assert.equal(await page.evaluate(()=>!!window.injected),false);
+                assert.deepEqual(errors,[],name+' must not raise browser exceptions');
+                if(count===null)assert.equal(await widget.locator('.online-count').count(),0,'Unknown is not zero');
+                if(name==='zero')assert.equal(await widget.locator('.avatar-wrapper').count(),0);
+                if(name==='online'){
+                  assert.equal(await widget.locator('.avatar-wrapper').count(),1);
+                  const transform=await widget.locator('.avatar-wrapper').evaluate(n=>n.style.transform);
+                  await page.waitForTimeout(100);assert.notEqual(await widget.locator('.avatar-wrapper').evaluate(n=>n.style.transform),transform);
+                }
+                if(name==='untrusted-fields')assert.equal(await widget.locator('.widget-header img').count(),0,'Server name must be text, not markup');
+                if(name==='offline'){
+                  for(const width of [320,390,768,1440]){
+                    await page.setViewportSize({width,height:1000});
+                    for(const theme of ['dark','light']){
+                      await page.locator('#tront-theme-btn').click();await page.locator('#te-preset').selectOption(theme);await page.locator('#tront-theme-editor [data-action=close]').click();
+                      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`overflow at ${width}/${theme}`);
+                      assert.equal(await page.locator('#about .about-me p').first().evaluate(n=>Math.round(parseFloat(getComputedStyle(n).lineHeight)/parseFloat(getComputedStyle(n).fontSize)*100)),145);
+                      assert.equal(await page.locator('#about .about-me li').first().evaluate(n=>Math.round(parseFloat(getComputedStyle(n).lineHeight)/parseFloat(getComputedStyle(n).fontSize)*100)),135);
+                      assert.equal(await page.locator('header img.logo').evaluate(n=>getComputedStyle(n).borderRadius),'0px');
+                      results.push({layout:width,theme,result:'passed'});
+                    }
+                  }
+                }
+                results.push({case:name,result:'passed'});await ctx.close();
+              }
+              const nojs=await browser.newContext({javaScriptEnabled:false});const pg=await nojs.newPage();
+              await pg.route('**/*',r=>r.request().url().startsWith(origin+'/')?r.continue():r.abort());await pg.goto(origin);
+              assert.equal(await pg.locator('#discord-widget-container .join-button').getAttribute('href'),invite);
+              assert.equal(await pg.locator('#discord-widget-container .widget-description').count(),1);results.push({case:'no-javascript',result:'passed'});await nojs.close();
+              const file=fs.readFileSync(path.join(__dirname,'og-path.txt'),'utf8').trim();const png=fs.readFileSync(path.join(root,file));
+              assert.equal(png.readUInt32BE(16),1200);assert.equal(png.readUInt32BE(20),630);
+              const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+              for(const attr of ['property="og:image"','name="twitter:image"'])assert(html.includes('<meta '+attr+' content="https://tront.xyz/'+file+'">'));
+              assert(html.includes('property="og:image:alt"'));assert(html.includes('name="twitter:image:alt"'));
+              console.log(JSON.stringify({runner:'actual source over HTTP with Discord fixtures',results,shareImage:file},null,2));
+            }finally{await browser.close();await new Promise(r=>server.close(r));}
+          })().catch(e=>{console.error(e);server.close();process.exitCode=1});
+          JS
+      - name: Run existing contracts and targeted native-browser tests
+        run: |
+          node --check tools/homepage-refinement/browser.cjs
+          node --test tools/theme-editor/test.cjs
+          node tools/theme-editor/preserve.cjs
+          node --test tools/seo/*.test.cjs
+          node tools/homepage-refinement/browser.cjs
+          git diff --check
+          git diff --exit-code -- games discord assets/js assets/css blog
+      - name: Save only the tested source changes on the isolated branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html tools/seo/copy-review.json tools/homepage-refinement assets/og
+          git commit -m 'Polish original homepage spacing, keep Discord fallback useful, refresh home share card'
+          git push origin HEAD:fix/og-home-small-fixes-20261103
+          git show --stat --oneline HEAD
+          git ls-files --stage index.html tools/seo/copy-review.json tools/homepage-refinement assets/og
