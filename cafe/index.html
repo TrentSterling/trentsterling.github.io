@@ -1929,14 +1929,56 @@ function twoBone(root,end,l1,l2,bend){
  let bendAxis=vsub(bend,axis.map(v=>v*dot(bend,axis)));if(Math.hypot(...bendAxis)<1e-4)bendAxis=cross(axis,[1,0,0]);bendAxis=norm(bendAxis);
  const along=(l1*l1-l2*l2+dist*dist)/(2*dist),h=Math.sqrt(Math.max(0,l1*l1-along*along));return root.map((v,i)=>v+axis[i]*along+bendAxis[i]*h);
 }
-function motionFor(a){return a.motion||= {sit:0,carry:0,brew:0,serve:0,wash:0,gait:0,yaw:a.ryaw||a.yaw||0,turn:0,clock:0,seat:null};}
+// Arm IK is solved in a torso-relative metric frame, before character yaw/height.
+// Bend history transports the elbow plane through near-parallel pole singularities.
+const ArmLimits={upper:.272,lower:.256,minFlex:14*Math.PI/180,maxFlex:145*Math.PI/180,maxWrist:40*Math.PI/180};
+function axisQuaternion(axis,angle){const n=norm(axis),h=Math.sin(angle/2);return[n[0]*h,n[1]*h,n[2]*h,Math.cos(angle/2)];}
+function armTurn(from,to,limit,fallback){if(!from)return to;const angle=Math.acos(clamp(dot(from,to),-1,1));if(angle<=limit)return to;let axis=cross(from,to);if(Math.hypot(...axis)<1e-6)axis=cross(from,fallback);if(Math.hypot(...axis)<1e-6)axis=cross(from,[0,0,1]);return qrot(axisQuaternion(axis,limit),from);}
+function armSolve(root,target,side,bodyQ,state={},dt=1/60,frame=0){
+ const inv=[-bodyQ[0],-bodyQ[1],-bodyQ[2],bodyQ[3]],L=ArmLimits,l1=L.upper,l2=L.lower;
+ let delta=qrot(inv,vsub(target,root));delta=[clamp(delta[0]*side,-.14,.16)*side,clamp(delta[1],-.54,.28),clamp(delta[2],-.23,.47)];
+ // A critically damped target preserves velocity when an action is interrupted/reversed.
+ if(!state.aim){state.aim=[...delta];state.velocity=[0,0,0];}
+ else if(state.frame!==frame&&dt>0){const step=Math.min(dt,.05),omega=14,decay=Math.exp(-omega*step),next=[],velocity=[];
+  for(let i=0;i<3;i++){const error=state.aim[i]-delta[i],temp=(state.velocity[i]+omega*error)*step;next[i]=delta[i]+(error+temp)*decay;velocity[i]=(state.velocity[i]-omega*temp)*decay;}
+  const change=vsub(next,state.aim),length=Math.hypot(...change),cap=1.4*step;if(length>cap){for(let i=0;i<3;i++){next[i]=state.aim[i]+change[i]*cap/length;velocity[i]=change[i]*cap/length/step;}}
+  state.aim=next;state.velocity=velocity;
+ }
+ delta=state.aim;
+ const rawLength=Math.hypot(...delta);let axis=rawLength>1e-7?delta.map(v=>v/rawLength):(state.axis||norm([side*.12,-1,.18]));
+ if(state.axis){const angle=Math.acos(clamp(dot(state.axis,axis),-1,1)),limit=state.frame===frame?0:Math.min(Math.max(dt,0),.05)*7;if(angle>limit){let normal=cross(state.axis,axis);if(Math.hypot(...normal)<1e-6)normal=state.pole||[side,0,0];axis=qrot(axisQuaternion(normal,limit),state.axis);}}
+ const distance=clamp(rawLength,Math.sqrt(l1*l1+l2*l2+2*l1*l2*Math.cos(L.maxFlex)),Math.sqrt(l1*l1+l2*l2+2*l1*l2*Math.cos(L.minFlex)));
+ const project=v=>vsub(v,axis.map(x=>x*dot(v,axis))),hint=norm([side*.48,-1,-.30]),preferred=project(hint),strength=Math.hypot(...preferred);
+ let prior=state.pole?project(state.pole):null;if(!prior||Math.hypot(...prior)<1e-5)prior=project([side,0,0]);if(Math.hypot(...prior)<1e-5)prior=project([0,0,-1]);prior=norm(prior);
+ let pole=strength>1e-6?norm(preferred):prior;
+ if(state.pole){const blend=smooth01(clamp((strength-.03)/.20,0,1));pole=norm(blend3(prior,pole,blend));
+  let angle=Math.atan2(dot(cross(prior,pole),axis),clamp(dot(prior,pole),-1,1));const limit=state.frame===frame?0:Math.min(Math.max(0,dt),.05)*5;
+  pole=qrot(axisQuaternion(axis,clamp(angle,-limit,limit)),prior);
+ }
+ const along=(l1*l1-l2*l2+distance*distance)/(2*distance),height=Math.sqrt(Math.max(0,l1*l1-along*along));
+ let upper=norm(axis.map((v,i)=>v*along+pole[i]*height));
+ // Project onto a continuous own-side shoulder cone; no atan2 branch across the back.
+ const candidate=norm([Math.max(.03,upper[0]*side)*side,Math.min(-.015,upper[1]),upper[2]]),elevation=Math.asin(candidate[1]),azimuth=clamp(Math.atan2(candidate[0]*side,candidate[2]),0,2.45),ce=Math.cos(elevation);
+ let limited=[Math.sin(azimuth)*ce*side,Math.sin(elevation),Math.cos(azimuth)*ce],shoulderLimited=Math.hypot(...vsub(upper,limited))>1e-6;
+ const step=state.frame===frame?0:Math.min(Math.max(dt,0),.05);upper=armTurn(state.upper,limited,step*6,pole);
+ let elbow=upper.map(v=>v*l1),fore=norm(axis.map((v,i)=>v*distance-elbow[i]));
+ const limitFore=direction=>{let cos=clamp(dot(upper,direction),-1,1),angle=clamp(Math.acos(cos),L.minFlex,L.maxFlex),perp=vsub(direction,upper.map(v=>v*cos));if(Math.hypot(...perp)<1e-6){const away=pole.map(v=>-v);perp=vsub(away,upper.map(v=>v*dot(away,upper)));}perp=norm(perp);return upper.map((v,i)=>v*Math.cos(angle)+perp[i]*Math.sin(angle));};
+ fore=limitFore(armTurn(state.fore,limitFore(fore),step*10,pole));const flex=Math.acos(clamp(dot(upper,fore),-1,1));
+ const hand=elbow.map((v,i)=>v+fore[i]*l2),toRoot=p=>{const v=qrot(bodyQ,p);return root.map((x,i)=>x+v[i]);};
+ state.axis=axis;state.pole=pole;state.upper=upper;state.fore=fore;state.frame=frame;
+ return{shoulder:root,elbow:toRoot(elbow),hand:toRoot(hand),pole,axis,flex,shoulderLimited,elevation,azimuth,targetError:Math.hypot(...vsub(hand,delta))};
+}
+function armWrist(desired,elbow,hand){const fore=norm(vsub(hand,elbow)),direction=qrot(desired,[0,-1,0]),angle=Math.acos(clamp(dot(direction,fore),-1,1));
+ if(angle<=ArmLimits.maxWrist)return desired;let axis=cross(direction,fore);if(Math.hypot(...axis)<1e-6)axis=cross(direction,[1,0,0]);if(Math.hypot(...axis)<1e-6)axis=cross(direction,[0,0,1]);return qmul(axisQuaternion(axis,angle-ArmLimits.maxWrist),desired);
+}
+function motionFor(a){return a.motion||= {sit:0,carry:0,brew:0,serve:0,wash:0,drink:0,handoff:0,gait:0,yaw:a.ryaw||a.yaw||0,turn:0,clock:0,seat:null};}
 function updateMotion(a,dt,running,alpha=1,preview=false){
  let m=motionFor(a),poseDt=running?dt:0,step=preview?(a.previewWalk?dt*1.55*Math.PI*2/1.35:0):0;
  if(preview){a.renderStep=(a.renderStep||0)+step;a.moveBlend=mix(a.moveBlend||0,a.previewWalk?1:0,1-Math.exp(-dt*8));}
  else{a.rx=mix(a.prevX,a.x,alpha);a.rz=mix(a.prevZ,a.z,alpha);let yaw=angleMix(a.prevYaw,a.yaw,alpha),old=m.yaw;m.yaw=angleMix(m.yaw,yaw,1-Math.exp(-dt*12));a.ryaw=m.yaw;m.turn=mix(m.turn,clamp(angleDelta(old,m.yaw)/Math.max(dt,.001),-2,2),1-Math.exp(-dt*6));a.renderStep=mix(a.prevStep??a.step,a.step,alpha);let velocity=running?(a.walkVelocity||0):0;a.moveBlend=mix(a.moveBlend||0,clamp(velocity/1.6,0,1),1-Math.exp(-dt*7));}
- m.clock+=poseDt;let seated=['seated','waiting','eating','residentSit'].includes(a.phase),s=objectById(a.seatId);
+ m.clock+=poseDt;m.poseDt=poseDt;m.poseFrame=(m.poseFrame||0)+1;let seated=['seated','waiting','eating','residentSit'].includes(a.phase),s=objectById(a.seatId);
  if(seated&&s)m.seat={...s};m.sit=mix(m.sit,seated?1:0,1-Math.exp(-poseDt*7));if(m.sit<.001&&!seated)m.seat=null;
- for(let[k,target]of[['carry',['delivering','serving'].includes(a.phase)],['brew',a.phase==='brewing'],['serve',a.phase==='serving'],['wash',a.phase==='residentUse'&&['sink','shower','tub'].includes(objectById(a.useId)?.def)]])m[k]=mix(m[k],target?1:0,1-Math.exp(-poseDt*8));
+ for(let[k,target]of[['drink',a.phase==='eating'],['handoff',a.phase==='serving'?smooth01(a.timer/.8):0],['carry',['delivering','serving'].includes(a.phase)],['brew',a.phase==='brewing'],['serve',a.phase==='serving'],['wash',a.phase==='residentUse'&&['sink','shower','tub'].includes(objectById(a.useId)?.def)]])m[k]=mix(m[k]||0,Number(target),1-Math.exp(-poseDt*8));
 }
 function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
  const out=[],L=a.look,H=L.height/1.83,B=L.build,m=motionFor(a),t=m.clock,sit=m.sit,o=m.seat,x=preview?0:a.rx,z=preview?0:a.rz;
@@ -1946,7 +1988,7 @@ function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
  const seatHeight=o?(defs[o.def].seat||.46):.46,hipY=mix(.918-.048*moving+bob*.5,(seatHeight+.003-.058)/H+.14,sit),sway=Math.sin(stride)*.015*moving;
  const world=p=>{let v=qrot(root,[p[0]*B*H,p[1]*H,p[2]*H]);return [baseX+v[0],v[1]+.058,baseZ+v[2]];};
  const emit=(type,p,s,c,rot=null,style=0)=>{let w=world(p);out.push(shape(type,...w,s[0]*B*H,s[1]*H,s[2]*H,c,{q:rot?qmul(root,rot):root,style,entity:{type:'actor',id:a.id}}));};
- const link=(key,p,q,r,depth,col,style=0)=>{let len=Math.hypot(...vsub(q,p));emit(key,p,[r,len,depth],col,between(p,q),style);};
+ const link=(key,p,q,r,depth,col,style=0)=>{const a0=world(p),b0=world(q);out.push(shape(key,...a0,r*B*H,Math.hypot(...vsub(b0,a0)),depth*H,col,{q:between(a0,b0),style,entity:{type:'actor',id:a.id}}));};
  const skin=L.skin,shirt=L.shirt,hair=L.hair,colors={skin,hair,shirt,apron:L.apron,apronshade:tint(L.apron,.94),stitch:tint(L.apron,1.08),nails:tint(skin,1.10),inner:tint(skin,.82),lip:'#aa6970',liplight:'#bc7c80',lash:tint(hair,.62),hairlight:tint(hair,1.055),hairdark:tint(hair,.90),shirtlight:tint(shirt,1.13),shoe:'#d3bfa2'};
  const part=(key,p,q=null,style=0)=>{for(let g of JennArt[key]){let c=g.color[0]==='$'?colors[g.color.slice(1)]:g.color;emit(g.key,p,[1,1,1],c||'#ffffff',q,style);}};
  const weight=Math.sin(t*.83+a.id.length)*.007*(1-moving)*(1-sit),lean=m.brew*.055+m.serve*.035+Math.sin(Math.PI*sit)*.1;
@@ -1975,20 +2017,20 @@ function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
  }
  const heldDrink=preview?(stagePose==='carry'?{orderId:'preview'}:null):heldOrder;
  const ware=(p,q,order)=>{Crockery.cup.forEach((g,i)=>{emit(g.key,p,[1/(B*H),1/H,1/H],g.color,q,g.style||0);Object.assign(out.at(-1),{propKind:'cup',propRoot:i===0,propOrder:order.orderId,propHolder:preview?'preview':a.id});});};
- const hands=[];
+ const hands=[];if(window.cafePoseDebug){a.armPose=[];a.poseFrame={bodyQ,hipY,weight,B,H};}m.arms||=[{},{}];
  for(let side of[-1,1]){
   let sw=Math.sin(stride+(side===1?0:Math.PI))*moving,shoulder=upper([side*.169,hipY+.408,-.004]);
   let hand=[side*(.217+Math.abs(sw)*.018),hipY-.112+Math.abs(sw)*.035,sw*.19+.02];
   hand=blend3(hand,[side*.112,hipY+.096,.258],sit);
-  let serving=.5-.5*Math.cos(clamp(a.timer/.8,0,1)*Math.PI),trayZ=.305+serving*.13*m.serve;
+  let serving=m.handoff||0,trayZ=.305+serving*.13*m.serve;
   hand=blend3(hand,[side*.19,hipY+.142,trayZ],m.carry);
   let reach=.5+.5*Math.sin(t*3.8+side);hand=blend3(hand,[side*(.14+reach*.025),hipY+.17+reach*.07,.294+reach*.075],Math.max(m.brew,m.wash));
-  let sip=0;if(a.phase==='eating'&&heldDrink&&side===1){sip=Math.pow(Math.max(0,Math.sin(t*1.3)),2)*sit;hand=blend3(hand,[.10,hipY+.58,.164],sip);}
-  hand=reachTarget(shoulder,hand,.5278);let elbow=twoBone(shoulder,hand,.272,.256,[side,0,.30]);
+  let sip=0;if(m.drink>.001&&side===1){sip=Math.pow(Math.max(0,Math.sin(t*1.3)),2)*sit*m.drink;hand=blend3(hand,[.10,hipY+.62,.164],sip);}
+  const metric=p=>[p[0]*B,p[1],p[2]],unmetric=p=>[p[0]/B,p[1],p[2]],solved=armSolve(metric(shoulder),metric(hand),side,bodyQ,m.arms[side<0?0:1],m.poseDt??1/60,m.poseFrame||0);hand=unmetric(solved.hand);let elbow=unmetric(solved.elbow);
   link('jnSleeve',shoulder,elbow,.060,.062,shirt,17);link('jnCuff',shoulder,elbow,.060,.062,tint(shirt,1.10),17);link('jnForearm',elbow,hand,.045,.046,skin,19);emit('sphere',elbow,[.045,.045,.044],skin,null,19);
-  let hQ=qEuler(-mix(.05,Math.PI/2,Math.max(m.carry,m.brew,m.wash,sit*.85)),side*.10,side*.08);
+  let hQ=armWrist(qEuler(-mix(.05,Math.PI/2,Math.max(m.carry,m.brew,m.wash,sit*.85)),side*.10,side*.08),solved.elbow,solved.hand);if(window.cafePoseDebug)a.armPose.push({...solved,side,wrist:hQ,worldShoulder:world(shoulder),worldElbow:world(elbow),worldHand:world(hand)});
   part('jnHand'+(side<0?'L':'R'),hand,hQ,19);hands.push(hand);
-  if(a.phase==='eating'&&heldDrink&&side===1)ware([hand[0]-.09,hand[1]-.04,hand[2]+.02],qEuler(-sip*.30,0,0),heldDrink);
+  if(a.phase==='eating'&&heldDrink&&side===1){const cupQ=qEuler(-sip*.30,0,0),grip=qrot(hQ,[0,-.045*H,0]),handle=qrot(cupQ,[.083,.047,0]),offset=grip.map((v,i)=>v-handle[i]);ware([hand[0]+offset[0]/(B*H),hand[1]+offset[1]/H,hand[2]+offset[2]/H],cupQ,heldDrink);}
  }
  let headBase=upper([0,hipY+.694,.004]),look=m.brew*-.10+Math.sin(t*.62+a.id.length)*.065*(1-moving),headQ=qmul(bodyQ,qEuler(m.brew*.12-m.serve*.05,look,Math.sin(t*.7)*.012));
  const face=p=>{let v=qrot(headQ,p);return headBase.map((x,i)=>x+v[i]);};
@@ -2009,7 +2051,7 @@ function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
  fp('jnLips',[0,0,0],null,19);
  fp('jnHair_'+(['ponytail','short','bob','curls'].includes(L.hairStyle)?L.hairStyle:'ponytail'),[0,0,0],null,18);
  if(L.glasses){for(let side of[-1,1]){fe('torus',[side*.059,.027,.127],[.039,.008,.033],'#52483c',qEuler(Math.PI/2,side*.28,0),11);}fe('capsule',[0,.031,.138],[.003,.043,.003],'#52483c',qEuler(0,0,Math.PI/2),11);}
- if(m.carry>.02){let hz=(hands[0][2]+hands[1][2])/2+.065,hy=(hands[0][1]+hands[1][1])/2+.0,sc=Math.min(1,m.carry*3);emit('cylinder',[0,hy+.027,hz],[.26*sc,.017,.18*sc],'#774258',qEuler(0,0,Math.sin(stride)*moving*.012),0);if(heldDrink)ware([.02,hy+.036,hz],null,heldDrink);}
+ if(m.carry>.02){let hz=(hands[0][2]+hands[1][2])/2+.065,hy=(hands[0][1]+hands[1][1])/2+.0;emit('cylinder',[0,hy+.027,hz],[.26,.017,.18],'#774258',qEuler(0,0,Math.sin(stride)*moving*.012),0);if(heldDrink)ware([.02,hy+.036,hz],null,heldDrink);}
  if(!preview){out.push(shape('disc',baseX,.063,baseZ,.32,.01,.24,'#3c3039',{style:3}));if(selected)out.push(shape('torus',baseX,.078,baseZ,.30,.055,.30,'#f78fc0',{style:4}));}
  return out;
 }
@@ -2934,7 +2976,7 @@ function roomContext(r){$('contextKind').textContent='ROOM · '+r.area+' m²';$(
  }host.appendChild(list);
 }
 
-window.cafeDemo={drinkOwnership,placement:validatePlacement,clearAccess,diningPair,doorClearance,roomEditor:RoomEditor,roomPlan:planRoomEdit,roomApply:applyRoomPlan,roomSelect,roomInfo,roomLinks,roomConnect,game:{get state(){return serviceGame},rules:ShiftRules,start:startShift,sandbox:enterSandbox,hire:hireEmployee,duty:setDuty,assign:assignEmployee,upgrade:buyUpgrade,prioritize:prioritizeOrder,biscuit:offerBiscuit,startPour,finishPour,pourPosition,get pour(){return pourSession},showResults:showShiftResults},artBuildId:"owned-service-20",baseArtBuildId:"home-repair-14",cancelInteraction,interactionProblem,prepareImport,get reservations(){return [...seatOwners]},repairedArt:RepairedArt,characterArt:JennArt,atelierArt:AtelierArt,atelierTexture:atelierArtwork,trioArt:TrioArt,trioTexture:trioArtwork,heroArt:HeroArt,heroTexture:heroArtwork,shapeObject:furniture,modelGeometry:Geometry,signSpec:MenuBoardSpec,signTexture:menuArtwork,generate:generateLayout,audit:layoutAudit,rebuild:installLayout,openRebuild,shops,assignShops:hydrateStaff,objectAccess:accessRoute,beginUse:beginResidentUse,updateMotion,curveRoute,makeActor,poseTests:()=>motionChecks(),get model(){return model},get cafe(){return cafe},get staff(){return staff},get customers(){return customers},get rooms(){return roomData},get nav(){return nav},get renderer(){return view},get camera(){return rig},get state(){return {mode,tool,paused,speed,selected,history:history.length,renderFailed}},get preview(){return selectedPreview},tests:kernelChecks,step:dt=>stepSimulation(dt),pause:v=>{paused=v},setMode,setTool,commit,undo,redo,save:saveData,load:loadData,studio:openDesigner,applyPerson:()=>closeDesigner(true),project:(x,y,z)=>rig.project(x,y,z),seatCandidates,findStation,spawn:spawnGuest,shapeCharacter:characterShapes,focus:focusCamera,pickAt:pick,hitAt:pickHit,cameraTests:cameraChecks};
+window.cafeDemo={drinkOwnership,placement:validatePlacement,clearAccess,diningPair,doorClearance,roomEditor:RoomEditor,roomPlan:planRoomEdit,roomApply:applyRoomPlan,roomSelect,roomInfo,roomLinks,roomConnect,game:{get state(){return serviceGame},rules:ShiftRules,start:startShift,sandbox:enterSandbox,hire:hireEmployee,duty:setDuty,assign:assignEmployee,upgrade:buyUpgrade,prioritize:prioritizeOrder,biscuit:offerBiscuit,startPour,finishPour,pourPosition,get pour(){return pourSession},showResults:showShiftResults},artBuildId:"anatomical-poses-21",baseArtBuildId:"home-repair-14",cancelInteraction,interactionProblem,prepareImport,get reservations(){return [...seatOwners]},repairedArt:RepairedArt,characterArt:JennArt,atelierArt:AtelierArt,atelierTexture:atelierArtwork,trioArt:TrioArt,trioTexture:trioArtwork,heroArt:HeroArt,heroTexture:heroArtwork,shapeObject:furniture,modelGeometry:Geometry,signSpec:MenuBoardSpec,signTexture:menuArtwork,generate:generateLayout,audit:layoutAudit,rebuild:installLayout,openRebuild,shops,assignShops:hydrateStaff,objectAccess:accessRoute,beginUse:beginResidentUse,updateMotion,curveRoute,makeActor,poseTests:()=>motionChecks(),get model(){return model},get cafe(){return cafe},get staff(){return staff},get customers(){return customers},get rooms(){return roomData},get nav(){return nav},get renderer(){return view},get camera(){return rig},get state(){return {mode,tool,paused,speed,selected,history:history.length,renderFailed}},get preview(){return selectedPreview},tests:kernelChecks,step:dt=>stepSimulation(dt),pause:v=>{paused=v},setMode,setTool,commit,undo,redo,save:saveData,load:loadData,studio:openDesigner,applyPerson:()=>closeDesigner(true),project:(x,y,z)=>rig.project(x,y,z),seatCandidates,findStation,spawn:spawnGuest,shapeCharacter:characterShapes,focus:focusCamera,pickAt:pick,hitAt:pickHit,cameraTests:cameraChecks};
 boot();
 initService();
 
