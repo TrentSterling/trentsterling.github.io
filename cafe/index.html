@@ -1682,6 +1682,14 @@ for(let side of[-1,1])jnBake('jnHand'+(side<0?'L':'R'),{skin:'$skin',nails:'$nai
  for(let i=0;i<4;i++){let x=(-.023+i*.015)*side,le=[.047,.054,.05,.038][i];k.tube('skin',jnCubic([[x,-.066,0],[x,-.077,.0],[x,-.066-le,.006],[x,-.066-le,.015]],16),t=>.0072*(1-.35*t)*Math.min(1,.35+(1-t)*6),12);k.ball('nails',[x,-.061-le,.018],[.0044,.0048,.001]);}
  k.tube('skin',jnCubic([[-side*.024,-.027,.005],[-side*.040,-.036,.009],[-side*.045,-.067,.018],[-side*.039,-.083,.022]],20),t=>.011*(1-.47*t),14);
 });
+// Two small articulated groups preserve the authored hand at zero closure.
+// No per-finger skeleton, geometry rebuild or hand skinning is needed.
+for(let side of[-1,1]){const suffix=side<0?'L':'R';
+ jnBake('jnGripPalm'+suffix,{skin:'$skin'},k=>k.add('skin',jnRings([[-.079,.021,.012,.002],[-.067,.030,.015,.001],[-.034,.031,.017,0],[.0,.024,.017,0],[.012,.023,.018,0]],28,18)));
+ jnBake('jnGripFingers'+suffix,{skin:'$skin',nails:'$nails'},k=>{for(let i=0;i<4;i++){const x=(-.023+i*.015)*side,le=[.047,.054,.05,.038][i];k.tube('skin',jnCubic([[x,0,0],[x,-.011,0],[x,-le,.006],[x,-le,.015]],16),t=>.0072*(1-.35*t)*Math.min(1,.35+(1-t)*6),12);k.ball('nails',[x,.005-le,.018],[.0044,.0048,.001]);}});
+ jnBake('jnGripThumb'+suffix,{skin:'$skin'},k=>k.tube('skin',jnCubic([[0,0,0],[-side*.016,-.009,.004],[-side*.021,-.040,.013],[-side*.015,-.056,.017]],20),t=>.011*(1-.47*t),14));
+}
+const handGripSocket=(amount,H=1)=>[0,-(.045+.032*amount)*H,-.014*amount*H];
 // A shaped ankle opening and rounded toe, not a scaled box.
 for(let side of[-1,1])jnBake('jnShoe'+(side<0?'L':'R'),{canvas:'$shoe',sole:'#e8e1d1',rubber:'#514647',laces:'#f5ead8',metal:'#b7a18a'},k=>{
  const sole=jnRings([[.014,.048,.11,.034],[.018,.061,.128,.034],[.041,.061,.128,.034],[.047,.057,.123,.034]],40,20);k.add('sole',sole);
@@ -2030,6 +2038,11 @@ function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
  const heldDrink=preview?(stagePose==='carry'?{orderId:'preview'}:null):heldOrder;
  const ware=(p,q,order)=>{Crockery.cup.forEach((g,i)=>{emit(g.key,p,[1/(B*H),1/H,1/H],g.color,q,g.style||0);Object.assign(out.at(-1),{propKind:'cup',propRoot:i===0,propOrder:order.orderId,propHolder:preview?'preview':a.id});});};
  const carryWeight=m.trayVisible&&!['delivering','serving'].includes(a.phase)?1:m.carry;
+ m.grips||=[0,0];if(m.gripFrame!==(m.poseFrame||0)){const dt=Math.min(.05,m.poseDt??1/60),k=1-Math.exp(-dt*14);for(let j=0;j<2;j++){
+  let target=m.brew*(1-m.carry);
+  if(j===1&&heldDrink){if(a.phase==='eating')target=smooth01(clamp((a.timer-.30)/.35,0,1));else if(a.phase==='serving')target=smooth01(clamp(a.timer/.28,0,1))*(1-smooth01(clamp((a.timer-ServiceTiming.release)/.20,0,1)));}
+  m.grips[j]=mix(m.grips[j],target,k);
+ }m.gripFrame=m.poseFrame||0;}
  const hands=[];if(window.cafePoseDebug){a.armPose=[];a.poseFrame={bodyQ,hipY,weight,B,H};}m.arms||=[{},{}];
  for(let side of[-1,1]){
   let sw=Math.sin(stride+(side===1?0:Math.PI))*moving,shoulder=upper([side*.169,hipY+.408,-.004]);
@@ -2041,21 +2054,25 @@ function characterShapes(a,time,selected=false,preview=false,heldOrder=null){
   let sip=0;if(m.drink>.001&&side===1){sip=Math.pow(Math.max(0,Math.sin(t*1.3)),2)*sit*m.drink;hand=blend3(hand,[.10,hipY+.62,.164],sip);}
   // World-space sockets are resolved through the same bounded arm solver as all poses.
   // The hidden editor/preview keeps its authored generic poses.
+  const grip=m.grips[side<0?0:1],desiredWrist=qEuler(-mix(.05,Math.PI/2,Math.max(m.carry,m.brew,m.wash,sit*.85)),side*.10,side*.08);
   let cupQ=null,cupTarget=null;
   if(m.trayVisible&&side===-1)hand=blend3(hand,[-mix(.19,.30,m.traySplit||0),hipY+.142,.325],carryWeight);
   if(contact?.hands?.[side<0?0:1]&&!(side===-1&&m.trayVisible))hand=blend3(hand,local(contact.hands[side<0?0:1]),contactBlend);
   if(contact?.cup&&side===1){
    const c=contact.cup;cupQ=qmul([-root[0],-root[1],-root[2],root[3]],c.q);
    let target=[...c.p];if(c.drink){const rest=world([.11,hipY+.30,.30]),mouth=world([.10,hipY+.57,.18]);rest[1]=Math.max(rest[1],c.floor+.10);target=blend3(c.p,blend3(rest,mouth,sip),c.drink);cupQ=qmul(cupQ,qEuler(-sip*.30*c.drink,0,0));}
-   const palm=qrot(qEuler(-Math.PI/2,.10,.08),[0,-.045*H,0]),handle=qrot(cupQ,[.083,.047,0]);cupTarget=local(target);hand=blend3(hand,cupTarget.map((v,i)=>v+(handle[i]-palm[i])/(i===0?B*H:H)),contactBlend);
+   const palm=qrot(desiredWrist,handGripSocket(grip,H)),handle=qrot(cupQ,[.083,.047,0]);cupTarget=local(target);hand=blend3(hand,cupTarget.map((v,i)=>v+(handle[i]-palm[i])/(i===0?B*H:H)),contactBlend);
   }
   const requestedHand=world(hand),metric=p=>[p[0]*B,p[1],p[2]],unmetric=p=>[p[0]/B,p[1],p[2]],solved=armSolve(metric(shoulder),metric(hand),side,bodyQ,m.arms[side<0?0:1],m.poseDt??1/60,m.poseFrame||0);hand=unmetric(solved.hand);let elbow=unmetric(solved.elbow);
   link('jnSleeve',shoulder,elbow,.060,.062,shirt,17);link('jnCuff',shoulder,elbow,.060,.062,tint(shirt,1.10),17);link('jnForearm',elbow,hand,.045,.046,skin,19);emit('sphere',elbow,[.045,.045,.044],skin,null,19);
-  let hQ=armWrist(qEuler(-mix(.05,Math.PI/2,Math.max(m.carry,m.brew,m.wash,sit*.85)),side*.10,side*.08),solved.elbow,solved.hand);if(window.cafePoseDebug)a.armPose.push({...solved,side,wrist:hQ,worldShoulder:world(shoulder),worldElbow:world(elbow),worldHand:world(hand)});
-  part('jnHand'+(side<0?'L':'R'),hand,hQ,19);hands.push(hand);
-  if(side===1&&(heldDrink||m.trayVisible)){const cq=cupQ||qEuler(-sip*.30,0,0),palm=qrot(hQ,[0,-.045*H,0]),handle=qrot(cq,[.083,.047,0]),p=hand.map((v,i)=>v+(palm[i]-handle[i])/(i===0?B*H:H));a.propSockets.handCup={p:world(p),q:qmul(root,cq)};a.propSockets.palm=world(hand.map((v,i)=>v+palm[i]/(i===0?B*H:H)));}
+  let hQ=armWrist(desiredWrist,solved.elbow,solved.hand);if(window.cafePoseDebug)a.armPose.push({...solved,side,wrist:hQ,worldShoulder:world(shoulder),worldElbow:world(elbow),worldHand:world(hand)});
+  if(grip<.001)part('jnHand'+(side<0?'L':'R'),hand,hQ,19);
+  else{const suffix=side<0?'L':'R',pivot=p=>{const v=qrot(hQ,[p[0]*B,p[1],p[2]]);return hand.map((x,i)=>x+v[i]/(i===0?B:1));};
+   part('jnGripPalm'+suffix,hand,hQ,19);part('jnGripFingers'+suffix,pivot([0,-.066,0]),qmul(hQ,qEuler(grip*.95,0,0)),19);part('jnGripThumb'+suffix,pivot([-side*.024,-.027,.005]),qmul(hQ,qEuler(grip*.45,0,side*grip*.35)),19);
+  }hands.push(hand);
+  if(side===1&&(heldDrink||m.trayVisible)){const cq=cupQ||qEuler(-sip*.30,0,0),palm=qrot(hQ,handGripSocket(grip,H)),handle=qrot(cq,[.083,.047,0]),p=hand.map((v,i)=>v+(palm[i]-handle[i])/(i===0?B*H:H));a.propSockets.handCup={p:world(p),q:qmul(root,cq)};a.propSockets.palm=world(hand.map((v,i)=>v+palm[i]/(i===0?B*H:H)));}
   if(window.cafePoseDebug&&contact)a.armPose.at(-1).contactTarget=contact.hands?.[side<0?0:1]||(side===1&&cupTarget?requestedHand:null);
-  if(a.phase==='eating'&&heldDrink&&!heldDrink.managed&&side===1){const cupQ=qEuler(-sip*.30,0,0),grip=qrot(hQ,[0,-.045*H,0]),handle=qrot(cupQ,[.083,.047,0]),offset=grip.map((v,i)=>v-handle[i]);ware([hand[0]+offset[0]/(B*H),hand[1]+offset[1]/H,hand[2]+offset[2]/H],cupQ,heldDrink);}
+  if(a.phase==='eating'&&heldDrink&&!heldDrink.managed&&side===1){const cupQ=qEuler(-sip*.30,0,0),grip=qrot(hQ,handGripSocket(m.grips[1],H)),handle=qrot(cupQ,[.083,.047,0]),offset=grip.map((v,i)=>v-handle[i]);ware([hand[0]+offset[0]/(B*H),hand[1]+offset[1]/H,hand[2]+offset[2]/H],cupQ,heldDrink);}
  }
  let headBase=upper([0,hipY+.694,.004]),look=m.brew*-.10+Math.sin(t*.62+a.id.length)*.065*(1-moving),headQ=qmul(bodyQ,qEuler(m.brew*.12-m.serve*.05,look,Math.sin(t*.7)*.012));
  const face=p=>{let v=qrot(headQ,p);return headBase.map((x,i)=>x+v[i]);};
@@ -2133,12 +2150,12 @@ function actorContact(a,drink){const m=motionFor(a),targetId=a.stationId||a.useI
  }
  if(!drink?.managed)return null;const table=tableCupPose(drink);if(!table)return null;
  if(a.role==='customer'&&a.phase==='eating'){
-  const pickup=smooth01(clamp((a.timer-ServiceTiming.pickup)/.65,0,1));return{cup:{...table,drink:pickup,floor:table.p[1]},weight:1,lean:mix(.38,.06,pickup),crouch:0};
+  const pickup=smooth01(clamp((a.timer-ServiceTiming.pickup)/.65,0,1));return{cup:{...table,drink:pickup,floor:table.p[1]},weight:1,lean:mix(.38+clamp((1.72-a.look.height)*.35,0,.12),.06,pickup),crouch:0};
  }
  if(a.phase==='serving'){
   const reach=smooth01(clamp((a.timer-ServiceTiming.grip)/.66,0,1)),state=cupPresentation.get(drink.orderId),start=state?.tray||a.propSockets?.trayCup||table;
   const cup=poseMix(start,table,reach);cup.p[1]+=Math.sin(Math.PI*reach)*.12;
-  return{cup,weight:smooth01(clamp(a.timer/.20,0,1)),lean:.33*reach,crouch:.12*reach};
+  return{cup,weight:smooth01(clamp(a.timer/.20,0,1)),lean:.33*reach,crouch:(.12+clamp((a.look.height-1.72)*.30,0,.054))*reach};
  }
  return null;
 }
@@ -2194,6 +2211,7 @@ function releaseSeat(a){
  a.seatId=null;a.tableId=null;a.seatStamp=null;a.tableStamp=null;
 }
 function cancelInteraction(a,reason='Cancelled',cooldown=.5){
+ if(a.job)cupPresentation.delete(a.job);if(pourSession?.actorId===a.id)pourSession=null;
  releaseSeat(a);
  a.job=null;a.stationId=null;a.stationStamp=null;a.useId=null;a.useStamp=null;
  a.breakNeed=null;a.breakTarget=null;a.path=[];a.goal=null;a.access=null;
@@ -2221,8 +2239,8 @@ function interactionProblem(a,checkOwner=true){
  return null;
 }
 function sendHome(a,reason='See you next time!'){
+ if(a.role==='customer')recordLost(a);
  if(a.phase==='leaving'||a.phase==='exiting'||a.phase==='gone')return;
- if(a.role==='customer'&&a.phase!=='eating')recordLost(a);
  for(let s of staff)if(s.job===a.id)cancelInteraction(s,'Order cancelled',.2);
  a.exitMessage=reason;releaseSeat(a);
  let path=nav.path([a.x,a.z],[15.1,24]);
@@ -2285,9 +2303,9 @@ function coreStepSimulation(dt){cafe.seconds+=dt;time+=dt;for(let a of allActors
  for(let c of customers){c.timer+=dt;
   if(DINING_PHASES.has(c.phase)&&!diningValid(c)){sendHome(c,'Seat or table changed');continue;}
   if(c.phase==='toSeat'){if(moveActor(c,dt)){c.phase='waiting';c.task=c.order.name;c.timer=0;c.sitBlend=0;let o=objectById(c.seatId);if(o)c.yaw=o.rot*Math.PI/2;}}
-  else if(c.phase==='queue'){c.wait+=dt;if(c.timer>2){c.timer=0;chooseSeat(c);}if(c.wait>26){cafe.lost++;log(c.name+' left: no available seat.');sendHome(c,'No seats available');}}
-  else if(c.phase==='waiting'){c.wait+=dt;c.sitBlend=Math.min(1,(c.sitBlend||0)+dt*3);if(!objectById(c.seatId)||!objectById(c.tableId)){sendHome(c,'Table removed');continue;}if(c.wait>patience(c)){cafe.lost++;log(c.name+' left after waiting too long.');sendHome(c,'Maybe next time');}}
-  else if(c.phase==='eating'){if(c.timer>7.5){const receipt=orderReceipt(c);let {tip,paid}=receipt;cafe.balance+=paid;cafe.served++;cafe.totalServed++;cafe.revenue+=paid;cafe.tips+=tip;recordPaid(c,receipt);let bs=shopStats(c.shopId||'shop-1');bs.served++;bs.revenue+=paid;cafe.dirtySave=true;log(c.name+' paid $'+paid+' for '+c.order.name.toLowerCase()+'.');showMoney(c,'+$'+paid);sfx('coin');sendHome(c,'Thanks, '+staff[0].name+'!');if(cafe.served===5)toast('5 customers served');}}
+  else if(c.phase==='queue'){c.wait+=dt;if(c.timer>2){c.timer=0;chooseSeat(c);}if(c.wait>26){log(c.name+' left: no available seat.');sendHome(c,'No seats available');}}
+  else if(c.phase==='waiting'){c.wait+=dt;c.sitBlend=Math.min(1,(c.sitBlend||0)+dt*3);if(!objectById(c.seatId)||!objectById(c.tableId)){sendHome(c,'Table removed');continue;}if(c.wait>patience(c)){log(c.name+' left after waiting too long.');sendHome(c,'Maybe next time');}}
+  else if(c.phase==='eating'){if(c.timer>7.5){payGuest(c);sendHome(c,'Thanks, '+staff[0].name+'!');}}
   else if(c.phase==='leaving'){if(moveActor(c,dt)){c.phase='gone';c.timer=0;}}
   else if(c.phase==='exiting'){if(c.timer>3){c.timer=0;let path=nav.path([c.x,c.z],[15,24]);if(path)setRoute(c,path,'leaving',c.exitMessage);}}
  }
@@ -2406,7 +2424,7 @@ function prepareImport(data){
   if(!nextNav.free(a.x,a.z)){const sh=nextShops.find(s=>s.id===a.shopId),p=(a.role==='barista'?sh.staffSpot:null)||sh.entry||[15,21];const at=nextNav.nearest(...p,4);if(at<0)throw Error('No walkable spawn for '+a.name+'.');[a.x,a.z]=nextNav.point(at);}
   a.prevX=a.rx=a.x;a.prevZ=a.rz=a.z;
  }
- const nextService=validateServiceSave(d.serviceGame);delete d.serviceGame;return {model:d,staff:nextStaff,cafe:nextCafe,rooms:nextRooms,nav:nextNav,serviceGame:nextService};
+ const nextService=validateServiceSave(d.serviceGame,nextCafe);delete d.serviceGame;return {model:d,staff:nextStaff,cafe:nextCafe,rooms:nextRooms,nav:nextNav,serviceGame:nextService};
 }
 function loadData(data){
  const next=prepareImport(data);
@@ -2416,7 +2434,7 @@ function loadData(data){
  selected=null;selectedActor=staff[0].id;selectedPreview=null;gesture=null;ghost=null;movingId=null;pointer=null;keys.clear();
  accum=0;time=cafe.seconds;dirtyStatic=true;
  closeModal();setMode('build');resetCamera();renderRoster();updateHUD();
- toast('Save loaded');return true;
+ if(serviceGame.phase==='result')showShiftResults();toast('Save loaded');return true;
 }
 function commit(label,fn,autoFloor=false){let before=JSON.stringify(model),trial=clone(model);try{let reason=fn(trial);if(reason){toast(reason,true);return false;}if(autoFloor)solveRooms(trial,true);validateSave(trial);}catch(e){toast(e.message,true);return false;}trial.revision=model.revision+1;let after=JSON.stringify(trial);if(before===after)return false;model=trial;history.push({label,before,after});if(history.length>60)history.shift();redoHistory=[];reconcileEdits();autosave();sfx('build');showContext();updateHUD();return true;}
 function undo(){roomClearDraft();let h=history.pop();if(!h)return;model=JSON.parse(h.before);if(h.peopleBefore){staff=clone(h.peopleBefore);resetActivities();}redoHistory.push(h);selected=null;reconcileEdits();hydrateStaff(false);autosave();showContext();updateHUD();toast('Undid '+h.label.toLowerCase());}
@@ -2457,7 +2475,7 @@ function updateHUD(){updateShopUI();let a=staff.find(a=>a.id===selectedActor)||s
 }
 function popModal(title,body){$('modalTitle').textContent=title;$('modalBody').innerHTML=body;$('modal').classList.add('show');}
 function showHelp(){popModal('Controls',`<div class="line"><span>Pan / orbit / zoom</span><b>Right drag / Alt drag / wheel</b></div><div class="line"><span>Perspective / focus</span><b>P / J</b></div><div class="line"><span>Build tools</span><b>W / B / D / N / M / R / X</b></div><div class="line"><span>Undo / redo / save</span><b>Ctrl Z / Ctrl Y / Ctrl S</b></div><div class="line"><span>Plan / home / pause</span><b>T / H / Space</b></div><p>Guests need a reachable seat. Baristas need a reachable coffee station. Bathrooms and home objects are usable by residents.</p><div><button class="btn" id="soundToggle">Sound: ${soundEnabled?'on':'off'}</button><button class="btn" id="qualityToggle">Pixels: ${view.quality<1.2?'Performance':'Crisp'}</button><button class="btn" id="debugToggle">Debug</button><button class="btn" id="nextDay">Next day</button><button class="btn" id="freePlayHelp">${serviceGame.mode==='sandbox'?'Shift mode':'Free play'}</button></div><p style="margin-bottom:5px">Load a starter layout:</p><button class="btn" id="presetCafe">Jenn’s café</button><button class="btn" id="presetHouse">Courtyard house</button><button class="btn" id="presetEmpty">Empty lot</button>${startupResume?'<button class="btn" id="resumeSave">Resume autosave</button>':''}<button class="btn" id="backupSave">Restore backup</button><button class="btn" id="switchRenderer">Try Three.js renderer</button>`);
- $('soundToggle').onclick=()=>{soundEnabled=!soundEnabled;$('soundToggle').textContent='Sound: '+(soundEnabled?'on':'off');sfx('coin');};$('qualityToggle').onclick=()=>{view.quality=view.quality<1.2?1.7:1;resize(false);$('qualityToggle').textContent='Pixels: '+(view.quality<1.2?'Performance':'Crisp');};$('debugToggle').onclick=()=>document.body.classList.toggle('debug');$('nextDay').onclick=()=>{if(customers.length){toast('Close the café and let the remaining guests leave first.',true);return;}cafe.day++;cafe.served=0;cafe.revenue=0;cafe.tips=0;cafe.lost=0;cafe.seconds=0;for(let a of staff){a.needs.energy=96;a.needs.hunger=95;}updateHUD();closeModal();toast('New day started.');};$('presetCafe').onclick=()=>confirmPreset('cafe');$('presetHouse').onclick=()=>confirmPreset('house');$('presetEmpty').onclick=()=>confirmPreset('empty');if($('resumeSave'))$('resumeSave').onclick=()=>{try{loadData(JSON.parse(startupResume));closeModal();}catch(e){toast(e.message,true);}};$('freePlayHelp').onclick=()=>{$('sandboxBtn').click();closeModal();};$('backupSave').onclick=()=>{try{const saved=localStorage.getItem('jenns-cafe-v4-backup')||localStorage.getItem('jenns-cafe-v3');if(!saved)return toast('No backup yet');loadData(JSON.parse(saved));}catch(e){toast(e.message,true);}};$('switchRenderer').onclick=()=>{closeModal();tryThree();};
+ $('soundToggle').onclick=()=>{soundEnabled=!soundEnabled;$('soundToggle').textContent='Sound: '+(soundEnabled?'on':'off');sfx('coin');};$('qualityToggle').onclick=()=>{view.quality=view.quality<1.2?1.7:1;resize(false);$('qualityToggle').textContent='Pixels: '+(view.quality<1.2?'Performance':'Crisp');};$('debugToggle').onclick=()=>document.body.classList.toggle('debug');$('nextDay').onclick=()=>{if(customers.length){toast('Close the café and let the remaining guests leave first.',true);return;}cafe.day++;cafe.served=0;cafe.revenue=0;cafe.tips=0;cafe.lost=0;cafe.seconds=0;for(let a of staff){a.needs.energy=96;a.needs.hunger=95;}updateHUD();closeModal();toast('New day started.');};$('presetCafe').onclick=()=>confirmPreset('cafe');$('presetHouse').onclick=()=>confirmPreset('house');$('presetEmpty').onclick=()=>confirmPreset('empty');if($('resumeSave'))$('resumeSave').onclick=()=>{try{loadData(JSON.parse(startupResume));}catch(e){toast(e.message,true);}};$('freePlayHelp').onclick=()=>{$('sandboxBtn').click();closeModal();};$('backupSave').onclick=()=>{try{const saved=localStorage.getItem('jenns-cafe-v4-backup')||localStorage.getItem('jenns-cafe-v3');if(!saved)return toast('No backup yet');loadData(JSON.parse(saved));}catch(e){toast(e.message,true);}};$('switchRenderer').onclick=()=>{closeModal();tryThree();};
 }
 function closeModal(){$('modal').classList.remove('show');}
 function confirmPreset(type){popModal('Replace this layout?',`<p>This replaces the current lot. Export a save first to keep it.</p><button class="btn" id="keepSave">Save current lot</button><button class="btn primary" id="replaceNow">Load ${type==='house'?'courtyard house':type==='empty'?'empty lot':'Jenn’s café'}</button>`);$('keepSave').onclick=exportSave;$('replaceNow').onclick=()=>{model=type==='cafe'?cafeStarter():type==='house'?oldHouse():blank();customers=[];seatOwners.clear();for(let a of staff){cancelInteraction(a,'Idle');a.x=15;a.z=20;a.prevX=a.rx=a.x;a.prevZ=a.rz=a.z;}cafe.open=false;selected=null;history=[];redoHistory=[];closeModal();reconcileEdits();setMode('build');resetCamera();autosave();toast('Fresh layout loaded.');};}
@@ -2470,7 +2488,7 @@ function renderDesigner(){let a=selectedPreview,l=a.look;let fields=`<label clas
 }
 function updateDesignerReadout(){$('previewName').textContent=selectedPreview.name||'New resident';$('heightTag').textContent=selectedPreview.look.height.toFixed(2)+' m';}
 function openDesigner(id=null,newPerson=false){if(mode!=='people'){returnMode=mode;worldCamera=rig.snapshot();}editingId=newPerson?null:(staff.find(a=>a.id===id)?.id||staff[0].id);selectedPreview=editingId?clone(staff.find(a=>a.id===editingId)):makeActor('new','New resident','barista',15,20, {shirt:swatches[staff.length%8],hairStyle:'curls'});mode='people';selectedPreview.phase='idle';selectedPreview.motion=null;selectedPreview.moveBlend=0;selectedPreview.renderStep=0;stageYaw=.12;stageClose=false;stagePose='idle';document.body.classList.remove('is-build');document.body.classList.add('is-people');$('modeBuild').classList.remove('active');$('modeLive').classList.remove('active');$('modePeople').classList.add('active');renderRoster();renderDesigner();resize(false);dirtyStatic=true;}
-function closeDesigner(apply){if(apply){let a=staff.find(a=>a.id===editingId);if(a){cancelInteraction(a,'Character updated',.5);a.name=selectedPreview.name.trim()||'Resident';a.role=selectedPreview.role;a.shopId=selectedPreview.shopId||shops()[0].id;a.look=sanitizeLook(selectedPreview.look);}else if(staff.length<6){let id='resident-'+(Math.max(0,...staff.map(a=>+a.id.split('-')[1]))+1),p=nav.nearest(15,20,3),pos=p>=0?nav.point(p):[15,21];a=makeActor(id,selectedPreview.name.trim()||'Resident',selectedPreview.role,...pos,sanitizeLook(selectedPreview.look));a.shopId=selectedPreview.shopId||shops()[0].id;staff.push(a);}selectedActor=a?.id||staff[0].id;autosave();toast('Character saved');}let next=returnMode;setMode(next);}
+function closeDesigner(apply){if(apply){let a=staff.find(a=>a.id===editingId);if(a){cancelInteraction(a,'Character updated',.5);a.name=selectedPreview.name.trim()||'Resident';a.role=selectedPreview.role;a.shopId=selectedPreview.shopId||shops()[0].id;a.look=sanitizeLook(selectedPreview.look);}else if(staff.length<6){let id='resident-'+(Math.max(0,...staff.map(a=>+a.id.split('-')[1]))+1),p=nav.nearest(15,20,3),pos=p>=0?nav.point(p):[15,21];a=makeActor(id,selectedPreview.name.trim()||'Resident',selectedPreview.role,...pos,sanitizeLook(selectedPreview.look));a.shopId=selectedPreview.shopId||shops()[0].id;staff.push(a);}selectedActor=a?.id||staff[0].id;trackShiftWages();autosave();toast('Character saved');}let next=returnMode;setMode(next);}
 function studioRig(){rig.projection='orthographic';rig.top=false;let mobile=innerWidth<=580,w=rig.w,h=rig.h,cx=mobile?w*.61:(w+(w<800?132:188)-(w<1200?278:302))/2,cy=mobile?h*.205:h*.47,avail=mobile?h*.39:h*.72;rig.theta=.10;rig.elev=.10;rig.zoom=stageClose?avail/0.82:avail/2.25;let target=stageClose?[0,1.56,0]:[0,.95,0],b=rig.basis(),dx=(w/2-cx)/rig.zoom,dy=(cy-h/2)/rig.zoom;rig.target=target.map((v,i)=>v+b.r[i]*dx+b.u[i]*dy);}
 function stageShapes(){return[shape('cylinder',0,-.10,0,1.15,.18,1.15,'#676176'),shape('cylinder',0,-.20,0,1.20,.03,1.20,'#ca648f'),shape('torus',0,-.006,0,.97,.018,.97,'#bd91b9',{style:4}),shape('round',0,-.255,0,12,.05,12,'#3b3c4a')];}
 function compose(){if(mode==='people'){staticShapes=stageShapes();if(view instanceof GLView){view.preview=true;view.clearColor=[.20,.21,.275];}else view.renderer.setClearColor('#373b4d');}else{staticShapes=worldShapes(model,wallMode,rig.theta).filter(s=>!(movingId&&s.entity?.type==='object'&&s.entity.id===movingId));if(view instanceof GLView){view.preview=false;view.clearColor=[.24,.31,.31];}else view.renderer.setClearColor('#50696a');}let pickWalls=new Map();for(let s of staticShapes){if(s.entity?.type!=='wall')continue;let k=s.entity.key;pickWalls.set(k,Math.max(pickWalls.get(k)||0,s.y+s.sy/2));}wallPickBounds=Array.from(pickWalls,([key,h])=>({key,h,bounds:wallBounds(key)}));view.setStatic(staticShapes);dirtyStatic=false;}
@@ -2563,7 +2581,7 @@ function boot(){try{initRoomUI();hydrateStaff(true);view=new GLView(canvas);resi
    Architectural data, art definitions and the interaction ownership kernel stay separate.
    Historical saves have no serviceGame record: they enter prep, with their lot intact. */
 const ShiftRules=Object.freeze({duration:180,drain:65,hireCost:70,wage:18,basePatience:78});
-function newServiceGame(){return {version:1,mode:'shift',phase:'prep',day:1,elapsed:0,arrived:0,planned:0,waveIndex:0,target:12,served:0,lost:0,revenue:0,costs:0,happiness:0,combo:0,bestCombo:0,perfect:0,priority:null,upgrades:{boiler:0,hospitality:0},employees:{},lastResult:null,bestStars:0};}
+function newServiceGame(){return {version:2,orders:{},interrupted:false,mode:'shift',phase:'prep',day:1,elapsed:0,arrived:0,planned:0,waveIndex:0,target:12,served:0,lost:0,revenue:0,costs:0,happiness:0,combo:0,bestCombo:0,perfect:0,priority:null,upgrades:{boiler:0,hospitality:0},employees:{},lastResult:null,bestStars:0};}
 let serviceGame=newServiceGame(),pourSession=null,teamOpen=false;
 const wavePlan=[{at:1,n:2,name:'Doors open'},{at:25,n:3,name:'Early birds'},{at:48,n:5,name:'Morning rush'},{at:78,n:5,name:'Coffee break'},{at:109,n:4,name:'Lunch crowd'},{at:140,n:3,name:'Last orders'}];
 const employeeCost=()=>staff.filter(a=>a.role==='barista'&&a.id!==staff[0]?.id).length*ShiftRules.wage;
@@ -2614,13 +2632,13 @@ function startShift(){
 function servicePreStep(dt){
  if(serviceGame.mode!=='shift')return;
  if(!['running','closing'].includes(serviceGame.phase)){cafe.open=false;return;}
- serviceGame.elapsed+=dt;serviceGame.wageIds||=[];for(const a of staff)if(a.role==='barista'&&a.id!==staff[0]?.id&&!serviceGame.wageIds.includes(a.id))serviceGame.wageIds.push(a.id);
+ serviceGame.elapsed+=dt;trackShiftWages();
  if(serviceGame.phase==='running'){
   // Spawn waves explicitly, never from a second independent automatic timer.
   while(serviceGame.waveIndex<serviceGame.waves.length&&serviceGame.elapsed>=serviceGame.waves[serviceGame.waveIndex].at){
    let wave=serviceGame.waves[serviceGame.waveIndex++];serviceGame.pendingArrivals=(serviceGame.pendingArrivals||0)+wave.n;serviceGame.waveName=wave.name;serviceGame.waveFlash=serviceGame.elapsed+5;sfx('build');
   }
-  if((serviceGame.pendingArrivals||0)>0){serviceGame.spawnIn=(serviceGame.spawnIn||0)-dt;if(serviceGame.spawnIn<=0){let c=spawnGuest();if(c){serviceGame.arrived++;serviceGame.pendingArrivals--;c.shiftGuest=true;}serviceGame.spawnIn=1.4;}}
+  if((serviceGame.pendingArrivals||0)>0){serviceGame.spawnIn=(serviceGame.spawnIn||0)-dt;if(serviceGame.spawnIn<=0){let c=spawnGuest();if(c){serviceGame.arrived++;serviceGame.pendingArrivals--;c.shiftGuest=true;serviceGame.orders[c.id]='outstanding';}serviceGame.spawnIn=1.4;}}
   if(serviceGame.elapsed>=ShiftRules.duration){serviceGame.phase='closing';cafe.open=false;serviceGame.pendingArrivals=0;}
  }
  cafe.nextArrival=1e6;
@@ -2630,13 +2648,32 @@ function servicePostStep(){
  if(pourSession){const a=actorById(pourSession.actorId),c=actorById(pourSession.customerId);if(!a||!c||a.phase!=='brewing'||a.job!==c.id||interactionProblem(a)){pourSession=null;}}
  if(serviceGame.mode==='shift'&&serviceGame.phase==='closing'){
   const pending=customers.filter(c=>!['gone','leaving','exiting'].includes(c.phase));
-  if(serviceGame.elapsed>ShiftRules.duration+ShiftRules.drain){for(let c of pending){if(c.phase!=='eating')recordLost(c);sendHome(c,'Shift ended');}}
-  if(serviceGame.elapsed>ShiftRules.duration+ShiftRules.drain+25){for(let c of [...customers]){if(!c.paid)recordLost(c);releaseSeat(c);}customers=[];}
+  if(serviceGame.elapsed>ShiftRules.duration+ShiftRules.drain){for(let c of pending)if(c.phase!=='eating')sendHome(c,'Shift ended');}
+  if(serviceGame.elapsed>ShiftRules.duration+ShiftRules.drain+25){for(let c of [...customers]){sendHome(c,'Shift ended');releaseSeat(c);}customers=[];}
   if(!customers.length)finishShift();
  }
 }
 function stepSimulation(dt){servicePreStep(dt);coreStepSimulation(dt);servicePostStep();}
-function recordLost(c){if(c.shiftCounted)return;c.shiftCounted=true;if(serviceGame.mode==='shift'&&['running','closing'].includes(serviceGame.phase)){serviceGame.lost++;serviceGame.combo=0;}if(serviceGame.priority===c.id)serviceGame.priority=null;}
+// Each admitted shift order has one terminal settlement, independent of actor phase.
+function shiftActive(g=serviceGame){return g.mode==='shift'&&['running','closing'].includes(g.phase);}
+function trackShiftWages(){if(!shiftActive())return;serviceGame.wageIds||=[];for(const a of staff)if(a.role==='barista'&&a.id!==staff[0]?.id&&!serviceGame.wageIds.includes(a.id))serviceGame.wageIds.push(a.id);}
+function orderSettled(c){return !!(c.settlement||c.shiftCounted||c.paid||(c.shiftGuest&&serviceGame.orders?.[c.id]&&serviceGame.orders[c.id]!=='outstanding'));}
+function settleOrder(c,state){
+ if(orderSettled(c))return false;c.settlement=state;c.shiftCounted=true;c.paid=state==='paid';
+ if(c.shiftGuest&&shiftActive()){serviceGame.orders||={};serviceGame.orders[c.id]=state;}
+ if(serviceGame.priority===c.id)serviceGame.priority=null;
+ if(pourSession?.customerId===c.id)pourSession=null;cupPresentation.delete(c.id);return true;
+}
+function recordLost(c){
+ if(!settleOrder(c,'cancelled'))return false;
+ cafe.lost++;cafe.dirtySave=true;
+ if(c.shiftGuest&&shiftActive()){serviceGame.lost++;serviceGame.combo=0;}return true;
+}
+function outstandingOrders(g=serviceGame){return Object.values(g.orders||{}).filter(s=>s==='outstanding').length;}
+function payGuest(c){
+ if(orderSettled(c))return false;const receipt=orderReceipt(c);if(!recordPaid(c,receipt))return false;
+ log(c.name+' paid $'+receipt.paid+' for '+c.order.name.toLowerCase()+'.');showMoney(c,'+$'+receipt.paid);sfx('coin');return true;
+}
 function orderReceipt(c){
  const quality=happiness(c),g=serviceGame;
  if(g.mode==='shift'&&['running','closing'].includes(g.phase)){
@@ -2647,23 +2684,35 @@ function orderReceipt(c){
  return {tip,paid:c.order.price+tip,quality};
 }
 function recordPaid(c,receipt){
- if(c.shiftCounted)return;c.shiftCounted=true;c.paid=true;
- if(serviceGame.priority===c.id)serviceGame.priority=null;
- if(serviceGame.mode==='shift'&&['running','closing'].includes(serviceGame.phase)){
+ if(!settleOrder(c,'paid'))return false;
+ cafe.balance+=receipt.paid;cafe.served++;cafe.totalServed++;cafe.revenue+=receipt.paid;cafe.tips+=receipt.tip;
+ const bs=shopStats(c.shopId||'shop-1');bs.served++;bs.revenue+=receipt.paid;cafe.dirtySave=true;
+ if(c.shiftGuest&&shiftActive()){
   serviceGame.served++;serviceGame.revenue+=receipt.paid;serviceGame.happiness+=receipt.quality;
-  const ingredients=2;serviceGame.costs+=ingredients;cafe.balance=Math.max(0,cafe.balance-ingredients);
- }
+  serviceGame.costs+=2;cafe.balance=Math.max(0,cafe.balance-2);
+ }return true;
+}
+function shiftReceipt(g){
+ const avg=g.served?g.happiness/g.served:0,met=g.served>=g.target;
+ const stars=g.interrupted?0:Number(met)+Number(met&&avg>=.78)+Number(met&&g.perfect>=3),bonus=stars*20;
+ return{day:g.day,served:g.served,target:g.target,lost:g.lost,arrived:g.arrived,outstanding:outstandingOrders(g),notAdmitted:Math.max(0,g.planned-g.arrived),quality:Math.round(avg*100),perfect:g.perfect,revenue:g.revenue,costs:g.costs,bonus,net:g.revenue-g.costs+bonus,stars,bestCombo:g.bestCombo,interrupted:g.interrupted};
+}
+function settleShift(g,account,interrupted=false){
+ if(g.phase==='result'||outstandingOrders(g))return false;
+ const wages=(g.wageIds||[]).length*ShiftRules.wage;g.costs+=wages;g.interrupted=interrupted;
+ g.lastResult=shiftReceipt(g);account.balance=Math.max(0,account.balance-wages)+g.lastResult.bonus;
+ g.bestStars=Math.max(g.bestStars,g.lastResult.stars);g.phase='result';account.open=false;account.dirtySave=true;return true;
 }
 function finishShift(){
- if(serviceGame.phase==='result')return;
- const g=serviceGame,avg=g.served?g.happiness/g.served:0,met=g.served>=g.target;
- const stars=Number(met)+Number(met&&avg>=.78)+Number(met&&g.perfect>=3);
- const wages=(g.wageIds||[]).length*ShiftRules.wage,bonus=stars*20;g.costs+=wages;cafe.balance=Math.max(0,cafe.balance-wages)+bonus;
- g.bestStars=Math.max(g.bestStars,stars);g.lastResult={day:g.day,served:g.served,target:g.target,lost:g.lost,quality:Math.round(avg*100),perfect:g.perfect,revenue:g.revenue,costs:g.costs,bonus,net:g.revenue-g.costs+bonus,stars,bestCombo:g.bestCombo};
- g.phase='result';pourSession=null;cafe.open=false;cafe.dirtySave=true;sfx('coin');autosave();showShiftResults();updateHUD();
+ if(customers.length)return false;
+ for(const [id,state]of Object.entries(serviceGame.orders||{}))if(state==='outstanding')recordLost({id,role:'customer',shiftGuest:true});
+ if(!settleShift(serviceGame,cafe))return false;
+ for(const a of staff)if(a.job)cancelInteraction(a,'Shift ended');
+ for(const [id,owner]of seatOwners)if(!actorById(owner))seatOwners.delete(id);
+ cupPresentation.clear();pourSession=null;sfx('coin');autosave();showShiftResults();updateHUD();return true;
 }
 function showShiftResults(){const r=serviceGame.lastResult;if(!r)return;
- popModal('Shift '+r.day+' complete',`<div class="result-stars" aria-label="${r.stars} stars">${'★'.repeat(r.stars)}<span>${'☆'.repeat(3-r.stars)}</span></div><div class="score-row"><strong>${r.served} / ${r.target}</strong><span>guests served</span><strong>${r.quality}%</strong><span>happiness</span><strong>${r.perfect}</strong><span>perfect pours</span></div><div class="receipt"><div><span>Sales + tips</span><b>$${r.revenue}</b></div><div><span>Supplies, biscuits + wages</span><b>−$${r.costs}</b></div><div><span>Star bonus</span><b>+$${r.bonus}</b></div><div class="net"><span>Shift profit</span><b>${r.net<0?'−':'+'}$${Math.abs(r.net)}</b></div></div><div class="result-note">${r.lost} left unserved · best streak ${r.bestCombo}</div><div class="result-actions"><button class="btn" id="resultTeam">Staff & upgrades</button><button class="btn primary" id="resultNext">Next shift</button></div>`);
+ popModal('Shift '+r.day+(r.interrupted?' closed on load':' complete'),`<div class="result-stars" aria-label="${r.stars} stars">${'★'.repeat(r.stars)}<span>${'☆'.repeat(3-r.stars)}</span></div>${r.interrupted?'<p>Unpaid orders were cancelled and wages settled.</p>':''}<div class="score-row"><strong>${r.served} / ${r.target}</strong><span>paid orders</span><strong>${r.quality}%</strong><span>happiness</span><strong>${r.perfect}</strong><span>perfect pours</span></div><div class="receipt"><div><span>Sales + tips</span><b>$${r.revenue}</b></div><div><span>Supplies, biscuits + wages</span><b>−$${r.costs}</b></div><div><span>Star bonus</span><b>+$${r.bonus}</b></div><div class="net"><span>Shift profit</span><b>${r.net<0?'−':'+'}$${Math.abs(r.net)}</b></div></div><div class="result-note">${r.arrived} arrived · ${r.lost} cancelled${r.notAdmitted?' · '+r.notAdmitted+' not admitted':''}</div><div class="result-actions"><button class="btn" id="resultTeam">Staff & upgrades</button><button class="btn primary" id="resultNext">Next shift</button></div>`);
  $('resultNext').onclick=()=>{closeModal();startShift();};$('resultTeam').onclick=()=>{closeModal();toggleTeam(true);};
 }
 function prioritizeOrder(id){let c=customers.find(c=>c.id===id);if(!c||!['toSeat','waiting','queue'].includes(c.phase))return false;
@@ -2696,10 +2745,10 @@ function hireEmployee(specialty='steady'){
  const id='resident-'+(Math.max(0,...staff.map(a=>+a.id.split('-')[1]))+1),ss=shops(),sh=ss.find(s=>s.id===($('hireShop')?.value))||ss[0],p=sh.staffSpot||sh.entry||[15,21],at=nav.nearest(...p,4);
  if(at<0)return false;
  const index=staff.length,a=makeActor(id,['Jenn','Mika','Rory','Sol','Em','Alex'][index]||'Barista','barista',...nav.point(at),{shirt:swatches[(index+2)%8],hairStyle:['short','bob','ponytail','curls'][index%4],skin:skins[index%skins.length],hair:hairs[index%hairs.length],apron:'#d2c3a1',outfit:'apron'});
- a.shopId=sh.id;staff.push(a);serviceGame.employees[id]={hired:true};cafe.balance-=ShiftRules.hireCost;cafe.dirtySave=true;renderRoster();renderTeam(true);updateHUD();autosave();toast(a.name+' hired · '+sh.name);return true;
+ a.shopId=sh.id;staff.push(a);trackShiftWages();serviceGame.employees[id]={hired:true};cafe.balance-=ShiftRules.hireCost;cafe.dirtySave=true;renderRoster();renderTeam(true);updateHUD();autosave();toast(a.name+' hired · '+sh.name);return true;
 }
 function assignEmployee(id,shopId){const a=staff.find(a=>a.id===id);if(!a||!shops().some(s=>s.id===shopId))return false;cancelInteraction(a,'Reassigned',.1);a.shopId=shopId;updateHUD();autosave();return true;}
-function setDuty(id,duty){const a=staff.find(a=>a.id===id);if(!a||!['barista','resident'].includes(duty))return false;cancelInteraction(a,duty==='barista'?'Ready for orders':'Off duty',.1);a.role=duty;renderTeam(true);updateHUD();autosave();return true;}
+function setDuty(id,duty){const a=staff.find(a=>a.id===id);if(!a||!['barista','resident'].includes(duty))return false;cancelInteraction(a,duty==='barista'?'Ready for orders':'Off duty',.1);a.role=duty;trackShiftWages();renderTeam(true);updateHUD();autosave();return true;}
 function buyUpgrade(kind){const prices={boiler:90,hospitality:65};if(!Object.hasOwn(prices,kind))return false;const level=serviceGame.upgrades[kind],price=prices[kind]*(level+1);if(level>=2||cafe.balance<price)return false;
  cafe.balance-=price;serviceGame.upgrades[kind]++;cafe.dirtySave=true;renderTeam(true);updateHUD();autosave();sfx('coin');return true;
 }
@@ -2736,16 +2785,39 @@ function updateServiceHUD(){if(!$('shiftHUD'))return;
  $('shiftStats').textContent=g.mode==='shift'?g.served+' served · '+g.lost+' left':cafe.served+' served';$('goalText').textContent='';
  if(teamOpen)renderTeam();
 }
-function validateServiceSave(raw){
+function validateServiceSave(raw,account){
  if(raw===undefined)return newServiceGame();
- const obj=v=>v&&typeof v==='object'&&!Array.isArray(v);if(!obj(raw)||raw.version!==1)throw Error('Invalid service progression.');
+ const obj=v=>v&&typeof v==='object'&&!Array.isArray(v),validId=id=>/^(guest-[0-9]{4,}|legacy-(paid|cancelled|outstanding)-[1-9][0-9]*)$/.test(id);
+ if(!obj(raw)||![1,2].includes(raw.version))throw Error('Invalid service progression.');
  const next=newServiceGame();for(const k of ['day','bestStars']){if(!Number.isSafeInteger(raw[k])||raw[k]<0||raw[k]>(k==='bestStars'?3:10000))throw Error('Invalid shift '+k);next[k]=raw[k];}
  if(!obj(raw.upgrades)||!obj(raw.employees))throw Error('Invalid staff or upgrades.');
  for(const k of ['boiler','hospitality']){const v=raw.upgrades[k];if(!Number.isInteger(v)||v<0||v>2)throw Error('Invalid upgrade level.');next.upgrades[k]=v;}
- for(const [k,v]of Object.entries(raw.employees)){if(!/^resident-[1-9]\d*$/.test(k)||!obj(v)||typeof v.hired!=='boolean')throw Error('Invalid employee record.');next.employees[k]={hired:v.hired};}
- // Active guests are deliberately not persisted by this engine. Never restore a
- // timer without its orders, or re-award a prior shift's bonus after loading.
- next.day=Math.max(1,next.day);next.phase='prep';return next;
+ for(const [k,v]of Object.entries(raw.employees)){if(!/^resident-[1-9][0-9]*$/.test(k)||!obj(v)||typeof v.hired!=='boolean')throw Error('Invalid employee record.');next.employees[k]={hired:v.hired};}
+ if(!['shift','sandbox'].includes(raw.mode)||!['prep','running','closing','result','sandbox'].includes(raw.phase))throw Error('Invalid shift state.');
+ next.day=Math.max(1,next.day);if(raw.mode==='sandbox'||(raw.version===1&&raw.phase==='prep'))return next;
+ const counts=['arrived','planned','target','served','lost','combo','bestCombo','perfect'];
+ for(const k of [...counts,'elapsed','revenue','costs','happiness']){const v=raw[k];if(!Number.isFinite(v)||v<0||v>1e8||(counts.includes(k)&&(!Number.isSafeInteger(v)||v>10000)))throw Error('Invalid shift '+k);next[k]=v;}
+ if(next.happiness>next.served+1e-6)throw Error('Invalid shift happiness.');
+ const wageIds=raw.wageIds??(raw.phase==='prep'?[]:null);if(!Array.isArray(wageIds)||wageIds.length>6||new Set(wageIds).size!==wageIds.length||wageIds.some(id=>!/^resident-[1-9][0-9]*$/.test(id)))throw Error('Invalid wage obligations.');
+ next.wageIds=[...wageIds];next.phase=raw.phase;
+ if(raw.version===2){
+  if(!obj(raw.orders)||Object.keys(raw.orders).length>10000||typeof raw.interrupted!=='boolean')throw Error('Invalid order settlements.');
+  for(const [id,state]of Object.entries(raw.orders)){if(!validId(id)||!['outstanding','paid','cancelled'].includes(state))throw Error('Invalid order settlement.');next.orders[id]=state;}
+  const states=Object.values(next.orders);if(states.length!==next.arrived||states.filter(s=>s==='paid').length!==next.served||states.filter(s=>s==='cancelled').length!==next.lost)throw Error('Order totals do not match settlements.');
+  if(raw.phase==='result'&&outstandingOrders(next))throw Error('Closed shift has unpaid orders.');next.interrupted=raw.interrupted;
+ }else{
+  // Legacy saves retain aggregates but no order identities. Preserve those counts
+  // explicitly; do not invent new guests, payments or income during migration.
+  if(next.arrived<next.served+next.lost)throw Error('Invalid legacy order totals.');
+  for(const [state,n]of [['paid',next.served],['cancelled',next.lost],['outstanding',next.arrived-next.served-next.lost]])for(let i=1;i<=n;i++)next.orders['legacy-'+state+'-'+i]=state;
+ }
+ if(next.phase==='prep'){if(next.arrived||next.served||next.lost)throw Error('Preparation has active orders.');return next;}
+ // Guests remain transient. Loading an active snapshot cancels its unpaid orders
+ // and settles its saved wage obligation once, without awarding completion bonuses.
+ const unpaid=outstandingOrders(next);for(const id of Object.keys(next.orders))if(next.orders[id]==='outstanding')next.orders[id]='cancelled';
+ next.lost+=unpaid;account.lost+=unpaid;
+ if(next.phase==='result')next.lastResult=shiftReceipt(next);else settleShift(next,account,true);
+ return next;
 }
 
 /* TREE ATELIER — isolated tree-art replacement.
@@ -3057,7 +3129,7 @@ function roomContext(r){$('contextKind').textContent='ROOM · '+r.area+' m²';$(
  }host.appendChild(list);
 }
 
-window.cafeDemo={drinkOwnership,placement:validatePlacement,clearAccess,diningPair,doorClearance,roomEditor:RoomEditor,roomPlan:planRoomEdit,roomApply:applyRoomPlan,roomSelect,roomInfo,roomLinks,roomConnect,game:{get state(){return serviceGame},rules:ShiftRules,start:startShift,sandbox:enterSandbox,hire:hireEmployee,duty:setDuty,assign:assignEmployee,upgrade:buyUpgrade,prioritize:prioritizeOrder,biscuit:offerBiscuit,startPour,finishPour,pourPosition,get pour(){return pourSession},showResults:showShiftResults},artBuildId:"interaction-contacts-01",baseArtBuildId:"home-repair-14",cancelInteraction,interactionProblem,prepareImport,get reservations(){return [...seatOwners]},repairedArt:RepairedArt,characterArt:JennArt,atelierArt:AtelierArt,atelierTexture:atelierArtwork,trioArt:TrioArt,trioTexture:trioArtwork,heroArt:HeroArt,heroTexture:heroArtwork,shapeObject:furniture,modelGeometry:Geometry,signSpec:MenuBoardSpec,signTexture:menuArtwork,generate:generateLayout,audit:layoutAudit,rebuild:installLayout,openRebuild,shops,assignShops:hydrateStaff,objectAccess:accessRoute,beginUse:beginResidentUse,updateMotion,curveRoute,makeActor,poseTests:()=>motionChecks(),get model(){return model},get cafe(){return cafe},get staff(){return staff},get customers(){return customers},get rooms(){return roomData},get nav(){return nav},get renderer(){return view},get camera(){return rig},get state(){return {mode,tool,paused,speed,selected,history:history.length,renderFailed}},get preview(){return selectedPreview},tests:kernelChecks,step:dt=>stepSimulation(dt),pause:v=>{paused=v},setMode,setTool,commit,undo,redo,save:saveData,load:loadData,studio:openDesigner,applyPerson:()=>closeDesigner(true),project:(x,y,z)=>rig.project(x,y,z),seatCandidates,findStation,spawn:spawnGuest,shapeCharacter:characterShapes,focus:focusCamera,pickAt:pick,hitAt:pickHit,cameraTests:cameraChecks};
+window.cafeDemo={drinkOwnership,placement:validatePlacement,clearAccess,diningPair,doorClearance,roomEditor:RoomEditor,roomPlan:planRoomEdit,roomApply:applyRoomPlan,roomSelect,roomInfo,roomLinks,roomConnect,game:{get state(){return serviceGame},rules:ShiftRules,start:startShift,sandbox:enterSandbox,hire:hireEmployee,duty:setDuty,assign:assignEmployee,upgrade:buyUpgrade,prioritize:prioritizeOrder,biscuit:offerBiscuit,startPour,finishPour,pourPosition,get pour(){return pourSession},showResults:showShiftResults},artBuildId:"closing-accounting-01",baseArtBuildId:"home-repair-14",cancelInteraction,interactionProblem,prepareImport,get reservations(){return [...seatOwners]},repairedArt:RepairedArt,characterArt:JennArt,atelierArt:AtelierArt,atelierTexture:atelierArtwork,trioArt:TrioArt,trioTexture:trioArtwork,heroArt:HeroArt,heroTexture:heroArtwork,shapeObject:furniture,modelGeometry:Geometry,signSpec:MenuBoardSpec,signTexture:menuArtwork,generate:generateLayout,audit:layoutAudit,rebuild:installLayout,openRebuild,shops,assignShops:hydrateStaff,objectAccess:accessRoute,beginUse:beginResidentUse,updateMotion,curveRoute,makeActor,poseTests:()=>motionChecks(),get model(){return model},get cafe(){return cafe},get staff(){return staff},get customers(){return customers},get rooms(){return roomData},get nav(){return nav},get renderer(){return view},get camera(){return rig},get state(){return {mode,tool,paused,speed,selected,history:history.length,renderFailed}},get preview(){return selectedPreview},tests:kernelChecks,step:dt=>stepSimulation(dt),pause:v=>{paused=v},setMode,setTool,commit,undo,redo,save:saveData,load:loadData,studio:openDesigner,applyPerson:()=>closeDesigner(true),project:(x,y,z)=>rig.project(x,y,z),seatCandidates,findStation,spawn:spawnGuest,shapeCharacter:characterShapes,focus:focusCamera,pickAt:pick,hitAt:pickHit,cameraTests:cameraChecks};
 boot();
 initService();
 
@@ -3191,7 +3263,7 @@ function motionChecks(){let results=[],check=(name,pass)=>results.push({name,pas
     else{button('staffFocus',a.name,{x:12,y:y+16,w:110,h:44},()=>{selectPerson(a.id);focusCamera(a);});text(['idle','break'].includes(a.phase)?'':a.task||'',134,y+28,13,palette.muted,500,Math.max(0,WUI-690));sourceButton('pauseBtn',paused?'▶':'Ⅱ',{x:WUI-366,y:y+16,w:44,h:44});for(const[n,i]of[1,3,6].map((n,i)=>[n,i]))button('speed:'+n,n+'×',{x:WUI-316+i*50,y:y+16,w:44,h:44},()=>{speed=n;paused=false;updateHUD();},{active:speed===n&&!paused});sourceButton('openBtn',label,{x:WUI-152,y:y+16,w:140,h:44},{active:true});}
     const ready=availablePour();if(pourSession||ready){sourceButton('helpPour',pourSession?'Pour now':'Assist pour',{x:mobile?188:WUI-506,y:y+(mobile?10:16),w:mobile?WUI-200:132,h:44},{active:!!pourSession});}
     const activeOrders=customers.filter(c=>['toSeat','waiting','queue'].includes(c.phase));
-    if(g.mode==='shift'&&g.phase!=='prep'){const remain=Math.max(0,ShiftRules.duration-g.elapsed),clock=g.phase==='running'?Math.floor(remain/60)+':'+String(Math.ceil(remain%60)).padStart(2,'0'):g.phase==='closing'?'Closing':'Complete';panel({x:12,y:76,w:mobile?WUI-116:440,h:mobile?72:56});text(clock,24,88,20,palette.ink,650);text(g.served+'/'+g.target+' guests',mobile?112:132,94,13,palette.muted);if(!mobile){text((g.served?Math.round(g.happiness/g.served*100):100)+'% happy',232,94,13,palette.muted);text(g.perfect+'/3 pours',344,94,13,palette.muted);}else text((g.served?Math.round(g.happiness/g.served*100):100)+'% happy · '+g.perfect+'/3 pours',24,120,12,palette.muted);}
+    if(g.mode==='shift'&&g.phase!=='prep'){const remain=Math.max(0,ShiftRules.duration-g.elapsed),clock=g.phase==='running'?Math.floor(remain/60)+':'+String(Math.ceil(remain%60)).padStart(2,'0'):g.phase==='closing'?'Closing':'Complete';panel({x:12,y:76,w:mobile?WUI-116:440,h:mobile?72:56});text(clock,24,88,20,palette.ink,650);text(g.phase==='closing'?outstandingOrders()+' unpaid':g.served+'/'+g.target+' paid',mobile?112:132,94,13,palette.muted,500,mobile?WUI-240:100);if(!mobile){text((g.served?Math.round(g.happiness/g.served*100):100)+'% happy',232,94,13,palette.muted);text(g.perfect+'/3 pours',344,94,13,palette.muted);}else text((g.served?Math.round(g.happiness/g.served*100):100)+'% happy · '+g.perfect+'/3 pours',24,120,12,palette.muted);}
     if(activeOrders.length){const r={x:mobile?8:12,y:y-112,w:WUI-(mobile?16:24),h:104};panel(r);scrollArea('orders',r,offset=>{let x=r.x+8-offset;for(const c of activeOrders){const card={x,y:r.y+8,w:178,h:88};button('order:'+c.id,'',card,()=>prioritizeOrder(c.id),{active:g.priority===c.id,name:'Prioritize '+c.name+' — '+c.order.name});text(c.name,x+10,r.y+17,14,palette.ink,650,150);text(c.order.name,x+10,r.y+39,13,palette.muted,500,150);const owner=staff.find(a=>a.job===c.id),state=owner?(owner.phase==='brewing'?'Brewing':'Preparing'):c.phase==='queue'?'Needs a seat':c.phase==='toSeat'?'Seating':'Waiting';text(state,x+10,r.y+60,12,palette.muted);const pct=clamp(1-c.wait/patience(c),0,1);box({x:x+10,y:r.y+83,w:158*pct,h:3},pct<.3?'#e99a80':palette.accent,0);if(c.phase==='waiting'&&!c.biscuit&&c.wait>22)button('biscuit:'+c.id,'+22s $2',{x:x+90,y:r.y+48,w:78,h:44},()=>offerBiscuit(c.id),{size:12});x+=186;}return activeOrders.length*186+8;},'x');}
     if(pourSession){const r={x:mobile?12:WUI/2-190,y:y-174,w:mobile?WUI-24:380,h:54};panel(r);text('Stop in the green',r.x+12,r.y+7,13);box({x:r.x+12,y:r.y+32,w:r.w-24,h:8},palette.line,0);box({x:r.x+12+(r.w-24)*.42,y:r.y+29,w:(r.w-24)*.16,h:14},'#74c59e',0);box({x:r.x+12+(r.w-24)*pourPosition()-2,y:r.y+24,w:4,h:24},'#f9e3aa',0);}
   }
