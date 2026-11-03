@@ -1,9 +1,9 @@
 {
   "format": "robotlife-public-runtime/v1",
-  "title": "Robot Life: fitted object grips",
-  "sourceCommit": "cbba7429c81c52ff348dff453ec493df02d8f65d",
-  "sha256": "f360d5460d37a0b1bbb640d44b32845e74e8943e8db443e5f4ef0293597293d0",
-  "bytes": 1418716,
+  "title": "Robot Life: kitchen flow and neighborhood",
+  "sourceCommit": "5fcd68d30afb47d768a212ad592a77e05258406b",
+  "sha256": "037c499298055f4aedd1cd4ae429f9bde3504bed6e1036628b460cf6124c626a",
+  "bytes": 1420961,
   "target": "https://tront.xyz/robotlife/",
-  "scope": "First-person hand-grip correction. Compiled runtime and license notices only."
+  "scope": "Cookware retains food on rejected assembly; modeled neighborhood facades. Qualified compiled runtime and existing license notices only."
 }
