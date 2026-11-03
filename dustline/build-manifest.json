@@ -1,0 +1,150 @@
+{
+  "format_version": 2,
+  "game_version": "0.7.1",
+  "source_sha": "1e09fdc9576b2a6f72dea94b3d6b8f5c0918a65b",
+  "workflow_sha": "1e09fdc9576b2a6f72dea94b3d6b8f5c0918a65b",
+  "artifact_branch": "build/dustline-1e09fdc9576b-41592039335-1",
+  "build_run_id": "41592039335",
+  "build_run_attempt": "1",
+  "built_at_utc": "2026-11-03T07:02:19.625353+00:00",
+  "toolchain": {
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "node": "v22.23.4",
+    "npm": "10.9.9",
+    "wasm_bindgen": "wasm-bindgen 0.2.118"
+  },
+  "verification": {
+    "native_command": "cargo test --locked --lib --test free_roam_progression",
+    "native_tests": "success",
+    "javascript_syntax": "success",
+    "chrome_setup": "success",
+    "software_render": "failure",
+    "receipt_path": "qa/receipt.json",
+    "scope": "Software-render functional/visual checks; not a hardware performance or multiplayer acceptance claim."
+  },
+  "public_deployment": true,
+  "assets": [
+    {
+      "path": "index.html",
+      "bytes": 447,
+      "sha256": "234465f07632424da7a30fce0e00e7a56990711fee415c83fa8c917925fbc6e4",
+      "git_blob_sha1": "7284da59ea4e47265a5e6aad4583405b375004fb"
+    },
+    {
+      "path": "style.css",
+      "bytes": 220,
+      "sha256": "dbb78f8e1685cb5dee896df3498e9979e8f10fcb9d4eaca19919a72b8d7591c2",
+      "git_blob_sha1": "868cdfdb593a572255bbd155750b227c719e14ca"
+    },
+    {
+      "path": "main.js",
+      "bytes": 9481,
+      "sha256": "1ddb942517a25540a5ff82c2faf6056e0f6979d46a4efba4a803b16ca0737860",
+      "git_blob_sha1": "f9fc1c71be2a2500a36c215a5484f8193cdf18a9"
+    },
+    {
+      "path": "pkg/dustline.js",
+      "bytes": 78197,
+      "sha256": "c57afe016a927a881fd7f3f3616b0a5d496e2ce63d56ce3ad4dcb0e659e2933d",
+      "git_blob_sha1": "054eb2cca3cae1a6c2dda4b0b2aa927ad568812c"
+    },
+    {
+      "path": "pkg/dustline_bg.wasm",
+      "bytes": 4427970,
+      "sha256": "c64cf702cd0f5a754607f5ffe574afaffaf03f9dce2ae4c2d78374788098fc21",
+      "git_blob_sha1": "5acd91ad9a9166823462d5a944eac003dae309de"
+    },
+    {
+      "path": "vendor/network.js",
+      "bytes": 76322,
+      "sha256": "4b2b3b456c75c637373867ee1680117d994227a79afe8c2978a37204f4767aeb",
+      "git_blob_sha1": "939cd9058ead2e77bb4e96ee90e0609880ed47a4"
+    },
+    {
+      "path": "licenses/Barlow-OFL.txt",
+      "bytes": 4377,
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "git_blob_sha1": "2f22ba6ca4dbc12145ae40b14c3368f387cba0e2"
+    },
+    {
+      "path": "licenses/SimpleClouds-MIT.txt",
+      "bytes": 1066,
+      "sha256": "77112811be207deed4dccbc82f4a2bdcbfe8981b7006a3a39f579dc3874d2be2",
+      "git_blob_sha1": "691e111e1191791ced1752a003a52c6b5eea26cf"
+    }
+  ],
+  "diagnostics": [
+    {
+      "path": "qa/00-webgpu-probe.png",
+      "bytes": 3126,
+      "sha256": "93a920719fa2dd45f96d6ceea11bd7f1f73df792f1d34dde71382f2fcce85c75"
+    },
+    {
+      "path": "qa/01-free-roam-start.png",
+      "bytes": 344549,
+      "sha256": "e323873b1424d4982e39f19d1b73bc4944285fc46e7e6e8402e2d8bb34f8ea14"
+    },
+    {
+      "path": "qa/02-native-driving.png",
+      "bytes": 357712,
+      "sha256": "aa24e45d1203eb8d629ecb9902583ea66b9e98d5241c8371987666ec6581ad6c"
+    },
+    {
+      "path": "qa/03-garage.png",
+      "bytes": 180349,
+      "sha256": "b8214891353fec6e58890b87cac697ef44212ed52b34cad458e162155b480e47"
+    },
+    {
+      "path": "qa/04-motorcycle.png",
+      "bytes": 364562,
+      "sha256": "6bb4c1ad84f8426b352032c5cd433bb8ae998120fd235a4035fe2b8a000b9dd0"
+    },
+    {
+      "path": "qa/05-sustained-world.png",
+      "bytes": 352415,
+      "sha256": "d0b0c1f62177be78917f12d98ffe52542e975d6b317106eba2124aa7346fd502"
+    },
+    {
+      "path": "qa/browser.log",
+      "bytes": 4625,
+      "sha256": "4c8397b7c192cda120c093870fbdecfb2d1b715f871f31a01176d6c03efc00e2"
+    },
+    {
+      "path": "qa/receipt.json",
+      "bytes": 76246,
+      "sha256": "47dbf1d8577621a26504128c9c1c36899531e5d4297b360f683ed4aef67fb8b0"
+    }
+  ],
+  "release_acceptance": {
+    "status": "accepted_for_publication",
+    "artifact_commit": "bb9f9f0a986e826273718474422b208373a91b38",
+    "runtime_rebuilt_after_testing": false,
+    "native_tests_passed": 56,
+    "world_check": {
+      "run_id": 41592039335,
+      "completed_assertions_passed": 34,
+      "frames": 146,
+      "gpu_completions_observed": 142,
+      "cash_earned": 168,
+      "combined_job_conclusion": "failure",
+      "reason": "Original 600-second combined test budget expired in later funded purchase phase; original outcome above is preserved."
+    },
+    "garage_check": {
+      "run_id": 41594237876,
+      "harness_commit": "296ef783c86ee1015ee0406efd1e6e2979b35c50",
+      "conclusion": "success",
+      "assertions_passed": 23,
+      "real_reload_verified": true,
+      "funded_fixture_start": 1000,
+      "cash_after_reload": 340,
+      "owned_after_reload": [
+        "ram_bar",
+        "weapon_feed",
+        "offroad_tires"
+      ]
+    },
+    "scope": "Software WebGPU gameplay, garage, purchase persistence and visual checks; hardware performance and shared multiplayer combat are not claimed.",
+    "source_pull_request": "https://github.com/TrentSterling/dustline/pull/5"
+  }
+}
