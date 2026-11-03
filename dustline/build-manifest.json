@@ -1,12 +1,12 @@
 {
   "format_version": 2,
   "game_version": "0.7.2",
-  "source_sha": "cab2ccf30378a7dde3706da2cc0f81dff34a85c3",
-  "workflow_sha": "cab2ccf30378a7dde3706da2cc0f81dff34a85c3",
-  "artifact_branch": "build/dustline-cab2ccf30378-41600383087-1",
-  "build_run_id": "41600383087",
+  "source_sha": "9a188084f37c4dbc671ec8713140ac10131b7497",
+  "workflow_sha": "9a188084f37c4dbc671ec8713140ac10131b7497",
+  "artifact_branch": "build/dustline-9a188084f37c-41606669917-1",
+  "build_run_id": "41606669917",
   "build_run_attempt": "1",
-  "built_at_utc": "2026-11-03T08:12:13.292038+00:00",
+  "built_at_utc": "2026-11-03T09:22:45.075023+00:00",
   "toolchain": {
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
@@ -20,10 +20,9 @@
     "javascript_syntax": "success",
     "chrome_setup": "success",
     "software_render": "success",
-    "receipt_path": "qa/receipt.json",
-    "scope": "Software-render functional/visual checks; not a hardware performance or multiplayer acceptance claim."
+    "scope": "Software-render functional/visual checks; not a hardware performance or multiplayer acceptance claim.",
+    "diagnostics": "QA receipt and diagnostics are retained in the private build artifact, not published with the website."
   },
-  "public_deployment": true,
   "assets": [
     {
       "path": "index.html",
@@ -39,9 +38,39 @@
     },
     {
       "path": "main.js",
-      "bytes": 10744,
-      "sha256": "c035bce76e0cd5a9fd6c8c945a59df6451639eec030b1fbdb468c9fa7a85e691",
-      "git_blob_sha1": "03a9e057e5a431856eac5e32020c5abd0e51cb3c"
+      "bytes": 8173,
+      "sha256": "16426cf39a5b640252c3e88aec1948e6c95d086d714e5a08aef86954545d4248",
+      "git_blob_sha1": "c58ecfa5a5afcd2d3b1c09bde2b1c9f4a923696b"
+    },
+    {
+      "path": "audio.mjs",
+      "bytes": 5063,
+      "sha256": "79aea1e99e6301de6941334f6b45ab13d6cfb6da2a2ff946325a97f97fd25b8a",
+      "git_blob_sha1": "b92ee7b7a58b86ab842eb9ad6a4632bbb1b828a0"
+    },
+    {
+      "path": "audio/engine.ogg.b64",
+      "bytes": 31700,
+      "sha256": "d5d340b94c27f459346ef3527f00b81aa1c658509ee89d8eb04664ab66f1fb04",
+      "git_blob_sha1": "f681bc90db3a44cc14581043e590b51dc0a33f7e"
+    },
+    {
+      "path": "audio/shot.ogg.b64",
+      "bytes": 9088,
+      "sha256": "2565f88746417b5db6c3448f52ebe3eba6da808550fe262b52068d2d2b7d20aa",
+      "git_blob_sha1": "bcd7eea99131c6be62f8548820b8c991e74b31ae"
+    },
+    {
+      "path": "audio/metal.ogg.b64",
+      "bytes": 7240,
+      "sha256": "f3526d3a5aac72875556456b0f221889586d3a9d0e90d21629fd562d8e21160d",
+      "git_blob_sha1": "5b46f1da2527d0b4376588e22a8db1e5501c72de"
+    },
+    {
+      "path": "audio/PROVENANCE.md",
+      "bytes": 1834,
+      "sha256": "295ed276c3b5b8e39abaf78edc0400baa71015319217263597beb63d239c8f28",
+      "git_blob_sha1": "f6bc0909bf4818cf91820a37e4e979b98a5fba37"
     },
     {
       "path": "pkg/dustline.js",
@@ -74,47 +103,11 @@
       "git_blob_sha1": "691e111e1191791ced1752a003a52c6b5eea26cf"
     }
   ],
-  "diagnostics": [
-    {
-      "path": "qa/00-webgpu-probe.png",
-      "bytes": 1750,
-      "sha256": "6c8fc95e185061fcf4cf6cdb2a404911e35fff0eba30d72fa9e9f9243ff590ab"
-    },
-    {
-      "path": "qa/09-startup-resize.png",
-      "bytes": 246773,
-      "sha256": "3d16c10e6614f884ca00e7426ddf572300222e20b9e4d7cb2189195b813a3aa8"
-    },
-    {
-      "path": "qa/10-resize-guard.png",
-      "bytes": 188318,
-      "sha256": "1f28d331b0dca4ef683dc84618333933c1c549e32ff461979c59844415ad361a"
-    },
-    {
-      "path": "qa/11-showroom-resize.png",
-      "bytes": 122334,
-      "sha256": "f4c995c498118f82682a1a7df9db5042895b5e22f21090bfb8cf24a71c3e4a53"
-    },
-    {
-      "path": "qa/browser.log",
-      "bytes": 4556,
-      "sha256": "8948f8b817b0aa3481be610951dd9ab05801fa486bcb8cddcb07c04b63458cb1"
-    },
-    {
-      "path": "qa/receipt.json",
-      "bytes": 52201,
-      "sha256": "1ce3d0c6b11db9cd407b5677a919b5ce041cabfa8876d9aa929bfa60ee2bed6e"
-    }
-  ],
-  "release_acceptance": {
-    "status": "accepted_for_publication",
-    "artifact_commit": "991d7fdf1d508dd9c4af672873465c404ab49a0a",
-    "source_merge_commit": "c314229c81349aee01ac4e40caddfca31f87063b",
-    "runtime_rebuilt_after_testing": false,
-    "native_tests_passed": 56,
-    "resize_check": {
-      "run_id": 41600383087,
-      "scope": "Software WebGPU startup, viewport and device-pixel-ratio changes, external backing-size repair, and showroom; not a target-hardware performance or multiplayer test."
-    }
+  "deployment": {
+    "target": "TrentSterling/trentsterling.github.io master:dustline/",
+    "artifact_commit": "0695fd8a5a1ef6600cc23267cbe699117e14a7a3",
+    "source_merge_commit": "0efd0fb85aedb0f066be2735e7d00c62c5d87104",
+    "source_manifest_git_blob_sha1": "5f0760af3586b6402d947551efdc9db28f47e778",
+    "note": "Asset hashes describe exact tested artifact bytes; QA diagnostics are not deployed."
   }
 }
