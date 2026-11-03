@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
@@ -27,6 +27,8 @@ jobs:
       - name: Execute the reviewed repair and every regression check
         run: |
           export NODE_PATH="$RUNNER_TEMP/palette-browser/node_modules"
+          export THEME_BASELINE_ROOT="$RUNNER_TEMP/palette-baseline"
+          git worktree add --detach "$THEME_BASELINE_ROOT" HEAD
           python3 - <<'PY'
           from pathlib import Path
           import subprocess
