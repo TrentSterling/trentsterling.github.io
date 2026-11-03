@@ -1,0 +1,51 @@
+name: Verify isolated palette and copy repair
+on:
+  push:
+    branches: [fix/palette-and-project-copy-20261102]
+    paths: [.github/workflows/palette-copy-verify.yml]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NODE_PATH: ${{ runner.temp }}/palette-browser/node_modules
+      THEME_BROWSER_EXECUTABLE: /opt/google/chrome/chrome
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 1
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install the existing media checks' decoder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y ffmpeg
+      - name: Execute the reviewed repair and every regression check
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          lines = Path('.github/workflows/palette-copy-repair.yml').read_text().splitlines()
+          scripts = []
+          i = 0
+          while i < len(lines):
+              if lines[i] == '        run: |':
+                  i += 1
+                  block = []
+                  while i < len(lines) and (not lines[i].strip() or lines[i].startswith('          ')):
+                      block.append(lines[i][10:] if lines[i].strip() else '')
+                      i += 1
+                  scripts.append('\n'.join(block))
+              else:
+                  i += 1
+          assert len(scripts) == 6, f'Unexpected repair step count: {len(scripts)}'
+          for index, script in enumerate(scripts, 1):
+              print(f'::group::Reviewed repair step {index}', flush=True)
+              subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', script], check=True)
+              print('::endgroup::', flush=True)
+          PY
