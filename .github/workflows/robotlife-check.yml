@@ -1,0 +1,33 @@
+name: Robot Life hosted playtest
+on:
+  push:
+    branches: [master]
+    paths: ['robotlife/**', 'tools/robotlife/**', '.github/workflows/robotlife-check.yml']
+  pull_request:
+    branches: [master]
+    paths: ['robotlife/**', 'tools/robotlife/**', '.github/workflows/robotlife-check.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install playwright==1.57.0
+      - run: python -m playwright install --with-deps chromium
+      - name: Verify local hosted-path runtime
+        run: python tools/robotlife/verify.py
+      - name: Verify actual live URL after Pages deployment
+        if: github.event_name == 'push'
+        run: python tools/robotlife/verify.py --live
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: robotlife-hosted-evidence
+          path: .robotlife-evidence/
+          include-hidden-files: true
+          retention-days: 14
