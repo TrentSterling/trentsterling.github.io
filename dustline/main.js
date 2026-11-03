@@ -1,12 +1,24 @@
-import init,{boot} from './pkg/dustline.js?v=0.7.1';
+import init,{boot} from './pkg/dustline.js?v=0.7.2';
 const canvas=document.getElementById('world'),keys=new Set(),params=new URLSearchParams(location.search);
 const seed=(Number(params.get('seed'))||73421)>>>0,placeKey=`dustline-places-${seed}`;
 const careerKey='dustline-career-v1';
+const startup=window.dustlineStartup={startedUtc:new Date().toISOString(),scriptStartMs:performance.now(),phase:'loading-wasm',wasmInitMs:null,rustBootMs:null,renderer:null,firstFrameSubmittedMs:null};
+let resizePending=true,lastPixelRatio=0;
 let savedCareerRevision=-1,lastCareerSave=0,lastCashSound=0;
 let game,network,previous=0,netSend=0,audio,osc,gain,pointerActive=false,fire=false,telemetry,lastEvents,noiseBuffer,bestWritten=0;
 const frameTimes=[],errors=[];
 window.addEventListener('error',e=>errors.push(e.message));window.addEventListener('unhandledrejection',e=>errors.push(String(e.reason)));
-function resize(){const dpr=Math.min(devicePixelRatio,1.5);canvas.width=Math.round(innerWidth*dpr);canvas.height=Math.round(innerHeight*dpr);game?.resize(canvas.width,canvas.height);}
+function resize(force=false){
+ const dpr=Math.min(devicePixelRatio||1,1.5);
+ if(!force&&!resizePending&&dpr===lastPixelRatio)return;
+ resizePending=false;lastPixelRatio=dpr;
+ const width=Math.max(1,Math.round((canvas.clientWidth||innerWidth)*dpr)),height=Math.max(1,Math.round((canvas.clientHeight||innerHeight)*dpr));
+ // After boot Rust owns the backing size and every dependent render target.
+ // Notifications during its async setup are queued until boot returns.
+ if(game)game.resize(width,height);
+ else{if(canvas.width!==width)canvas.width=width;if(canvas.height!==height)canvas.height=height;}
+}
+const resizeObserver=new ResizeObserver(()=>{resizePending=true;});resizeObserver.observe(canvas);
 function audioStart(){if(audio)return;audio=new AudioContext();osc=audio.createOscillator();osc.type='sawtooth';const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=340;gain=audio.createGain();gain.gain.value=0;osc.connect(filter).connect(gain).connect(audio.destination);osc.start();}
 // Browser audio bridge. Gameplay events and counters are authored by Rust.
 function effect(kind){
@@ -43,7 +55,7 @@ function command(action){if(!game)return;if(action!=='pulse'&&action!=='chase'){
 const keyCommands={KeyG:'garage',KeyQ:'pulse',KeyN:'new-run',Escape:'menu',KeyV:'swap',KeyF:'recover',KeyE:'eject',KeyB:'bots',KeyM:'mark',KeyC:'chase',KeyO:'showroom',KeyX:'breakup',KeyT:'playback'};
 window.addEventListener('keydown',e=>{if(!game)return;if(game.text_key(e.key)){e.preventDefault();return;}if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(keyCommands[e.code]&&!e.repeat){e.preventDefault();command(keyCommands[e.code]);return;}if(game.paused)return;keys.add(e.code);audioStart();});
 window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();endPointerGesture();});
-document.addEventListener('visibilitychange',()=>{saveCareer(true);keys.clear();endPointerGesture();previous=0;});
+document.addEventListener('visibilitychange',()=>{saveCareer(true);keys.clear();endPointerGesture();previous=0;resizePending=true;});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.focus();canvas.setPointerCapture(e.pointerId);audioStart();if(!game)return;const r=canvas.getBoundingClientRect();const action=game.ui_click((e.clientX-r.left)*canvas.width/r.width,(e.clientY-r.top)*canvas.height/r.height);if(action){endPointerGesture();bridge(action);saveCareer(true);try{localStorage.setItem(placeKey,game.places_json());}catch{}return;}if(game.paused){endPointerGesture();return;}pointerActive=true;fire=(e.buttons&1)!==0;game.set_manual_aim((e.buttons&2)!==0);});
 canvas.addEventListener('pointermove',e=>{
@@ -57,15 +69,17 @@ canvas.addEventListener('pointermove',e=>{
 });
 canvas.addEventListener('pointerup',endPointerGesture);canvas.addEventListener('pointercancel',endPointerGesture);
 canvas.addEventListener('lostpointercapture',endPointerGesture);
-canvas.addEventListener('wheel',e=>{e.preventDefault();game?.orbit(0,e.deltaY*.015);},{passive:false});window.addEventListener('resize',resize);
+canvas.addEventListener('wheel',e=>{e.preventDefault();game?.orbit(0,e.deltaY*.015);},{passive:false});window.addEventListener('resize',()=>{resizePending=true;});
 function tick(now){const dt=previous?(now-previous)/1000:1/60;previous=now;frameTimes.push(dt*1000);if(frameTimes.length>600)frameTimes.shift();
+  resize();
   try{if(network)game.set_remotes(JSON.stringify(network.sample()));game.boost=keys.has('ShiftLeft')||keys.has('ShiftRight');game.firing=fire||keys.has('KeyJ');game.drive(Math.min(dt,.1),keys.has('KeyW')||keys.has('ArrowUp'),keys.has('KeyS')||keys.has('ArrowDown'),Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')),keys.has('Space'),keys.has('KeyR'));telemetry=JSON.parse(game.telemetry());}
   catch(e){errors.push(String(e));console.error(e);return;}
+  if(startup.firstFrameSubmittedMs===null){startup.firstFrameSubmittedMs=performance.now();startup.phase='running';}
   eventAudio(telemetry);saveCareer();
   if(telemetry.bestScore>bestWritten){bestWritten=telemetry.bestScore;try{const best=Number(localStorage.getItem('dustline-best-raid')||0);if(bestWritten>best)localStorage.setItem('dustline-best-raid',String(bestWritten));}catch{}}
   if(audio){osc.frequency.setTargetAtTime(30+telemetry.speed*1.2+(telemetry.boosting?35:0),audio.currentTime,.08);gain.gain.setTargetAtTime(game.paused?0:game.volume()*(keys.has('KeyW')?.6:.2),audio.currentTime,.1);}
   if(network&&now-netSend>66){netSend=now;network.send(JSON.parse(game.snapshot()));}requestAnimationFrame(tick);
 }
-try{if(!navigator.gpu)throw Error('DUSTLINE requires WebGPU.');resize();await init({module_or_path:new URL('./pkg/dustline_bg.wasm?v=0.7.1',import.meta.url)});game=await boot(canvas,seed);try{const profile=localStorage.getItem(careerKey);if(profile&&!game.load_career(profile)){localStorage.setItem(careerKey+'-unreadable-backup',profile);console.warn('Unreadable career profile backed up. Starting a new career.');}}catch(e){console.warn('Career loading unavailable:',e.message);}try{game.load_places(localStorage.getItem(placeKey)||'[]');game.best_score=Number(localStorage.getItem('dustline-best-raid')||0);}catch{}game.set_room(params.get('room')||'global');
-window.dustline={game,errors,frameTimes,command,get telemetry(){return JSON.parse(game.telemetry());},get peers(){return network?.count()||0;},join,leave};canvas.focus();requestAnimationFrame(tick);join();}
-catch(e){errors.push(String(e));console.error('DUSTLINE boot failed:',e);}
+try{if(!navigator.gpu)throw Error('DUSTLINE requires WebGPU.');resize(true);const wasmStarted=performance.now();await init({module_or_path:new URL('./pkg/dustline_bg.wasm?v=0.7.2',import.meta.url)});startup.wasmInitMs=performance.now()-wasmStarted;startup.phase='initializing-gpu-and-world';const bootStarted=performance.now();game=await boot(canvas,seed);startup.rustBootMs=performance.now()-bootStarted;startup.renderer=JSON.parse(game.startup_json());resize(true);try{const profile=localStorage.getItem(careerKey);if(profile&&!game.load_career(profile)){localStorage.setItem(careerKey+'-unreadable-backup',profile);console.warn('Unreadable career profile backed up. Starting a new career.');}}catch(e){console.warn('Career loading unavailable:',e.message);}try{game.load_places(localStorage.getItem(placeKey)||'[]');game.best_score=Number(localStorage.getItem('dustline-best-raid')||0);}catch{}game.set_room(params.get('room')||'global');
+window.dustline={game,errors,frameTimes,startup,command,get telemetry(){return JSON.parse(game.telemetry());},get peers(){return network?.count()||0;},join,leave};canvas.focus();requestAnimationFrame(tick);join();}
+catch(e){startup.phase='failed';startup.error=String(e);errors.push(String(e));console.error('DUSTLINE boot failed:',e);}
