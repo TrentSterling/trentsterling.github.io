@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
-      NODE_PATH: ${{ runner.temp }}/palette-browser/node_modules
       THEME_BROWSER_EXECUTABLE: /opt/google/chrome/chrome
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -27,6 +26,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y ffmpeg
       - name: Execute the reviewed repair and every regression check
         run: |
+          export NODE_PATH="$RUNNER_TEMP/palette-browser/node_modules"
           python3 - <<'PY'
           from pathlib import Path
           import subprocess
