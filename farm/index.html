@@ -580,6 +580,72 @@ THE SOFTWARE.
     <div id="notification"></div>
 
     <script>(() => {
+  // js/touch-camera.js
+  function installTouchCamera(surface2, { blocked: blocked2, pan, zoom: zoom2, activity = () => {
+  } }) {
+    const fingers = /* @__PURE__ */ new Map();
+    let gesture = false, excluded = false, suppress = false, previous = null;
+    const frame = () => {
+      const points = [...fingers.values()];
+      return { x: points.reduce((n, p) => n + p.x, 0) / points.length, y: points.reduce((n, p) => n + p.y, 0) / points.length, d: points.length === 2 ? Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) : 0 };
+    };
+    surface2.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "touch") {
+        suppress = false;
+        return;
+      }
+      if (!fingers.size) {
+        gesture = false;
+        excluded = false;
+        suppress = false;
+      }
+      excluded || (excluded = !!blocked2(e.clientX, e.clientY));
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY });
+      previous = frame();
+      if (fingers.size > 1) {
+        gesture = true;
+        suppress = true;
+        if (!excluded) activity();
+      }
+    }, true);
+    surface2.addEventListener("pointermove", (e) => {
+      const point = fingers.get(e.pointerId);
+      if (!point) return;
+      point.x = e.clientX;
+      point.y = e.clientY;
+      const next = frame();
+      if (!excluded && (gesture || Math.hypot(point.x - point.startX, point.y - point.startY) > 8)) {
+        gesture = true;
+        suppress = true;
+        activity();
+        pan(next.x - previous.x, next.y - previous.y);
+        if (next.d > 8 && previous.d > 8) zoom2(previous.d / next.d);
+        e.stopImmediatePropagation();
+      }
+      previous = next;
+    }, { capture: true, passive: false });
+    const end = (e) => {
+      if (!fingers.has(e.pointerId)) return;
+      const tap = e.type === "pointerup" && !excluded && !gesture && fingers.size === 1;
+      fingers.delete(e.pointerId);
+      if (e.type === "pointercancel") suppress = true;
+      previous = fingers.size ? frame() : null;
+      if (tap) {
+        suppress = true;
+        e.target.dispatchEvent(new PointerEvent("click", { bubbles: true, cancelable: true, clientX: e.clientX, clientY: e.clientY, button: 0, pointerType: "touch" }));
+      }
+    };
+    surface2.addEventListener("pointerup", end, true);
+    surface2.addEventListener("pointercancel", end, true);
+    surface2.addEventListener("click", (e) => {
+      if (suppress && e.isTrusted && (e.pointerType === "touch" || e.sourceCapabilities?.firesTouchEvents)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    }, true);
+    return { isGesturing: () => gesture && fingers.size > 0 };
+  }
+
   // node_modules/three/build/three.module.js
   /**
    * @license
@@ -20550,6 +20616,53 @@ THE SOFTWARE.
       return new _CapsuleGeometry(data.radius, data.length, data.capSegments, data.radialSegments);
     }
   };
+  var CircleGeometry = class _CircleGeometry extends BufferGeometry {
+    constructor(radius = 1, segments = 32, thetaStart = 0, thetaLength = Math.PI * 2) {
+      super();
+      this.type = "CircleGeometry";
+      this.parameters = {
+        radius,
+        segments,
+        thetaStart,
+        thetaLength
+      };
+      segments = Math.max(3, segments);
+      const indices = [];
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+      const vertex2 = new Vector3();
+      const uv = new Vector2();
+      vertices.push(0, 0, 0);
+      normals.push(0, 0, 1);
+      uvs.push(0.5, 0.5);
+      for (let s = 0, i = 3; s <= segments; s++, i += 3) {
+        const segment2 = thetaStart + s / segments * thetaLength;
+        vertex2.x = radius * Math.cos(segment2);
+        vertex2.y = radius * Math.sin(segment2);
+        vertices.push(vertex2.x, vertex2.y, vertex2.z);
+        normals.push(0, 0, 1);
+        uv.x = (vertices[i] / radius + 1) / 2;
+        uv.y = (vertices[i + 1] / radius + 1) / 2;
+        uvs.push(uv.x, uv.y);
+      }
+      for (let i = 1; i <= segments; i++) {
+        indices.push(i, i + 1, 0);
+      }
+      this.setIndex(indices);
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    }
+    copy(source) {
+      super.copy(source);
+      this.parameters = Object.assign({}, source.parameters);
+      return this;
+    }
+    static fromJSON(data) {
+      return new _CircleGeometry(data.radius, data.segments, data.thetaStart, data.thetaLength);
+    }
+  };
   var CylinderGeometry = class _CylinderGeometry extends BufferGeometry {
     constructor(radiusTop = 1, radiusBottom = 1, height = 1, radialSegments = 32, heightSegments = 1, openEnded = false, thetaStart = 0, thetaLength = Math.PI * 2) {
       super();
@@ -21916,6 +22029,67 @@ THE SOFTWARE.
     if (options.extrudePath !== void 0) data.options.extrudePath = options.extrudePath.toJSON();
     return data;
   }
+  var RingGeometry = class _RingGeometry extends BufferGeometry {
+    constructor(innerRadius = 0.5, outerRadius = 1, thetaSegments = 32, phiSegments = 1, thetaStart = 0, thetaLength = Math.PI * 2) {
+      super();
+      this.type = "RingGeometry";
+      this.parameters = {
+        innerRadius,
+        outerRadius,
+        thetaSegments,
+        phiSegments,
+        thetaStart,
+        thetaLength
+      };
+      thetaSegments = Math.max(3, thetaSegments);
+      phiSegments = Math.max(1, phiSegments);
+      const indices = [];
+      const vertices = [];
+      const normals = [];
+      const uvs = [];
+      let radius = innerRadius;
+      const radiusStep = (outerRadius - innerRadius) / phiSegments;
+      const vertex2 = new Vector3();
+      const uv = new Vector2();
+      for (let j = 0; j <= phiSegments; j++) {
+        for (let i = 0; i <= thetaSegments; i++) {
+          const segment2 = thetaStart + i / thetaSegments * thetaLength;
+          vertex2.x = radius * Math.cos(segment2);
+          vertex2.y = radius * Math.sin(segment2);
+          vertices.push(vertex2.x, vertex2.y, vertex2.z);
+          normals.push(0, 0, 1);
+          uv.x = (vertex2.x / outerRadius + 1) / 2;
+          uv.y = (vertex2.y / outerRadius + 1) / 2;
+          uvs.push(uv.x, uv.y);
+        }
+        radius += radiusStep;
+      }
+      for (let j = 0; j < phiSegments; j++) {
+        const thetaSegmentLevel = j * (thetaSegments + 1);
+        for (let i = 0; i < thetaSegments; i++) {
+          const segment2 = i + thetaSegmentLevel;
+          const a = segment2;
+          const b = segment2 + thetaSegments + 1;
+          const c = segment2 + thetaSegments + 2;
+          const d = segment2 + 1;
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+      this.setIndex(indices);
+      this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+      this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+    }
+    copy(source) {
+      super.copy(source);
+      this.parameters = Object.assign({}, source.parameters);
+      return this;
+    }
+    static fromJSON(data) {
+      return new _RingGeometry(data.innerRadius, data.outerRadius, data.thetaSegments, data.phiSegments, data.thetaStart, data.thetaLength);
+    }
+  };
   var SphereGeometry = class _SphereGeometry extends BufferGeometry {
     constructor(radius = 1, widthSegments = 32, heightSegments = 16, phiStart = 0, phiLength = Math.PI * 2, thetaStart = 0, thetaLength = Math.PI) {
       super();
@@ -24461,6 +24635,12 @@ THE SOFTWARE.
     return { triangleBudget, candidateTriangles, castTriangles, castBatches, excluded };
   }
 
+  // js/camera-framing.js
+  function cameraFraming(aspect2) {
+    const desktop = Math.max(0, Math.min(1, (aspect2 - 0.75) / 0.55));
+    return { x: 1.15 * desktop, z: -0.5, scale: Math.max(1, Math.min(1.45, 0.8 / aspect2)) };
+  }
+
   // js/renderer.js
   var curveUniforms = {
     curvature: { value: 0.022 },
@@ -24528,8 +24708,6 @@ worldPosition = curveWorldPos;
   var CAMERA_HEIGHT = 6.9;
   var CAMERA_DISTANCE = 6.15;
   var CAMERA_PITCH = -Math.atan(CAMERA_HEIGHT / CAMERA_DISTANCE);
-  var FOLLOW_FRAME_X = 1.15;
-  var FOLLOW_FRAME_Z = -0.5;
   var sunLight;
   var ambientLight;
   var hemiLight;
@@ -24680,6 +24858,17 @@ worldPosition = curveWorldPos;
   function zoomCamera(step) {
     targetZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, targetZoom + step));
   }
+  function scaleCameraZoom(ratio) {
+    targetZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, targetZoom * ratio));
+  }
+  function resetCamera() {
+    targetZoom = 1;
+    followPlayer();
+  }
+  function panCameraPixels(dx, dy) {
+    const x = window.innerWidth / 2, y = window.innerHeight / 2, a = raycastGround({ clientX: x, clientY: y }), b = raycastGround({ clientX: x + dx, clientY: y + dy });
+    if (a && b) panCamera(a.worldX - b.worldX, a.worldZ - b.worldZ);
+  }
   function setDebugCamera({ x, z, height, distance, pitch } = {}) {
     if (x != null && z != null) debugTarget = { x, z };
     if (height != null) camHeight = height;
@@ -24695,13 +24884,15 @@ worldPosition = curveWorldPos;
       zoom += (targetZoom - zoom) * (1 - Math.exp(-14 * dt));
       applyViewDistance();
     }
+    const framing = cameraFraming(camera.aspect);
     if (following && !debugTarget) {
-      freeX = targetPos.x + FOLLOW_FRAME_X;
-      freeZ = targetPos.z + FOLLOW_FRAME_Z;
+      freeX = targetPos.x + framing.x;
+      freeZ = targetPos.z + framing.z;
     }
     const fx = debugTarget ? debugTarget.x : freeX;
     const fz = debugTarget ? debugTarget.z : freeZ;
-    const dist = camDistance * zoom, hgt = camHeight * zoom;
+    const viewScale = debugTarget ? 1 : framing.scale;
+    const dist = camDistance * zoom * viewScale, hgt = camHeight * zoom * viewScale;
     const desiredX = fx;
     const desiredY = hgt;
     const desiredZ = fz + dist;
@@ -24819,184 +25010,655 @@ worldPosition = curveWorldPos;
     }
   }
 
-  // js/inventory.js
-  var ITEMS = {
-    carrot_seed: { name: "Carrot Seeds", type: "seed", cropId: "carrot", buyPrice: 5, icon: "carrot_seed" },
-    tomato_seed: { name: "Tomato Seeds", type: "seed", cropId: "tomato", buyPrice: 10, icon: "tomato_seed" },
-    potato_seed: { name: "Potato Seeds", type: "seed", cropId: "potato", buyPrice: 3, icon: "potato_seed" },
-    wheat_seed: { name: "Wheat Seeds", type: "seed", cropId: "wheat", buyPrice: 8, icon: "wheat_seed" },
-    carrot: { name: "Carrot", type: "crop", sellPrice: 15, icon: "carrot" },
-    tomato: { name: "Tomato", type: "crop", sellPrice: 25, icon: "tomato" },
-    potato: { name: "Potato", type: "crop", sellPrice: 10, icon: "potato" },
-    wheat: { name: "Wheat", type: "crop", sellPrice: 20, icon: "wheat" },
-    // --- New seeds ---
-    strawberry_seed: { name: "Strawberry Seeds", type: "seed", cropId: "strawberry", buyPrice: 7, icon: "strawberry_seed" },
-    mint_seed: { name: "Mint Seeds", type: "seed", cropId: "mint", buyPrice: 14, icon: "mint_seed" },
-    lavender_seed: { name: "Lavender Seeds", type: "seed", cropId: "lavender", buyPrice: 26, icon: "lavender_seed" },
-    tulip_seed: { name: "Tulip Bulbs", type: "seed", cropId: "tulip", buyPrice: 18, icon: "tulip_seed" },
-    sunflower_seed: { name: "Sunflower Seeds", type: "seed", cropId: "sunflower", buyPrice: 30, icon: "sunflower_seed" },
-    rose_seed: { name: "Rose Seeds", type: "seed", cropId: "rose", buyPrice: 50, icon: "rose_seed" },
-    square_watermelon_seed: { name: "Square Melon Seeds", type: "seed", cropId: "square_watermelon", buyPrice: 130, icon: "square_watermelon_seed" },
-    grape_seed: { name: "Grape Vine", type: "seed", cropId: "grape", buyPrice: 45, icon: "grape_seed" },
-    // --- Late-game premium seeds (#63) ---
-    dragonfruit_seed: { name: "Dragonfruit Cutting", type: "seed", cropId: "dragonfruit", buyPrice: 110, icon: "dragonfruit_seed" },
-    golden_pumpkin_seed: { name: "Golden Pumpkin Seeds", type: "seed", cropId: "golden_pumpkin", buyPrice: 180, icon: "golden_pumpkin_seed" },
-    // --- New crops (harvested) ---
-    strawberry: { name: "Strawberry", type: "crop", sellPrice: 18, icon: "strawberry" },
-    mint: { name: "Mint", type: "crop", sellPrice: 22, icon: "mint" },
-    lavender: { name: "Lavender", type: "crop", sellPrice: 48, icon: "lavender" },
-    tulip: { name: "Tulip", type: "crop", sellPrice: 38, icon: "tulip" },
-    sunflower: { name: "Sunflower", type: "crop", sellPrice: 70, icon: "sunflower" },
-    rose: { name: "Rose", type: "crop", sellPrice: 95, icon: "rose" },
-    square_watermelon: { name: "Square Watermelon", type: "crop", sellPrice: 300, icon: "square_watermelon" },
-    grape: { name: "Grapes", type: "crop", sellPrice: 55, icon: "grape" },
-    dragonfruit: { name: "Dragonfruit", type: "crop", sellPrice: 130, icon: "dragonfruit" },
-    // late-game (#63)
-    golden_pumpkin: { name: "Golden Pumpkin", type: "crop", sellPrice: 400, icon: "golden_pumpkin" },
-    // late-game jackpot (#63)
-    // --- Materials (gathered, sellable; reuses the 'crop' sellable bucket) ---
-    wood: { name: "Wood", type: "crop", sellPrice: 14, icon: "wood" },
-    apple: { name: "Apple", type: "crop", sellPrice: 1, icon: "apple" },
-    // fruit-tree drop, ~$1 each
-    // --- Tools / placeables (bought at shop, not sold) ---
-    sprinkler: { name: "Sprinkler", type: "tool", buyPrice: 250, icon: "sprinkler" },
-    // --- Animal produce (sellable) ---
-    egg: { name: "Egg", type: "crop", sellPrice: 16, icon: "egg" },
-    cow_milk: { name: "Cow Milk", type: "crop", sellPrice: 34, icon: "cow_milk" },
-    goat_milk: { name: "Goat Milk", type: "crop", sellPrice: 52, icon: "goat_milk" },
-    honey: { name: "Honey", type: "crop", sellPrice: 75, icon: "honey" },
-    // from beehives (#44)
-    // --- Fish (caught at the pond, #49) ---
-    minnow: { name: "Minnow", type: "crop", sellPrice: 12, icon: "minnow" },
-    trout: { name: "Trout", type: "crop", sellPrice: 30, icon: "trout" },
-    bass: { name: "Bass", type: "crop", sellPrice: 42, icon: "bass" },
-    salmon: { name: "Salmon", type: "crop", sellPrice: 60, icon: "salmon" },
-    pike: { name: "Pike", type: "crop", sellPrice: 78, icon: "pike" },
-    catfish: { name: "Catfish \u{1F431}", type: "crop", sellPrice: 55, icon: "catfish" },
-    // it has a cat face. meow.
-    bob: { name: "Bob", type: "crop", sellPrice: 40, icon: "bob" },
-    // a fish named Bob. hi Bob.
-    // --- Crafted goods (made in the Workshop, sold at market) ---
-    cheese: { name: "Goat Cheese", type: "crop", crafted: true, sellPrice: 130, icon: "cheese" },
-    sunny_jam: { name: "Sunny Jam", type: "crop", crafted: true, sellPrice: 150, icon: "sunny_jam" },
-    calm_potion: { name: "Calm Potion", type: "crop", crafted: true, sellPrice: 210, icon: "calm_potion" },
-    country_cake: { name: "Country Cake", type: "crop", crafted: true, sellPrice: 240, icon: "country_cake" },
-    perfume: { name: "Perfume", type: "crop", crafted: true, sellPrice: 300, icon: "perfume" },
-    love_potion: { name: "Love Potion", type: "crop", crafted: true, sellPrice: 280, icon: "love_potion" },
-    melon_juice: { name: "Melon Juice", type: "crop", crafted: true, sellPrice: 360, icon: "melon_juice" },
-    grand_elixir: { name: "Grand Elixir", type: "crop", crafted: true, sellPrice: 440, icon: "grand_elixir" },
-    wine: { name: "Wine", type: "crop", crafted: true, sellPrice: 220, icon: "wine" },
-    // --- Cooked meals (made in the Kitchen/Workshop, heal a lot, sell well) #50 ---
-    veggie_soup: { name: "Veggie Soup", type: "crop", crafted: true, sellPrice: 120, icon: "veggie_soup" },
-    fruit_pie: { name: "Fruit Pie", type: "crop", crafted: true, sellPrice: 160, icon: "fruit_pie" },
-    fish_stew: { name: "Fish Stew", type: "crop", crafted: true, sellPrice: 140, icon: "fish_stew" },
-    honey_cake: { name: "Honey Cake", type: "crop", crafted: true, sellPrice: 200, icon: "honey_cake" }
+  // js/gpu-ui/glyphs.js
+  var raw = {
+    a: "43 32 12 03 05 16 36 45|42 46",
+    b: "00 06|03 12 32 43 45 36 16 05",
+    c: "42 12 03 05 16 46",
+    d: "40 46|43 32 12 03 05 16 36 45",
+    e: "04 44 43 32 12 03 05 16 46",
+    f: "16 11 20 40|02 32",
+    g: "42 47 38 18|43 32 12 03 05 16 36 45",
+    h: "00 06|03 12 32 43 46",
+    i: "20 20|22 26",
+    j: "30 30|32 37 28 08",
+    k: "00 06|42 04 46",
+    l: "10 15 26 36",
+    m: "06 02 12 23 26|23 32 43 46",
+    n: "06 02|03 12 32 43 46",
+    o: "12 32 43 45 36 16 05 03 12",
+    p: "02 08|03 12 32 43 45 36 16 05",
+    q: "42 48|43 32 12 03 05 16 36 45",
+    r: "06 02|03 12 32 43",
+    s: "42 12 03 14 34 45 36 06",
+    t: "20 25 36 46|02 42",
+    u: "02 05 16 36 45|42 46",
+    v: "02 26 42",
+    w: "02 16 24 36 42",
+    x: "02 46|42 06",
+    y: "02 16 36 45|42 47 38 18",
+    z: "02 42 06 46",
+    A: "06 20 46|14 34",
+    B: "00 06 36 45 44 33 03|33 42 41 30 00",
+    C: "40 10 01 05 16 46",
+    D: "00 06 26 45 41 20 00",
+    E: "40 00 06 46|03 33",
+    F: "40 00 06|03 33",
+    G: "40 10 01 05 16 46 43 23",
+    H: "00 06|40 46|03 43",
+    I: "00 40|20 26|06 46",
+    J: "00 40 45 36 16 05",
+    K: "00 06|40 03 46",
+    L: "00 06 46",
+    M: "06 00 23 40 46",
+    N: "06 00 46 40",
+    O: "10 30 41 45 36 16 05 01 10",
+    P: "06 00 30 41 42 33 03",
+    Q: "10 30 41 45 36 16 05 01 10|24 46",
+    R: "06 00 30 41 42 33 03|23 46",
+    S: "40 10 01 02 13 33 44 45 36 06",
+    T: "00 40|20 26",
+    U: "00 05 16 36 45 40",
+    V: "00 26 40",
+    W: "00 16 23 36 40",
+    X: "00 46|40 06",
+    Y: "00 23 40|23 26",
+    Z: "00 40 06 46",
+    "0": "10 30 41 45 36 16 05 01 10|15 31",
+    "1": "11 20 26|06 46",
+    "2": "01 10 30 41 42 06 46",
+    "3": "00 30 41 42 23 44 45 36 06",
+    "4": "30 04 44|30 36",
+    "5": "40 00 03 33 44 45 36 06",
+    "6": "40 10 01 05 16 36 45 44 33 03",
+    "7": "00 40 16",
+    "8": "10 30 41 42 33 13 02 01 10|13 04 05 16 36 45 44 33",
+    "9": "43 13 02 01 10 30 41 45 36 06",
+    ".": "26 26",
+    ",": "26 17",
+    ":": "22 22|25 25",
+    ";": "22 22|25 16",
+    "-": "13 33",
+    "+": "03 43|21 25",
+    "/": "40 06",
+    "'": "20 12",
+    "!": "20 24|26 26",
+    "?": "01 10 30 41 42 23 24|26 26",
+    "(": "30 11 15 36",
+    ")": "10 31 35 16",
+    "[": "30 10 16 36",
+    "]": "10 30 36 16",
+    "=": "02 42|04 44",
+    "%": "00 11 00|40 06|35 46 35",
+    "<": "40 03 46",
+    ">": "00 43 06",
+    "_": "06 46",
+    "#": "10 16|30 36|02 42|04 44",
+    "&": "46 11 10 20 31 06 36 44",
+    "*": "21 25|03 43|01 45|41 05",
+    "|": "20 26",
+    " ": ""
   };
-  function createInventory() {
-    const items = {};
-    return {
-      add(id, qty = 1) {
-        items[id] = (items[id] || 0) + qty;
-      },
-      remove(id, qty = 1) {
-        if (!items[id] || items[id] < qty) return false;
-        items[id] -= qty;
-        if (items[id] <= 0) delete items[id];
-        return true;
-      },
-      count(id) {
-        return items[id] || 0;
-      },
-      has(id, qty = 1) {
-        return (items[id] || 0) >= qty;
-      },
-      getAll() {
-        return { ...items };
-      },
-      // For save/load
-      serialize() {
-        return { ...items };
-      },
-      load(data) {
-        Object.keys(items).forEach((k) => delete items[k]);
-        Object.assign(items, data);
+  var GLYPHS = Object.fromEntries(Object.entries(raw).map(([c, paths]) => [
+    c,
+    paths ? paths.split("|").map((p) => p.split(" ").map((pt) => [Number(pt[0]), Number(pt[1])])) : []
+  ]));
+  function cleanText(value, uppercase = true) {
+    const clean = String(value ?? "").normalize("NFKD").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[—–]/g, "-").replace(/[×]/g, "x").replace(/[→]/g, ">").replace(/[✓]/g, "OK").replace(/[·]/g, " / ").replace(/[^\x20-\x7E\n]/gu, (c) => /[\p{L}\p{N}]/u.test(c) ? "?" : "").replace(/[ \t]+/g, " ").trim();
+    return uppercase ? clean.toUpperCase() : clean;
+  }
+  function measureText(text, size = 12) {
+    return cleanText(text).length * size * 1.02;
+  }
+  function wrapText(text, maxWidth, size = 12) {
+    const limit = Math.max(1, Math.floor(maxWidth / (size * 1.02))), lines = [];
+    for (const para of cleanText(text).split("\n")) {
+      let line = "";
+      for (let word of para.split(" ")) {
+        if (line && line.length + word.length + 1 > limit) {
+          lines.push(line);
+          line = "";
+        }
+        while (word.length > limit) {
+          if (line) {
+            lines.push(line);
+            line = "";
+          }
+          lines.push(word.slice(0, limit));
+          word = word.slice(limit);
+        }
+        if (word) line += (line ? " " : "") + word;
       }
-    };
+      if (line) lines.push(line);
+    }
+    return lines;
   }
 
-  // js/seasons.js
-  var SEASONS = [
-    { name: "Spring", emoji: "\u{1F338}", growth: 1.1 },
-    { name: "Summer", emoji: "\u2600\uFE0F", growth: 1.25 },
-    { name: "Autumn", emoji: "\u{1F342}", growth: 0.9 },
-    { name: "Winter", emoji: "\u2744\uFE0F", growth: 0.55 }
-  ];
-  var SEASON_DAYS = 3;
-  function getSeason(day) {
-    const idx = Math.floor((Math.max(1, day) - 1) / SEASON_DAYS) % SEASONS.length;
-    return { ...SEASONS[idx], index: idx };
+  // js/gpu-ui/geometry.js
+  var COLORS = { ink: 3427651, paper: 16773325, cream: 16775399, leaf: 7049572, moss: 4680528, peach: 15776130, rose: 12280912, gold: 15121504, shadow: 2307884, muted: 9214070 };
+  function rgba(hex, alpha = 1) {
+    return [(hex >> 16 & 255) / 255, (hex >> 8 & 255) / 255, (hex & 255) / 255, alpha];
   }
-
-  // js/state.js
-  var inventory = createInventory();
-  var barnStorage = createInventory();
-  var MAX_HEALTH = 100;
-  var HEALTH_DRAIN = 0.35;
-  var DAY_LENGTH = 300;
-  var AFK_MS = 7e3;
-  var PAN_SCALE = 0.03;
-  var BARN_UPGRADE_COSTS = [150, 300, 600, 1200];
-  var G = {
-    // Core save-model primitives
-    coins: 100,
-    day: 1,
-    gameTime: 0,
-    playerName: "Jenn",
-    playerGender: "girl",
-    health: 100,
-    season: getSeason(1),
-    barnLevel: 1,
-    barnCapacity: 50,
-    // derived; recalcBarnCapacity() overwrites
-    // Inventory singletons (also exported as const above)
-    inventory,
-    barnStorage,
-    // Selection / pending-action / input flags
-    selectedSlot: 0,
-    pendingAction: null,
-    // { x, z, tool, auto? }
-    pendingRoute: null,
-    // { tx, tz }
-    lastInputAt: performance.now(),
-    autoActive: false,
-    autoCheckTimer: 0,
-    namePromptOpen: false,
-    autoSkip: /* @__PURE__ */ new Set(),
-    // auto-farm tiles unreachable this AFK session
-    // Throttled-UI / step / health-UI timers
-    _uiDirty: true,
-    _uiTimer: 0,
-    stepTimer: 0,
-    healthUiTimer: 0,
-    buffHudTimer: 0,
-    // Fishing
-    fishing: null,
-    // { state:'cast'|'bite', timer }
-    // Loop scratch / timer handles
-    saveTimer: null,
-    lastTime: performance.now(),
-    _sysCtx: null,
-    // Drag-to-pan camera state
-    dragDown: false,
-    dragMoved: false,
-    dragLastX: 0,
-    dragLastY: 0,
-    dragStartX: 0,
-    dragStartY: 0,
-    // Lazy DOM nodes (reassigned from null)
-    autoBadgeEl: null,
-    buffBarEl: null
+  var GeometryBatch = class {
+    constructor({ atlas = false } = {}) {
+      this.atlas = atlas;
+      this.positions = [];
+      this.colors = [];
+      this.hits = [];
+      this.labels = [];
+    }
+    vertex(x, y, c) {
+      this.positions.push(x, y, 0);
+      this.colors.push(...c);
+    }
+    tri(a, b, c, color, alpha = 1) {
+      const tint = rgba(color, alpha);
+      for (const p of [a, b, c]) this.vertex(p[0], p[1], tint);
+    }
+    rect(x, y, w, h, color, alpha = 1) {
+      this.tri([x, y], [x + w, y], [x, y + h], color, alpha);
+      this.tri([x + w, y], [x + w, y + h], [x, y + h], color, alpha);
+    }
+    disc(x, y, r, color, alpha = 1) {
+      for (let i = 0; i < 10; i++) {
+        let a = i * Math.PI / 5, b = (i + 1) * Math.PI / 5;
+        this.tri([x, y], [x + Math.cos(a) * r, y + Math.sin(a) * r], [x + Math.cos(b) * r, y + Math.sin(b) * r], color, alpha);
+      }
+    }
+    line(x1, y1, x2, y2, width, color, alpha = 1) {
+      const dx = x2 - x1, dy = y2 - y1, n = Math.hypot(dx, dy) || 1, nx = -dy / n, ny = dx / n, r = width / 2, fringe = 0.8;
+      const core = rgba(color, alpha), edge = rgba(color, 0), points = [[x1 + nx * r, y1 + ny * r], [x2 + nx * r, y2 + ny * r], [x2 - nx * r, y2 - ny * r], [x1 - nx * r, y1 - ny * r]];
+      this.tri(points[0], points[1], points[2], color, alpha);
+      this.tri(points[0], points[2], points[3], color, alpha);
+      for (const sign2 of [-1, 1]) {
+        const a = [x1 + nx * r * sign2, y1 + ny * r * sign2], b = [x2 + nx * r * sign2, y2 + ny * r * sign2], c = [x2 + nx * (r + fringe) * sign2, y2 + ny * (r + fringe) * sign2], d = [x1 + nx * (r + fringe) * sign2, y1 + ny * (r + fringe) * sign2];
+        for (const [p, t2] of [[a, core], [b, core], [c, edge], [a, core], [c, edge], [d, edge]]) this.vertex(p[0], p[1], t2);
+      }
+      this.softDisc(x1, y1, r, color, alpha, fringe);
+      this.softDisc(x2, y2, r, color, alpha, fringe);
+    }
+    softDisc(x, y, r, color, alpha = 1, fringe = 0.8) {
+      const core = rgba(color, alpha), edge = rgba(color, 0);
+      for (let i = 0; i < 12; i++) {
+        const a = i * Math.PI / 6, b = (i + 1) * Math.PI / 6, p = [x + Math.cos(a) * r, y + Math.sin(a) * r], q = [x + Math.cos(b) * r, y + Math.sin(b) * r], po = [x + Math.cos(a) * (r + fringe), y + Math.sin(a) * (r + fringe)], qo = [x + Math.cos(b) * (r + fringe), y + Math.sin(b) * (r + fringe)];
+        this.tri([x, y], p, q, color, alpha);
+        for (const [v, c] of [[p, core], [q, core], [qo, edge], [p, core], [qo, edge], [po, edge]]) this.vertex(v[0], v[1], c);
+      }
+    }
+    roundRect(x, y, w, h, r, color, alpha = 1) {
+      r = Math.max(0, Math.min(r, w / 2, h / 2));
+      this.rect(x + r, y, w - 2 * r, h, color, alpha);
+      this.rect(x, y + r, w, h - 2 * r, color, alpha);
+      for (const [px2, py2] of [[x + r, y + r], [x + w - r, y + r], [x + r, y + h - r], [x + w - r, y + h - r]]) this.disc(px2, py2, r, color, alpha);
+    }
+    panel(x, y, w, h, color = COLORS.paper) {
+      this.roundRect(x + 3, y + 5, w, h, 12, COLORS.shadow, 0.22);
+      this.roundRect(x, y, w, h, 12, COLORS.ink);
+      this.roundRect(x + 2, y + 2, w - 4, h - 4, 10, color);
+    }
+    text(text, x, y, size = 12, color = COLORS.ink, mixedCase = false) {
+      const value = cleanText(text, !mixedCase);
+      this.labels.push({ text: value, x, y, size, width: measureText(value, size), height: size, color });
+      if (this.atlas) return measureText(value, size);
+      let cx = x;
+      for (const c of value) {
+        for (const path2 of GLYPHS[c] || GLYPHS["?"]) {
+          if (path2.length === 1) this.disc(cx + path2[0][0] * size / 6, y + path2[0][1] * size / 6, size * 0.07, color);
+          for (let i = 1; i < path2.length; i++) {
+            const p = path2[i - 1], q = path2[i];
+            this.line(cx + p[0] * size / 6, y + p[1] * size / 6, cx + q[0] * size / 6, y + q[1] * size / 6, Math.max(1.6, size * 0.2), color);
+          }
+        }
+        cx += size * 1.02;
+      }
+      return cx - x;
+    }
+    paragraph(text, x, y, width, size = 12, color = COLORS.ink, lineHeight = size * 1.65) {
+      const lines = wrapText(text, width, size);
+      lines.forEach((l, i) => this.text(l, x, y + i * lineHeight, size, color));
+      return lines.length * lineHeight;
+    }
+    button(id, label, x, y, w, h, action, { selected: selected2 = false, disabled = false, size = 12 } = {}) {
+      this.roundRect(x, y, w, h, 7, selected2 ? COLORS.moss : disabled ? 14013369 : COLORS.cream);
+      this.line(x + 8, y + h - 1, x + w - 8, y + h - 1, 2, selected2 ? COLORS.gold : COLORS.peach);
+      const longest = Math.max(...cleanText(label).split(" ").map((s) => s.length));
+      if (longest <= 8) size = Math.min(size, (w - 18) / (longest * 1.02));
+      const lines = wrapText(label, w - 18, size);
+      const lineH = size * 1.55;
+      lines.forEach((l, i) => this.text(l, x + (w - measureText(l, size)) / 2, y + (h - lines.length * lineH) / 2 + i * lineH + size * 0.25, size, selected2 ? COLORS.cream : disabled ? COLORS.muted : COLORS.ink));
+      this.hits.push({ id, label: cleanText(label), x, y, w, h, action, disabled });
+    }
+    hit(x, y) {
+      return hitTest(this.hits, x, y);
+    }
   };
+  function hitTest(hits, x, y) {
+    for (let i = hits.length - 1; i >= 0; i--) {
+      const h = hits[i];
+      if (x >= h.x && x < h.x + h.w && y >= h.y && y < h.y + h.h) return h;
+    }
+    return null;
+  }
+
+  // js/presentation/task-markers.js
+  function createTaskMarkers() {
+    const root = new Group();
+    root.name = "task-targets";
+    scene.add(root);
+    const ink = applyCurvature(new MeshBasicMaterial({ color: 3427651, side: DoubleSide }));
+    const waiting = applyCurvature(new MeshBasicMaterial({ color: 11658676, side: DoubleSide }));
+    const active5 = applyCurvature(new MeshBasicMaterial({ color: 16765815, side: DoubleSide }));
+    const ring = new RingGeometry(0.39, 0.46, 24), disc = new CircleGeometry(0.17, 20);
+    const markers = Array.from({ length: 11 }, (_, i) => {
+      const group = new Group(), edge = new Mesh(ring, waiting), badge = new Mesh(disc, waiting);
+      edge.rotation.x = badge.rotation.x = -Math.PI / 2;
+      edge.position.y = 0.115;
+      badge.position.set(0.27, 0.14, 0.27);
+      const batch = new GeometryBatch();
+      batch.text(String(i + 1), 0, 0, 12);
+      const w = batch.labels[0].width;
+      const vertices = [];
+      for (let j = 0; j < batch.positions.length; j += 3) vertices.push((batch.positions[j] - w / 2) * 0.018 + 0.27, 0.145, (batch.positions[j + 1] - 6) * 0.018 + 0.27);
+      const geometry2 = new BufferGeometry();
+      geometry2.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+      group.add(edge, badge, new Mesh(geometry2, ink));
+      group.visible = false;
+      root.add(group);
+      return { group, edge, badge };
+    });
+    let key3 = "";
+    const stats = { updates: 0, count: 0 };
+    return { stats, update(tasks) {
+      const next = tasks.map((t2) => `${t2.x},${t2.z},${t2.active}`).join(";");
+      if (next === key3) return;
+      key3 = next;
+      stats.updates++;
+      stats.count = tasks.length;
+      markers.forEach((m, i) => {
+        const t2 = tasks[i];
+        m.group.visible = !!t2;
+        if (t2) {
+          m.group.position.set(t2.x, 0, t2.z);
+          m.edge.material = m.badge.material = t2.active ? active5 : waiting;
+        }
+      });
+    } };
+  }
+
+  // js/presentation/contact-shadow.js
+  var material = null;
+  var geometry = null;
+  function contactShadowResources() {
+    if (!material) {
+      const size = 64, pixels = new Uint8Array(size * size * 4);
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+        const d = Math.hypot(x - 31.5, y - 31.5) / 31.5, a = Math.max(0, 1 - d);
+        pixels.set([54, 65, 40, Math.round(a * a * 58)], (y * size + x) * 4);
+      }
+      const texture = new DataTexture(pixels, size, size, RGBAFormat);
+      texture.colorSpace = SRGBColorSpace;
+      texture.magFilter = LinearFilter;
+      texture.minFilter = LinearFilter;
+      texture.needsUpdate = true;
+      material = applyCurvature(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
+      geometry = new PlaneGeometry(1, 1, 2, 2);
+      geometry.rotateX(-Math.PI / 2);
+    }
+    return { material, geometry };
+  }
+  function contactShadow(width = 1, depth = width, y = 0.082) {
+    const r = contactShadowResources(), mesh4 = new Mesh(r.geometry, r.material);
+    mesh4.scale.set(width, 1, depth);
+    mesh4.position.y = y;
+    mesh4.renderOrder = 2;
+    mesh4.userData.sharedPresentationResource = true;
+    return mesh4;
+  }
+
+  // js/presentation/farmer-rig.js
+  var UP = new Vector3(0, 1, 0);
+  var direction = new Vector3();
+  var pole = new Vector3();
+  var bend = new Vector3();
+  var reach = new Vector3();
+  var outlet = new Vector3();
+  var dropMatrix = new Matrix4();
+  function solveArm(shoulder, target2, side, elbow, hand, upper = 0.18, lower = 0.19) {
+    direction.subVectors(target2, shoulder);
+    const requested = direction.length(), distance = MathUtils.clamp(requested, 0.035, upper + lower - 8e-3);
+    if (requested < 1e-8) direction.set(0, -1, 0);
+    else direction.divideScalar(requested);
+    hand.copy(shoulder).addScaledVector(direction, distance);
+    pole.set(side, 0, -0.65);
+    bend.copy(pole).addScaledVector(direction, -pole.dot(direction));
+    if (bend.lengthSq() < 1e-8) bend.crossVectors(direction, UP);
+    bend.normalize();
+    const along = (upper * upper - lower * lower + distance * distance) / (2 * distance);
+    elbow.copy(shoulder).addScaledVector(direction, along).addScaledVector(bend, Math.sqrt(Math.max(0, upper * upper - along * along)));
+  }
+  function between(mesh4, a, b) {
+    direction.subVectors(b, a);
+    mesh4.position.copy(a).add(b).multiplyScalar(0.5);
+    mesh4.scale.y = direction.length();
+    mesh4.quaternion.setFromUnitVectors(UP, direction.normalize());
+  }
+  function createFarmerRig(torso2, held) {
+    const material3 = curvedMaterial({ color: 15909532 }), sleeve = curvedMaterial({ color: 15255445 });
+    const limb = new CylinderGeometry(0.043, 0.048, 1, 7), handGeo = new SphereGeometry(0.053, 8, 6);
+    const arms = [-1, 1].map((side) => {
+      const upper = new Mesh(limb, sleeve), lower = new Mesh(limb, material3), palm = new Mesh(handGeo, material3);
+      upper.name = `upper-arm-${side}`;
+      lower.name = `forearm-${side}`;
+      palm.name = `hand-${side}`;
+      torso2.add(upper, lower, palm);
+      return { side, upper, lower, palm, shoulder: new Vector3(side * 0.19, 0.59, 0), target: new Vector3(), elbow: new Vector3(), hand: new Vector3() };
+    });
+    const water = new InstancedMesh(new SphereGeometry(0.014, 5, 4), curvedMaterial({ color: 7390688 }), 7);
+    water.name = "farmer-water-stream";
+    water.visible = false;
+    water.frustumCulled = false;
+    torso2.parent?.add(water);
+    return { torso: torso2, held, arms, water };
+  }
+  function poseFarmer(rig, { tool = "move", phase = -1, time = 0, walking = false, walkPhase = time * 10 } = {}) {
+    const active5 = phase >= 0 && phase <= 1, e = active5 ? Math.sin(Math.PI * phase) ** 2 : 0;
+    const reaching = tool === "hand" || tool.endsWith("_seed"), swing = tool === "hoe" || tool === "axe";
+    rig.torso.rotation.x = e * (reaching ? 0.3 : swing ? 0.17 : 0.1);
+    rig.torso.position.y = -e * (reaching ? 0.1 : 0.025);
+    for (let i = 1; i >= 0; i--) {
+      const arm = rig.arms[i];
+      const right = arm.side === 1;
+      arm.target.set(arm.side * 0.235, 0.34, 0.075 + (walking ? Math.sin(walkPhase + arm.side * 1.57) * 0.065 : 0));
+      if (right && tool !== "move") arm.target.set(0.23, 0.39, 0.14);
+      if (active5) {
+        if (tool === "water") arm.target.lerp(reach.set(arm.side * 0.17, 0.42, right ? 0.3 : 0.23), e);
+        else if (swing && right) arm.target.set(0.1 - 0.06 * e, 0.43 + 0.05 * e, 0.12 - 0.02 * e);
+        else if (reaching) arm.target.lerp(reach.set(arm.side * 0.19, right ? 0.47 : 0.24, right ? 0.17 : 0.31), e);
+      }
+      if (swing && right) arm.target.set(0.1 - 0.06 * e, 0.43 + 0.05 * e, 0.12 - 0.02 * e);
+      if (swing && !right) {
+        rig.held.updateMatrix();
+        arm.target.set(0, 0, 0.18).applyMatrix4(rig.held.matrix);
+      }
+      solveArm(arm.shoulder, arm.target, arm.side, arm.elbow, arm.hand);
+      if (right) {
+        rig.held.position.copy(arm.hand);
+        rig.held.rotation.set(swing ? -1.1 + e * (tool === "hoe" ? 1.72 : 1.65) : tool === "water" ? e * 0.48 : 0, swing ? -0.65 : 0, 0);
+      }
+      between(arm.upper, arm.shoulder, arm.elbow);
+      between(arm.lower, arm.elbow, arm.hand);
+      arm.palm.position.copy(arm.hand);
+    }
+    rig.held.position.copy(rig.arms[1].hand);
+    rig.held.userData.secondaryGripError = swing ? rig.arms[0].hand.distanceTo(rig.arms[0].target) : 0;
+    rig.held.userData.gripError = rig.held.position.distanceTo(rig.arms[1].hand);
+    rig.water.visible = active5 && tool === "water" && e > 0.25;
+    if (rig.water.visible) {
+      rig.held.updateMatrix();
+      rig.torso.updateMatrix();
+      outlet.set(0, -0.055, 0.35).applyMatrix4(rig.held.matrix).applyMatrix4(rig.torso.matrix);
+      for (let i = 0; i < 7; i++) {
+        const u = (i / 7 + time * 1.8) % 1;
+        dropMatrix.makeScale(0.75, 1.5, 0.75);
+        dropMatrix.setPosition(outlet.x, outlet.y * (1 - u) + 0.015 * u, outlet.z + 0.14 * u);
+        rig.water.setMatrixAt(i, dropMatrix);
+      }
+      rig.water.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  // js/presentation/farmer-gait.js
+  var UP2 = new Vector3(0, 1, 0);
+  var axis = new Vector3();
+  var bend2 = new Vector3();
+  var target = new Vector3();
+  var inverse = new Matrix4();
+  var WALK_STRIDE = 1.008;
+  var SOLE = 0.075;
+  var BOOT_HALF = 0.055;
+  var STANCE_TRAVEL = 0.4;
+  var SWING_LIMIT = 0.1;
+  var SUPPORT_RECOVERY = 0.035;
+  function segment(mesh4, a, b) {
+    axis.subVectors(b, a);
+    mesh4.position.copy(a).add(b).multiplyScalar(0.5);
+    mesh4.scale.y = axis.length();
+    mesh4.quaternion.setFromUnitVectors(UP2, axis.normalize());
+  }
+  function solveLeg(hip, ankle, side, knee, foot) {
+    axis.subVectors(ankle, hip);
+    const length = axis.length(), d = MathUtils.clamp(length, 0.04, 0.429);
+    if (length < 1e-8) axis.set(0, -1, 0);
+    else axis.divideScalar(length);
+    foot.copy(hip).addScaledVector(axis, d);
+    bend2.set(side * 0.12, 0, 1).addScaledVector(axis, -axis.dot(target.set(side * 0.12, 0, 1))).normalize();
+    const a = (0.21 * 0.21 - 0.22 * 0.22 + d * d) / (2 * d);
+    knee.copy(hip).addScaledVector(axis, a).addScaledVector(bend2, Math.sqrt(Math.max(0, 0.21 * 0.21 - a * a)));
+  }
+  function createFarmerGait(root, torso2) {
+    const cloth = curvedMaterial({ color: 8414551 }), leather = curvedMaterial({ color: 7360826 });
+    const bone = new CylinderGeometry(0.055, 0.06, 1, 8), bootGeo = new SphereGeometry(0.085, 10, 7);
+    const legs = [-1, 1].map((side) => {
+      const upper = new Mesh(bone, cloth), lower = new Mesh(bone, cloth), boot = new Mesh(bootGeo, leather);
+      boot.scale.set(0.9, BOOT_HALF / 0.085, 1.4);
+      upper.name = `thigh-${side}`;
+      lower.name = `shin-${side}`;
+      boot.name = `boot-${side}`;
+      root.add(upper, lower, boot);
+      return { side, upper, lower, boot, hip: new Vector3(), knee: new Vector3(), ankle: new Vector3(), foot: new Vector3(), world: new Vector3(), from: new Vector3(), phase: side < 0 ? 0.25 : 0.75, swing: false, start: 0.5, contact: true, settling: false };
+    });
+    return { root, torso: torso2, legs, distance: 0, initialized: false, settle: null, slip: 0 };
+  }
+  function neutral(gait2, leg, out, forward = 0) {
+    const yaw = gait2.root.rotation.y, s = Math.sin(yaw), c = Math.cos(yaw);
+    return out.set(gait2.x + c * leg.side * 0.09 * 0.85 + Math.sin(gait2.travelYaw) * forward, SOLE + BOOT_HALF * 0.85, gait2.z - s * leg.side * 0.09 * 0.85 + Math.cos(gait2.travelYaw) * forward);
+  }
+  function resetFarmerGait(gait2) {
+    gait2.distance = 0;
+    gait2.cycle = 0;
+    gait2.stride = 0.8;
+    gait2.duty = 0.5;
+    gait2.settle = null;
+    gait2.initialized = true;
+    gait2.yaw = gait2.root.rotation.y;
+    gait2.x = gait2.root.position.x;
+    gait2.z = gait2.root.position.z;
+    gait2.travelYaw = gait2.yaw;
+    for (const leg of gait2.legs) {
+      neutral(gait2, leg, leg.world);
+      leg.from.copy(leg.world);
+      leg.phase = leg.side < 0 ? 0.25 : 0.75;
+      leg.stride = 0.8;
+      leg.duty = 0.5;
+      leg.swing = false;
+      leg.contact = true;
+      leg.contactId = 0;
+      leg.settling = false;
+      leg.yaw = gait2.yaw;
+      leg.fromYaw = leg.yaw;
+    }
+  }
+  function gaitProfile(speed2) {
+    const stride = 0.8 + MathUtils.clamp(speed2 - 2.4, 0, 5.6) * 0.08;
+    return { stride, duty: STANCE_TRAVEL / stride };
+  }
+  function advanceFeet(gait2, distance, dt, energy) {
+    const yaw = gait2.travelYaw;
+    const [left, right] = gait2.legs;
+    const progress2 = (l) => (l.phase - l.start) / (1 - l.start);
+    const support = !left.contact && !right.contact ? progress2(left) >= progress2(right) ? left : right : null;
+    for (const leg of gait2.legs) {
+      const travelled = leg.phase * leg.stride + distance;
+      let p = travelled / leg.stride;
+      leg.settling = false;
+      const recovery = Math.min(SWING_LIMIT, STANCE_TRAVEL / Math.max(1, gait2.speed) * 0.85);
+      if (!leg.contact && leg.swing) p = Math.max(p, leg.phase + dt * (1 - leg.start) / (leg === support ? SUPPORT_RECOVERY : recovery));
+      if (p >= 1) {
+        const remaining = Math.max(0, travelled - leg.stride);
+        leg.stride = gait2.stride;
+        leg.duty = gait2.duty;
+        p = remaining / leg.stride;
+        neutral(gait2, leg, leg.world, STANCE_TRAVEL / 2 - remaining);
+        leg.yaw = yaw;
+        leg.contact = true;
+        leg.contactId++;
+        leg.swing = false;
+      }
+      if (leg.contact && (p >= leg.duty || contactReach(gait2, leg) > 0.418)) {
+        p = Math.max(p, leg.duty);
+        leg.from.copy(leg.world);
+        leg.fromYaw = leg.yaw;
+        leg.start = p;
+        leg.swing = true;
+        leg.contact = false;
+      }
+      leg.phase = p;
+      if (!leg.contact) {
+        if (!leg.swing) {
+          leg.from.copy(leg.world);
+          leg.fromYaw = leg.yaw;
+          leg.start = p;
+          leg.swing = true;
+        }
+        const u = MathUtils.clamp((p - leg.start) / (1 - leg.start), 0, 1), smooth = u * u * (3 - 2 * u);
+        neutral(gait2, leg, target, STANCE_TRAVEL / 2);
+        leg.world.lerpVectors(leg.from, target, smooth);
+        leg.world.y += Math.sin(Math.PI * u) * (0.07 + 0.025 * energy);
+        leg.yaw = leg.fromYaw + Math.atan2(Math.sin(yaw - leg.fromYaw), Math.cos(yaw - leg.fromYaw)) * smooth;
+      }
+    }
+  }
+  function contactReach(gait2, leg) {
+    const yaw = gait2.root.rotation.y, s = Math.sin(yaw), c = Math.cos(yaw), dx = leg.world.x - gait2.x, dz = leg.world.z - gait2.z, scale = gait2.root.scale;
+    target.set((c * dx - s * dz) / scale.x, (leg.world.y - gait2.root.position.y) / scale.y, (s * dx + c * dz) / scale.z);
+    return target.distanceTo(leg.hip);
+  }
+  function poseFarmerGait(gait2, { distance = 0, dt = 0, walking = false, energy = 1 } = {}) {
+    if (!gait2.initialized) resetFarmerGait(gait2);
+    gait2.distance += distance;
+    const moving2 = distance > 1e-7;
+    if (moving2) {
+      gait2.speed = dt > 0 ? distance / dt : 5;
+      const profile = gaitProfile(gait2.speed);
+      gait2.stride = profile.stride;
+      gait2.duty = profile.duty;
+      gait2.cycle += distance / gait2.stride;
+    }
+    if (moving2) {
+      gait2.torso.position.y += Math.sin(gait2.cycle * Math.PI * 2) ** 2 * 0.012;
+      gait2.torso.rotation.z = Math.sin(gait2.cycle * Math.PI * 2) * 0.018;
+    } else gait2.torso.rotation.z = 0;
+    gait2.torso.updateMatrix();
+    for (const leg of gait2.legs) leg.hip.set(leg.side * 0.09, 0.36, 0).applyMatrix4(gait2.torso.matrix);
+    if (moving2) {
+      gait2.settle = null;
+      gait2.travelYaw = Math.atan2(gait2.root.position.x - gait2.x, gait2.root.position.z - gait2.z);
+      for (const leg of gait2.legs) if (leg.settling) {
+        leg.phase = leg.duty;
+        leg.start = leg.phase;
+        leg.from.copy(leg.world);
+        leg.fromYaw = leg.yaw;
+        leg.swing = true;
+        leg.contact = false;
+      }
+      const startX = gait2.x, startZ = gait2.z, steps = Math.max(1, Math.ceil(distance / 0.025), Math.ceil(dt / 8e-3));
+      for (let i = 1; i <= steps; i++) {
+        gait2.x = MathUtils.lerp(startX, gait2.root.position.x, i / steps);
+        gait2.z = MathUtils.lerp(startZ, gait2.root.position.z, i / steps);
+        advanceFeet(gait2, distance / steps, dt / steps, energy);
+      }
+    } else {
+      gait2.x = gait2.root.position.x;
+      gait2.z = gait2.root.position.z;
+      gait2.travelYaw = gait2.root.rotation.y;
+      for (const leg of gait2.legs) if (leg.contact && contactReach(gait2, leg) > 0.418) {
+        leg.contact = false;
+        leg.swing = true;
+      }
+      if (!gait2.settle) {
+        const leg = gait2.legs.find((l) => !l.contact) || gait2.legs.find((l) => l.world.distanceTo(neutral(gait2, l, target)) > 0.012 || Math.abs(Math.sin(l.yaw - gait2.root.rotation.y)) > 0.05);
+        if (leg) {
+          gait2.settle = { leg, t: 0, duration: gait2.legs.some((l) => l.contact) ? 0.16 : SUPPORT_RECOVERY, lift: leg.world.y > SOLE + BOOT_HALF * 0.85 + 2e-3 ? 0 : 0.065 };
+          leg.from.copy(leg.world);
+          leg.fromYaw = leg.yaw;
+          leg.settling = true;
+          leg.contact = false;
+        }
+      }
+      if (gait2.settle) {
+        const { leg, duration, lift } = gait2.settle, u = Math.min(1, (gait2.settle.t += dt) / duration);
+        neutral(gait2, leg, target);
+        leg.world.lerpVectors(leg.from, target, u * u * (3 - 2 * u));
+        leg.world.y += Math.sin(Math.PI * u) * lift;
+        leg.yaw = leg.fromYaw + Math.atan2(Math.sin(gait2.root.rotation.y - leg.fromYaw), Math.cos(gait2.root.rotation.y - leg.fromYaw)) * u;
+        if (u === 1) {
+          leg.settling = false;
+          leg.contact = true;
+          leg.contactId++;
+          gait2.settle = null;
+        }
+      }
+      for (const leg of gait2.legs) if (!leg.settling) {
+        leg.swing = false;
+        leg.phase = leg.side < 0 ? leg.duty / 2 : leg.duty / 2 + 0.5;
+      }
+    }
+    gait2.root.updateMatrix();
+    inverse.copy(gait2.root.matrix).invert();
+    gait2.torso.updateMatrix();
+    gait2.slip = 0;
+    for (const leg of gait2.legs) {
+      leg.hip.set(leg.side * 0.09, 0.36, 0).applyMatrix4(gait2.torso.matrix);
+      leg.ankle.copy(leg.world).applyMatrix4(inverse);
+      solveLeg(leg.hip, leg.ankle, leg.side, leg.knee, leg.foot);
+      segment(leg.upper, leg.hip, leg.knee);
+      segment(leg.lower, leg.knee, leg.foot);
+      leg.boot.position.copy(leg.foot);
+      leg.boot.rotation.y = leg.yaw - gait2.root.rotation.y;
+      leg.boot.rotation.x = leg.contact ? 0 : -0.2 * Math.sin(Math.PI * Math.max(0, (leg.phase - leg.duty) / (1 - leg.duty)));
+      if (leg.contact) gait2.slip = Math.max(gait2.slip, leg.foot.distanceTo(leg.ankle) * gait2.root.scale.x);
+    }
+  }
+
+  // js/village-layouts.js
+  var box = (x, z, w, h) => Array.from({ length: w * h }, (_, i) => [x + i % w, z + Math.floor(i / w)]);
+  function layout(id, type, anchor, cells, access, rot = 0) {
+    const xs = cells.map((c) => c[0]), zs = cells.map((c) => c[1]);
+    return { id, name: type, type, anchor, cells, access, clearance: access, solid: true, rot, halfExtent: cells.length === 1 ? 0.48 : 0.96, center: { x: (Math.min(...xs) + Math.max(...xs)) / 2, z: (Math.min(...zs) + Math.max(...zs)) / 2 } };
+  }
+  var VILLAGE_LAYOUTS = {
+    barn: layout("courtyard2x2", "barn", { x: 29, z: 21 }, box(28, 21, 2, 2), box(27, 21, 1, 2), Math.PI * 1.5),
+    shop: layout("courtyard2x2", "shop", { x: 29, z: 23 }, box(28, 23, 2, 2), box(27, 23, 1, 2), Math.PI * 1.5),
+    cottage: layout("cottage3x2", "house", { x: 24, z: 16 }, box(22, 16, 3, 2), box(22, 18, 3, 1))
+  };
+  function legacyVillageLayout(kind) {
+    const b = VILLAGE_LAYOUTS[kind], { x, z } = b.anchor;
+    return layout("legacy1x1", b.type, b.anchor, [[x, z]], [[x, z + 1], [x - 1, z], [x + 1, z], [x, z - 1]]);
+  }
+
+  // js/fixed-sites.js
+  var box2 = (x, z, w, h) => Array.from({ length: w * h }, (_, i) => [x + i % w, z + Math.floor(i / w)]);
+  var ROAD_CELLS = box2(30, 0, 3, 48);
+  var FIXED_SITES = {
+    greenhouse: { cells: box2(33, 19, 3, 3), clearance: box2(33, 22, 3, 1) },
+    greenhouseLegacy: { cells: box2(30, 19, 3, 3), clearance: box2(30, 22, 3, 1) },
+    fountain: { cells: box2(26, 28, 3, 3), clearance: box2(26, 31, 3, 1) },
+    bowl: { cells: [[21, 28]], clearance: [] },
+    ...Object.fromEntries(["winery", "creamery", "juicery", "perfumery"].map((kind, i) => [kind, { cells: box2(10, 20 + i * 3, 3, 2), clearance: box2(10, 22 + i * 3, 3, 1) }]))
+  };
+  function isAuthoredSite(x, z) {
+    return ROAD_CELLS.some((c) => c[0] === x && c[1] === z) || Object.values(FIXED_SITES).some((s) => [...s.cells, ...s.clearance].some((c) => c[0] === x && c[1] === z));
+  }
+
+  // js/fence-policy.js
+  var protectedCells = [...Object.values(FIXED_SITES).flatMap((s) => [...s.cells, ...s.clearance]), ...Object.values(VILLAGE_LAYOUTS).flatMap((s) => [...s.cells, ...s.access])];
+  function fenceAtLevel(x, z, level) {
+    const h = 4 + (level - 1) * 3, min = 24 - h - 0.5, max = 24 + h - 0.5, b = 0.18;
+    if (x >= 29.5 && x <= 32.5) return false;
+    if (protectedCells.some(([a, c]) => Math.abs(x - a) <= 0.51 && Math.abs(z - c) <= 0.51)) return false;
+    if (x >= min - b && x <= max + b && Math.abs(x - 24) > 1.5 && (Math.abs(z - min) < b || Math.abs(z - max) < b)) return true;
+    return z >= min - b && z <= max + b && Math.abs(z - 24) > 1.5 && (Math.abs(x - min) < b || Math.abs(x - max) < b);
+  }
 
   // js/space.js
   var cellKey = (x, z) => `${Math.round(x)},${Math.round(z)}`;
@@ -25143,614 +25805,6 @@ worldPosition = curveWorldPos;
   };
   var farmSpace = new Occupancy();
 
-  // js/fixed-sites.js
-  var box = (x, z, w, h) => Array.from({ length: w * h }, (_, i) => [x + i % w, z + Math.floor(i / w)]);
-  var ROAD_CELLS = box(30, 0, 3, 48);
-  var FIXED_SITES = {
-    greenhouse: { cells: box(33, 19, 3, 3), clearance: box(33, 22, 3, 1) },
-    greenhouseLegacy: { cells: box(30, 19, 3, 3), clearance: box(30, 22, 3, 1) },
-    fountain: { cells: box(26, 28, 3, 3), clearance: box(26, 31, 3, 1) },
-    bowl: { cells: [[21, 28]], clearance: [] },
-    ...Object.fromEntries(["winery", "creamery", "juicery", "perfumery"].map((kind, i) => [kind, { cells: box(10, 20 + i * 3, 3, 2), clearance: box(10, 22 + i * 3, 3, 1) }]))
-  };
-  function isAuthoredSite(x, z) {
-    return ROAD_CELLS.some((c) => c[0] === x && c[1] === z) || Object.values(FIXED_SITES).some((s) => [...s.cells, ...s.clearance].some((c) => c[0] === x && c[1] === z));
-  }
-
-  // js/village-layouts.js
-  var box2 = (x, z, w, h) => Array.from({ length: w * h }, (_, i) => [x + i % w, z + Math.floor(i / w)]);
-  function layout(id, type, anchor, cells, access, rot = 0) {
-    const xs = cells.map((c) => c[0]), zs = cells.map((c) => c[1]);
-    return { id, name: type, type, anchor, cells, access, clearance: access, solid: true, rot, halfExtent: cells.length === 1 ? 0.48 : 0.96, center: { x: (Math.min(...xs) + Math.max(...xs)) / 2, z: (Math.min(...zs) + Math.max(...zs)) / 2 } };
-  }
-  var VILLAGE_LAYOUTS = {
-    barn: layout("courtyard2x2", "barn", { x: 29, z: 21 }, box2(28, 21, 2, 2), box2(27, 21, 1, 2), Math.PI * 1.5),
-    shop: layout("courtyard2x2", "shop", { x: 29, z: 23 }, box2(28, 23, 2, 2), box2(27, 23, 1, 2), Math.PI * 1.5),
-    cottage: layout("cottage3x2", "house", { x: 24, z: 16 }, box2(22, 16, 3, 2), box2(22, 18, 3, 1))
-  };
-  function legacyVillageLayout(kind) {
-    const b = VILLAGE_LAYOUTS[kind], { x, z } = b.anchor;
-    return layout("legacy1x1", b.type, b.anchor, [[x, z]], [[x, z + 1], [x - 1, z], [x + 1, z], [x, z - 1]]);
-  }
-
-  // js/performance-metrics.js
-  var metrics = /* @__PURE__ */ new Map();
-  function measure(name, start) {
-    const ms = performance.now() - start, m = metrics.get(name) || { count: 0, total: 0, max: 0, samples: [] };
-    m.count++;
-    m.total += ms;
-    m.max = Math.max(m.max, ms);
-    m.samples.push(ms);
-    if (m.samples.length > 300) m.samples.shift();
-    metrics.set(name, m);
-    return ms;
-  }
-  function metricSnapshot() {
-    return Object.fromEntries([...metrics].map(([key3, m]) => {
-      const values = [...m.samples].sort((a, b) => a - b);
-      return [key3, { count: m.count, meanMs: m.total / m.count, p50Ms: values[Math.floor(values.length * 0.5)] || 0, p95Ms: values[Math.floor(values.length * 0.95)] || 0, maxMs: m.max }];
-    }));
-  }
-
-  // js/registry.js
-  var systems = [];
-  function registerSystem(sys) {
-    if (!sys || !sys.id) throw new Error("registerSystem: a system needs an id");
-    if (systems.some((s) => s.id === sys.id)) return;
-    systems.push(sys);
-  }
-  function updateSystems(dt, ctx2) {
-    for (const s of systems) if (s.update) s.update(dt, ctx2);
-  }
-
-  // js/object-identity.js
-  var serial = 0;
-  function objectId(record2) {
-    return record2.uid || (record2.uid = globalThis.crypto?.randomUUID?.() || `farm-${Date.now()}-${++serial}`);
-  }
-
-  // js/meshmerge.js
-  var _c = new Color();
-  var mergedMat = curvedMaterial({ vertexColors: true });
-  function mergeGroupGeo(group) {
-    const baked = [];
-    let total = 0;
-    group.traverse((c) => {
-      if (!c.isMesh || !c.geometry) return;
-      c.updateMatrix();
-      const g = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
-      g.applyMatrix4(c.matrix);
-      const col2 = c.material && c.material.color ? c.material.color : _c.set(13421772);
-      baked.push({ g, r: col2.r, gg: col2.g, b: col2.b });
-      total += g.attributes.position.count;
-      if (c.geometry !== g) c.geometry.dispose();
-      if (c.material) c.material.dispose();
-    });
-    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
-    let o = 0;
-    for (const b of baked) {
-      const p = b.g.attributes.position, nn = b.g.attributes.normal;
-      for (let i = 0; i < p.count; i++) {
-        const j = (o + i) * 3;
-        pos[j] = p.getX(i);
-        pos[j + 1] = p.getY(i);
-        pos[j + 2] = p.getZ(i);
-        if (nn) {
-          nor[j] = nn.getX(i);
-          nor[j + 1] = nn.getY(i);
-          nor[j + 2] = nn.getZ(i);
-        }
-        col[j] = b.r;
-        col[j + 1] = b.gg;
-        col[j + 2] = b.b;
-      }
-      o += p.count;
-      b.g.dispose();
-    }
-    const geo = new BufferGeometry();
-    geo.setAttribute("position", new BufferAttribute(pos, 3));
-    geo.setAttribute("normal", new BufferAttribute(nor, 3));
-    geo.setAttribute("color", new BufferAttribute(col, 3));
-    return geo;
-  }
-  function mergedMesh(fn) {
-    const g = new Group();
-    fn(g);
-    return new Mesh(mergeGroupGeo(g), mergedMat);
-  }
-  function freezeStatic(obj) {
-    obj.matrixAutoUpdate = false;
-    obj.updateMatrix();
-    return obj;
-  }
-
-  // js/terrain.js
-  var CORE_MIN = 0;
-  var CORE_MAX = 48;
-  var AMP = 0.33;
-  function distOutsideCore(x, z) {
-    const dx = Math.max(0, CORE_MIN - x, x - CORE_MAX);
-    const dz = Math.max(0, CORE_MIN - z, z - CORE_MAX);
-    return Math.hypot(dx, dz);
-  }
-  function coreFade(x, z) {
-    return Math.min(1, distOutsideCore(x, z) / 8);
-  }
-  function terrainHeight(x, z) {
-    const n = Math.sin(x * 0.18 + 1.3) * Math.cos(z * 0.15 - 0.7) + 0.5 * Math.sin((x + z) * 0.09 + 2.1);
-    return n / 1.5 * AMP * coreFade(x, z);
-  }
-
-  // js/decor.js
-  var inCore = (x, z) => x >= 0 && x < 48 && z >= 0 && z < 48;
-  var groundY = (x, z) => inCore(x, z) ? 0.02 : terrainHeight(x, z) + 0.02;
-  var box3 = (w, h, d) => new BoxGeometry(w, h, d);
-  var cyl = (rt, rb, h, s = 8) => new CylinderGeometry(rt, rb, h, s);
-  var sph = (r, s = 8) => new SphereGeometry(r, s, Math.max(4, s - 2));
-  var cone = (r, h, s = 6) => new ConeGeometry(r, h, s);
-  function part(g, geo, color, x, y, z, rx = 0, ry = 0, rz = 0) {
-    const m = new Mesh(geo, curvedMaterial({ color }));
-    m.position.set(x, y, z);
-    if (rx) m.rotation.x = rx;
-    if (ry) m.rotation.y = ry;
-    if (rz) m.rotation.z = rz;
-    g.add(m);
-    return m;
-  }
-  var FLOWER_COLS = [16375883, 15231119, 15764026, 9419007, 15921896];
-  var BUILD = {
-    haybale(g) {
-      part(g, cyl(0.26, 0.26, 0.5, 10), 14467658, 0, 0.26, 0, 0, 0, Math.PI / 2);
-      part(g, cyl(0.265, 0.265, 0.06, 10), 12888120, 0, 0.26, 0.16, 0, 0, Math.PI / 2);
-      part(g, cyl(0.265, 0.265, 0.06, 10), 12888120, 0, 0.26, -0.16, 0, 0, Math.PI / 2);
-    },
-    flowerbed(g) {
-      part(g, box3(0.68, 0.14, 1.45), 5913122, 0, 0.07, 0);
-      for (const x of [-0.36, 0.36]) part(g, box3(0.055, 0.2, 1.52), 11105855, x, 0.11, 0);
-      for (const z of [-0.74, 0.74]) part(g, box3(0.74, 0.2, 0.055), 11105855, 0, 0.11, z);
-      for (let row2 = 0; row2 < 5; row2++) for (const x of [-0.17, 0.17]) {
-        const z = -0.55 + row2 * 0.275, y = 0.25 + row2 % 2 * 0.04;
-        part(g, cyl(0.015, 0.015, 0.22, 4), 4160052, x, y, z);
-        part(g, sph(0.075, 6), FLOWER_COLS[row2], x, y + 0.13, z);
-        part(g, sph(0.055, 5), 6587719, x + 0.05, y - 0.02, z);
-      }
-    },
-    bench(g) {
-      part(g, box3(0.72, 0.06, 0.26), 11105855, 0, 0.24, 0);
-      part(g, box3(0.72, 0.22, 0.05), 11105855, 0, 0.36, -0.11);
-      for (const sx of [-0.3, 0.3]) for (const sz of [-0.09, 0.09]) part(g, box3(0.05, 0.24, 0.05), 7227942, sx, 0.12, sz);
-    },
-    signpost(g) {
-      part(g, cyl(0.04, 0.04, 0.7, 6), 7227942, 0, 0.35, 0);
-      part(g, box3(0.34, 0.2, 0.04), 12096074, 0, 0.56, 0);
-      part(g, box3(0.34, 0.2, 0.01), 7227942, 0, 0.56, 0.025);
-    },
-    gnome(g) {
-      part(g, cone(0.13, 0.28, 8), 3895216, 0, 0.14, 0);
-      part(g, sph(0.085, 8), 15778970, 0, 0.32, 0);
-      part(g, cone(0.1, 0.18, 8), 13777723, 0, 0.44, 0);
-      part(g, sph(0.06, 6), 15921906, 0, 0.27, 0.06);
-    },
-    lamp(g) {
-      part(g, cyl(0.1, 0.12, 0.08, 8), 3817287, 0, 0.04, 0);
-      part(g, cyl(0.03, 0.03, 0.85, 6), 3356735, 0, 0.46, 0);
-      part(g, box3(0.15, 0.17, 0.15), 2764340, 0, 0.95, 0);
-      part(g, sph(0.07, 8), 16770970, 0, 0.95, 0);
-      part(g, cone(0.11, 0.09, 4), 3356735, 0, 1.08, 0, 0, Math.PI / 4);
-    },
-    topiary(g) {
-      part(g, cyl(0.12, 0.16, 0.18, 8), 11887663, 0, 0.09, 0);
-      part(g, sph(0.22, 10), 3112250, 0, 0.4, 0);
-      part(g, sph(0.15, 8), 3508543, 0, 0.62, 0);
-    },
-    birdbath(g) {
-      part(g, cyl(0.07, 0.1, 0.45, 8), 10132130, 0, 0.22, 0);
-      part(g, cyl(0.22, 0.16, 0.08, 12), 11579576, 0, 0.46, 0);
-      part(g, cyl(0.18, 0.18, 0.02, 12), 6732799, 0, 0.5, 0);
-    },
-    picnic(g) {
-      part(g, box3(0.9, 0.05, 0.5), 12622426, 0, 0.42, 0);
-      for (const sz of [-0.34, 0.34]) part(g, box3(0.9, 0.04, 0.15), 11105855, 0, 0.24, sz);
-      for (const sx of [-0.38, 0.38]) for (const sz of [-0.22, 0.22]) part(g, box3(0.05, 0.42, 0.05), 7227942, sx, 0.2, sz);
-    },
-    well(g) {
-      part(g, cyl(0.3, 0.32, 0.42, 12), 9079440, 0, 0.21, 0);
-      part(g, cyl(0.24, 0.24, 0.04, 12), 2237480, 0, 0.41, 0);
-      for (const sx of [-0.26, 0.26]) part(g, box3(0.05, 0.55, 0.05), 7227942, sx, 0.68, 0);
-      part(g, cyl(0.025, 0.025, 0.55, 6), 5913122, 0, 0.9, 0, 0, 0, Math.PI / 2);
-      part(g, cone(0.42, 0.26, 4), 9124395, 0, 1.07, 0, 0, Math.PI / 4);
-    },
-    statue(g) {
-      part(g, box3(0.36, 0.28, 0.36), 10921645, 0, 0.14, 0);
-      part(g, box3(0.3, 0.05, 0.3), 10132128, 0, 0.3, 0);
-      part(g, cyl(0.1, 0.14, 0.42, 8), 13027020, 0, 0.53, 0);
-      part(g, sph(0.1, 8), 13027020, 0, 0.79, 0);
-    },
-    windmill(g) {
-      part(g, cyl(0.18, 0.3, 1.2, 8), 14207920, 0, 0.6, 0);
-      part(g, cone(0.32, 0.32, 8), 8010539, 0, 1.36, 0);
-      part(g, sph(0.08, 6), 4868682, 0, 1.08, 0.32);
-      for (let i = 0; i < 4; i++) {
-        const a = i * Math.PI / 2;
-        part(g, box3(0.5, 0.1, 0.02), 15656656, Math.cos(a) * 0.28, 1.08 + Math.sin(a) * 0.28, 0.34, 0, 0, a);
-      }
-    }
-  };
-  var DECOR_TYPES = {
-    haybale: { name: "Hay Bale", emoji: "\u{1F33E}", cost: 30, footprint: 0.6, beauty: 1, note: "rustic charm" },
-    flowerbed: { name: "Flower Bed", emoji: "\u{1F337}", cost: 45, footprint: 0.8, beauty: 4, note: "a splash of colour" },
-    signpost: { name: "Signpost", emoji: "\u{1FAA7}", cost: 50, footprint: 0.5, beauty: 1, note: "mark the way" },
-    bench: { name: "Garden Bench", emoji: "\u{1FA91}", cost: 65, footprint: 0.9, beauty: 2, note: "a place to rest" },
-    gnome: { name: "Garden Gnome", emoji: "\u{1F9D9}", cost: 75, footprint: 0.4, beauty: 3, note: "keeps you company" },
-    lamp: { name: "Lamp Post", emoji: "\u{1F3EE}", cost: 95, footprint: 0.5, beauty: 3, note: "warm glow" },
-    topiary: { name: "Topiary", emoji: "\u{1F333}", cost: 110, footprint: 0.6, beauty: 4, note: "tidy hedge" },
-    birdbath: { name: "Bird Bath", emoji: "\u{1F426}", cost: 125, footprint: 0.6, beauty: 5, note: "invites birds" },
-    picnic: { name: "Picnic Table", emoji: "\u{1F9FA}", cost: 140, footprint: 1, beauty: 3, note: "family gathering" },
-    well: { name: "Stone Well", emoji: "\u{1FAA3}", cost: 185, footprint: 0.9, beauty: 5, note: "old-world cosy" },
-    statue: { name: "Statue", emoji: "\u{1F5FF}", cost: 220, footprint: 0.7, beauty: 7, note: "grand centrepiece" },
-    windmill: { name: "Windmill", emoji: "\u{1F32C}\uFE0F", cost: 420, footprint: 1, beauty: 8, note: "landmark for the estate" }
-  };
-  var DECOR_CATALOG = Object.entries(DECOR_TYPES).map(([id, t2]) => ({ id, ...t2 }));
-  function decorModel(id, layout2 = 1) {
-    const g = new Group();
-    if (BUILD[id]) BUILD[id](g);
-    if (id === "flowerbed" && !layout2) g.scale.z = 0.48;
-    return g;
-  }
-  var placed = [];
-  var _geo = {};
-  var _ims = {};
-  var _dirty = false;
-  var _m4 = new Matrix4();
-  var _q = new Quaternion();
-  var _p = new Vector3();
-  var _s = new Vector3(1, 1, 1);
-  var _YUP = new Vector3(0, 1, 0);
-  function geoFor(id) {
-    if (!_geo[id]) {
-      const g = new Group();
-      BUILD[id](g);
-      _geo[id] = mergeGroupGeo(g);
-    }
-    return _geo[id];
-  }
-  function rebuildDecorIMs() {
-    _dirty = false;
-    const byId = {};
-    for (const d of placed) (byId[d.id] = byId[d.id] || []).push(d);
-    for (const id in _ims) {
-      if (!byId[id]) {
-        scene.remove(_ims[id]);
-        _ims[id].dispose();
-        delete _ims[id];
-      }
-    }
-    for (const id in byId) {
-      const list2 = byId[id];
-      if (_ims[id]) {
-        scene.remove(_ims[id]);
-        _ims[id].dispose();
-      }
-      const im = new InstancedMesh(geoFor(id), mergedMat, list2.length);
-      list2.forEach((d, i) => {
-        const f = footprint(d.id, d.x, d.z, d.rot || 0, d.layout || 0);
-        _p.set(f.center.x, groundY(d.x, d.z), f.center.z);
-        _q.setFromAxisAngle(_YUP, f.rot);
-        _s.set(f.scale, f.scale, f.scale * (d.id === "flowerbed" && !d.layout ? 0.48 : 1));
-        im.setMatrixAt(i, _m4.compose(_p, _q, _s));
-      });
-      im.instanceMatrix.needsUpdate = true;
-      im.computeBoundingSphere();
-      scene.add(im);
-      _ims[id] = im;
-    }
-  }
-  function placeDecor(id, x, z, rot = 0, layout2 = 1) {
-    if (!BUILD[id]) return false;
-    placed.push({ id, x, z, rot, layout: layout2 });
-    _dirty = true;
-    return true;
-  }
-  function updateDecor() {
-    if (_dirty) rebuildDecorIMs();
-  }
-  function getDecorCount() {
-    return placed.length;
-  }
-  function beautyScore() {
-    let s = 0;
-    for (const d of placed) s += DECOR_TYPES[d.id] && DECOR_TYPES[d.id].beauty || 0;
-    return s;
-  }
-  function countByType() {
-    const c = {};
-    for (const d of placed) c[d.id] = (c[d.id] || 0) + 1;
-    return c;
-  }
-  function serializeDecor() {
-    return placed.map((d) => ({ uid: objectId(d), id: d.id, x: d.x, z: d.z, rot: d.rot, layout: d.layout }));
-  }
-  function loadDecor(data) {
-    placed = [];
-    for (const id in _ims) {
-      scene.remove(_ims[id]);
-      _ims[id].dispose();
-      delete _ims[id];
-    }
-    if (data) {
-      for (const d of data) if (BUILD[d.id]) placed.push({ uid: d.uid, id: d.id, x: d.x, z: d.z, rot: d.rot || 0, layout: d.layout || 0 });
-    }
-    _dirty = true;
-  }
-
-  // js/visitors.js
-  var FARM_CX = 24;
-  var FARM_CZ = 24;
-  var MAX_VISITORS = 4;
-  var MAX_WITH_BOWL = 7;
-  var ABS_MAX = 14;
-  var SPAWN_EVERY = 45;
-  var CAT_COLORS = [10132122, 14061882, 2763306, 15262422];
-  var FOOD_BOWL_COST = 120;
-  var BOWL_POS = { x: FARM_CX - 3, z: FARM_CZ + 4 };
-  var visitors = [];
-  var timer = 20;
-  var foodBowl = null;
-  function buildCat(color) {
-    const g = new Group();
-    const body = new Mesh(new BoxGeometry(0.2, 0.14, 0.32), curvedMaterial({ color }));
-    body.position.y = 0.14;
-    g.add(body);
-    const head = new Mesh(new BoxGeometry(0.16, 0.14, 0.15), curvedMaterial({ color }));
-    head.position.set(0, 0.22, 0.2);
-    g.add(head);
-    for (const ex of [-0.05, 0.05]) {
-      const e = new Mesh(new ConeGeometry(0.04, 0.08, 4), curvedMaterial({ color }));
-      e.position.set(ex, 0.32, 0.18);
-      g.add(e);
-    }
-    const tail = new Mesh(new CylinderGeometry(0.02, 0.02, 0.22, 5), curvedMaterial({ color }));
-    tail.position.set(0, 0.2, -0.2);
-    tail.rotation.x = -0.5;
-    g.add(tail);
-    for (const lx of [-0.07, 0.07]) for (const lz of [-0.1, 0.1]) {
-      const l = new Mesh(new CylinderGeometry(0.025, 0.025, 0.14, 5), curvedMaterial({ color }));
-      l.position.set(lx, 0.07, lz);
-      g.add(l);
-    }
-    scene.add(g);
-    return g;
-  }
-  function box4(w, h, d, color) {
-    return new Mesh(new BoxGeometry(w, h, d), curvedMaterial({ color }));
-  }
-  function addLegs(g, color) {
-    for (const lx of [-0.07, 0.07]) for (const lz of [-0.1, 0.1]) {
-      const l = new Mesh(new CylinderGeometry(0.025, 0.025, 0.14, 5), curvedMaterial({ color }));
-      l.position.set(lx, 0.07, lz);
-      g.add(l);
-    }
-  }
-  function buildSkunk() {
-    const g = new Group();
-    const black = 1513242, white = 15921898;
-    const body = box4(0.22, 0.15, 0.34, black);
-    body.position.y = 0.14;
-    g.add(body);
-    const stripe = box4(0.07, 0.16, 0.34, white);
-    stripe.position.y = 0.165;
-    g.add(stripe);
-    const head = box4(0.15, 0.13, 0.14, black);
-    head.position.set(0, 0.2, 0.22);
-    g.add(head);
-    const snout = box4(0.05, 0.05, 0.07, white);
-    snout.position.set(0, 0.19, 0.3);
-    g.add(snout);
-    const tail = new Mesh(new CylinderGeometry(0.11, 0.04, 0.32, 6), curvedMaterial({ color: white }));
-    tail.position.set(0, 0.3, -0.2);
-    tail.rotation.x = -0.7;
-    g.add(tail);
-    addLegs(g, black);
-    scene.add(g);
-    return g;
-  }
-  function buildRabbit() {
-    const g = new Group();
-    const c = Math.random() < 0.5 ? 15789284 : 10255192;
-    const body = box4(0.2, 0.18, 0.26, c);
-    body.position.y = 0.15;
-    g.add(body);
-    const head = box4(0.15, 0.15, 0.14, c);
-    head.position.set(0, 0.26, 0.16);
-    g.add(head);
-    for (const ex of [-0.04, 0.04]) {
-      const ear = box4(0.04, 0.16, 0.05, c);
-      ear.position.set(ex, 0.4, 0.14);
-      g.add(ear);
-    }
-    const tail = box4(0.08, 0.08, 0.08, 16777215);
-    tail.position.set(0, 0.16, -0.16);
-    g.add(tail);
-    addLegs(g, c);
-    scene.add(g);
-    return g;
-  }
-  function buildDuck() {
-    const g = new Group();
-    const c = 15913530;
-    const body = box4(0.2, 0.16, 0.3, c);
-    body.position.y = 0.13;
-    g.add(body);
-    const head = box4(0.14, 0.14, 0.14, c);
-    head.position.set(0, 0.27, 0.16);
-    g.add(head);
-    const beak = box4(0.08, 0.05, 0.1, 15239722);
-    beak.position.set(0, 0.25, 0.26);
-    g.add(beak);
-    const tail = box4(0.1, 0.08, 0.08, c);
-    tail.position.set(0, 0.16, -0.18);
-    tail.rotation.x = 0.4;
-    g.add(tail);
-    for (const lx of [-0.05, 0.05]) {
-      const f = box4(0.06, 0.04, 0.1, 15239722);
-      f.position.set(lx, 0.03, 0.02);
-      g.add(f);
-    }
-    scene.add(g);
-    return g;
-  }
-  function buildPossum() {
-    const g = new Group();
-    const c = 12170925;
-    const body = box4(0.22, 0.15, 0.32, c);
-    body.position.y = 0.14;
-    g.add(body);
-    const head = box4(0.14, 0.13, 0.16, 15262938);
-    head.position.set(0, 0.19, 0.22);
-    g.add(head);
-    const nose = box4(0.04, 0.04, 0.06, 14257312);
-    nose.position.set(0, 0.17, 0.31);
-    g.add(nose);
-    for (const ex of [-0.05, 0.05]) {
-      const ear = box4(0.05, 0.05, 0.02, 7038560);
-      ear.position.set(ex, 0.27, 0.2);
-      g.add(ear);
-    }
-    const tail = new Mesh(new CylinderGeometry(0.02, 0.02, 0.34, 5), curvedMaterial({ color: 14267296 }));
-    tail.position.set(0, 0.12, -0.24);
-    tail.rotation.x = 1;
-    g.add(tail);
-    addLegs(g, c);
-    scene.add(g);
-    return g;
-  }
-  function pickVisitorSpecies(roll = Math.random()) {
-    const r = (roll % 1 + 1) % 1;
-    if (r < 0.4) return "cat";
-    if (r < 0.62) return "skunk";
-    if (r < 0.8) return "rabbit";
-    if (r < 0.92) return "duck";
-    return "possum";
-  }
-  function buildVisitor(species) {
-    switch (species) {
-      case "skunk":
-        return buildSkunk();
-      case "rabbit":
-        return buildRabbit();
-      case "duck":
-        return buildDuck();
-      case "possum":
-        return buildPossum();
-      default:
-        return buildCat(CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)]);
-    }
-  }
-  function disposeVisitor(v) {
-    scene.remove(v.grp);
-    v.grp.traverse((o) => {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) o.material.dispose();
-    });
-  }
-  function buildBowl() {
-    const g = new Group();
-    const bowl = new Mesh(new CylinderGeometry(0.22, 0.16, 0.1, 10), curvedMaterial({ color: 11883306 }));
-    bowl.position.y = 0.05;
-    g.add(bowl);
-    const food = new Mesh(new CylinderGeometry(0.16, 0.16, 0.05, 10), curvedMaterial({ color: 14196826 }));
-    food.position.y = 0.1;
-    g.add(food);
-    g.position.set(BOWL_POS.x, 0.02, BOWL_POS.z);
-    scene.add(g);
-    return g;
-  }
-  function placeFoodBowl() {
-    if (foodBowl) return false;
-    foodBowl = buildBowl();
-    return true;
-  }
-  function hasFoodBowl() {
-    return !!foodBowl;
-  }
-  function wanderTarget() {
-    if (foodBowl) return { x: BOWL_POS.x + (Math.random() * 2 - 1) * 3, z: BOWL_POS.z + (Math.random() * 2 - 1) * 3 };
-    return { x: FARM_CX + (Math.random() * 2 - 1) * 9, z: FARM_CZ + (Math.random() * 2 - 1) * 9 };
-  }
-  function visitorCap() {
-    const base = foodBowl ? MAX_WITH_BOWL : MAX_VISITORS;
-    return Math.min(base + Math.floor(beautyScore() / 6), ABS_MAX);
-  }
-  function spawnInterval() {
-    const base = foodBowl ? 12 : SPAWN_EVERY;
-    return Math.max(6, base - beautyScore() * 0.6);
-  }
-  function spawnVisitor() {
-    if (visitors.length >= ABS_MAX) return null;
-    const ang = Math.random() * Math.PI * 2, r = 18;
-    const x = FARM_CX + Math.cos(ang) * r, z = FARM_CZ + Math.sin(ang) * r;
-    const species = pickVisitorSpecies();
-    const grp = buildVisitor(species);
-    grp.position.set(x, 0.02, z);
-    const t2 = wanderTarget();
-    const ttl = (foodBowl ? 80 + Math.random() * 60 : 30 + Math.random() * 45) + Math.min(beautyScore(), 40);
-    const v = { grp, species, x, z, tx: t2.x, tz: t2.z, ttl, bob: Math.random() * 6 };
-    visitors.push(v);
-    return v;
-  }
-  function updateVisitors(dt) {
-    const every = spawnInterval();
-    const cap = visitorCap();
-    timer -= dt;
-    if (timer <= 0) {
-      timer = every + Math.random() * (every * 0.5);
-      if (visitors.length < cap) spawnVisitor();
-    }
-    for (let i = visitors.length - 1; i >= 0; i--) {
-      const v = visitors[i];
-      v.ttl -= dt;
-      const dx = v.tx - v.x, dz = v.tz - v.z, d = Math.hypot(dx, dz);
-      if (d > 0.25) {
-        const s = Math.min(d, 1.6 * dt);
-        v.x += dx / d * s;
-        v.z += dz / d * s;
-        v.grp.rotation.y = Math.atan2(dx, dz);
-      } else {
-        const t2 = wanderTarget();
-        v.tx = t2.x;
-        v.tz = t2.z;
-      }
-      v.bob += dt;
-      v.grp.position.set(v.x, 0.02 + Math.abs(Math.sin(v.bob * 6)) * 0.03, v.z);
-      if (v.ttl <= 0) {
-        disposeVisitor(v);
-        visitors.splice(i, 1);
-      }
-    }
-  }
-  function getVisitorCount() {
-    return visitors.length;
-  }
-  function serializeVisitors() {
-    return { bowl: !!foodBowl };
-  }
-  function loadVisitors(d) {
-    if (d && d.bowl && !foodBowl) placeFoodBowl();
-  }
-  registerSystem({ id: "visitors", update(dt) {
-    updateVisitors(dt);
-  } });
-
-  // js/fence-policy.js
-  var protectedCells = [...Object.values(FIXED_SITES).flatMap((s) => [...s.cells, ...s.clearance]), ...Object.values(VILLAGE_LAYOUTS).flatMap((s) => [...s.cells, ...s.access])];
-  function fenceAtLevel(x, z, level) {
-    const h = 4 + (level - 1) * 3, min = 24 - h - 0.5, max = 24 + h - 0.5, b = 0.18;
-    if (x >= 29.5 && x <= 32.5) return false;
-    if (protectedCells.some(([a, c]) => Math.abs(x - a) <= 0.51 && Math.abs(z - c) <= 0.51)) return false;
-    if (x >= min - b && x <= max + b && Math.abs(x - 24) > 1.5 && (Math.abs(z - min) < b || Math.abs(z - max) < b)) return true;
-    return z >= min - b && z <= max + b && Math.abs(z - 24) > 1.5 && (Math.abs(x - min) < b || Math.abs(x - max) < b);
-  }
-
   // js/building-layouts.js
   var BARN_LAYOUTS = Object.freeze({
     legacy1x1: Object.freeze({ id: "legacy1x1", name: "barn", type: "barn", anchor: { x: 29, z: 21 }, center: { x: 29, z: 21 }, halfExtent: 0.48, cells: [[29, 21]] }),
@@ -25812,6 +25866,61 @@ worldPosition = curveWorldPos;
     root.position.z -= (b.min.z + b.max.z) / 2;
     root.updateMatrixWorld(true);
     return solidBuildingBounds(root);
+  }
+
+  // js/meshmerge.js
+  var _c = new Color();
+  var mergedMat = curvedMaterial({ vertexColors: true });
+  function mergeGroupGeo(group) {
+    const baked = [];
+    let total = 0;
+    group.traverse((c) => {
+      if (!c.isMesh || !c.geometry) return;
+      c.updateMatrix();
+      const g = c.geometry.index ? c.geometry.toNonIndexed() : c.geometry.clone();
+      g.applyMatrix4(c.matrix);
+      const col2 = c.material && c.material.color ? c.material.color : _c.set(13421772);
+      baked.push({ g, r: col2.r, gg: col2.g, b: col2.b });
+      total += g.attributes.position.count;
+      if (c.geometry !== g) c.geometry.dispose();
+      if (c.material) c.material.dispose();
+    });
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+    let o = 0;
+    for (const b of baked) {
+      const p = b.g.attributes.position, nn = b.g.attributes.normal;
+      for (let i = 0; i < p.count; i++) {
+        const j = (o + i) * 3;
+        pos[j] = p.getX(i);
+        pos[j + 1] = p.getY(i);
+        pos[j + 2] = p.getZ(i);
+        if (nn) {
+          nor[j] = nn.getX(i);
+          nor[j + 1] = nn.getY(i);
+          nor[j + 2] = nn.getZ(i);
+        }
+        col[j] = b.r;
+        col[j + 1] = b.gg;
+        col[j + 2] = b.b;
+      }
+      o += p.count;
+      b.g.dispose();
+    }
+    const geo = new BufferGeometry();
+    geo.setAttribute("position", new BufferAttribute(pos, 3));
+    geo.setAttribute("normal", new BufferAttribute(nor, 3));
+    geo.setAttribute("color", new BufferAttribute(col, 3));
+    return geo;
+  }
+  function mergedMesh(fn) {
+    const g = new Group();
+    fn(g);
+    return new Mesh(mergeGroupGeo(g), mergedMat);
+  }
+  function freezeStatic(obj) {
+    obj.matrixAutoUpdate = false;
+    obj.updateMatrix();
+    return obj;
   }
 
   // js/presentation/palette.js
@@ -26001,36 +26110,6 @@ worldPosition = curveWorldPos;
     root.name = "village-access:" + layout2.name;
     root.userData.presentationGround = true;
     return root;
-  }
-
-  // js/presentation/contact-shadow.js
-  var material = null;
-  var geometry = null;
-  function contactShadowResources() {
-    if (!material) {
-      const size = 64, pixels = new Uint8Array(size * size * 4);
-      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
-        const d = Math.hypot(x - 31.5, y - 31.5) / 31.5, a = Math.max(0, 1 - d);
-        pixels.set([54, 65, 40, Math.round(a * a * 58)], (y * size + x) * 4);
-      }
-      const texture = new DataTexture(pixels, size, size, RGBAFormat);
-      texture.colorSpace = SRGBColorSpace;
-      texture.magFilter = LinearFilter;
-      texture.minFilter = LinearFilter;
-      texture.needsUpdate = true;
-      material = applyCurvature(new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
-      geometry = new PlaneGeometry(1, 1, 2, 2);
-      geometry.rotateX(-Math.PI / 2);
-    }
-    return { material, geometry };
-  }
-  function contactShadow(width = 1, depth = width, y = 0.082) {
-    const r = contactShadowResources(), mesh4 = new Mesh(r.geometry, r.material);
-    mesh4.scale.set(width, 1, depth);
-    mesh4.position.y = y;
-    mesh4.renderOrder = 2;
-    mesh4.userData.sharedPresentationResource = true;
-    return mesh4;
   }
 
   // js/textures.js
@@ -26720,8 +26799,8 @@ worldPosition = curveWorldPos;
 
   // js/world.js
   var WORLD_SIZE = 48;
-  var FARM_CX2 = 24;
-  var FARM_CZ2 = 24;
+  var FARM_CX = 24;
+  var FARM_CZ = 24;
   var farmLevel = 1;
   var EXPANSION_COSTS = [0, 200, 500, 1e3, 2e3, 4e3, 8e3];
   function getFarmLevel() {
@@ -26735,7 +26814,7 @@ worldPosition = curveWorldPos;
   }
   function isInFarm(x, z) {
     const hs = getFarmHalfSize();
-    return x >= FARM_CX2 - hs && x < FARM_CX2 + hs && z >= FARM_CZ2 - hs && z < FARM_CZ2 + hs;
+    return x >= FARM_CX - hs && x < FARM_CX + hs && z >= FARM_CZ - hs && z < FARM_CZ + hs;
   }
   var TILE = {
     GRASS: "grass",
@@ -26864,8 +26943,8 @@ worldPosition = curveWorldPos;
   }
   function initFarmTiles() {
     const hs = getFarmHalfSize();
-    for (let z = FARM_CZ2 - hs; z < FARM_CZ2 + hs; z++) {
-      for (let x = FARM_CX2 - hs; x < FARM_CX2 + hs; x++) {
+    for (let z = FARM_CZ - hs; z < FARM_CZ + hs; z++) {
+      for (let x = FARM_CX - hs; x < FARM_CX + hs; x++) {
         const key3 = tileKey(x, z);
         if (!farmTiles.has(key3)) {
           farmTiles.set(key3, {
@@ -26880,8 +26959,8 @@ worldPosition = curveWorldPos;
     }
   }
   function addStartingSoil() {
-    for (let z = FARM_CZ2 - 2; z < FARM_CZ2 + 2; z++) {
-      for (let x = FARM_CX2 - 2; x < FARM_CX2 + 2; x++) {
+    for (let z = FARM_CZ - 2; z < FARM_CZ + 2; z++) {
+      for (let x = FARM_CX - 2; x < FARM_CX + 2; x++) {
         const key3 = tileKey(x, z);
         const tile = farmTiles.get(key3);
         if (tile) {
@@ -26893,29 +26972,29 @@ worldPosition = curveWorldPos;
   }
   function addPathsAndBuildings() {
     const hs = getFarmHalfSize();
-    const shopX = FARM_CX2 + hs + 1;
-    const shopZ = FARM_CZ2 - 1;
-    const marketZ = FARM_CZ2 + 1;
-    const barnZ = FARM_CZ2 - 3;
-    for (let x = FARM_CX2 + hs - 1; x <= shopX; x++) {
+    const shopX = FARM_CX + hs + 1;
+    const shopZ = FARM_CZ - 1;
+    const marketZ = FARM_CZ + 1;
+    const barnZ = FARM_CZ - 3;
+    for (let x = FARM_CX + hs - 1; x <= shopX; x++) {
       setSpecialTile(x, shopZ, TILE.PATH);
       setSpecialTile(x, marketZ, TILE.PATH);
       setSpecialTile(x, barnZ, TILE.PATH);
     }
-    setSpecialTile(shopX, FARM_CZ2, TILE.PATH);
-    setSpecialTile(shopX, FARM_CZ2 - 2, TILE.PATH);
+    setSpecialTile(shopX, FARM_CZ, TILE.PATH);
+    setSpecialTile(shopX, FARM_CZ - 2, TILE.PATH);
     setSpecialTile(shopX, shopZ, TILE.SHOP);
     setSpecialTile(shopX, marketZ, TILE.MARKET);
     setSpecialTile(shopX, barnZ, TILE.BARN);
     addBuildingModel(shopX, shopZ, 4881497);
     addBuildingModel(shopX, marketZ, 12861504);
     addBarnModel(shopX, barnZ);
-    for (let z = FARM_CZ2 - 10; z < FARM_CZ2 - 7; z++) {
-      for (let x = FARM_CX2 - 9; x < FARM_CX2 - 6; x++) {
+    for (let z = FARM_CZ - 10; z < FARM_CZ - 7; z++) {
+      for (let x = FARM_CX - 9; x < FARM_CX - 6; x++) {
         setSpecialTile(x, z, TILE.WATER);
       }
     }
-    addCottage(FARM_CX2, FARM_CZ2 - 8);
+    addCottage(FARM_CX, FARM_CZ - 8);
   }
   function addCottage(x, z) {
     setSpecialTile(x, z, TILE.HOUSE);
@@ -27099,7 +27178,7 @@ worldPosition = curveWorldPos;
     importedFenceParts = parts3;
     updateFarmBorder();
   }
-  var fence = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, gateHalf: 1.5, gateX: FARM_CX2, gateZ: FARM_CZ2, active: false };
+  var fence = { minX: 0, maxX: 0, minZ: 0, maxZ: 0, gateHalf: 1.5, gateX: FARM_CX, gateZ: FARM_CZ, active: false };
   function fenceBlocks(x, z) {
     return fenceAtLevel(x, z, farmLevel);
   }
@@ -27110,17 +27189,17 @@ worldPosition = curveWorldPos;
     }
     borderMeshes.length = 0;
     const hs = getFarmHalfSize();
-    const minX = FARM_CX2 - hs - 0.5;
-    const maxX = FARM_CX2 + hs - 0.5;
-    const minZ = FARM_CZ2 - hs - 0.5;
-    const maxZ = FARM_CZ2 + hs - 0.5;
+    const minX = FARM_CX - hs - 0.5;
+    const maxX = FARM_CX + hs - 0.5;
+    const minZ = FARM_CZ - hs - 0.5;
+    const maxZ = FARM_CZ + hs - 0.5;
     fence.minX = minX;
     fence.maxX = maxX;
     fence.minZ = minZ;
     fence.maxZ = maxZ;
     fence.gateHalf = 1.5;
-    fence.gateX = FARM_CX2;
-    fence.gateZ = FARM_CZ2;
+    fence.gateX = FARM_CX;
+    fence.gateZ = FARM_CZ;
     fence.active = true;
     const postGeo = new CylinderGeometry(0.04, 0.06, 0.6, 5);
     const railGeo = new BoxGeometry(1, 0.04, 0.04, 2, 1, 1);
@@ -27129,8 +27208,8 @@ worldPosition = curveWorldPos;
     const SPACING = 2;
     const _posts = [], _rails = [];
     const gateHalf = 1.5;
-    const inGateX = (xx) => Math.abs(xx - FARM_CX2) <= gateHalf;
-    const inGateZ = (zz) => Math.abs(zz - FARM_CZ2) <= gateHalf;
+    const inGateX = (xx) => Math.abs(xx - FARM_CX) <= gateHalf;
+    const inGateZ = (zz) => Math.abs(zz - FARM_CZ) <= gateHalf;
     for (let x = minX; x <= maxX + 0.01; x += SPACING) {
       if (inGateX(x)) continue;
       addPost(x, minZ);
@@ -27156,18 +27235,18 @@ worldPosition = curveWorldPos;
     const lintelGeoZ = new BoxGeometry(0.07, 0.09, gw, 1, 1, 2);
     const addLintel = () => {
     };
-    addGatePost(FARM_CX2 - gateHalf, minZ);
-    addGatePost(FARM_CX2 + gateHalf, minZ);
-    addLintel(lintelGeoX, FARM_CX2, minZ);
-    addGatePost(FARM_CX2 - gateHalf, maxZ);
-    addGatePost(FARM_CX2 + gateHalf, maxZ);
-    addLintel(lintelGeoX, FARM_CX2, maxZ);
-    addGatePost(minX, FARM_CZ2 - gateHalf);
-    addGatePost(minX, FARM_CZ2 + gateHalf);
-    addLintel(lintelGeoZ, minX, FARM_CZ2);
-    addGatePost(maxX, FARM_CZ2 - gateHalf);
-    addGatePost(maxX, FARM_CZ2 + gateHalf);
-    addLintel(lintelGeoZ, maxX, FARM_CZ2);
+    addGatePost(FARM_CX - gateHalf, minZ);
+    addGatePost(FARM_CX + gateHalf, minZ);
+    addLintel(lintelGeoX, FARM_CX, minZ);
+    addGatePost(FARM_CX - gateHalf, maxZ);
+    addGatePost(FARM_CX + gateHalf, maxZ);
+    addLintel(lintelGeoX, FARM_CX, maxZ);
+    addGatePost(minX, FARM_CZ - gateHalf);
+    addGatePost(minX, FARM_CZ + gateHalf);
+    addLintel(lintelGeoZ, minX, FARM_CZ);
+    addGatePost(maxX, FARM_CZ - gateHalf);
+    addGatePost(maxX, FARM_CZ + gateHalf);
+    addLintel(lintelGeoZ, maxX, FARM_CZ);
     const _fm = new Matrix4(), _fq = new Quaternion(), _fp = new Vector3(), _fs = new Vector3(1, 1, 1), _fy = new Vector3(0, 1, 0);
     if (_posts.length && !importedFenceParts) {
       const im = new InstancedMesh(postGeo, postMat, _posts.length);
@@ -27445,6 +27524,1047 @@ worldPosition = curveWorldPos;
       }
     }
   }
+
+  // js/buffs.js
+  var MEAL_BUFFS = {
+    honey_cake: { stat: "luck", mult: 2, secs: 90, label: "\u{1F340} Honey Cake \u2014 lucky harvests for a while!" },
+    grand_elixir: { stat: "luck", mult: 3, secs: 120, label: "\u{1F340} Grand Elixir \u2014 very lucky harvests!" },
+    fish_stew: { stat: "speed", mult: 1.35, secs: 90, label: "\u{1F41F} Fish Stew \u2014 quick feet!" },
+    country_cake: { stat: "speed", mult: 1.2, secs: 120, label: "\u{1F370} Country Cake \u2014 a spring in your step!" },
+    veggie_soup: { stat: "growth", mult: 1.5, secs: 90, label: "\u{1F331} Veggie Soup \u2014 crops grow faster!" }
+  };
+  var STAT_ICON = { luck: "\u{1F340}", speed: "\u{1F45F}", growth: "\u{1F331}" };
+  var active2 = {};
+  function fmtBuffTime(secs) {
+    const s = Math.max(0, Math.ceil(secs));
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
+  }
+  function applyMeal(id) {
+    const b = MEAL_BUFFS[id];
+    if (!b) return null;
+    active2[b.stat] = { mult: b.mult, remaining: b.secs };
+    return b;
+  }
+  function tickBuffs(dt) {
+    for (const stat of Object.keys(active2)) {
+      active2[stat].remaining -= dt;
+      if (active2[stat].remaining <= 0) delete active2[stat];
+    }
+  }
+  function statMult(stat) {
+    return active2[stat] ? active2[stat].mult : 1;
+  }
+  function luckMult() {
+    return statMult("luck");
+  }
+  function speedMult() {
+    return statMult("speed");
+  }
+  function growthMult() {
+    return statMult("growth");
+  }
+  function activeBuffs() {
+    return Object.entries(active2).map(([stat, b]) => ({
+      stat,
+      mult: b.mult,
+      remaining: Math.max(0, b.remaining),
+      icon: STAT_ICON[stat] || "\u2728"
+    }));
+  }
+
+  // js/player.js
+  function blocked(x, z) {
+    return isSolidTile(x, z) || fenceBlocks(x, z);
+  }
+  var mood = 1;
+  function setPlayerMood(h) {
+    mood = Math.max(0, Math.min(1, h));
+  }
+  var playerGroup;
+  var heldGroup;
+  var gait;
+  var torso;
+  var armRig;
+  var selectedTool = "move";
+  var displayedTool = null;
+  var farmAction = null;
+  var poseTime = 0;
+  var targetX = 24;
+  var targetZ = 24;
+  var currentX = 24;
+  var currentZ = 24;
+  var moving = false;
+  var stuckTimer = 0;
+  var path = null;
+  var pathIdx = 0;
+  var bodyMesh;
+  var ponytail;
+  var gender = "girl";
+  var SPEED = 5;
+  var PUSH_THROUGH = 0.7;
+  function createPlayer() {
+    playerGroup = new Group();
+    playerGroup.scale.setScalar(0.85);
+    playerGroup.userData.shadowRole = "actor";
+    torso = new Group();
+    torso.name = "farmer-torso";
+    playerGroup.add(torso);
+    const bodyGeo = new CylinderGeometry(0.17, 0.19, 0.34, 12);
+    const bodyMat = curvedMaterial({ color: 6003669 });
+    const body = new Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.48;
+    torso.add(body);
+    bodyMesh = body;
+    const headGeo = new SphereGeometry(0.16, 12, 9);
+    const headMat = curvedMaterial({ color: 16107168 });
+    const head = new Mesh(headGeo, headMat);
+    head.position.y = 0.78;
+    torso.add(head);
+    const hairGeo = new SphereGeometry(0.17, 12, 9, 0, Math.PI * 2, 0, Math.PI * 0.6);
+    const hairMat = curvedMaterial({ color: 6042391 });
+    const hair = new Mesh(hairGeo, hairMat);
+    hair.position.y = 0.82;
+    torso.add(hair);
+    const brimGeo = new CylinderGeometry(0.27, 0.27, 0.04, 12);
+    const hatMat = curvedMaterial({ color: 14202238 });
+    const brim = new Mesh(brimGeo, hatMat);
+    brim.position.y = 0.92;
+    torso.add(brim);
+    const topGeo = new CylinderGeometry(0.14, 0.18, 0.15, 12);
+    const top = new Mesh(topGeo, hatMat);
+    top.position.y = 1;
+    torso.add(top);
+    ponytail = new Mesh(new SphereGeometry(0.07, 6, 5), curvedMaterial({ color: 7028510 }));
+    ponytail.scale.set(1, 1.8, 1);
+    ponytail.position.set(0, 0.72, -0.15);
+    torso.add(ponytail);
+    setPlayerGender(gender);
+    const addPart = (geo, color, x, y, z, rz = 0, parent = torso) => {
+      const m = new Mesh(geo, curvedMaterial({ color }));
+      m.position.set(x, y, z);
+      m.rotation.z = rz;
+      parent.add(m);
+      return m;
+    };
+    for (const side of [-1, 1]) {
+      addPart(new BoxGeometry(0.025, 0.28, 0.024), 15783597, side * 0.075, 0.48, 0.16);
+      addPart(new SphereGeometry(0.014, 8, 6), 4472110, side * 0.056, 0.8, 0.148);
+    }
+    addPart(new BoxGeometry(0.22, 0.18, 0.028), 15255445, 0, 0.39, 0.173);
+    addPart(new SphereGeometry(0.029, 8, 6), 15644561, 0, 0.755, 0.163);
+    playerGroup.add(contactShadow(0.72, 0.54, 0.015));
+    heldGroup = new Group();
+    heldGroup.name = "farmer-grip";
+    torso.add(heldGroup);
+    armRig = createFarmerRig(torso, heldGroup);
+    displayedTool = null;
+    farmAction = null;
+    setHeldTool(selectedTool);
+    poseFarmer(armRig, { tool: selectedTool });
+    playerGroup.position.set(currentX, 0.07, currentZ);
+    gait = createFarmerGait(playerGroup, torso);
+    poseFarmerGait(gait);
+    scene.add(playerGroup);
+    return playerGroup;
+  }
+  function buildHeldTool(toolId) {
+    const g = new Group();
+    const add = (geo, color, x, y, z, rx, rz) => {
+      const m = new Mesh(geo, curvedMaterial({ color }));
+      m.position.set(x, y, z);
+      if (rx) m.rotation.x = rx;
+      if (rz) m.rotation.z = rz;
+      g.add(m);
+    };
+    if (toolId === "water") {
+      add(new CylinderGeometry(0.1, 0.11, 0.16, 10), 6003669, 0, -0.15, 0.04);
+      add(new CylinderGeometry(0.021, 0.035, 0.24, 7), 5605563, 0, -0.1, 0.21, 1.2);
+      add(new CylinderGeometry(0.052, 0.035, 0.035, 8), 3496816, 0, -0.055, 0.33, 1.2);
+      add(new TorusGeometry(0.07, 0.014, 5, 10), 4487082, 0, -0.06, 0.015);
+    } else if (toolId === "hoe") {
+      add(new CylinderGeometry(0.014, 0.014, 0.7, 7), 9991759, 0, 0, 0.23, Math.PI / 2);
+      add(new BoxGeometry(0.24, 0.065, 0.075), 9411486, 0, 0, 0.56);
+    } else if (toolId === "axe") {
+      add(new CylinderGeometry(0.016, 0.02, 0.57, 7), 9991759, 0, 0, 0.2, Math.PI / 2);
+      add(new BoxGeometry(0.055, 0.18, 0.12), 11122871, 0, -0.055, 0.45);
+    } else if (toolId === "sprinkler") {
+      add(new CylinderGeometry(0.04, 0.05, 0.16, 6), 7043206, 0, 0, 0);
+      add(new SphereGeometry(0.05, 6, 5), 4165584, 0, 0.1, 0);
+    } else if (toolId === "hand") {
+      add(new TorusGeometry(0.09, 0.015, 4, 10), 12096074, 0, -0.08, 0);
+      add(new CylinderGeometry(0.105, 0.075, 0.1, 8), 13150318, 0, -0.19, 0);
+    } else if (toolId && toolId.endsWith("_seed")) {
+      add(new BoxGeometry(0.1, 0.14, 0.07), 11897418, 0, -0.07, 0);
+    } else {
+      return null;
+    }
+    return g;
+  }
+  function setPlayerGender(g) {
+    gender = g === "boy" ? "boy" : "girl";
+    if (bodyMesh) bodyMesh.material.color.set(gender === "boy" ? 6851223 : 12483448);
+    if (ponytail) ponytail.visible = gender === "girl";
+  }
+  function setHeldTool(toolId) {
+    selectedTool = toolId;
+    farmAction = null;
+    displayHeldTool(toolId);
+  }
+  function displayHeldTool(toolId) {
+    if (!heldGroup) return;
+    if (displayedTool === toolId) return;
+    displayedTool = toolId;
+    while (heldGroup.children.length) {
+      const c = heldGroup.children[0];
+      heldGroup.remove(c);
+      c.traverse((o) => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
+      });
+    }
+    const tool = buildHeldTool(toolId);
+    if (tool) heldGroup.add(tool);
+  }
+  function playFarmAction(tool, x, z) {
+    if (!playerGroup || !["hoe", "water", "axe", "hand"].includes(tool) && !tool?.endsWith("_seed")) return;
+    const dx = x - currentX, dz = z - currentZ;
+    if (Math.hypot(dx, dz) > 0.05) playerGroup.rotation.y = Math.atan2(dx, dz);
+    farmAction = { tool, elapsed: 0, duration: tool === "water" ? 0.85 : 0.65 };
+    displayHeldTool(tool);
+  }
+  function updateFarmPose(dt, travel = 0) {
+    poseTime += dt;
+    if (farmAction) {
+      farmAction.elapsed += dt;
+      if (farmAction.elapsed >= farmAction.duration) {
+        farmAction = null;
+        displayHeldTool(selectedTool);
+      }
+    }
+    if (armRig) poseFarmer(armRig, { tool: displayedTool || "move", phase: farmAction ? farmAction.elapsed / farmAction.duration : -1, walking: travel > 1e-7, walkPhase: ((gait?.cycle || 0) + travel / (gait?.stride || WALK_STRIDE)) * Math.PI * 2, time: poseTime });
+  }
+  function moveTo(x, z) {
+    farmAction = null;
+    displayHeldTool(selectedTool);
+    targetX = x;
+    targetZ = z;
+    path = null;
+    moving = true;
+    stuckTimer = 0;
+  }
+  function stopMovement() {
+    targetX = currentX;
+    targetZ = currentZ;
+    path = null;
+    pathIdx = 0;
+    moving = false;
+    stuckTimer = 0;
+  }
+  function moveAlong(waypoints) {
+    if (!waypoints || !waypoints.length) return;
+    farmAction = null;
+    displayHeldTool(selectedTool);
+    path = waypoints;
+    pathIdx = 0;
+    targetX = waypoints[0].x;
+    targetZ = waypoints[0].z;
+    moving = true;
+    stuckTimer = 0;
+  }
+  function advanceWaypoint() {
+    if (path && pathIdx < path.length - 1) {
+      pathIdx++;
+      targetX = path[pathIdx].x;
+      targetZ = path[pathIdx].z;
+      stuckTimer = 0;
+      return true;
+    }
+    path = null;
+    return false;
+  }
+  function updatePlayer(dt) {
+    if (!playerGroup) return;
+    if (!moving) {
+      updateFarmPose(dt);
+      poseFarmerGait(gait, { dt });
+      return;
+    }
+    const previousX = currentX, previousZ = currentZ;
+    const dx = targetX - currentX;
+    const dz = targetZ - currentZ;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < 0.05) {
+      currentX = targetX;
+      currentZ = targetZ;
+      if (!advanceWaypoint()) moving = false;
+    } else {
+      const step = Math.min(SPEED * speedMult() * dt, dist);
+      const mx = dx / dist * step;
+      const mz = dz / dist * step;
+      if (blocked(currentX, currentZ) || !blocked(currentX + mx, currentZ + mz)) {
+        currentX += mx;
+        currentZ += mz;
+        stuckTimer = 0;
+      } else if (Math.abs(mx) > 1e-3 && !blocked(currentX + mx, currentZ)) {
+        currentX += mx;
+        stuckTimer = 0;
+      } else if (Math.abs(mz) > 1e-3 && !blocked(currentX, currentZ + mz)) {
+        currentZ += mz;
+        stuckTimer = 0;
+      } else {
+        stuckTimer += dt;
+        if (stuckTimer > PUSH_THROUGH) {
+          moving = false;
+          path = null;
+          stuckTimer = 0;
+        }
+      }
+      if (Math.hypot(targetX - currentX, targetZ - currentZ) < 0.05) {
+        currentX = targetX;
+        currentZ = targetZ;
+        if (!advanceWaypoint()) {
+          moving = false;
+          stuckTimer = 0;
+        }
+      }
+    }
+    playerGroup.position.x = currentX;
+    playerGroup.position.z = currentZ;
+    playerGroup.position.y = 0.07;
+    const travel = Math.hypot(currentX - previousX, currentZ - previousZ);
+    if (travel > 1e-7) playerGroup.rotation.y = Math.atan2(currentX - previousX, currentZ - previousZ);
+    updateFarmPose(dt, travel);
+    poseFarmerGait(gait, { distance: travel, dt, walking: moving, energy: mood });
+  }
+  function getPlayerPos() {
+    return { x: Math.round(currentX), z: Math.round(currentZ) };
+  }
+  function getPlayerWorldPos() {
+    return { x: currentX, z: currentZ };
+  }
+  function isMoving() {
+    return moving;
+  }
+  function getTarget() {
+    return moving ? { x: targetX, z: targetZ } : null;
+  }
+  function getPath() {
+    return path ? path.slice() : null;
+  }
+  function setPlayerPos(x, z) {
+    farmAction = null;
+    displayHeldTool(selectedTool);
+    if (armRig) poseFarmer(armRig, { tool: selectedTool });
+    currentX = x;
+    currentZ = z;
+    targetX = x;
+    targetZ = z;
+    path = null;
+    moving = false;
+    if (playerGroup) {
+      playerGroup.position.set(x, 0.07, z);
+      if (gait) {
+        resetFarmerGait(gait);
+        poseFarmerGait(gait);
+      }
+    }
+  }
+  function getPlayerGroup() {
+    return playerGroup;
+  }
+
+  // js/inventory.js
+  var ITEMS = {
+    carrot_seed: { name: "Carrot Seeds", type: "seed", cropId: "carrot", buyPrice: 5, icon: "carrot_seed" },
+    tomato_seed: { name: "Tomato Seeds", type: "seed", cropId: "tomato", buyPrice: 10, icon: "tomato_seed" },
+    potato_seed: { name: "Potato Seeds", type: "seed", cropId: "potato", buyPrice: 3, icon: "potato_seed" },
+    wheat_seed: { name: "Wheat Seeds", type: "seed", cropId: "wheat", buyPrice: 8, icon: "wheat_seed" },
+    carrot: { name: "Carrot", type: "crop", sellPrice: 15, icon: "carrot" },
+    tomato: { name: "Tomato", type: "crop", sellPrice: 25, icon: "tomato" },
+    potato: { name: "Potato", type: "crop", sellPrice: 10, icon: "potato" },
+    wheat: { name: "Wheat", type: "crop", sellPrice: 20, icon: "wheat" },
+    // --- New seeds ---
+    strawberry_seed: { name: "Strawberry Seeds", type: "seed", cropId: "strawberry", buyPrice: 7, icon: "strawberry_seed" },
+    mint_seed: { name: "Mint Seeds", type: "seed", cropId: "mint", buyPrice: 14, icon: "mint_seed" },
+    lavender_seed: { name: "Lavender Seeds", type: "seed", cropId: "lavender", buyPrice: 26, icon: "lavender_seed" },
+    tulip_seed: { name: "Tulip Bulbs", type: "seed", cropId: "tulip", buyPrice: 18, icon: "tulip_seed" },
+    sunflower_seed: { name: "Sunflower Seeds", type: "seed", cropId: "sunflower", buyPrice: 30, icon: "sunflower_seed" },
+    rose_seed: { name: "Rose Seeds", type: "seed", cropId: "rose", buyPrice: 50, icon: "rose_seed" },
+    square_watermelon_seed: { name: "Square Melon Seeds", type: "seed", cropId: "square_watermelon", buyPrice: 130, icon: "square_watermelon_seed" },
+    grape_seed: { name: "Grape Vine", type: "seed", cropId: "grape", buyPrice: 45, icon: "grape_seed" },
+    // --- Late-game premium seeds (#63) ---
+    dragonfruit_seed: { name: "Dragonfruit Cutting", type: "seed", cropId: "dragonfruit", buyPrice: 110, icon: "dragonfruit_seed" },
+    golden_pumpkin_seed: { name: "Golden Pumpkin Seeds", type: "seed", cropId: "golden_pumpkin", buyPrice: 180, icon: "golden_pumpkin_seed" },
+    // --- New crops (harvested) ---
+    strawberry: { name: "Strawberry", type: "crop", sellPrice: 18, icon: "strawberry" },
+    mint: { name: "Mint", type: "crop", sellPrice: 22, icon: "mint" },
+    lavender: { name: "Lavender", type: "crop", sellPrice: 48, icon: "lavender" },
+    tulip: { name: "Tulip", type: "crop", sellPrice: 38, icon: "tulip" },
+    sunflower: { name: "Sunflower", type: "crop", sellPrice: 70, icon: "sunflower" },
+    rose: { name: "Rose", type: "crop", sellPrice: 95, icon: "rose" },
+    square_watermelon: { name: "Square Watermelon", type: "crop", sellPrice: 300, icon: "square_watermelon" },
+    grape: { name: "Grapes", type: "crop", sellPrice: 55, icon: "grape" },
+    dragonfruit: { name: "Dragonfruit", type: "crop", sellPrice: 130, icon: "dragonfruit" },
+    // late-game (#63)
+    golden_pumpkin: { name: "Golden Pumpkin", type: "crop", sellPrice: 400, icon: "golden_pumpkin" },
+    // late-game jackpot (#63)
+    // --- Materials (gathered, sellable; reuses the 'crop' sellable bucket) ---
+    wood: { name: "Wood", type: "crop", sellPrice: 14, icon: "wood" },
+    apple: { name: "Apple", type: "crop", sellPrice: 1, icon: "apple" },
+    // fruit-tree drop, ~$1 each
+    // --- Tools / placeables (bought at shop, not sold) ---
+    sprinkler: { name: "Sprinkler", type: "tool", buyPrice: 250, icon: "sprinkler" },
+    // --- Animal produce (sellable) ---
+    egg: { name: "Egg", type: "crop", sellPrice: 16, icon: "egg" },
+    cow_milk: { name: "Cow Milk", type: "crop", sellPrice: 34, icon: "cow_milk" },
+    goat_milk: { name: "Goat Milk", type: "crop", sellPrice: 52, icon: "goat_milk" },
+    honey: { name: "Honey", type: "crop", sellPrice: 75, icon: "honey" },
+    // from beehives (#44)
+    // --- Fish (caught at the pond, #49) ---
+    minnow: { name: "Minnow", type: "crop", sellPrice: 12, icon: "minnow" },
+    trout: { name: "Trout", type: "crop", sellPrice: 30, icon: "trout" },
+    bass: { name: "Bass", type: "crop", sellPrice: 42, icon: "bass" },
+    salmon: { name: "Salmon", type: "crop", sellPrice: 60, icon: "salmon" },
+    pike: { name: "Pike", type: "crop", sellPrice: 78, icon: "pike" },
+    catfish: { name: "Catfish \u{1F431}", type: "crop", sellPrice: 55, icon: "catfish" },
+    // it has a cat face. meow.
+    bob: { name: "Bob", type: "crop", sellPrice: 40, icon: "bob" },
+    // a fish named Bob. hi Bob.
+    // --- Crafted goods (made in the Workshop, sold at market) ---
+    cheese: { name: "Goat Cheese", type: "crop", crafted: true, sellPrice: 130, icon: "cheese" },
+    sunny_jam: { name: "Sunny Jam", type: "crop", crafted: true, sellPrice: 150, icon: "sunny_jam" },
+    calm_potion: { name: "Calm Potion", type: "crop", crafted: true, sellPrice: 210, icon: "calm_potion" },
+    country_cake: { name: "Country Cake", type: "crop", crafted: true, sellPrice: 240, icon: "country_cake" },
+    perfume: { name: "Perfume", type: "crop", crafted: true, sellPrice: 300, icon: "perfume" },
+    love_potion: { name: "Love Potion", type: "crop", crafted: true, sellPrice: 280, icon: "love_potion" },
+    melon_juice: { name: "Melon Juice", type: "crop", crafted: true, sellPrice: 360, icon: "melon_juice" },
+    grand_elixir: { name: "Grand Elixir", type: "crop", crafted: true, sellPrice: 440, icon: "grand_elixir" },
+    wine: { name: "Wine", type: "crop", crafted: true, sellPrice: 220, icon: "wine" },
+    // --- Cooked meals (made in the Kitchen/Workshop, heal a lot, sell well) #50 ---
+    veggie_soup: { name: "Veggie Soup", type: "crop", crafted: true, sellPrice: 120, icon: "veggie_soup" },
+    fruit_pie: { name: "Fruit Pie", type: "crop", crafted: true, sellPrice: 160, icon: "fruit_pie" },
+    fish_stew: { name: "Fish Stew", type: "crop", crafted: true, sellPrice: 140, icon: "fish_stew" },
+    honey_cake: { name: "Honey Cake", type: "crop", crafted: true, sellPrice: 200, icon: "honey_cake" }
+  };
+  function createInventory() {
+    const items = {};
+    return {
+      add(id, qty = 1) {
+        items[id] = (items[id] || 0) + qty;
+      },
+      remove(id, qty = 1) {
+        if (!items[id] || items[id] < qty) return false;
+        items[id] -= qty;
+        if (items[id] <= 0) delete items[id];
+        return true;
+      },
+      count(id) {
+        return items[id] || 0;
+      },
+      has(id, qty = 1) {
+        return (items[id] || 0) >= qty;
+      },
+      getAll() {
+        return { ...items };
+      },
+      // For save/load
+      serialize() {
+        return { ...items };
+      },
+      load(data) {
+        Object.keys(items).forEach((k) => delete items[k]);
+        Object.assign(items, data);
+      }
+    };
+  }
+
+  // js/seasons.js
+  var SEASONS = [
+    { name: "Spring", emoji: "\u{1F338}", growth: 1.1 },
+    { name: "Summer", emoji: "\u2600\uFE0F", growth: 1.25 },
+    { name: "Autumn", emoji: "\u{1F342}", growth: 0.9 },
+    { name: "Winter", emoji: "\u2744\uFE0F", growth: 0.55 }
+  ];
+  var SEASON_DAYS = 3;
+  function getSeason(day) {
+    const idx = Math.floor((Math.max(1, day) - 1) / SEASON_DAYS) % SEASONS.length;
+    return { ...SEASONS[idx], index: idx };
+  }
+
+  // js/state.js
+  var inventory = createInventory();
+  var barnStorage = createInventory();
+  var MAX_HEALTH = 100;
+  var HEALTH_DRAIN = 0.35;
+  var DAY_LENGTH = 300;
+  var AFK_MS = 7e3;
+  var PAN_SCALE = 0.03;
+  var BARN_UPGRADE_COSTS = [150, 300, 600, 1200];
+  var G = {
+    // Core save-model primitives
+    coins: 100,
+    day: 1,
+    gameTime: 0,
+    playerName: "Jenn",
+    playerGender: "girl",
+    health: 100,
+    season: getSeason(1),
+    barnLevel: 1,
+    barnCapacity: 50,
+    // derived; recalcBarnCapacity() overwrites
+    // Inventory singletons (also exported as const above)
+    inventory,
+    barnStorage,
+    // Selection / pending-action / input flags
+    selectedSlot: 0,
+    pendingAction: null,
+    // { x, z, tool, auto? }
+    pendingRoute: null,
+    // { tx, tz }
+    lastInputAt: performance.now(),
+    autoActive: false,
+    autoCheckTimer: 0,
+    namePromptOpen: false,
+    autoSkip: /* @__PURE__ */ new Set(),
+    // auto-farm tiles unreachable this AFK session
+    // Throttled-UI / step / health-UI timers
+    _uiDirty: true,
+    _uiTimer: 0,
+    stepTimer: 0,
+    healthUiTimer: 0,
+    buffHudTimer: 0,
+    // Fishing
+    fishing: null,
+    // { state:'cast'|'bite', timer }
+    // Loop scratch / timer handles
+    saveTimer: null,
+    lastTime: performance.now(),
+    _sysCtx: null,
+    // Drag-to-pan camera state
+    dragDown: false,
+    dragMoved: false,
+    dragLastX: 0,
+    dragLastY: 0,
+    dragStartX: 0,
+    dragStartY: 0,
+    // Lazy DOM nodes (reassigned from null)
+    autoBadgeEl: null,
+    buffBarEl: null
+  };
+
+  // js/performance-metrics.js
+  var metrics = /* @__PURE__ */ new Map();
+  function measure(name, start) {
+    const ms = performance.now() - start, m = metrics.get(name) || { count: 0, total: 0, max: 0, samples: [] };
+    m.count++;
+    m.total += ms;
+    m.max = Math.max(m.max, ms);
+    m.samples.push(ms);
+    if (m.samples.length > 300) m.samples.shift();
+    metrics.set(name, m);
+    return ms;
+  }
+  function metricSnapshot() {
+    return Object.fromEntries([...metrics].map(([key3, m]) => {
+      const values = [...m.samples].sort((a, b) => a - b);
+      return [key3, { count: m.count, meanMs: m.total / m.count, p50Ms: values[Math.floor(values.length * 0.5)] || 0, p95Ms: values[Math.floor(values.length * 0.95)] || 0, maxMs: m.max }];
+    }));
+  }
+
+  // js/registry.js
+  var systems = [];
+  function registerSystem(sys) {
+    if (!sys || !sys.id) throw new Error("registerSystem: a system needs an id");
+    if (systems.some((s) => s.id === sys.id)) return;
+    systems.push(sys);
+  }
+  function updateSystems(dt, ctx2) {
+    for (const s of systems) if (s.update) s.update(dt, ctx2);
+  }
+
+  // js/object-identity.js
+  var serial = 0;
+  function objectId(record2) {
+    return record2.uid || (record2.uid = globalThis.crypto?.randomUUID?.() || `farm-${Date.now()}-${++serial}`);
+  }
+
+  // js/terrain.js
+  var CORE_MIN = 0;
+  var CORE_MAX = 48;
+  var AMP = 0.33;
+  function distOutsideCore(x, z) {
+    const dx = Math.max(0, CORE_MIN - x, x - CORE_MAX);
+    const dz = Math.max(0, CORE_MIN - z, z - CORE_MAX);
+    return Math.hypot(dx, dz);
+  }
+  function coreFade(x, z) {
+    return Math.min(1, distOutsideCore(x, z) / 8);
+  }
+  function terrainHeight(x, z) {
+    const n = Math.sin(x * 0.18 + 1.3) * Math.cos(z * 0.15 - 0.7) + 0.5 * Math.sin((x + z) * 0.09 + 2.1);
+    return n / 1.5 * AMP * coreFade(x, z);
+  }
+
+  // js/decor.js
+  var inCore = (x, z) => x >= 0 && x < 48 && z >= 0 && z < 48;
+  var groundY = (x, z) => inCore(x, z) ? 0.02 : terrainHeight(x, z) + 0.02;
+  var box3 = (w, h, d) => new BoxGeometry(w, h, d);
+  var cyl = (rt, rb, h, s = 8) => new CylinderGeometry(rt, rb, h, s);
+  var sph = (r, s = 8) => new SphereGeometry(r, s, Math.max(4, s - 2));
+  var cone = (r, h, s = 6) => new ConeGeometry(r, h, s);
+  function part(g, geo, color, x, y, z, rx = 0, ry = 0, rz = 0) {
+    const m = new Mesh(geo, curvedMaterial({ color }));
+    m.position.set(x, y, z);
+    if (rx) m.rotation.x = rx;
+    if (ry) m.rotation.y = ry;
+    if (rz) m.rotation.z = rz;
+    g.add(m);
+    return m;
+  }
+  var FLOWER_COLS = [16375883, 15231119, 15764026, 9419007, 15921896];
+  var BUILD = {
+    haybale(g) {
+      part(g, cyl(0.26, 0.26, 0.5, 10), 14467658, 0, 0.26, 0, 0, 0, Math.PI / 2);
+      part(g, cyl(0.265, 0.265, 0.06, 10), 12888120, 0, 0.26, 0.16, 0, 0, Math.PI / 2);
+      part(g, cyl(0.265, 0.265, 0.06, 10), 12888120, 0, 0.26, -0.16, 0, 0, Math.PI / 2);
+    },
+    flowerbed(g) {
+      part(g, box3(0.68, 0.14, 1.45), 5913122, 0, 0.07, 0);
+      for (const x of [-0.36, 0.36]) part(g, box3(0.055, 0.2, 1.52), 11105855, x, 0.11, 0);
+      for (const z of [-0.74, 0.74]) part(g, box3(0.74, 0.2, 0.055), 11105855, 0, 0.11, z);
+      for (let row2 = 0; row2 < 5; row2++) for (const x of [-0.17, 0.17]) {
+        const z = -0.55 + row2 * 0.275, y = 0.25 + row2 % 2 * 0.04;
+        part(g, cyl(0.015, 0.015, 0.22, 4), 4160052, x, y, z);
+        part(g, sph(0.075, 6), FLOWER_COLS[row2], x, y + 0.13, z);
+        part(g, sph(0.055, 5), 6587719, x + 0.05, y - 0.02, z);
+      }
+    },
+    bench(g) {
+      part(g, box3(0.72, 0.06, 0.26), 11105855, 0, 0.24, 0);
+      part(g, box3(0.72, 0.22, 0.05), 11105855, 0, 0.36, -0.11);
+      for (const sx of [-0.3, 0.3]) for (const sz of [-0.09, 0.09]) part(g, box3(0.05, 0.24, 0.05), 7227942, sx, 0.12, sz);
+    },
+    signpost(g) {
+      part(g, cyl(0.04, 0.04, 0.7, 6), 7227942, 0, 0.35, 0);
+      part(g, box3(0.34, 0.2, 0.04), 12096074, 0, 0.56, 0);
+      part(g, box3(0.34, 0.2, 0.01), 7227942, 0, 0.56, 0.025);
+    },
+    gnome(g) {
+      part(g, cone(0.13, 0.28, 8), 3895216, 0, 0.14, 0);
+      part(g, sph(0.085, 8), 15778970, 0, 0.32, 0);
+      part(g, cone(0.1, 0.18, 8), 13777723, 0, 0.44, 0);
+      part(g, sph(0.06, 6), 15921906, 0, 0.27, 0.06);
+    },
+    lamp(g) {
+      part(g, cyl(0.1, 0.12, 0.08, 8), 3817287, 0, 0.04, 0);
+      part(g, cyl(0.03, 0.03, 0.85, 6), 3356735, 0, 0.46, 0);
+      part(g, box3(0.15, 0.17, 0.15), 2764340, 0, 0.95, 0);
+      part(g, sph(0.07, 8), 16770970, 0, 0.95, 0);
+      part(g, cone(0.11, 0.09, 4), 3356735, 0, 1.08, 0, 0, Math.PI / 4);
+    },
+    topiary(g) {
+      part(g, cyl(0.12, 0.16, 0.18, 8), 11887663, 0, 0.09, 0);
+      part(g, sph(0.22, 10), 3112250, 0, 0.4, 0);
+      part(g, sph(0.15, 8), 3508543, 0, 0.62, 0);
+    },
+    birdbath(g) {
+      part(g, cyl(0.07, 0.1, 0.45, 8), 10132130, 0, 0.22, 0);
+      part(g, cyl(0.22, 0.16, 0.08, 12), 11579576, 0, 0.46, 0);
+      part(g, cyl(0.18, 0.18, 0.02, 12), 6732799, 0, 0.5, 0);
+    },
+    picnic(g) {
+      part(g, box3(0.9, 0.05, 0.5), 12622426, 0, 0.42, 0);
+      for (const sz of [-0.34, 0.34]) part(g, box3(0.9, 0.04, 0.15), 11105855, 0, 0.24, sz);
+      for (const sx of [-0.38, 0.38]) for (const sz of [-0.22, 0.22]) part(g, box3(0.05, 0.42, 0.05), 7227942, sx, 0.2, sz);
+    },
+    well(g) {
+      part(g, cyl(0.3, 0.32, 0.42, 12), 9079440, 0, 0.21, 0);
+      part(g, cyl(0.24, 0.24, 0.04, 12), 2237480, 0, 0.41, 0);
+      for (const sx of [-0.26, 0.26]) part(g, box3(0.05, 0.55, 0.05), 7227942, sx, 0.68, 0);
+      part(g, cyl(0.025, 0.025, 0.55, 6), 5913122, 0, 0.9, 0, 0, 0, Math.PI / 2);
+      part(g, cone(0.42, 0.26, 4), 9124395, 0, 1.07, 0, 0, Math.PI / 4);
+    },
+    statue(g) {
+      part(g, box3(0.36, 0.28, 0.36), 10921645, 0, 0.14, 0);
+      part(g, box3(0.3, 0.05, 0.3), 10132128, 0, 0.3, 0);
+      part(g, cyl(0.1, 0.14, 0.42, 8), 13027020, 0, 0.53, 0);
+      part(g, sph(0.1, 8), 13027020, 0, 0.79, 0);
+    },
+    windmill(g) {
+      part(g, cyl(0.18, 0.3, 1.2, 8), 14207920, 0, 0.6, 0);
+      part(g, cone(0.32, 0.32, 8), 8010539, 0, 1.36, 0);
+      part(g, sph(0.08, 6), 4868682, 0, 1.08, 0.32);
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2;
+        part(g, box3(0.5, 0.1, 0.02), 15656656, Math.cos(a) * 0.28, 1.08 + Math.sin(a) * 0.28, 0.34, 0, 0, a);
+      }
+    }
+  };
+  var DECOR_TYPES = {
+    haybale: { name: "Hay Bale", emoji: "\u{1F33E}", cost: 30, footprint: 0.6, beauty: 1, note: "rustic charm" },
+    flowerbed: { name: "Flower Bed", emoji: "\u{1F337}", cost: 45, footprint: 0.8, beauty: 4, note: "a splash of colour" },
+    signpost: { name: "Signpost", emoji: "\u{1FAA7}", cost: 50, footprint: 0.5, beauty: 1, note: "mark the way" },
+    bench: { name: "Garden Bench", emoji: "\u{1FA91}", cost: 65, footprint: 0.9, beauty: 2, note: "a place to rest" },
+    gnome: { name: "Garden Gnome", emoji: "\u{1F9D9}", cost: 75, footprint: 0.4, beauty: 3, note: "keeps you company" },
+    lamp: { name: "Lamp Post", emoji: "\u{1F3EE}", cost: 95, footprint: 0.5, beauty: 3, note: "warm glow" },
+    topiary: { name: "Topiary", emoji: "\u{1F333}", cost: 110, footprint: 0.6, beauty: 4, note: "tidy hedge" },
+    birdbath: { name: "Bird Bath", emoji: "\u{1F426}", cost: 125, footprint: 0.6, beauty: 5, note: "invites birds" },
+    picnic: { name: "Picnic Table", emoji: "\u{1F9FA}", cost: 140, footprint: 1, beauty: 3, note: "family gathering" },
+    well: { name: "Stone Well", emoji: "\u{1FAA3}", cost: 185, footprint: 0.9, beauty: 5, note: "old-world cosy" },
+    statue: { name: "Statue", emoji: "\u{1F5FF}", cost: 220, footprint: 0.7, beauty: 7, note: "grand centrepiece" },
+    windmill: { name: "Windmill", emoji: "\u{1F32C}\uFE0F", cost: 420, footprint: 1, beauty: 8, note: "landmark for the estate" }
+  };
+  var DECOR_CATALOG = Object.entries(DECOR_TYPES).map(([id, t2]) => ({ id, ...t2 }));
+  function decorModel(id, layout2 = 1) {
+    const g = new Group();
+    if (BUILD[id]) BUILD[id](g);
+    if (id === "flowerbed" && !layout2) g.scale.z = 0.48;
+    return g;
+  }
+  var placed = [];
+  var _geo = {};
+  var _ims = {};
+  var _dirty = false;
+  var _m4 = new Matrix4();
+  var _q = new Quaternion();
+  var _p = new Vector3();
+  var _s = new Vector3(1, 1, 1);
+  var _YUP = new Vector3(0, 1, 0);
+  function geoFor(id) {
+    if (!_geo[id]) {
+      const g = new Group();
+      BUILD[id](g);
+      _geo[id] = mergeGroupGeo(g);
+    }
+    return _geo[id];
+  }
+  function rebuildDecorIMs() {
+    _dirty = false;
+    const byId = {};
+    for (const d of placed) (byId[d.id] = byId[d.id] || []).push(d);
+    for (const id in _ims) {
+      if (!byId[id]) {
+        scene.remove(_ims[id]);
+        _ims[id].dispose();
+        delete _ims[id];
+      }
+    }
+    for (const id in byId) {
+      const list2 = byId[id];
+      if (_ims[id]) {
+        scene.remove(_ims[id]);
+        _ims[id].dispose();
+      }
+      const im = new InstancedMesh(geoFor(id), mergedMat, list2.length);
+      list2.forEach((d, i) => {
+        const f = footprint(d.id, d.x, d.z, d.rot || 0, d.layout || 0);
+        _p.set(f.center.x, groundY(d.x, d.z), f.center.z);
+        _q.setFromAxisAngle(_YUP, f.rot);
+        _s.set(f.scale, f.scale, f.scale * (d.id === "flowerbed" && !d.layout ? 0.48 : 1));
+        im.setMatrixAt(i, _m4.compose(_p, _q, _s));
+      });
+      im.instanceMatrix.needsUpdate = true;
+      im.computeBoundingSphere();
+      scene.add(im);
+      _ims[id] = im;
+    }
+  }
+  function placeDecor(id, x, z, rot = 0, layout2 = 1) {
+    if (!BUILD[id]) return false;
+    placed.push({ id, x, z, rot, layout: layout2 });
+    _dirty = true;
+    return true;
+  }
+  function updateDecor() {
+    if (_dirty) rebuildDecorIMs();
+  }
+  function getDecorCount() {
+    return placed.length;
+  }
+  function beautyScore() {
+    let s = 0;
+    for (const d of placed) s += DECOR_TYPES[d.id] && DECOR_TYPES[d.id].beauty || 0;
+    return s;
+  }
+  function countByType() {
+    const c = {};
+    for (const d of placed) c[d.id] = (c[d.id] || 0) + 1;
+    return c;
+  }
+  function serializeDecor() {
+    return placed.map((d) => ({ uid: objectId(d), id: d.id, x: d.x, z: d.z, rot: d.rot, layout: d.layout }));
+  }
+  function loadDecor(data) {
+    placed = [];
+    for (const id in _ims) {
+      scene.remove(_ims[id]);
+      _ims[id].dispose();
+      delete _ims[id];
+    }
+    if (data) {
+      for (const d of data) if (BUILD[d.id]) placed.push({ uid: d.uid, id: d.id, x: d.x, z: d.z, rot: d.rot || 0, layout: d.layout || 0 });
+    }
+    _dirty = true;
+  }
+
+  // js/visitors.js
+  var FARM_CX2 = 24;
+  var FARM_CZ2 = 24;
+  var MAX_VISITORS = 4;
+  var MAX_WITH_BOWL = 7;
+  var ABS_MAX = 14;
+  var SPAWN_EVERY = 45;
+  var CAT_COLORS = [10132122, 14061882, 2763306, 15262422];
+  var FOOD_BOWL_COST = 120;
+  var BOWL_POS = { x: FARM_CX2 - 3, z: FARM_CZ2 + 4 };
+  var visitors = [];
+  var timer = 20;
+  var foodBowl = null;
+  function buildCat(color) {
+    const g = new Group();
+    const body = new Mesh(new BoxGeometry(0.2, 0.14, 0.32), curvedMaterial({ color }));
+    body.position.y = 0.14;
+    g.add(body);
+    const head = new Mesh(new BoxGeometry(0.16, 0.14, 0.15), curvedMaterial({ color }));
+    head.position.set(0, 0.22, 0.2);
+    g.add(head);
+    for (const ex of [-0.05, 0.05]) {
+      const e = new Mesh(new ConeGeometry(0.04, 0.08, 4), curvedMaterial({ color }));
+      e.position.set(ex, 0.32, 0.18);
+      g.add(e);
+    }
+    const tail = new Mesh(new CylinderGeometry(0.02, 0.02, 0.22, 5), curvedMaterial({ color }));
+    tail.position.set(0, 0.2, -0.2);
+    tail.rotation.x = -0.5;
+    g.add(tail);
+    for (const lx of [-0.07, 0.07]) for (const lz of [-0.1, 0.1]) {
+      const l = new Mesh(new CylinderGeometry(0.025, 0.025, 0.14, 5), curvedMaterial({ color }));
+      l.position.set(lx, 0.07, lz);
+      g.add(l);
+    }
+    scene.add(g);
+    return g;
+  }
+  function box4(w, h, d, color) {
+    return new Mesh(new BoxGeometry(w, h, d), curvedMaterial({ color }));
+  }
+  function addLegs(g, color) {
+    for (const lx of [-0.07, 0.07]) for (const lz of [-0.1, 0.1]) {
+      const l = new Mesh(new CylinderGeometry(0.025, 0.025, 0.14, 5), curvedMaterial({ color }));
+      l.position.set(lx, 0.07, lz);
+      g.add(l);
+    }
+  }
+  function buildSkunk() {
+    const g = new Group();
+    const black = 1513242, white = 15921898;
+    const body = box4(0.22, 0.15, 0.34, black);
+    body.position.y = 0.14;
+    g.add(body);
+    const stripe = box4(0.07, 0.16, 0.34, white);
+    stripe.position.y = 0.165;
+    g.add(stripe);
+    const head = box4(0.15, 0.13, 0.14, black);
+    head.position.set(0, 0.2, 0.22);
+    g.add(head);
+    const snout = box4(0.05, 0.05, 0.07, white);
+    snout.position.set(0, 0.19, 0.3);
+    g.add(snout);
+    const tail = new Mesh(new CylinderGeometry(0.11, 0.04, 0.32, 6), curvedMaterial({ color: white }));
+    tail.position.set(0, 0.3, -0.2);
+    tail.rotation.x = -0.7;
+    g.add(tail);
+    addLegs(g, black);
+    scene.add(g);
+    return g;
+  }
+  function buildRabbit() {
+    const g = new Group();
+    const c = Math.random() < 0.5 ? 15789284 : 10255192;
+    const body = box4(0.2, 0.18, 0.26, c);
+    body.position.y = 0.15;
+    g.add(body);
+    const head = box4(0.15, 0.15, 0.14, c);
+    head.position.set(0, 0.26, 0.16);
+    g.add(head);
+    for (const ex of [-0.04, 0.04]) {
+      const ear = box4(0.04, 0.16, 0.05, c);
+      ear.position.set(ex, 0.4, 0.14);
+      g.add(ear);
+    }
+    const tail = box4(0.08, 0.08, 0.08, 16777215);
+    tail.position.set(0, 0.16, -0.16);
+    g.add(tail);
+    addLegs(g, c);
+    scene.add(g);
+    return g;
+  }
+  function buildDuck() {
+    const g = new Group();
+    const c = 15913530;
+    const body = box4(0.2, 0.16, 0.3, c);
+    body.position.y = 0.13;
+    g.add(body);
+    const head = box4(0.14, 0.14, 0.14, c);
+    head.position.set(0, 0.27, 0.16);
+    g.add(head);
+    const beak = box4(0.08, 0.05, 0.1, 15239722);
+    beak.position.set(0, 0.25, 0.26);
+    g.add(beak);
+    const tail = box4(0.1, 0.08, 0.08, c);
+    tail.position.set(0, 0.16, -0.18);
+    tail.rotation.x = 0.4;
+    g.add(tail);
+    for (const lx of [-0.05, 0.05]) {
+      const f = box4(0.06, 0.04, 0.1, 15239722);
+      f.position.set(lx, 0.03, 0.02);
+      g.add(f);
+    }
+    scene.add(g);
+    return g;
+  }
+  function buildPossum() {
+    const g = new Group();
+    const c = 12170925;
+    const body = box4(0.22, 0.15, 0.32, c);
+    body.position.y = 0.14;
+    g.add(body);
+    const head = box4(0.14, 0.13, 0.16, 15262938);
+    head.position.set(0, 0.19, 0.22);
+    g.add(head);
+    const nose = box4(0.04, 0.04, 0.06, 14257312);
+    nose.position.set(0, 0.17, 0.31);
+    g.add(nose);
+    for (const ex of [-0.05, 0.05]) {
+      const ear = box4(0.05, 0.05, 0.02, 7038560);
+      ear.position.set(ex, 0.27, 0.2);
+      g.add(ear);
+    }
+    const tail = new Mesh(new CylinderGeometry(0.02, 0.02, 0.34, 5), curvedMaterial({ color: 14267296 }));
+    tail.position.set(0, 0.12, -0.24);
+    tail.rotation.x = 1;
+    g.add(tail);
+    addLegs(g, c);
+    scene.add(g);
+    return g;
+  }
+  function pickVisitorSpecies(roll = Math.random()) {
+    const r = (roll % 1 + 1) % 1;
+    if (r < 0.4) return "cat";
+    if (r < 0.62) return "skunk";
+    if (r < 0.8) return "rabbit";
+    if (r < 0.92) return "duck";
+    return "possum";
+  }
+  function buildVisitor(species) {
+    switch (species) {
+      case "skunk":
+        return buildSkunk();
+      case "rabbit":
+        return buildRabbit();
+      case "duck":
+        return buildDuck();
+      case "possum":
+        return buildPossum();
+      default:
+        return buildCat(CAT_COLORS[Math.floor(Math.random() * CAT_COLORS.length)]);
+    }
+  }
+  function disposeVisitor(v) {
+    scene.remove(v.grp);
+    v.grp.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) o.material.dispose();
+    });
+  }
+  function buildBowl() {
+    const g = new Group();
+    const bowl = new Mesh(new CylinderGeometry(0.22, 0.16, 0.1, 10), curvedMaterial({ color: 11883306 }));
+    bowl.position.y = 0.05;
+    g.add(bowl);
+    const food = new Mesh(new CylinderGeometry(0.16, 0.16, 0.05, 10), curvedMaterial({ color: 14196826 }));
+    food.position.y = 0.1;
+    g.add(food);
+    g.position.set(BOWL_POS.x, 0.02, BOWL_POS.z);
+    scene.add(g);
+    return g;
+  }
+  function placeFoodBowl() {
+    if (foodBowl) return false;
+    foodBowl = buildBowl();
+    return true;
+  }
+  function hasFoodBowl() {
+    return !!foodBowl;
+  }
+  function wanderTarget() {
+    if (foodBowl) return { x: BOWL_POS.x + (Math.random() * 2 - 1) * 3, z: BOWL_POS.z + (Math.random() * 2 - 1) * 3 };
+    return { x: FARM_CX2 + (Math.random() * 2 - 1) * 9, z: FARM_CZ2 + (Math.random() * 2 - 1) * 9 };
+  }
+  function visitorCap() {
+    const base = foodBowl ? MAX_WITH_BOWL : MAX_VISITORS;
+    return Math.min(base + Math.floor(beautyScore() / 6), ABS_MAX);
+  }
+  function spawnInterval() {
+    const base = foodBowl ? 12 : SPAWN_EVERY;
+    return Math.max(6, base - beautyScore() * 0.6);
+  }
+  function spawnVisitor() {
+    if (visitors.length >= ABS_MAX) return null;
+    const ang = Math.random() * Math.PI * 2, r = 18;
+    const x = FARM_CX2 + Math.cos(ang) * r, z = FARM_CZ2 + Math.sin(ang) * r;
+    const species = pickVisitorSpecies();
+    const grp = buildVisitor(species);
+    grp.position.set(x, 0.02, z);
+    const t2 = wanderTarget();
+    const ttl = (foodBowl ? 80 + Math.random() * 60 : 30 + Math.random() * 45) + Math.min(beautyScore(), 40);
+    const v = { grp, species, x, z, tx: t2.x, tz: t2.z, ttl, bob: Math.random() * 6 };
+    visitors.push(v);
+    return v;
+  }
+  function updateVisitors(dt) {
+    const every = spawnInterval();
+    const cap = visitorCap();
+    timer -= dt;
+    if (timer <= 0) {
+      timer = every + Math.random() * (every * 0.5);
+      if (visitors.length < cap) spawnVisitor();
+    }
+    for (let i = visitors.length - 1; i >= 0; i--) {
+      const v = visitors[i];
+      v.ttl -= dt;
+      const dx = v.tx - v.x, dz = v.tz - v.z, d = Math.hypot(dx, dz);
+      if (d > 0.25) {
+        const s = Math.min(d, 1.6 * dt);
+        v.x += dx / d * s;
+        v.z += dz / d * s;
+        v.grp.rotation.y = Math.atan2(dx, dz);
+      } else {
+        const t2 = wanderTarget();
+        v.tx = t2.x;
+        v.tz = t2.z;
+      }
+      v.bob += dt;
+      v.grp.position.set(v.x, 0.02 + Math.abs(Math.sin(v.bob * 6)) * 0.03, v.z);
+      if (v.ttl <= 0) {
+        disposeVisitor(v);
+        visitors.splice(i, 1);
+      }
+    }
+  }
+  function getVisitorCount() {
+    return visitors.length;
+  }
+  function serializeVisitors() {
+    return { bowl: !!foodBowl };
+  }
+  function loadVisitors(d) {
+    if (d && d.bowl && !foodBowl) placeFoodBowl();
+  }
+  registerSystem({ id: "visitors", update(dt) {
+    updateVisitors(dt);
+  } });
 
   // js/crates.js
   var PAD_SLOTS = [{ x: 30, z: 27 }, { x: 29, z: 28 }, { x: 31, z: 28 }, { x: 29, z: 26 }];
@@ -28015,54 +29135,6 @@ worldPosition = curveWorldPos;
       placeCoop(d.x, d.z, d.rot || 0, d.layout || 0);
       Object.assign(coops.at(-1), { uid: d.uid, prodT: d.prodT ?? EGG_EVERY });
     }
-  }
-
-  // js/buffs.js
-  var MEAL_BUFFS = {
-    honey_cake: { stat: "luck", mult: 2, secs: 90, label: "\u{1F340} Honey Cake \u2014 lucky harvests for a while!" },
-    grand_elixir: { stat: "luck", mult: 3, secs: 120, label: "\u{1F340} Grand Elixir \u2014 very lucky harvests!" },
-    fish_stew: { stat: "speed", mult: 1.35, secs: 90, label: "\u{1F41F} Fish Stew \u2014 quick feet!" },
-    country_cake: { stat: "speed", mult: 1.2, secs: 120, label: "\u{1F370} Country Cake \u2014 a spring in your step!" },
-    veggie_soup: { stat: "growth", mult: 1.5, secs: 90, label: "\u{1F331} Veggie Soup \u2014 crops grow faster!" }
-  };
-  var STAT_ICON = { luck: "\u{1F340}", speed: "\u{1F45F}", growth: "\u{1F331}" };
-  var active2 = {};
-  function fmtBuffTime(secs) {
-    const s = Math.max(0, Math.ceil(secs));
-    const m = Math.floor(s / 60);
-    return m > 0 ? `${m}:${String(s % 60).padStart(2, "0")}` : `${s}s`;
-  }
-  function applyMeal(id) {
-    const b = MEAL_BUFFS[id];
-    if (!b) return null;
-    active2[b.stat] = { mult: b.mult, remaining: b.secs };
-    return b;
-  }
-  function tickBuffs(dt) {
-    for (const stat of Object.keys(active2)) {
-      active2[stat].remaining -= dt;
-      if (active2[stat].remaining <= 0) delete active2[stat];
-    }
-  }
-  function statMult(stat) {
-    return active2[stat] ? active2[stat].mult : 1;
-  }
-  function luckMult() {
-    return statMult("luck");
-  }
-  function speedMult() {
-    return statMult("speed");
-  }
-  function growthMult() {
-    return statMult("growth");
-  }
-  function activeBuffs() {
-    return Object.entries(active2).map(([stat, b]) => ({
-      stat,
-      mult: b.mult,
-      remaining: Math.max(0, b.remaining),
-      icon: STAT_ICON[stat] || "\u2728"
-    }));
   }
 
   // js/farm.js
@@ -29764,604 +30836,6 @@ worldPosition = curveWorldPos;
     }
   }
 
-  // js/presentation/farmer-rig.js
-  var UP = new Vector3(0, 1, 0);
-  var direction = new Vector3();
-  var pole = new Vector3();
-  var bend = new Vector3();
-  var reach = new Vector3();
-  var outlet = new Vector3();
-  var dropMatrix = new Matrix4();
-  function solveArm(shoulder, target2, side, elbow, hand, upper = 0.18, lower = 0.19) {
-    direction.subVectors(target2, shoulder);
-    const requested = direction.length(), distance = MathUtils.clamp(requested, 0.035, upper + lower - 8e-3);
-    if (requested < 1e-8) direction.set(0, -1, 0);
-    else direction.divideScalar(requested);
-    hand.copy(shoulder).addScaledVector(direction, distance);
-    pole.set(side, 0, -0.65);
-    bend.copy(pole).addScaledVector(direction, -pole.dot(direction));
-    if (bend.lengthSq() < 1e-8) bend.crossVectors(direction, UP);
-    bend.normalize();
-    const along = (upper * upper - lower * lower + distance * distance) / (2 * distance);
-    elbow.copy(shoulder).addScaledVector(direction, along).addScaledVector(bend, Math.sqrt(Math.max(0, upper * upper - along * along)));
-  }
-  function between(mesh4, a, b) {
-    direction.subVectors(b, a);
-    mesh4.position.copy(a).add(b).multiplyScalar(0.5);
-    mesh4.scale.y = direction.length();
-    mesh4.quaternion.setFromUnitVectors(UP, direction.normalize());
-  }
-  function createFarmerRig(torso2, held) {
-    const material3 = curvedMaterial({ color: 15909532 }), sleeve = curvedMaterial({ color: 15255445 });
-    const limb = new CylinderGeometry(0.043, 0.048, 1, 7), handGeo = new SphereGeometry(0.053, 8, 6);
-    const arms = [-1, 1].map((side) => {
-      const upper = new Mesh(limb, sleeve), lower = new Mesh(limb, material3), palm = new Mesh(handGeo, material3);
-      upper.name = `upper-arm-${side}`;
-      lower.name = `forearm-${side}`;
-      palm.name = `hand-${side}`;
-      torso2.add(upper, lower, palm);
-      return { side, upper, lower, palm, shoulder: new Vector3(side * 0.19, 0.59, 0), target: new Vector3(), elbow: new Vector3(), hand: new Vector3() };
-    });
-    const water = new InstancedMesh(new SphereGeometry(0.014, 5, 4), curvedMaterial({ color: 7390688 }), 7);
-    water.name = "farmer-water-stream";
-    water.visible = false;
-    water.frustumCulled = false;
-    torso2.parent?.add(water);
-    return { torso: torso2, held, arms, water };
-  }
-  function poseFarmer(rig, { tool = "move", phase = -1, time = 0, walking = false, walkPhase = time * 10 } = {}) {
-    const active5 = phase >= 0 && phase <= 1, e = active5 ? Math.sin(Math.PI * phase) ** 2 : 0;
-    const reaching = tool === "hand" || tool.endsWith("_seed"), swing = tool === "hoe" || tool === "axe";
-    rig.torso.rotation.x = e * (reaching ? 0.3 : swing ? 0.17 : 0.1);
-    rig.torso.position.y = -e * (reaching ? 0.1 : 0.025);
-    for (let i = 1; i >= 0; i--) {
-      const arm = rig.arms[i];
-      const right = arm.side === 1;
-      arm.target.set(arm.side * 0.235, 0.34, 0.075 + (walking ? Math.sin(walkPhase + arm.side * 1.57) * 0.065 : 0));
-      if (right && tool !== "move") arm.target.set(0.23, 0.39, 0.14);
-      if (active5) {
-        if (tool === "water") arm.target.lerp(reach.set(arm.side * 0.17, 0.42, right ? 0.3 : 0.23), e);
-        else if (swing && right) arm.target.set(0.1 - 0.06 * e, 0.43 + 0.05 * e, 0.12 - 0.02 * e);
-        else if (reaching) arm.target.lerp(reach.set(arm.side * 0.19, right ? 0.47 : 0.24, right ? 0.17 : 0.31), e);
-      }
-      if (swing && right) arm.target.set(0.1 - 0.06 * e, 0.43 + 0.05 * e, 0.12 - 0.02 * e);
-      if (swing && !right) {
-        rig.held.updateMatrix();
-        arm.target.set(0, 0, 0.18).applyMatrix4(rig.held.matrix);
-      }
-      solveArm(arm.shoulder, arm.target, arm.side, arm.elbow, arm.hand);
-      if (right) {
-        rig.held.position.copy(arm.hand);
-        rig.held.rotation.set(swing ? -1.1 + e * (tool === "hoe" ? 1.72 : 1.65) : tool === "water" ? e * 0.48 : 0, swing ? -0.65 : 0, 0);
-      }
-      between(arm.upper, arm.shoulder, arm.elbow);
-      between(arm.lower, arm.elbow, arm.hand);
-      arm.palm.position.copy(arm.hand);
-    }
-    rig.held.position.copy(rig.arms[1].hand);
-    rig.held.userData.secondaryGripError = swing ? rig.arms[0].hand.distanceTo(rig.arms[0].target) : 0;
-    rig.held.userData.gripError = rig.held.position.distanceTo(rig.arms[1].hand);
-    rig.water.visible = active5 && tool === "water" && e > 0.25;
-    if (rig.water.visible) {
-      rig.held.updateMatrix();
-      rig.torso.updateMatrix();
-      outlet.set(0, -0.055, 0.35).applyMatrix4(rig.held.matrix).applyMatrix4(rig.torso.matrix);
-      for (let i = 0; i < 7; i++) {
-        const u = (i / 7 + time * 1.8) % 1;
-        dropMatrix.makeScale(0.75, 1.5, 0.75);
-        dropMatrix.setPosition(outlet.x, outlet.y * (1 - u) + 0.015 * u, outlet.z + 0.14 * u);
-        rig.water.setMatrixAt(i, dropMatrix);
-      }
-      rig.water.instanceMatrix.needsUpdate = true;
-    }
-  }
-
-  // js/presentation/farmer-gait.js
-  var UP2 = new Vector3(0, 1, 0);
-  var axis = new Vector3();
-  var bend2 = new Vector3();
-  var target = new Vector3();
-  var inverse = new Matrix4();
-  var WALK_STRIDE = 1.008;
-  var SOLE = 0.075;
-  var BOOT_HALF = 0.055;
-  var STANCE_TRAVEL = 0.4;
-  var SWING_LIMIT = 0.1;
-  var SUPPORT_RECOVERY = 0.035;
-  function segment(mesh4, a, b) {
-    axis.subVectors(b, a);
-    mesh4.position.copy(a).add(b).multiplyScalar(0.5);
-    mesh4.scale.y = axis.length();
-    mesh4.quaternion.setFromUnitVectors(UP2, axis.normalize());
-  }
-  function solveLeg(hip, ankle, side, knee, foot) {
-    axis.subVectors(ankle, hip);
-    const length = axis.length(), d = MathUtils.clamp(length, 0.04, 0.429);
-    if (length < 1e-8) axis.set(0, -1, 0);
-    else axis.divideScalar(length);
-    foot.copy(hip).addScaledVector(axis, d);
-    bend2.set(side * 0.12, 0, 1).addScaledVector(axis, -axis.dot(target.set(side * 0.12, 0, 1))).normalize();
-    const a = (0.21 * 0.21 - 0.22 * 0.22 + d * d) / (2 * d);
-    knee.copy(hip).addScaledVector(axis, a).addScaledVector(bend2, Math.sqrt(Math.max(0, 0.21 * 0.21 - a * a)));
-  }
-  function createFarmerGait(root, torso2) {
-    const cloth = curvedMaterial({ color: 8414551 }), leather = curvedMaterial({ color: 7360826 });
-    const bone = new CylinderGeometry(0.055, 0.06, 1, 8), bootGeo = new SphereGeometry(0.085, 10, 7);
-    const legs = [-1, 1].map((side) => {
-      const upper = new Mesh(bone, cloth), lower = new Mesh(bone, cloth), boot = new Mesh(bootGeo, leather);
-      boot.scale.set(0.9, BOOT_HALF / 0.085, 1.4);
-      upper.name = `thigh-${side}`;
-      lower.name = `shin-${side}`;
-      boot.name = `boot-${side}`;
-      root.add(upper, lower, boot);
-      return { side, upper, lower, boot, hip: new Vector3(), knee: new Vector3(), ankle: new Vector3(), foot: new Vector3(), world: new Vector3(), from: new Vector3(), phase: side < 0 ? 0.25 : 0.75, swing: false, start: 0.5, contact: true, settling: false };
-    });
-    return { root, torso: torso2, legs, distance: 0, initialized: false, settle: null, slip: 0 };
-  }
-  function neutral(gait2, leg, out, forward = 0) {
-    const yaw = gait2.root.rotation.y, s = Math.sin(yaw), c = Math.cos(yaw);
-    return out.set(gait2.x + c * leg.side * 0.09 * 0.85 + Math.sin(gait2.travelYaw) * forward, SOLE + BOOT_HALF * 0.85, gait2.z - s * leg.side * 0.09 * 0.85 + Math.cos(gait2.travelYaw) * forward);
-  }
-  function resetFarmerGait(gait2) {
-    gait2.distance = 0;
-    gait2.cycle = 0;
-    gait2.stride = 0.8;
-    gait2.duty = 0.5;
-    gait2.settle = null;
-    gait2.initialized = true;
-    gait2.yaw = gait2.root.rotation.y;
-    gait2.x = gait2.root.position.x;
-    gait2.z = gait2.root.position.z;
-    gait2.travelYaw = gait2.yaw;
-    for (const leg of gait2.legs) {
-      neutral(gait2, leg, leg.world);
-      leg.from.copy(leg.world);
-      leg.phase = leg.side < 0 ? 0.25 : 0.75;
-      leg.stride = 0.8;
-      leg.duty = 0.5;
-      leg.swing = false;
-      leg.contact = true;
-      leg.contactId = 0;
-      leg.settling = false;
-      leg.yaw = gait2.yaw;
-      leg.fromYaw = leg.yaw;
-    }
-  }
-  function gaitProfile(speed2) {
-    const stride = 0.8 + MathUtils.clamp(speed2 - 2.4, 0, 5.6) * 0.08;
-    return { stride, duty: STANCE_TRAVEL / stride };
-  }
-  function advanceFeet(gait2, distance, dt, energy) {
-    const yaw = gait2.travelYaw;
-    const [left, right] = gait2.legs;
-    const progress2 = (l) => (l.phase - l.start) / (1 - l.start);
-    const support = !left.contact && !right.contact ? progress2(left) >= progress2(right) ? left : right : null;
-    for (const leg of gait2.legs) {
-      const travelled = leg.phase * leg.stride + distance;
-      let p = travelled / leg.stride;
-      leg.settling = false;
-      const recovery = Math.min(SWING_LIMIT, STANCE_TRAVEL / Math.max(1, gait2.speed) * 0.85);
-      if (!leg.contact && leg.swing) p = Math.max(p, leg.phase + dt * (1 - leg.start) / (leg === support ? SUPPORT_RECOVERY : recovery));
-      if (p >= 1) {
-        const remaining = Math.max(0, travelled - leg.stride);
-        leg.stride = gait2.stride;
-        leg.duty = gait2.duty;
-        p = remaining / leg.stride;
-        neutral(gait2, leg, leg.world, STANCE_TRAVEL / 2 - remaining);
-        leg.yaw = yaw;
-        leg.contact = true;
-        leg.contactId++;
-        leg.swing = false;
-      }
-      if (leg.contact && (p >= leg.duty || contactReach(gait2, leg) > 0.418)) {
-        p = Math.max(p, leg.duty);
-        leg.from.copy(leg.world);
-        leg.fromYaw = leg.yaw;
-        leg.start = p;
-        leg.swing = true;
-        leg.contact = false;
-      }
-      leg.phase = p;
-      if (!leg.contact) {
-        if (!leg.swing) {
-          leg.from.copy(leg.world);
-          leg.fromYaw = leg.yaw;
-          leg.start = p;
-          leg.swing = true;
-        }
-        const u = MathUtils.clamp((p - leg.start) / (1 - leg.start), 0, 1), smooth = u * u * (3 - 2 * u);
-        neutral(gait2, leg, target, STANCE_TRAVEL / 2);
-        leg.world.lerpVectors(leg.from, target, smooth);
-        leg.world.y += Math.sin(Math.PI * u) * (0.07 + 0.025 * energy);
-        leg.yaw = leg.fromYaw + Math.atan2(Math.sin(yaw - leg.fromYaw), Math.cos(yaw - leg.fromYaw)) * smooth;
-      }
-    }
-  }
-  function contactReach(gait2, leg) {
-    const yaw = gait2.root.rotation.y, s = Math.sin(yaw), c = Math.cos(yaw), dx = leg.world.x - gait2.x, dz = leg.world.z - gait2.z, scale = gait2.root.scale;
-    target.set((c * dx - s * dz) / scale.x, (leg.world.y - gait2.root.position.y) / scale.y, (s * dx + c * dz) / scale.z);
-    return target.distanceTo(leg.hip);
-  }
-  function poseFarmerGait(gait2, { distance = 0, dt = 0, walking = false, energy = 1 } = {}) {
-    if (!gait2.initialized) resetFarmerGait(gait2);
-    gait2.distance += distance;
-    const moving2 = distance > 1e-7;
-    if (moving2) {
-      gait2.speed = dt > 0 ? distance / dt : 5;
-      const profile = gaitProfile(gait2.speed);
-      gait2.stride = profile.stride;
-      gait2.duty = profile.duty;
-      gait2.cycle += distance / gait2.stride;
-    }
-    if (moving2) {
-      gait2.torso.position.y += Math.sin(gait2.cycle * Math.PI * 2) ** 2 * 0.012;
-      gait2.torso.rotation.z = Math.sin(gait2.cycle * Math.PI * 2) * 0.018;
-    } else gait2.torso.rotation.z = 0;
-    gait2.torso.updateMatrix();
-    for (const leg of gait2.legs) leg.hip.set(leg.side * 0.09, 0.36, 0).applyMatrix4(gait2.torso.matrix);
-    if (moving2) {
-      gait2.settle = null;
-      gait2.travelYaw = Math.atan2(gait2.root.position.x - gait2.x, gait2.root.position.z - gait2.z);
-      for (const leg of gait2.legs) if (leg.settling) {
-        leg.phase = leg.duty;
-        leg.start = leg.phase;
-        leg.from.copy(leg.world);
-        leg.fromYaw = leg.yaw;
-        leg.swing = true;
-        leg.contact = false;
-      }
-      const startX = gait2.x, startZ = gait2.z, steps = Math.max(1, Math.ceil(distance / 0.025), Math.ceil(dt / 8e-3));
-      for (let i = 1; i <= steps; i++) {
-        gait2.x = MathUtils.lerp(startX, gait2.root.position.x, i / steps);
-        gait2.z = MathUtils.lerp(startZ, gait2.root.position.z, i / steps);
-        advanceFeet(gait2, distance / steps, dt / steps, energy);
-      }
-    } else {
-      gait2.x = gait2.root.position.x;
-      gait2.z = gait2.root.position.z;
-      gait2.travelYaw = gait2.root.rotation.y;
-      for (const leg of gait2.legs) if (leg.contact && contactReach(gait2, leg) > 0.418) {
-        leg.contact = false;
-        leg.swing = true;
-      }
-      if (!gait2.settle) {
-        const leg = gait2.legs.find((l) => !l.contact) || gait2.legs.find((l) => l.world.distanceTo(neutral(gait2, l, target)) > 0.012 || Math.abs(Math.sin(l.yaw - gait2.root.rotation.y)) > 0.05);
-        if (leg) {
-          gait2.settle = { leg, t: 0, duration: gait2.legs.some((l) => l.contact) ? 0.16 : SUPPORT_RECOVERY, lift: leg.world.y > SOLE + BOOT_HALF * 0.85 + 2e-3 ? 0 : 0.065 };
-          leg.from.copy(leg.world);
-          leg.fromYaw = leg.yaw;
-          leg.settling = true;
-          leg.contact = false;
-        }
-      }
-      if (gait2.settle) {
-        const { leg, duration, lift } = gait2.settle, u = Math.min(1, (gait2.settle.t += dt) / duration);
-        neutral(gait2, leg, target);
-        leg.world.lerpVectors(leg.from, target, u * u * (3 - 2 * u));
-        leg.world.y += Math.sin(Math.PI * u) * lift;
-        leg.yaw = leg.fromYaw + Math.atan2(Math.sin(gait2.root.rotation.y - leg.fromYaw), Math.cos(gait2.root.rotation.y - leg.fromYaw)) * u;
-        if (u === 1) {
-          leg.settling = false;
-          leg.contact = true;
-          leg.contactId++;
-          gait2.settle = null;
-        }
-      }
-      for (const leg of gait2.legs) if (!leg.settling) {
-        leg.swing = false;
-        leg.phase = leg.side < 0 ? leg.duty / 2 : leg.duty / 2 + 0.5;
-      }
-    }
-    gait2.root.updateMatrix();
-    inverse.copy(gait2.root.matrix).invert();
-    gait2.torso.updateMatrix();
-    gait2.slip = 0;
-    for (const leg of gait2.legs) {
-      leg.hip.set(leg.side * 0.09, 0.36, 0).applyMatrix4(gait2.torso.matrix);
-      leg.ankle.copy(leg.world).applyMatrix4(inverse);
-      solveLeg(leg.hip, leg.ankle, leg.side, leg.knee, leg.foot);
-      segment(leg.upper, leg.hip, leg.knee);
-      segment(leg.lower, leg.knee, leg.foot);
-      leg.boot.position.copy(leg.foot);
-      leg.boot.rotation.y = leg.yaw - gait2.root.rotation.y;
-      leg.boot.rotation.x = leg.contact ? 0 : -0.2 * Math.sin(Math.PI * Math.max(0, (leg.phase - leg.duty) / (1 - leg.duty)));
-      if (leg.contact) gait2.slip = Math.max(gait2.slip, leg.foot.distanceTo(leg.ankle) * gait2.root.scale.x);
-    }
-  }
-
-  // js/player.js
-  function blocked(x, z) {
-    return isSolidTile(x, z) || fenceBlocks(x, z);
-  }
-  var mood = 1;
-  function setPlayerMood(h) {
-    mood = Math.max(0, Math.min(1, h));
-  }
-  var playerGroup;
-  var heldGroup;
-  var gait;
-  var torso;
-  var armRig;
-  var selectedTool = "move";
-  var displayedTool = null;
-  var farmAction = null;
-  var poseTime = 0;
-  var targetX = 24;
-  var targetZ = 24;
-  var currentX = 24;
-  var currentZ = 24;
-  var moving = false;
-  var stuckTimer = 0;
-  var path = null;
-  var pathIdx = 0;
-  var bodyMesh;
-  var ponytail;
-  var gender = "girl";
-  var SPEED = 5;
-  var PUSH_THROUGH = 0.7;
-  function createPlayer() {
-    playerGroup = new Group();
-    playerGroup.scale.setScalar(0.85);
-    playerGroup.userData.shadowRole = "actor";
-    torso = new Group();
-    torso.name = "farmer-torso";
-    playerGroup.add(torso);
-    const bodyGeo = new CylinderGeometry(0.17, 0.19, 0.34, 12);
-    const bodyMat = curvedMaterial({ color: 6003669 });
-    const body = new Mesh(bodyGeo, bodyMat);
-    body.position.y = 0.48;
-    torso.add(body);
-    bodyMesh = body;
-    const headGeo = new SphereGeometry(0.16, 12, 9);
-    const headMat = curvedMaterial({ color: 16107168 });
-    const head = new Mesh(headGeo, headMat);
-    head.position.y = 0.78;
-    torso.add(head);
-    const hairGeo = new SphereGeometry(0.17, 12, 9, 0, Math.PI * 2, 0, Math.PI * 0.6);
-    const hairMat = curvedMaterial({ color: 6042391 });
-    const hair = new Mesh(hairGeo, hairMat);
-    hair.position.y = 0.82;
-    torso.add(hair);
-    const brimGeo = new CylinderGeometry(0.27, 0.27, 0.04, 12);
-    const hatMat = curvedMaterial({ color: 14202238 });
-    const brim = new Mesh(brimGeo, hatMat);
-    brim.position.y = 0.92;
-    torso.add(brim);
-    const topGeo = new CylinderGeometry(0.14, 0.18, 0.15, 12);
-    const top = new Mesh(topGeo, hatMat);
-    top.position.y = 1;
-    torso.add(top);
-    ponytail = new Mesh(new SphereGeometry(0.07, 6, 5), curvedMaterial({ color: 7028510 }));
-    ponytail.scale.set(1, 1.8, 1);
-    ponytail.position.set(0, 0.72, -0.15);
-    torso.add(ponytail);
-    setPlayerGender(gender);
-    const addPart = (geo, color, x, y, z, rz = 0, parent = torso) => {
-      const m = new Mesh(geo, curvedMaterial({ color }));
-      m.position.set(x, y, z);
-      m.rotation.z = rz;
-      parent.add(m);
-      return m;
-    };
-    for (const side of [-1, 1]) {
-      addPart(new BoxGeometry(0.025, 0.28, 0.024), 15783597, side * 0.075, 0.48, 0.16);
-      addPart(new SphereGeometry(0.014, 8, 6), 4472110, side * 0.056, 0.8, 0.148);
-    }
-    addPart(new BoxGeometry(0.22, 0.18, 0.028), 15255445, 0, 0.39, 0.173);
-    addPart(new SphereGeometry(0.029, 8, 6), 15644561, 0, 0.755, 0.163);
-    playerGroup.add(contactShadow(0.72, 0.54, 0.015));
-    heldGroup = new Group();
-    heldGroup.name = "farmer-grip";
-    torso.add(heldGroup);
-    armRig = createFarmerRig(torso, heldGroup);
-    displayedTool = null;
-    farmAction = null;
-    setHeldTool(selectedTool);
-    poseFarmer(armRig, { tool: selectedTool });
-    playerGroup.position.set(currentX, 0.07, currentZ);
-    gait = createFarmerGait(playerGroup, torso);
-    poseFarmerGait(gait);
-    scene.add(playerGroup);
-    return playerGroup;
-  }
-  function buildHeldTool(toolId) {
-    const g = new Group();
-    const add = (geo, color, x, y, z, rx, rz) => {
-      const m = new Mesh(geo, curvedMaterial({ color }));
-      m.position.set(x, y, z);
-      if (rx) m.rotation.x = rx;
-      if (rz) m.rotation.z = rz;
-      g.add(m);
-    };
-    if (toolId === "water") {
-      add(new CylinderGeometry(0.1, 0.11, 0.16, 10), 6003669, 0, -0.15, 0.04);
-      add(new CylinderGeometry(0.021, 0.035, 0.24, 7), 5605563, 0, -0.1, 0.21, 1.2);
-      add(new CylinderGeometry(0.052, 0.035, 0.035, 8), 3496816, 0, -0.055, 0.33, 1.2);
-      add(new TorusGeometry(0.07, 0.014, 5, 10), 4487082, 0, -0.06, 0.015);
-    } else if (toolId === "hoe") {
-      add(new CylinderGeometry(0.014, 0.014, 0.7, 7), 9991759, 0, 0, 0.23, Math.PI / 2);
-      add(new BoxGeometry(0.24, 0.065, 0.075), 9411486, 0, 0, 0.56);
-    } else if (toolId === "axe") {
-      add(new CylinderGeometry(0.016, 0.02, 0.57, 7), 9991759, 0, 0, 0.2, Math.PI / 2);
-      add(new BoxGeometry(0.055, 0.18, 0.12), 11122871, 0, -0.055, 0.45);
-    } else if (toolId === "sprinkler") {
-      add(new CylinderGeometry(0.04, 0.05, 0.16, 6), 7043206, 0, 0, 0);
-      add(new SphereGeometry(0.05, 6, 5), 4165584, 0, 0.1, 0);
-    } else if (toolId === "hand") {
-      add(new TorusGeometry(0.09, 0.015, 4, 10), 12096074, 0, -0.08, 0);
-      add(new CylinderGeometry(0.105, 0.075, 0.1, 8), 13150318, 0, -0.19, 0);
-    } else if (toolId && toolId.endsWith("_seed")) {
-      add(new BoxGeometry(0.1, 0.14, 0.07), 11897418, 0, -0.07, 0);
-    } else {
-      return null;
-    }
-    return g;
-  }
-  function setPlayerGender(g) {
-    gender = g === "boy" ? "boy" : "girl";
-    if (bodyMesh) bodyMesh.material.color.set(gender === "boy" ? 6851223 : 12483448);
-    if (ponytail) ponytail.visible = gender === "girl";
-  }
-  function setHeldTool(toolId) {
-    selectedTool = toolId;
-    farmAction = null;
-    displayHeldTool(toolId);
-  }
-  function displayHeldTool(toolId) {
-    if (!heldGroup) return;
-    if (displayedTool === toolId) return;
-    displayedTool = toolId;
-    while (heldGroup.children.length) {
-      const c = heldGroup.children[0];
-      heldGroup.remove(c);
-      c.traverse((o) => {
-        if (o.geometry) o.geometry.dispose();
-        if (o.material) o.material.dispose();
-      });
-    }
-    const tool = buildHeldTool(toolId);
-    if (tool) heldGroup.add(tool);
-  }
-  function playFarmAction(tool, x, z) {
-    if (!playerGroup || !["hoe", "water", "axe", "hand"].includes(tool) && !tool?.endsWith("_seed")) return;
-    const dx = x - currentX, dz = z - currentZ;
-    if (Math.hypot(dx, dz) > 0.05) playerGroup.rotation.y = Math.atan2(dx, dz);
-    farmAction = { tool, elapsed: 0, duration: tool === "water" ? 0.85 : 0.65 };
-    displayHeldTool(tool);
-  }
-  function updateFarmPose(dt, travel = 0) {
-    poseTime += dt;
-    if (farmAction) {
-      farmAction.elapsed += dt;
-      if (farmAction.elapsed >= farmAction.duration) {
-        farmAction = null;
-        displayHeldTool(selectedTool);
-      }
-    }
-    if (armRig) poseFarmer(armRig, { tool: displayedTool || "move", phase: farmAction ? farmAction.elapsed / farmAction.duration : -1, walking: travel > 1e-7, walkPhase: ((gait?.cycle || 0) + travel / (gait?.stride || WALK_STRIDE)) * Math.PI * 2, time: poseTime });
-  }
-  function moveTo(x, z) {
-    farmAction = null;
-    displayHeldTool(selectedTool);
-    targetX = x;
-    targetZ = z;
-    path = null;
-    moving = true;
-    stuckTimer = 0;
-  }
-  function moveAlong(waypoints) {
-    if (!waypoints || !waypoints.length) return;
-    farmAction = null;
-    displayHeldTool(selectedTool);
-    path = waypoints;
-    pathIdx = 0;
-    targetX = waypoints[0].x;
-    targetZ = waypoints[0].z;
-    moving = true;
-    stuckTimer = 0;
-  }
-  function advanceWaypoint() {
-    if (path && pathIdx < path.length - 1) {
-      pathIdx++;
-      targetX = path[pathIdx].x;
-      targetZ = path[pathIdx].z;
-      stuckTimer = 0;
-      return true;
-    }
-    path = null;
-    return false;
-  }
-  function updatePlayer(dt) {
-    if (!playerGroup) return;
-    if (!moving) {
-      updateFarmPose(dt);
-      poseFarmerGait(gait, { dt });
-      return;
-    }
-    const previousX = currentX, previousZ = currentZ;
-    const dx = targetX - currentX;
-    const dz = targetZ - currentZ;
-    const dist = Math.sqrt(dx * dx + dz * dz);
-    if (dist < 0.05) {
-      currentX = targetX;
-      currentZ = targetZ;
-      if (!advanceWaypoint()) moving = false;
-    } else {
-      const step = Math.min(SPEED * speedMult() * dt, dist);
-      const mx = dx / dist * step;
-      const mz = dz / dist * step;
-      if (blocked(currentX, currentZ) || !blocked(currentX + mx, currentZ + mz)) {
-        currentX += mx;
-        currentZ += mz;
-        stuckTimer = 0;
-      } else if (Math.abs(mx) > 1e-3 && !blocked(currentX + mx, currentZ)) {
-        currentX += mx;
-        stuckTimer = 0;
-      } else if (Math.abs(mz) > 1e-3 && !blocked(currentX, currentZ + mz)) {
-        currentZ += mz;
-        stuckTimer = 0;
-      } else {
-        stuckTimer += dt;
-        if (stuckTimer > PUSH_THROUGH) {
-          moving = false;
-          path = null;
-          stuckTimer = 0;
-        }
-      }
-      if (Math.hypot(targetX - currentX, targetZ - currentZ) < 0.05) {
-        currentX = targetX;
-        currentZ = targetZ;
-        if (!advanceWaypoint()) {
-          moving = false;
-          stuckTimer = 0;
-        }
-      }
-    }
-    playerGroup.position.x = currentX;
-    playerGroup.position.z = currentZ;
-    playerGroup.position.y = 0.07;
-    const travel = Math.hypot(currentX - previousX, currentZ - previousZ);
-    if (travel > 1e-7) playerGroup.rotation.y = Math.atan2(currentX - previousX, currentZ - previousZ);
-    updateFarmPose(dt, travel);
-    poseFarmerGait(gait, { distance: travel, dt, walking: moving, energy: mood });
-  }
-  function getPlayerPos() {
-    return { x: Math.round(currentX), z: Math.round(currentZ) };
-  }
-  function getPlayerWorldPos() {
-    return { x: currentX, z: currentZ };
-  }
-  function isMoving() {
-    return moving;
-  }
-  function getTarget() {
-    return moving ? { x: targetX, z: targetZ } : null;
-  }
-  function getPath() {
-    return path ? path.slice() : null;
-  }
-  function setPlayerPos(x, z) {
-    farmAction = null;
-    displayHeldTool(selectedTool);
-    if (armRig) poseFarmer(armRig, { tool: selectedTool });
-    currentX = x;
-    currentZ = z;
-    targetX = x;
-    targetZ = z;
-    path = null;
-    moving = false;
-    if (playerGroup) {
-      playerGroup.position.set(x, 0.07, z);
-      if (gait) {
-        resetFarmerGait(gait);
-        poseFarmerGait(gait);
-      }
-    }
-  }
-  function getPlayerGroup() {
-    return playerGroup;
-  }
-
   // js/farm-space.js
   var signature = "";
   var lastRefresh = -Infinity;
@@ -30572,9 +31046,10 @@ worldPosition = curveWorldPos;
   var good = applyCurvature(new MeshBasicMaterial({ color: 8504992, transparent: true, opacity: 0.48, depthWrite: false }));
   var bad = applyCurvature(new MeshBasicMaterial({ color: 15235429, transparent: true, opacity: 0.48, depthWrite: false }));
   var accessMat = applyCurvature(new MeshBasicMaterial({ color: 15059843, transparent: true, opacity: 0.55, depthWrite: false }));
+  var entranceInk = applyCurvature(new MeshBasicMaterial({ color: 4798482, side: DoubleSide, transparent: true, depthTest: false, depthWrite: false }));
   var isPlacing = () => !!active3;
   function placementStatus() {
-    return active3 ? { name: active3.kind.name, reason: active3.reason, valid: active3.valid, confirmLabel: active3.kind.confirmLabel || "PLACE", rotation: Math.round(active3.rot * 180 / Math.PI), cells: footprint(active3.kind.id, 0, 0, active3.rot, active3.kind.layout ?? 1).cells.length } : null;
+    return active3 ? { name: active3.kind.name, reason: active3.reason, valid: active3.valid, success: !!active3.justPlaced, confirmLabel: active3.kind.confirmLabel || "PLACE", rotation: Math.round(active3.rot * 180 / Math.PI), cells: footprint(active3.kind.id, 0, 0, active3.rot, active3.kind.layout ?? 1).cells.length } : null;
   }
   function beginPlacement(kind) {
     cancelPlacement();
@@ -30600,6 +31075,8 @@ worldPosition = curveWorldPos;
   function moveGhost(x, z, force = false) {
     if (!active3) return;
     previewStats.requests++;
+    if (active3.justPlaced && active3.justPlaced.x === x && active3.justPlaced.z === z && !force) return;
+    active3.justPlaced = null;
     const started = performance.now(), key3 = `${x},${z},${active3.rot}`;
     if (!force && active3.key === key3 && started - (active3.checkedAt || 0) < 150) return;
     const shapeChanged = active3.key !== key3;
@@ -30611,6 +31088,7 @@ worldPosition = curveWorldPos;
     const result = active3.kind.validate ? active3.kind.validate(x, z, active3.rot) : validatePlacement(active3.kind.id, x, z, active3.rot), f = result.candidate || footprint(active3.kind.id, x, z, active3.rot, active3.kind.layout ?? 1);
     active3.valid = result.ok && active3.kind.afford();
     active3.reason = active3.kind.afford() ? result.ok && active3.kind.oneShot ? "Ready to move" : result.reason : "Not enough coins";
+    if (active3.valid && f.clearance.length) active3.reason = "Arrow: entrance - keep clear";
     const mat = active3.valid ? good : bad;
     active3.root.visible = true;
     active3.root.position.set(0, 0.02, 0);
@@ -30629,6 +31107,17 @@ worldPosition = curveWorldPos;
         p.position.set(a, 0.08, b);
         active3.pads.add(p);
       }
+      for (const [a, b] of f.clearance) {
+        const nearest = f.cells.reduce((best, c) => Math.hypot(c[0] - a, c[1] - b) < Math.hypot(best[0] - a, best[1] - b) ? c : best, f.cells[0]);
+        const dx = nearest[0] - a, dz = nearest[1] - b, n = Math.hypot(dx, dz) || 1, ux = dx / n, uz = dz / n;
+        const g = new BufferGeometry();
+        g.setAttribute("position", new Float32BufferAttribute([ux * 0.32, 0.2, uz * 0.32, -ux * 0.18 - uz * 0.22, 0.2, -uz * 0.18 + ux * 0.22, -ux * 0.18 + uz * 0.22, 0.2, -uz * 0.18 - ux * 0.22], 3));
+        const arrow = new Mesh(g, entranceInk);
+        arrow.position.set(a, 0, b);
+        arrow.renderOrder = 10;
+        arrow.userData.access = true;
+        active3.pads.add(arrow);
+      }
     } else active3.pads.children.forEach((p) => {
       if (!p.userData.access) p.material = mat;
     });
@@ -30644,7 +31133,7 @@ worldPosition = curveWorldPos;
     return active3?.x != null ? confirmPlace(active3.x, active3.z) : "invalid";
   }
   function confirmPlace(x, z) {
-    if (!active3) return "invalid";
+    if (!active3 || active3.justPlaced?.x === x && active3.justPlaced?.z === z) return "invalid";
     moveGhost(x, z, true);
     if (!active3.valid) return "invalid";
     if (active3.kind.place(x, z, active3.rot) === false) {
@@ -30661,8 +31150,11 @@ worldPosition = curveWorldPos;
       cancelPlacement();
       return "done";
     }
+    active3.justPlaced = { x, z };
     active3.key = null;
-    moveGhost(x, z);
+    active3.valid = false;
+    active3.reason = "Placed! Choose another place";
+    active3.root.visible = false;
     return "placed";
   }
   function cancelPlacement() {
@@ -32887,130 +33379,6 @@ worldPosition = curveWorldPos;
       if (route && Math.round(end.x) === approach.x && Math.round(end.z) === approach.z) return { approach, route, target: approach.target };
     }
     return null;
-  }
-
-  // js/gpu-ui/glyphs.js
-  var raw = {
-    a: "43 32 12 03 05 16 36 45|42 46",
-    b: "00 06|03 12 32 43 45 36 16 05",
-    c: "42 12 03 05 16 46",
-    d: "40 46|43 32 12 03 05 16 36 45",
-    e: "04 44 43 32 12 03 05 16 46",
-    f: "16 11 20 40|02 32",
-    g: "42 47 38 18|43 32 12 03 05 16 36 45",
-    h: "00 06|03 12 32 43 46",
-    i: "20 20|22 26",
-    j: "30 30|32 37 28 08",
-    k: "00 06|42 04 46",
-    l: "10 15 26 36",
-    m: "06 02 12 23 26|23 32 43 46",
-    n: "06 02|03 12 32 43 46",
-    o: "12 32 43 45 36 16 05 03 12",
-    p: "02 08|03 12 32 43 45 36 16 05",
-    q: "42 48|43 32 12 03 05 16 36 45",
-    r: "06 02|03 12 32 43",
-    s: "42 12 03 14 34 45 36 06",
-    t: "20 25 36 46|02 42",
-    u: "02 05 16 36 45|42 46",
-    v: "02 26 42",
-    w: "02 16 24 36 42",
-    x: "02 46|42 06",
-    y: "02 16 36 45|42 47 38 18",
-    z: "02 42 06 46",
-    A: "06 20 46|14 34",
-    B: "00 06 36 45 44 33 03|33 42 41 30 00",
-    C: "40 10 01 05 16 46",
-    D: "00 06 26 45 41 20 00",
-    E: "40 00 06 46|03 33",
-    F: "40 00 06|03 33",
-    G: "40 10 01 05 16 46 43 23",
-    H: "00 06|40 46|03 43",
-    I: "00 40|20 26|06 46",
-    J: "00 40 45 36 16 05",
-    K: "00 06|40 03 46",
-    L: "00 06 46",
-    M: "06 00 23 40 46",
-    N: "06 00 46 40",
-    O: "10 30 41 45 36 16 05 01 10",
-    P: "06 00 30 41 42 33 03",
-    Q: "10 30 41 45 36 16 05 01 10|24 46",
-    R: "06 00 30 41 42 33 03|23 46",
-    S: "40 10 01 02 13 33 44 45 36 06",
-    T: "00 40|20 26",
-    U: "00 05 16 36 45 40",
-    V: "00 26 40",
-    W: "00 16 23 36 40",
-    X: "00 46|40 06",
-    Y: "00 23 40|23 26",
-    Z: "00 40 06 46",
-    "0": "10 30 41 45 36 16 05 01 10|15 31",
-    "1": "11 20 26|06 46",
-    "2": "01 10 30 41 42 06 46",
-    "3": "00 30 41 42 23 44 45 36 06",
-    "4": "30 04 44|30 36",
-    "5": "40 00 03 33 44 45 36 06",
-    "6": "40 10 01 05 16 36 45 44 33 03",
-    "7": "00 40 16",
-    "8": "10 30 41 42 33 13 02 01 10|13 04 05 16 36 45 44 33",
-    "9": "43 13 02 01 10 30 41 45 36 06",
-    ".": "26 26",
-    ",": "26 17",
-    ":": "22 22|25 25",
-    ";": "22 22|25 16",
-    "-": "13 33",
-    "+": "03 43|21 25",
-    "/": "40 06",
-    "'": "20 12",
-    "!": "20 24|26 26",
-    "?": "01 10 30 41 42 23 24|26 26",
-    "(": "30 11 15 36",
-    ")": "10 31 35 16",
-    "[": "30 10 16 36",
-    "]": "10 30 36 16",
-    "=": "02 42|04 44",
-    "%": "00 11 00|40 06|35 46 35",
-    "<": "40 03 46",
-    ">": "00 43 06",
-    "_": "06 46",
-    "#": "10 16|30 36|02 42|04 44",
-    "&": "46 11 10 20 31 06 36 44",
-    "*": "21 25|03 43|01 45|41 05",
-    "|": "20 26",
-    " ": ""
-  };
-  var GLYPHS = Object.fromEntries(Object.entries(raw).map(([c, paths]) => [
-    c,
-    paths ? paths.split("|").map((p) => p.split(" ").map((pt) => [Number(pt[0]), Number(pt[1])])) : []
-  ]));
-  function cleanText(value, uppercase = true) {
-    const clean = String(value ?? "").normalize("NFKD").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[—–]/g, "-").replace(/[×]/g, "x").replace(/[→]/g, ">").replace(/[✓]/g, "OK").replace(/[·]/g, " / ").replace(/[^\x20-\x7E\n]/gu, (c) => /[\p{L}\p{N}]/u.test(c) ? "?" : "").replace(/[ \t]+/g, " ").trim();
-    return uppercase ? clean.toUpperCase() : clean;
-  }
-  function measureText(text, size = 12) {
-    return cleanText(text).length * size * 1.02;
-  }
-  function wrapText(text, maxWidth, size = 12) {
-    const limit = Math.max(1, Math.floor(maxWidth / (size * 1.02))), lines = [];
-    for (const para of cleanText(text).split("\n")) {
-      let line = "";
-      for (let word of para.split(" ")) {
-        if (line && line.length + word.length + 1 > limit) {
-          lines.push(line);
-          line = "";
-        }
-        while (word.length > limit) {
-          if (line) {
-            lines.push(line);
-            line = "";
-          }
-          lines.push(word.slice(0, limit));
-          word = word.slice(limit);
-        }
-        if (word) line += (line ? " " : "") + word;
-      }
-      if (line) lines.push(line);
-    }
-    return lines;
   }
 
   // js/gpu-ui/emergency.js
@@ -35905,112 +36273,6 @@ worldPosition = curveWorldPos;
     return { position, uv, color };
   }
 
-  // js/gpu-ui/geometry.js
-  var COLORS = { ink: 3427651, paper: 16773325, cream: 16775399, leaf: 7049572, moss: 4680528, peach: 15776130, rose: 12280912, gold: 15121504, shadow: 2307884, muted: 9214070 };
-  function rgba(hex, alpha = 1) {
-    return [(hex >> 16 & 255) / 255, (hex >> 8 & 255) / 255, (hex & 255) / 255, alpha];
-  }
-  var GeometryBatch = class {
-    constructor({ atlas = false } = {}) {
-      this.atlas = atlas;
-      this.positions = [];
-      this.colors = [];
-      this.hits = [];
-      this.labels = [];
-    }
-    vertex(x, y, c) {
-      this.positions.push(x, y, 0);
-      this.colors.push(...c);
-    }
-    tri(a, b, c, color, alpha = 1) {
-      const tint = rgba(color, alpha);
-      for (const p of [a, b, c]) this.vertex(p[0], p[1], tint);
-    }
-    rect(x, y, w, h, color, alpha = 1) {
-      this.tri([x, y], [x + w, y], [x, y + h], color, alpha);
-      this.tri([x + w, y], [x + w, y + h], [x, y + h], color, alpha);
-    }
-    disc(x, y, r, color, alpha = 1) {
-      for (let i = 0; i < 10; i++) {
-        let a = i * Math.PI / 5, b = (i + 1) * Math.PI / 5;
-        this.tri([x, y], [x + Math.cos(a) * r, y + Math.sin(a) * r], [x + Math.cos(b) * r, y + Math.sin(b) * r], color, alpha);
-      }
-    }
-    line(x1, y1, x2, y2, width, color, alpha = 1) {
-      const dx = x2 - x1, dy = y2 - y1, n = Math.hypot(dx, dy) || 1, nx = -dy / n, ny = dx / n, r = width / 2, fringe = 0.8;
-      const core = rgba(color, alpha), edge = rgba(color, 0), points = [[x1 + nx * r, y1 + ny * r], [x2 + nx * r, y2 + ny * r], [x2 - nx * r, y2 - ny * r], [x1 - nx * r, y1 - ny * r]];
-      this.tri(points[0], points[1], points[2], color, alpha);
-      this.tri(points[0], points[2], points[3], color, alpha);
-      for (const sign2 of [-1, 1]) {
-        const a = [x1 + nx * r * sign2, y1 + ny * r * sign2], b = [x2 + nx * r * sign2, y2 + ny * r * sign2], c = [x2 + nx * (r + fringe) * sign2, y2 + ny * (r + fringe) * sign2], d = [x1 + nx * (r + fringe) * sign2, y1 + ny * (r + fringe) * sign2];
-        for (const [p, t2] of [[a, core], [b, core], [c, edge], [a, core], [c, edge], [d, edge]]) this.vertex(p[0], p[1], t2);
-      }
-      this.softDisc(x1, y1, r, color, alpha, fringe);
-      this.softDisc(x2, y2, r, color, alpha, fringe);
-    }
-    softDisc(x, y, r, color, alpha = 1, fringe = 0.8) {
-      const core = rgba(color, alpha), edge = rgba(color, 0);
-      for (let i = 0; i < 12; i++) {
-        const a = i * Math.PI / 6, b = (i + 1) * Math.PI / 6, p = [x + Math.cos(a) * r, y + Math.sin(a) * r], q = [x + Math.cos(b) * r, y + Math.sin(b) * r], po = [x + Math.cos(a) * (r + fringe), y + Math.sin(a) * (r + fringe)], qo = [x + Math.cos(b) * (r + fringe), y + Math.sin(b) * (r + fringe)];
-        this.tri([x, y], p, q, color, alpha);
-        for (const [v, c] of [[p, core], [q, core], [qo, edge], [p, core], [qo, edge], [po, edge]]) this.vertex(v[0], v[1], c);
-      }
-    }
-    roundRect(x, y, w, h, r, color, alpha = 1) {
-      r = Math.max(0, Math.min(r, w / 2, h / 2));
-      this.rect(x + r, y, w - 2 * r, h, color, alpha);
-      this.rect(x, y + r, w, h - 2 * r, color, alpha);
-      for (const [px2, py2] of [[x + r, y + r], [x + w - r, y + r], [x + r, y + h - r], [x + w - r, y + h - r]]) this.disc(px2, py2, r, color, alpha);
-    }
-    panel(x, y, w, h, color = COLORS.paper) {
-      this.roundRect(x + 3, y + 5, w, h, 12, COLORS.shadow, 0.22);
-      this.roundRect(x, y, w, h, 12, COLORS.ink);
-      this.roundRect(x + 2, y + 2, w - 4, h - 4, 10, color);
-    }
-    text(text, x, y, size = 12, color = COLORS.ink, mixedCase = false) {
-      const value = cleanText(text, !mixedCase);
-      this.labels.push({ text: value, x, y, size, width: measureText(value, size), height: size, color });
-      if (this.atlas) return measureText(value, size);
-      let cx = x;
-      for (const c of value) {
-        for (const path2 of GLYPHS[c] || GLYPHS["?"]) {
-          if (path2.length === 1) this.disc(cx + path2[0][0] * size / 6, y + path2[0][1] * size / 6, size * 0.07, color);
-          for (let i = 1; i < path2.length; i++) {
-            const p = path2[i - 1], q = path2[i];
-            this.line(cx + p[0] * size / 6, y + p[1] * size / 6, cx + q[0] * size / 6, y + q[1] * size / 6, Math.max(1.6, size * 0.2), color);
-          }
-        }
-        cx += size * 1.02;
-      }
-      return cx - x;
-    }
-    paragraph(text, x, y, width, size = 12, color = COLORS.ink, lineHeight = size * 1.65) {
-      const lines = wrapText(text, width, size);
-      lines.forEach((l, i) => this.text(l, x, y + i * lineHeight, size, color));
-      return lines.length * lineHeight;
-    }
-    button(id, label, x, y, w, h, action, { selected: selected2 = false, disabled = false, size = 12 } = {}) {
-      this.roundRect(x, y, w, h, 7, selected2 ? COLORS.moss : disabled ? 14013369 : COLORS.cream);
-      this.line(x + 8, y + h - 1, x + w - 8, y + h - 1, 2, selected2 ? COLORS.gold : COLORS.peach);
-      const longest = Math.max(...cleanText(label).split(" ").map((s) => s.length));
-      if (longest <= 8) size = Math.min(size, (w - 18) / (longest * 1.02));
-      const lines = wrapText(label, w - 18, size);
-      const lineH = size * 1.55;
-      lines.forEach((l, i) => this.text(l, x + (w - measureText(l, size)) / 2, y + (h - lines.length * lineH) / 2 + i * lineH + size * 0.25, size, selected2 ? COLORS.cream : disabled ? COLORS.muted : COLORS.ink));
-      this.hits.push({ id, label: cleanText(label), x, y, w, h, action, disabled });
-    }
-    hit(x, y) {
-      return hitTest(this.hits, x, y);
-    }
-  };
-  function hitTest(hits, x, y) {
-    for (let i = hits.length - 1; i >= 0; i--) {
-      const h = hits[i];
-      if (x >= h.x && x < h.x + h.w && y >= h.y && y < h.y + h.h) return h;
-    }
-    return null;
-  }
-
   // js/gpu-ui/renderer.js
   var GpuUiRenderer = class {
     constructor(renderer2) {
@@ -36131,6 +36393,35 @@ worldPosition = curveWorldPos;
       pointer = { x: e.clientX - rect2.left, y: e.clientY - rect2.top };
       return batch.hit(pointer.x, pointer.y) || readNamePrompt() || getOpenPanel();
     };
+    let touchPress = null, suppressTouchClick = false;
+    const touchIds = /* @__PURE__ */ new Set();
+    canvas.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "touch") return;
+      touchIds.add(e.pointerId);
+      if (touchIds.size > 1) {
+        touchPress = null;
+        suppressTouchClick = true;
+        return;
+      }
+      suppressTouchClick = false;
+      const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+      touchPress = { id: e.pointerId, x, y, hit: batch.hit(x, y) };
+    }, true);
+    canvas.addEventListener("pointerup", (e) => {
+      if (e.pointerType !== "touch") return;
+      touchIds.delete(e.pointerId);
+      if (!touchPress || touchPress.id !== e.pointerId) return;
+      const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, hit = batch.hit(x, y), press = touchPress;
+      touchPress = null;
+      if (hit && hit.id === press.hit?.id && Math.hypot(x - press.x, y - press.y) <= 8) {
+        activate(hit);
+        suppressTouchClick = true;
+      }
+    }, true);
+    canvas.addEventListener("pointercancel", (e) => {
+      touchIds.delete(e.pointerId);
+      touchPress = null;
+    }, true);
     for (const event of ["mousedown", "mousemove", "contextmenu", "dblclick"]) canvas.addEventListener(event, (e) => {
       if (blocked2(e)) {
         e.stopImmediatePropagation();
@@ -36138,6 +36429,12 @@ worldPosition = curveWorldPos;
       }
     }, { capture: true });
     canvas.addEventListener("click", (e) => {
+      if (suppressTouchClick && (e.pointerType === "touch" || e.sourceCapabilities?.firesTouchEvents)) {
+        suppressTouchClick = false;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
       if (blocked2(e)) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -36322,7 +36619,7 @@ worldPosition = curveWorldPos;
       if (placing) {
         batch.panel(toolX, toolY, toolW, toolH);
         batch.text(`${placing.name} / ${placing.cells} ${placing.cells === 1 ? "CELL" : "CELLS"}`, toolX + 16, toolY + 16, compact ? 11 : 14);
-        batch.paragraph(placing.reason, toolX + 16, toolY + 41, toolW - 32, 11, placing.valid ? COLORS.moss : COLORS.rose);
+        batch.paragraph(placing.reason, toolX + 16, toolY + 41, toolW - 32, 11, placing.valid || placing.success ? COLORS.moss : COLORS.rose);
         const pw = (toolW - 36) / 3;
         batch.button("confirm-build", placing.confirmLabel || "PLACE", toolX + 12, toolY + toolH - 52, pw, 44, commands.place, { disabled: !placing.valid, selected: placing.valid, size: 11 });
         batch.button("rotate", "ROTATE", toolX + 18 + pw, toolY + toolH - 52, pw, 44, commands.rotate, { size: 11 });
@@ -36346,7 +36643,11 @@ worldPosition = curveWorldPos;
           seedPage = (seedPage + 1) % Math.ceil(seeds.length / 3);
         }, { size: 14 });
       }
-      if (!placing && !arranging) batch.button("follow", "CENTER", 12, toolY - 44, 84, 36, commands.follow, { size: 10 });
+      if (!placing && !arranging) {
+        batch.button("follow", "CENTER", 12, toolY - 44, 84, 36, commands.follow, { size: 10 });
+        const queued = commands.queued?.() || 0;
+        if (queued) batch.button("cancel-queue", `CANCEL ${queued}`, 104, toolY - 44, 118, 36, commands.cancelQueue, { size: 10 });
+      }
       if (hud2.notice && !placing && !arranging) {
         const nw = Math.min(width - 24, 500, Math.max(150, measureText(hud2.notice, 10) + 28)), lines = wrapText(hud2.notice, nw - 28, 10), nh = lines.length * 17 + 24;
         batch.panel((width - nw) / 2, toolY - nh - 54, nw, nh, COLORS.cream);
@@ -36382,7 +36683,10 @@ worldPosition = curveWorldPos;
       dirty = false;
       measure("hudBuildUpload", started);
     }
-    return { runtime, draw(now) {
+    return { runtime, blocksPoint(x, y) {
+      const r = canvas.getBoundingClientRect();
+      return !!(batch.hit(x - r.left, y - r.top) || readNamePrompt() || getOpenPanel());
+    }, draw(now) {
       const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
       if (w !== width || h !== height) {
         width = w;
@@ -37610,25 +37914,22 @@ ${rows}
   }
   var taskQueue = [];
   var MAX_QUEUE = 10;
-  var TOOL_EMOJI = { hand: "\u{1F9FA}", hoe: "\u26CF\uFE0F", water: "\u{1F4A7}", axe: "\u{1FA93}", sprinkler: "\u{1F4A6}", fish: "\u{1F3A3}", move: "\u{1F463}", crate: "\u{1F4E6}", bin: "\u{1F9FA}", fountain: "\u{1FA99}" };
-  function taskEmoji(tool) {
-    if (!tool) return "\u{1F3AF}";
-    if (tool.id && tool.id.endsWith("_seed")) return "\u{1F331}";
-    return TOOL_EMOJI[tool.id] || "\u{1F3AF}";
+  function queuedTasks() {
+    return [G.pendingAction, ...taskQueue].filter(Boolean).map((t2, i) => ({ x: t2.x, z: t2.z, tool: t2.tool.id, active: !!G.pendingAction && i === 0 }));
   }
-  var _taskQueueEl = null;
   function renderTaskQueue() {
-    if (!_taskQueueEl) {
-      _taskQueueEl = document.createElement("div");
-      _taskQueueEl.style.cssText = "position:fixed;left:50%;bottom:152px;transform:translateX(-50%);z-index:55;display:flex;gap:4px;pointer-events:none";
-      document.body.appendChild(_taskQueueEl);
+  }
+  function cancelQueuedTasks() {
+    clearTaskQueue();
+    if (G.pendingAction) {
+      G.pendingAction = null;
+      G.pendingRoute = null;
+      if (stopMovement) stopMovement();
+      else {
+        const p = getPlayerWorldPos();
+        moveTo(p.x, p.z);
+      }
     }
-    const items = [];
-    if (G.pendingAction && G.pendingAction.tool) items.push({ tool: G.pendingAction.tool, active: true });
-    for (const t2 of taskQueue) items.push({ tool: t2.tool, active: false });
-    _taskQueueEl.innerHTML = items.map(
-      (it) => `<span style="font-size:${it.active ? 22 : 17}px;line-height:1;background:rgba(30,22,12,${it.active ? 0.95 : 0.7});border:2px solid ${it.active ? "#ffd24a" : "#5a4326"};border-radius:8px;padding:3px 5px;${it.active ? "box-shadow:0 0 8px #ffd24a" : ""}">${taskEmoji(it.tool)}</span>`
-    ).join("");
   }
   function enqueueTask(task) {
     if (taskQueue.length >= MAX_QUEUE) {
@@ -37673,7 +37974,9 @@ ${rows}
       build: () => openBuild(),
       home: () => openHome(),
       barn: () => openBarn(),
-      follow: () => followPlayer(),
+      follow: () => resetCamera(),
+      queued: () => queuedTasks().length,
+      cancelQueue: cancelQueuedTasks,
       more: () => openMoreMenu(),
       arrangement: arrangementStatus,
       moveObject: moveSelection,
@@ -37691,6 +37994,8 @@ ${rows}
   window.addEventListener("error", () => requestAnimationFrame((now) => gpuUI.draw(now)));
   window.addEventListener("unhandledrejection", () => requestAnimationFrame((now) => gpuUI.draw(now)));
   createWorld();
+  var taskMarkers = createTaskMarkers();
+  installTouchCamera(container, { blocked: (x, y) => gpuUI.blocksPoint(x, y), pan: panCameraPixels, zoom: scaleCameraZoom, activity: markInput });
   initHighlight();
   createPlayer();
   initMarket();
@@ -39287,8 +39592,12 @@ ${rows}
       } else if (G.pendingAction.auto) {
         G.autoSkip.add(G.pendingAction.x + "," + G.pendingAction.z);
         if (G.autoSkip.size > 40) G.autoSkip.clear();
+      } else {
+        notify("Could not reach that task");
       }
       G.pendingAction = null;
+      startNextTask();
+    } else if (!isMoving() && taskQueue.length) {
       startNextTask();
     }
     G.autoCheckTimer -= dt;
@@ -39344,6 +39653,7 @@ ${rows}
     updateGrandpa(dt, _grandpaCtx);
     _camTmp.set(ppos.x, 0, ppos.z);
     updateCamera(_camTmp, dt, isMoving());
+    taskMarkers.update(queuedTasks());
     profMark("misc");
     const dayProgress = getDayProgress();
     updateDayNight(dayProgress);
