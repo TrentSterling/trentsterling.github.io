@@ -1,10 +1,12 @@
-"""Verify the published Robot Life bytes and exercise real GPU menu input.
-Run from the repository root after installing Playwright and Chromium:
+"""Verify the public Robot Life runtime and real GPU menu/keyboard events.
+Install Playwright and Chromium, then run from the repository root:
   python tools/robotlife/verify.py
   python tools/robotlife/verify.py --live
-No source files, user saves, or credentials are published by this test.
+Physics uses explicit fixed steps, as in the source game's regression suite.
+This verifies hosted bytes and input, not hardware frame pacing/performance.
 """
 import argparse
+import base64
 import functools
 import hashlib
 import http.server
@@ -26,18 +28,23 @@ assert hashlib.sha256((ROOT / 'robotlife/index.html').read_bytes()).hexdigest() 
 mode = 'live' if args.live else 'local'
 out = ROOT / '.robotlife-evidence' / mode
 out.mkdir(parents=True, exist_ok=True)
-report = {'mode': mode, 'expectedSha256': expected, 'errors': [], 'warnings': [], 'checks': []}
+report = {'mode': mode, 'expectedSha256': expected, 'errors': [], 'warnings': [], 'checks': [], 'scope': 'Real HTTP navigation, GPU pointer controls and keyboard events; explicit fixed-delta physics steps avoid software-compositor RAF throttling. No game bytes modified. Not a hardware frame-rate test.'}
 server = None
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+def capture(page, name):
+    # Capture the actual rendered WebGL drawing buffer in the same JS task.
+    # No Canvas2D or substitute image rendering is used.
+    image = page.evaluate("()=>{__robotLife.render();return document.querySelector('canvas').toDataURL('image/png');}")
+    assert image.startswith('data:image/png;base64,')
+    (out / name).write_bytes(base64.b64decode(image.split(',', 1)[1]))
+
 try:
     if args.live:
         base = 'https://tront.xyz/robotlife'
-        # Pages deployment is separate from verification. Wait only for this
-        # exact published runtime, never accept a 200 response for an old build.
         deadline = time.monotonic() + 240
         while True:
             try:
@@ -60,10 +67,9 @@ try:
     with sync_playwright() as p:
         env = dict(os.environ)
         env.pop('DISPLAY', None)
-        with p.chromium.launch(headless=True, env=env, args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader']) as browser:
+        env.pop('WAYLAND_DISPLAY', None)
+        with p.chromium.launch(headless=True, env=env, args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-dev-shm-usage']) as browser:
             page = browser.new_page(viewport={'width': 1280, 'height': 800})
-            # Exposes observational hooks in this browser only; shipped HTML
-            # remains byte-identical and contains no enabled QA session.
             page.add_init_script('window.__ROBOTLIFE_QA__ = true;')
             page.on('pageerror', lambda error: report['errors'].append(str(error)))
             page.on('console', lambda m: report['warnings'].append(m.text) if m.type in ['warning', 'error'] else None)
@@ -74,6 +80,7 @@ try:
             report['url'] = page.url
             report['checks'].append('Bare /robotlife resolves to the exact approved runtime with HTTP 200')
             page.wait_for_function('window.__ROBOTLIFE_READY__ && window.__robotLife', timeout=60000)
+            page.evaluate('__robotLife.freeze()')
             assert page.locator('button,input,textarea,select').count() == 0
             report['checks'].append('WebGL game initializes without HTML controls')
             info = page.evaluate("""() => {
@@ -84,28 +91,30 @@ try:
             button = info['button']
             assert button and button['enabled']
             page.mouse.click((button['x']+button['w']/2)*info['scale'], (button['y']+button['h']/2)*info['scale'])
-            page.wait_for_function('!__robotLife.ui.menu', timeout=15000)
+            assert page.evaluate('!__robotLife.ui.menu && __robotLife.input.active')
             report['checks'].append('Actual GPU Visit the diner button enters gameplay')
             before = page.evaluate('__robotLife.player.position.toArray()')
-            page.keyboard.down('KeyA')
-            page.wait_for_timeout(750)
-            page.keyboard.up('KeyA')
+            page.keyboard.down('s')
+            assert page.evaluate('__robotLife.input.keys.has("KeyS")')
+            page.evaluate('for(let i=0;i<20;i++)__robotLife.step(.05)')
+            page.keyboard.up('s')
             after = page.evaluate('__robotLife.player.position.toArray()')
-            assert sum((a-b)**2 for a,b in zip(after,before)) > .0001
-            report['checks'].append('Keyboard movement works on the hosted page')
+            assert sum((a-b)**2 for a,b in zip(after,before)) > .0001, {'before':before,'after':after}
+            report['movement'] = {'before':before, 'after':after, 'simulationSeconds':1}
+            report['checks'].append('Real keyboard events drive movement through fixed-delta physics')
             assert page.evaluate('__robotLife.validate().nonFinite.length === 0')
             report['checks'].append('Physics remains finite')
-            page.screenshot(path=str(out / 'diner.png'))
+            capture(page, 'diner.png')
             page.keyboard.press('Escape')
-            page.wait_for_function('!!__robotLife.ui.menu', timeout=15000)
+            assert page.evaluate('!!__robotLife.ui.menu')
             report['checks'].append('Escape opens the GPU pause menu')
-            page.screenshot(path=str(out / 'pause.png'))
+            capture(page, 'pause.png')
             assert not report['errors'], report['errors']
             report['checks'].append('No JavaScript page errors')
             report['passed'] = True
 except Exception as error:
     report['passed'] = False
-    report['failure'] = str(error)
+    report['failure'] = repr(error)
     raise
 finally:
     if server:
