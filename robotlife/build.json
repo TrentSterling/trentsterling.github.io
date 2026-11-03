@@ -1,10 +1,9 @@
 {
   "format": "robotlife-public-runtime/v1",
-  "title": "Robot Life: Counter Life",
-  "sourceCommit": "4d9568d0b86e4f90e880ef03985699bb3af3fc6e",
-  "verifiedRun": 41638729339,
+  "title": "Robot Life: fitted object grips",
+  "sourceCommit": "cbba7429c81c52ff348dff453ec493df02d8f65d",
+  "sha256": "f360d5460d37a0b1bbb640d44b32845e74e8943e8db443e5f4ef0293597293d0",
+  "bytes": 1418716,
   "target": "https://tront.xyz/robotlife/",
-  "sha256": "81e55f87ad6986c776c079e073e35919b3df0e74f97858234eeb5193a96609d0",
-  "bytes": 1414470,
-  "scope": "Desktop WebGL playtest. Runtime only; private development files and test save data are excluded."
+  "scope": "First-person hand-grip correction. Compiled runtime and license notices only."
 }
