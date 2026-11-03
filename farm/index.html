@@ -36601,7 +36601,7 @@ worldPosition = curveWorldPos;
       batch.panel(12, 12, headerW, 48);
       const coinsLabel = `${hud2.coins} COINS`;
       batch.text(coinsLabel, 26, 29, Math.min(compact ? 12 : 14, 145 / (coinsLabel.length * 1.02)));
-      const right = compact ? width - 132 : headerW - 114;
+      const right = compact ? 12 + headerW - 120 : headerW - 114;
       batch.text(`${Math.round(hud2.health)}% ENERGY`, right, 30, 9, COLORS.moss);
       if (width >= 1050) batch.text(hud2.day + "  " + hud2.time, 175, 31, 10, COLORS.moss);
       const quest = hud2.quest || "";
@@ -36644,9 +36644,10 @@ worldPosition = curveWorldPos;
         }, { size: 14 });
       }
       if (!placing && !arranging) {
-        batch.button("follow", "CENTER", 12, toolY - 44, 84, 36, commands.follow, { size: 10 });
+        const auxY = compact && toolY - 44 < ay + 46 ? Math.min(toolY - 36, ay + 46) : toolY - 44;
+        batch.button("follow", "CENTER", 12, auxY, 84, 36, commands.follow, { size: 10 });
         const queued = commands.queued?.() || 0;
-        if (queued) batch.button("cancel-queue", `CANCEL ${queued}`, 104, toolY - 44, 118, 36, commands.cancelQueue, { size: 10 });
+        if (queued) batch.button("cancel-queue", `CANCEL ${queued}`, 104, auxY, 118, 36, commands.cancelQueue, { size: 10 });
       }
       if (hud2.notice && !placing && !arranging) {
         const nw = Math.min(width - 24, 500, Math.max(150, measureText(hud2.notice, 10) + 28)), lines = wrapText(hud2.notice, nw - 28, 10), nh = lines.length * 17 + 24;
@@ -38505,10 +38506,16 @@ ${rows}
     add("View the farm", () => focusCamera(24, 24));
     add("View market road", () => focusCamera(33, 24));
     for (const el of document.querySelectorAll("#bag .bag-chip")) add("Eat " + el.textContent, () => el.click());
-    const help = document.createElement("div");
-    help.className = "shop-header";
-    help.textContent = "How to farm: select the hoe and click grass. Choose a seed and click soil. Water the planted crop. When ripe, harvest. Sell your crops at the market. Use the proceeds to improve the farm. Right-drag pans; wheel zooms. Escape cancels placement or closes a menu. R rotates a building preview. Gold cells mark its entrance.";
-    list2.appendChild(help);
+    for (const text of [
+      "Hoe grass, plant seeds and water. Pick ripe crops, then sell at the market.",
+      "Touch: drag to look, pinch to zoom. CENTER follows Jenn and resets zoom.",
+      "Mouse: right-drag to look, wheel to zoom. Rotate buildings and keep entrances clear. R rotates; Escape cancels."
+    ]) {
+      const help = document.createElement("div");
+      help.className = "shop-header";
+      help.textContent = text;
+      list2.appendChild(help);
+    }
     overlay2.classList.remove("hidden");
   }
   container.addEventListener("wheel", (e) => {
