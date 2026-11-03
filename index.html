@@ -22,7 +22,8 @@
     <meta property="og:url" content="https://tront.xyz/">
     <meta property="og:title" content="Trent Sterling (Tront) | Network Programmer &amp; Unity Generalist">
     <meta property="og:description" content="Games and tools by Trent Sterling (Tront), a Unity and network programmer working on Project Demigod, VR, multiplayer systems, and browser experiments.">
-    <meta property="og:image" content="https://tront.xyz/blog/assets/img/og-image.png">
+    <meta property="og:image" content="https://tront.xyz/assets/og/home-8182f1da2113.png">
+    <meta property="og:image:alt" content="Trent Sterling (Tront), Game Developer &amp; Creator. Unity, C#, VR and multiplayer. tront.xyz">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -30,7 +31,8 @@
     <meta name="twitter:url" content="https://tront.xyz/">
     <meta name="twitter:title" content="Trent Sterling (Tront) | Network Programmer &amp; Unity Generalist">
     <meta name="twitter:description" content="Games and tools by Trent Sterling (Tront), a Unity and network programmer working on Project Demigod, VR, multiplayer systems, and browser experiments.">
-    <meta name="twitter:image" content="https://tront.xyz/blog/assets/img/og-image.png">
+    <meta name="twitter:image" content="https://tront.xyz/assets/og/home-8182f1da2113.png">
+    <meta name="twitter:image:alt" content="Trent Sterling (Tront), Game Developer &amp; Creator. Unity, C#, VR and multiplayer. tront.xyz">
     <meta name="twitter:creator" content="@Trent_Sterling">
     <link rel="icon" href="/favicon.png" type="image/png">
     
@@ -69,6 +71,7 @@
         .section h2 { font-size: 1.5rem; margin-bottom: 0.3rem; }
         .about-me { text-align: left; margin: 0 auto; width: 100%; }
         .about-me p, .about-me li { font-size: 1rem; margin-bottom: 0.25rem; line-height: 1.35; }
+        .about-me p { margin-bottom: 0.5rem; line-height: 1.45; }
         .about-me h3 { color: #d4a5f0; font-size: 1.2rem; margin-top: 0.5rem; margin-bottom: 0.2rem; }
         .about-me a { color: #d4a5f0; text-decoration: none; font-weight: 600; border-bottom: 1px solid rgba(212, 165, 240, 0.35); transition: color 0.2s, border-color 0.2s; }
         .about-me a:hover { color: #fff; border-bottom-color: #d4a5f0; }
@@ -288,7 +291,15 @@
 
             <div class="section" id="discord-section">
                 <aside id="discord-widget-container" class="discord-widget">
-                    <div class="widget-loading">Loading Discord Status...</div>
+                    <h3 class="widget-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
+                           <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
+                        </svg>
+                        <span>Trent's Cool Developer Spot</span>
+                    </h3>
+                    <p class="widget-description">A developer's backchannel for game tech, VR, AI, LLMs, and hardware like ESP8266/32. Active since 2015. <a href="/discord/" target="_blank">Read More</a></p>
+                    <p class="widget-loading" role="status">Live status unavailable.</p>
+                    <a href="https://discord.gg/0hyoWZyM6y7kkFCN" target="_blank" rel="noopener noreferrer" class="join-button">Join Discord</a>
                 </aside>
             </div>
 
@@ -344,31 +355,53 @@
         (function() {
             const WIDGET_URL = 'https://discord.com/api/guilds/126995334109986817/widget.json';
             const widgetContainer = document.getElementById('discord-widget-container');
+            // Static fallback stays useful even before JavaScript or when Discord is unavailable.
+            const fallbackMarkup = widgetContainer.innerHTML;
+            const fallbackInvite = widgetContainer.querySelector('.join-button').href;
+            const fallbackName = widgetContainer.querySelector('.widget-header span').textContent;
+            const showFallback = () => { widgetContainer.innerHTML = fallbackMarkup; };
+            const safeInvite = (value) => {
+                try {
+                    const url = new URL(value);
+                    const invitePath = url.hostname === 'discord.gg' ? /^\/[A-Za-z0-9-]+\/?$/
+                        : /^(www\.)?discord\.com$/.test(url.hostname) ? /^\/invite\/[A-Za-z0-9-]+\/?$/ : null;
+                    return url.protocol === 'https:' && !url.username && !url.password && !url.port
+                        && invitePath && invitePath.test(url.pathname) ? url.href : fallbackInvite;
+                } catch (_) { return fallbackInvite; }
+            };
 
             const fetchWidgetData = async () => {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 8000);
+                widgetContainer.querySelector('[role="status"]').textContent = 'Loading Discord status...';
                 try {
-                    const response = await fetch(WIDGET_URL + '?cache_bust=' + new Date().getTime());
+                    const response = await fetch(WIDGET_URL + '?cache_bust=' + new Date().getTime(), { signal: controller.signal });
                     if (!response.ok) throw new Error(`Discord API error: ${response.status}`);
-                    const data = await response.json();
-                    renderWidget(data);
-                } catch (error) {
-                    widgetContainer.innerHTML = `<div class="widget-loading">Discord widget failed to load.</div>`;
+                    renderWidget(await response.json());
+                } catch (_) {
+                    showFallback();
+                } finally {
+                    clearTimeout(timeout);
                 }
             };
 
             const renderWidget = (data) => {
-                if (!data || !data.presence_count || !data.instant_invite) {
-                    widgetContainer.innerHTML = `<div class="widget-loading">Discord widget failed to load.</div>`;
+                // Zero is a valid online count; unknown counts must never masquerade as zero.
+                if (!data || !Number.isSafeInteger(data.presence_count) || data.presence_count < 0) {
+                    showFallback();
                     return;
                 }
-                const { name, presence_count, members, instant_invite } = data;
+                const presence_count = data.presence_count;
+                const name = typeof data.name === 'string' && data.name.trim() ? data.name : fallbackName;
+                const members = Array.isArray(data.members) ? data.members : [];
+                const instant_invite = safeInvite(data.instant_invite);
                 
                 const widgetHTML = `
                     <h3 class="widget-header">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-discord" viewBox="0 0 16 16">
                            <path d="M13.545 2.907a13.2 13.2 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.2 12.2 0 0 0-3.658 0 8 8 0 0 0-.412-.833.05.05 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.04.04 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032q.003.022.021.037a13.3 13.3 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019q.463-.63.818-1.329a.05.05 0 0 0-.01-.059l-.018-.011a9 9 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019q.127-.095.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.05.05 0 0 1 .053.007q.121.1.248.195a.05.05 0 0 1-.004.085 8 8 0 0 1-1.249.594.05.05 0 0 0-.03.03.05.05 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.2 13.2 0 0 0 4.001-2.02.05.05 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.03.03 0 0 0-.02-.019m-8.198 7.307c-.789 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612m5.316 0c-.788 0-1.438-.724-1.438-1.612s.637-1.613 1.438-1.613c.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612"/>
                         </svg>
-                        <span>${name}</span>
+                        <span></span>
                     </h3>
                     <p class="widget-description">A developer's backchannel for game tech, VR, AI, LLMs, and hardware like ESP8266/32. Active since 2015. <a href="/discord/" target="_blank">Read More</a></p>
                     <div class="avatar-constellation">
@@ -377,6 +410,8 @@
                     <a href="${instant_invite}" target="_blank" rel="noopener noreferrer" class="join-button">Join Discord</a>
                 `;
                 widgetContainer.innerHTML = widgetHTML;
+                widgetContainer.querySelector('.widget-header span').textContent = name;
+                widgetContainer.querySelector('.join-button').href = instant_invite;
 
                 const constellation = widgetContainer.querySelector('.avatar-constellation');
                 const constellationInner = widgetContainer.querySelector('.constellation-inner-wrapper');
@@ -393,7 +428,7 @@
                 constellationInner.style.height = `${baseHeight}px`;
 
                 const maxAvatars = 50;
-                const onlineMembers = members.filter(m => m.status !== 'offline');
+                const onlineMembers = members.filter(m => m && m.status !== 'offline' && typeof m.avatar_url === 'string' && /^https:\/\//i.test(m.avatar_url));
                 const avatars = onlineMembers.slice(0, maxAvatars).map(member => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'avatar-wrapper';
@@ -466,7 +501,7 @@
                     });
                     requestAnimationFrame(update);
                 }
-                update();
+                if (avatars.length) update();
             };
             fetchWidgetData();
         })();
