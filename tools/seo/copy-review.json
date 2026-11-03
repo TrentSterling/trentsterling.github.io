@@ -1,7 +1,7 @@
 {
   "index.html": {
     "beforeSha256": "00b51d664cb776d43df0165976625d9f09968329eb5f0e57a7846a42f73d912a",
-    "afterSha256": "caaaafe2454faf3557ea2d2bb50672ec8f6797edbf9d0de874e440d3adc3f8e8",
+    "afterSha256": "0188c7d82fc61d93ac23091a59859ab086ff4689eea1bcbc39f79fedf991d028",
     "replacements": [
       {
         "before": "content=\"I'm Trent Sterling (Tront), a game developer with over 15 years of experience, specializing in Unity, C#, and multiplayer networking.\"",
@@ -107,12 +107,21 @@
         "before": "    <meta name=\"twitter:image\" content=\"https://tront.xyz/blog/assets/img/og-image.png\">",
         "after": "    <meta name=\"twitter:image\" content=\"https://tront.xyz/assets/og/home-8182f1da2113.png\">\n    <meta name=\"twitter:image:alt\" content=\"Trent Sterling (Tront), Game Developer &amp; Creator. Unity, C#, VR and multiplayer. tront.xyz\">",
         "count": 1
+      },
+      {
+        "before": "\"dateModified\": \"2026-10-28\",",
+        "after": "\"dateModified\": \"2026-11-03T07:19:41Z\",",
+        "count": 1
       }
     ],
     "previousVersions": [
       {
         "afterSha256": "c9190bf8603b421db3218fa9a5e4767a6a9c076e7bf248553e88e67fc75a2b94",
         "replacementCount": 11
+      },
+      {
+        "afterSha256": "caaaafe2454faf3557ea2d2bb50672ec8f6797edbf9d0de874e440d3adc3f8e8",
+        "replacementCount": 21
       }
     ]
   },
