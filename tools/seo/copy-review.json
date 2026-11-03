@@ -62,7 +62,7 @@
   },
   "games/index.html": {
     "beforeSha256": "113e13b552ea5c5e2345d1c6faa1b7e1a007e36067d7fd3054d0287021008561",
-    "afterSha256": "daac44f01788eec44e0e1fd762d362ddb1cbf96c3cd1d4c4ffd01e762eb88b60",
+    "afterSha256": "ce9fe8c1fe18004a63191fc0587a6a1e8621d8cfe7b5c6f52d2d91d71c877de0",
     "replacements": [
       {
         "before": "Production work, games, experiments, and tools by Trent Sterling (Tront), Network Programmer and Unity Generalist on Project Demigod. Building in Unity, C#, VR, multiplayer, and GPU systems since 2009. Most of the browser games here are one self-contained HTML file: nothing to install, nothing to download.",
@@ -203,6 +203,11 @@
         "before": "VR brawler on Quest 2. You punch dudes, they ragdoll. Physics-based combat that never stops being satisfying.",
         "after": "Punch dudes and watch them ragdoll in this physics-based VR brawler for Quest 2.",
         "count": 1
+      },
+      {
+        "before": "Cafe game prototype from 2017. The itch page still says the build is incoming.",
+        "after": "A restaurant-building prototype I made for Jennifer, inspired by The Sims and Diner Dash. Arrange furniture, stack props, and save your cafe layout.",
+        "count": 1
       }
     ],
     "previousVersions": [
@@ -213,6 +218,10 @@
       {
         "afterSha256": "ce9a5d82d37e6b954a75e391c610c58104a0846bd792f58db19476f41934a982",
         "replacementCount": 8
+      },
+      {
+        "afterSha256": "daac44f01788eec44e0e1fd762d362ddb1cbf96c3cd1d4c4ffd01e762eb88b60",
+        "replacementCount": 28
       }
     ]
   }
