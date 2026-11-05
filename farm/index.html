@@ -25669,6 +25669,8 @@ worldPosition = curveWorldPos;
     coop: spec(1, 2, 1.15, true),
     hive: spec(1, 1),
     crate: spec(1, 1),
+    trellis: spec(2, 1),
+    gardenpatch: spec(2, 2),
     bench: spec(2, 1, 1.5, true),
     flowerbed: spec(1, 2, 1.2),
     picnic: spec(2, 2, 1.65, true),
@@ -25750,6 +25752,7 @@ worldPosition = curveWorldPos;
         return seen;
       };
       const before = flood(edgeBlocked), after = flood(nextEdge);
+      if (actors.some((p) => before.has(cellKey(p.x, p.z)) && !after.has(cellKey(p.x, p.z)))) return fail2("Leave a path to the animals");
       const usable = (e, seen, edge) => e.access?.some((c) => seen.has(cellKey(...c)) && e.cells.some(([x, z]) => Math.abs(x - c[0]) + Math.abs(z - c[1]) === 1 && !edge((x + c[0]) / 2, (z + c[1]) / 2)));
       for (const e of this.entries.values()) if (usable(e, before, edgeBlocked) && !usable(e, after, nextEdge)) return fail2("The new fence would block an entrance");
       for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) if (tile(x, z)?.crop && before.has(cellKey(x, z)) && !after.has(cellKey(x, z))) return fail2("The new fence would block a crop");
@@ -25799,6 +25802,7 @@ worldPosition = curveWorldPos;
       for (const e of this.entries.values()) if (e.access?.length && !e.access.some(reachable)) {
         if (e.access.some(wasReachable)) return bad2("This would block an existing entrance");
       }
+      if (actors.some((p) => !reachable([p.x, p.z]) && wasReachable([p.x, p.z]))) return bad2("Leave a path to the animals");
       for (let z = 0; z < size; z++) for (let x = 0; x < size; x++) if (tile(x, z)?.crop && !reachable([x, z]) && wasReachable([x, z])) return bad2("Leave a path to every crop");
       return { ok: true, reason: "Ready to place", candidate };
     }
@@ -28140,6 +28144,40 @@ worldPosition = curveWorldPos;
         part(g, sph(0.055, 5), 6587719, x + 0.05, y - 0.02, z);
       }
     },
+    planter(g) {
+      part(g, cyl(0.26, 0.19, 0.28, 10), 12151112, 0, 0.14, 0);
+      part(g, cyl(0.28, 0.28, 0.055, 10), 13731932, 0, 0.28, 0);
+      part(g, cyl(0.23, 0.23, 0.018, 10), 5717547, 0, 0.315, 0);
+      for (const [x, z, c] of [[-0.11, -0.06, 16110955], [0.1, -0.08, 15502243], [0, 0.1, 15328206]]) {
+        part(g, cyl(0.012, 0.012, 0.19, 5), 5406018, x, 0.39, z);
+        for (let i = 0; i < 5; i++) {
+          const a = i * Math.PI * 2 / 5;
+          part(g, sph(0.045, 6), c, x + Math.cos(a) * 0.047, 0.5, z + Math.sin(a) * 0.047);
+        }
+        part(g, sph(0.027, 6), 16104783, x, 0.515, z);
+      }
+    },
+    trellis(g) {
+      for (const x of [-0.64, 0.64]) part(g, box3(0.07, 1.05, 0.07), 9068605, x, 0.525, 0);
+      for (const y of [0.2, 0.48, 0.76, 1]) part(g, box3(1.35, 0.045, 0.045), 12159835, 0, y, 0);
+      for (const x of [-0.4, 0, 0.4]) part(g, box3(0.035, 0.82, 0.035), 12819050, x, 0.57, 0);
+      for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+        const x = side * (0.57 - i * 0.055), y = 0.18 + i * 0.19;
+        part(g, sph(0.1, 7), i % 2 ? 6723149 : 5079107, x, y, 0.055);
+        part(g, sph(0.055, 6), i % 2 ? 15770279 : 16111015, x + side * 0.06, y + 0.04, 0.12);
+      }
+    },
+    gardenpatch(g) {
+      part(g, box3(1.66, 0.12, 1.66), 6244656, 0, 0.06, 0);
+      for (const x of [-0.84, 0.84]) part(g, box3(0.08, 0.18, 1.76), 11107149, x, 0.09, 0);
+      for (const z of [-0.84, 0.84]) part(g, box3(1.62, 0.18, 0.08), 11107149, 0, 0.09, z);
+      for (let row2 = 0; row2 < 4; row2++) for (let col = 0; col < 4; col++) {
+        const x = -0.57 + col * 0.38, z = -0.57 + row2 * 0.38, y = 0.26 + (row2 + col) % 2 * 0.04;
+        part(g, cyl(0.012, 0.012, 0.22, 5), 5406018, x, y - 0.02, z);
+        part(g, sph(0.09, 7), FLOWER_COLS[(row2 * 2 + col) % FLOWER_COLS.length], x, y + 0.1, z);
+        part(g, sph(0.065, 6), 6458186, x + 0.06, y - 0.07, z + 0.04);
+      }
+    },
     bench(g) {
       part(g, box3(0.72, 0.06, 0.26), 11105855, 0, 0.24, 0);
       part(g, box3(0.72, 0.22, 0.05), 11105855, 0, 0.36, -0.11);
@@ -28202,6 +28240,9 @@ worldPosition = curveWorldPos;
     }
   };
   var DECOR_TYPES = {
+    planter: { name: "Flower Pot", emoji: "", cost: 25, footprint: 0.6, beauty: 2, note: "a little colour" },
+    trellis: { name: "Flower Trellis", emoji: "", cost: 70, footprint: 0.9, beauty: 4, note: "climbing blooms" },
+    gardenpatch: { name: "Cottage Garden", emoji: "", cost: 120, footprint: 1, beauty: 7, note: "a garden to make your own" },
     haybale: { name: "Hay Bale", emoji: "\u{1F33E}", cost: 30, footprint: 0.6, beauty: 1, note: "rustic charm" },
     flowerbed: { name: "Flower Bed", emoji: "\u{1F337}", cost: 45, footprint: 0.8, beauty: 4, note: "a splash of colour" },
     signpost: { name: "Signpost", emoji: "\u{1FAA7}", cost: 50, footprint: 0.5, beauty: 1, note: "mark the way" },
@@ -30945,14 +30986,22 @@ worldPosition = curveWorldPos;
     sprinkler: { read: serializeSprinklers, write: loadSprinklers, name: () => "Sprinkler", cost: () => 0, model: sprinklerModel },
     flytrap: { read: serializeFlytraps, write: loadFlytraps, name: () => "Flytrap", cost: () => FLYTRAP_COST, model: flytrapModel, max: 6 }
   };
-  var lastEdit = null;
+  var EDIT_HISTORY_LIMIT = 20;
+  var editHistory = [];
+  function recordEdit(action) {
+    editHistory.push(action);
+    if (editHistory.length > EDIT_HISTORY_LIMIT) editHistory.shift();
+  }
   var copy = (d) => JSON.parse(JSON.stringify(d));
   var fail = (reason) => ({ ok: false, reason });
   function resetEditHistory() {
-    lastEdit = null;
+    editHistory.length = 0;
+  }
+  function undoEditCount() {
+    return editHistory.length;
   }
   function canUndoEdit() {
-    return !!lastEdit;
+    return undoEditCount() > 0;
   }
   function editableObject(group, uid) {
     const store = stores[group], data = store?.read().find((d) => d.uid === uid);
@@ -30993,9 +31042,10 @@ worldPosition = curveWorldPos;
     const check = validateMove(o, x, z, rot);
     if (!check.ok) return check;
     const before = copy(o.data), rotated = check.candidate.rot;
+    if (before.x === x && before.z === z && (before.rot || 0) === rotated) return { ok: true, reason: "Already here" };
     write(group, stores[group].read().map((d) => d.uid === uid ? { ...d, x, z, rot: rotated } : d));
     const after = copy(editableObject(group, uid).data);
-    lastEdit = { kind: "move", group, uid, before, after };
+    recordEdit({ kind: "move", group, uid, before, after });
     return { ok: true, reason: "Moved" };
   }
   function removalCheck(o) {
@@ -31011,11 +31061,11 @@ worldPosition = curveWorldPos;
     write(group, stores[group].read().filter((d) => d.uid !== uid));
     if (group === "sprinkler") inventory.add("sprinkler");
     else G.coins += o.refund;
-    lastEdit = { kind: "remove", group, uid, before: copy(o.data), refund: o.refund };
+    recordEdit({ kind: "remove", group, uid, before: copy(o.data), refund: o.refund });
     return { ok: true, reason: group === "sprinkler" ? "Returned to bag" : `Sold for ${o.refund} coins` };
   }
   function undoEdit() {
-    const action = lastEdit;
+    const action = editHistory.at(-1);
     if (!action) return fail("Nothing to undo");
     const { group, uid, before } = action, store = stores[group], list2 = store.read();
     if (action.kind === "move") {
@@ -31035,7 +31085,7 @@ worldPosition = curveWorldPos;
       if (group === "sprinkler") inventory.remove("sprinkler");
       else G.coins -= action.refund;
     }
-    lastEdit = null;
+    editHistory.pop();
     G._uiDirty = true;
     return { ok: true, reason: "Undone" };
   }
@@ -33173,7 +33223,7 @@ worldPosition = curveWorldPos;
     if (!active4) return null;
     if (selected) selected = editableObject(selected.group, selected.uid);
     const check = removalCheck(selected);
-    return { name: selected?.name || "Arrange farm", selected: !!selected, reason: confirmSale ? check.reason + "?" : message, removeLabel: confirmSale ? "CONFIRM" : selected?.group === "sprinkler" ? "PACK" : "SELL", canRemove: check.ok, removeReason: check.reason, undo: canUndoEdit() };
+    return { name: selected?.name || "Arrange farm", selected: !!selected, reason: confirmSale ? check.reason + "?" : message, removeLabel: confirmSale ? "CONFIRM" : selected?.group === "sprinkler" ? "PACK" : "SELL", canRemove: check.ok, removeReason: check.reason, undo: canUndoEdit(), undoCount: undoEditCount() };
   }
   function moveSelection() {
     if (!selected) return;
@@ -36631,7 +36681,7 @@ worldPosition = curveWorldPos;
         const ew = (toolW - 30) / 4;
         batch.button("move-object", "MOVE", toolX + 8, toolY + toolH - 52, ew, 44, commands.moveObject, { disabled: !arranging.selected, selected: arranging.selected, size: 10 });
         batch.button("sell-object", arranging.removeLabel, toolX + 12 + ew, toolY + toolH - 52, ew, 44, commands.removeObject, { disabled: !arranging.selected, size: compact ? 9 : 10 });
-        batch.button("undo-object", "UNDO", toolX + 16 + ew * 2, toolY + toolH - 52, ew, 44, commands.undoObject, { disabled: !arranging.undo, size: 10 });
+        batch.button("undo-object", arranging.undoCount ? `UNDO ${arranging.undoCount}` : "UNDO", toolX + 16 + ew * 2, toolY + toolH - 52, ew, 44, commands.undoObject, { disabled: !arranging.undo, size: 10 });
         batch.button("end-arrange", "DONE", toolX + 20 + ew * 3, toolY + toolH - 52, ew, 44, commands.endArrange, { size: 10 });
       } else {
         batch.panel(toolX, toolY, toolW, toolH);
