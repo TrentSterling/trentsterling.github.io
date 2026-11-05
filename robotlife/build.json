@@ -1,9 +1,15 @@
 {
   "format": "robotlife-public-runtime/v1",
-  "title": "Robot Life: kitchen flow and neighborhood",
-  "sourceCommit": "5fcd68d30afb47d768a212ad592a77e05258406b",
-  "sha256": "037c499298055f4aedd1cd4ae429f9bde3504bed6e1036628b460cf6124c626a",
-  "bytes": 1420961,
+  "title": "Robot Life: direct tray service",
+  "sourceCommit": "0028500676ecb23a878e2faf3968e016ecd2117d",
+  "sha256": "f41f8b8c23dfe0f75022c3eaf5cc06b53fcd9ac630765265e62698eaf6776317",
+  "bytes": 1421349,
   "target": "https://tront.xyz/robotlife/",
-  "scope": "Cookware retains food on rejected assembly; modeled neighborhood facades. Qualified compiled runtime and existing license notices only."
+  "scope": "Serve burgers and drinks directly from mixed trays; retain unserved cargo. Compiled runtime and existing license notices only.",
+  "verification": {
+    "sourceCheck": "passed",
+    "rules": "67 passed",
+    "offlineBuild": "passed",
+    "browser": "Not run: local Chromium launch unavailable; GitHub job failed before steps."
+  }
 }
