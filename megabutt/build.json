@@ -1,16 +1,25 @@
 {
   "product": "MEGABUTT",
-  "version": "0.5.0",
-  "sourceRevision": "d849c7b635184922b8c69ee93a238ed426c8ae1a",
+  "version": "0.6.0",
+  "sourceRevision": "ca1d3bf30ba1e6837ffe20274e85220e69768243",
   "sourceDirty": false,
-  "qualifiedRuntimeRevision": "4a3b0f25ac53ff98a1c53b820b4389fe06411c30",
+  "builtSourceRevision": "7fbaa48ff2010f02bc95a389a68b7a86925fe878",
+  "verification": {
+    "unitTests": 74,
+    "inputRouteTests": 2,
+    "nativeWasmParityRoutes": 8,
+    "offscreenRenderer": "Vulkan SwiftShader; 25k resident GPU crowd; zero invalid positions, penetrations or map failures",
+    "browserWindowedAudioSmoke": "Not run: environment unavailable",
+    "targetHardwareFPS": "Not measured"
+  },
+  "rollbackPublicCommit": "0914f4d2dc055f3bdbade94af9f4e24ee02c9b56",
   "sha256": {
-    "index.html": "803cd35e1145abd53beacca9fa84bddd2f93d1ce9facafe0276a4fa700dc4d8a",
-    "pkg/megabutt.js": "988df2aaf2876d3c656b61f32c5bb2a3699ee270fbdca2a4a540f4b08d38776a",
+    "index.html": "62350f85eb0f8fd80a977bce3f7d99e7697a20cb315122391a1de823464da958",
+    "pkg/megabutt.js": "dd8916d3c40a092133914290a67e0d41f5f5c29a55e7611643ee44e05b3ad7f9",
     "MATERIAL-NOTICE.txt": "9a74b22e501e4d5d1f7c8bbb46a56d9b28d53348ae359ac9507f3ccbf0699443",
     "UFL.txt": "2f0015108d68627bd788d313f529c21ff4da2c2c42a5e1f3883acc83480f9002",
     "FONT-NOTICE.txt": "2a0f055ee645baf5eff4e3ea945aa8bfb5a8b5b0d813bc5050d74e8ddbc00c6e",
     "LICENSE.txt": "dcd59350678c3e6e454df9701fb60490211f0b90ede0351b7df66e916ac6b1b3",
-    "pkg/megabutt_bg.wasm": "a78b9ddc05bba163cb80c90ee0d54d3588a3884ee11700e87eb7f31302338a4c"
+    "pkg/megabutt_bg.wasm": "2b78cb2acf6fb2a1cb8fd0b399c14c355512a554e151a3bdb9afc46e07993b39"
   }
 }
