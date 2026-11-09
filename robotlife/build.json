@@ -1,15 +1,13 @@
 {
   "format": "robotlife-public-runtime/v1",
-  "title": "Robot Life: direct tray service",
-  "sourceCommit": "0028500676ecb23a878e2faf3968e016ecd2117d",
-  "sha256": "f41f8b8c23dfe0f75022c3eaf5cc06b53fcd9ac630765265e62698eaf6776317",
-  "bytes": 1421349,
+  "title": "Robot Life: one-click hands, voices and burnt burgers",
+  "sourceCommit": "4445382d1a4d8d2d02edf6999081f186ee1de957",
+  "sha256": "2291dbab38b63279369cc9a65e5fbbbcbc6e8e041a0b8ca7790b144d9abba45d",
+  "bytes": 4631480,
   "target": "https://tront.xyz/robotlife/",
-  "scope": "Serve burgers and drinks directly from mixed trays; retain unserved cargo. Compiled runtime and existing license notices only.",
+  "scope": "One-click grab and throw, loose kitchen food, auto-scooping tools, burnt and gross food, always-ringing bell, repositioned first-person hands, spoken Chatterbox NPC lines and Kenney CC0 SFX. Compiled runtime and license notices only.",
   "verification": {
-    "sourceCheck": "passed",
-    "rules": "67 passed",
-    "offlineBuild": "passed",
-    "browser": "Not run: local Chromium launch unavailable; GitHub job failed before steps."
+    "rules": "67 of 68 passed (known Windows-path failure in object-grips test)",
+    "browser": "Scripted Chrome run of grab/throw, scoop, burn, floor grossness, bell; game-smoke 114 checks passed before one stale Q-throw check"
   }
 }
