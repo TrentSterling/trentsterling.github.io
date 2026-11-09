@@ -1,13 +1,13 @@
 {
   "format": "robotlife-public-runtime/v1",
-  "title": "Robot Life: one-click hands, voices and burnt burgers",
-  "sourceCommit": "4445382d1a4d8d2d02edf6999081f186ee1de957",
-  "sha256": "2291dbab38b63279369cc9a65e5fbbbcbc6e8e041a0b8ca7790b144d9abba45d",
-  "bytes": 4631480,
+  "title": "Robot Life: sauce bottles, glass cups, water and steadier ragdolls",
+  "sourceCommit": "3215d43fd487d6920cd78cdc15216550df1b3926",
+  "sha256": "5b1b5518f972664eacb7439be8c8b8e51ed48cbc80c830bb0cbe40a39a4d1470",
+  "bytes": 4636986,
   "target": "https://tront.xyz/robotlife/",
-  "scope": "One-click grab and throw, loose kitchen food, auto-scooping tools, burnt and gross food, always-ringing bell, repositioned first-person hands, spoken Chatterbox NPC lines and Kenney CC0 SFX. Compiled runtime and license notices only.",
+  "scope": "Grabbable ketchup and mustard that squirt, transparent glass cups with 8 smoothie colors, working water that returns thrown objects to shore, ragdolls no longer teleport home, depth-flicker fixes. Compiled runtime and license notices only.",
   "verification": {
     "rules": "67 of 68 passed (known Windows-path failure in object-grips test)",
-    "browser": "Scripted Chrome run of grab/throw, scoop, burn, floor grossness, bell; game-smoke 114 checks passed before one stale Q-throw check"
+    "browser": "Scripted Chrome runs of sauce squirt, glass cup render, water return"
   }
 }
