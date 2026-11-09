@@ -19,3 +19,6 @@
 .games-empty p{margin:1rem 0;color:var(--text-muted);line-height:1.5}
 .grid .item[hidden],.games-empty[hidden]{display:none!important}
 @media(max-width:480px){.games-discovery{padding:0}.games-search-row{flex-wrap:wrap}#games-search{flex-basis:100%}.games-search-row button{margin-left:auto}.games-refinements{column-gap:1rem}}
+/* Legacy light themes use selector overrides, not the gallery's dark variables. */
+html[data-te-gallery="native"][data-theme="light"] :is(.games-discovery,.games-empty,.games-result-count){--text-color:#1d1d1f;--text-muted:#444;--item-bg:#fff;--border-color:#767676;--accent-purple:#0756b8;--te-accent:#0756b8}
+html[data-te-gallery="custom"] :is(.games-discovery,.games-empty,.games-result-count){--text-color:var(--te-ink);--text-muted:var(--te-muted);--item-bg:var(--te-elem);--border-color:var(--te-line);--accent-purple:var(--te-accent)}

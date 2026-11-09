@@ -22,6 +22,23 @@ const report = { cases: [], errors: [], fixture: 'Exact local pages/assets, exte
   }
   const count = page => page.locator('.grid .item:visible').count();
   const search = page => page.locator('#games-search');
+  async function readableControls(page) {
+    const contrasts = await page.evaluate(() => {
+      const luminance = color => {
+        const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => {
+          v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;
+        });
+        return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
+      };
+      return [...document.querySelectorAll('.games-search-label,.games-refinements label,.games-refinements legend,#games-search,#games-search-help,#games-result-count,.games-empty h2,.games-empty p')].filter(e => e.getClientRects().length).map(e => {
+        let node = e, background;
+        while (node) { background = getComputedStyle(node).backgroundColor; if (!/rgba\([^)]*,\s*0\)|transparent/.test(background)) break; node = node.parentElement; }
+        const a = luminance(getComputedStyle(e).color), b = luminance(background);
+        return { label: e.id || e.className || e.tagName, ratio: (Math.max(a, b) + .05) / (Math.min(a, b) + .05) };
+      });
+    });
+    for (const result of contrasts) assert.ok(result.ratio >= 4.5, `${result.label}: text contrast ${result.ratio}`);
+  }
   async function reset(page) { await page.locator('#games-reset').click(); assert.equal(await count(page), 128); }
   try {
     for (const width of [320, 390, 768, 1440]) {
@@ -29,6 +46,7 @@ const report = { cases: [], errors: [], fixture: 'Exact local pages/assets, exte
       assert.equal(await count(page), 128);
       assert.match(await page.locator('.grid .item:visible').first().innerText(), /^Project Demigod/);
       assert.equal(await page.locator('#games-result-count').innerText(), '128 of 128 projects');
+      await readableControls(page);
       await page.screenshot({ path: path.join(out, `games-discovery-${width}.png`), fullPage: false });
       await search(page).fill('  GEMs   shared  ');
       assert.equal(await count(page), 1);
@@ -88,8 +106,11 @@ const report = { cases: [], errors: [], fixture: 'Exact local pages/assets, exte
       assert.equal(await count(page), 1);
       await reset(page);
       await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
-      await search(page).fill('tools');
+      await search(page).fill('nothing matches this project');
+      await readableControls(page);
       await page.screenshot({ path: path.join(out, `games-discovery-light-${width}.png`), fullPage: false });
+      await page.evaluate(() => { document.documentElement.removeAttribute('data-theme'); document.documentElement.setAttribute('data-te-gallery', 'custom'); });
+      await readableControls(page);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       assert.ok(await search(page).evaluate(e => e.getBoundingClientRect().width >= 220));
       report.cases.push({ width, search: true, intersections: true, zeroResults: true, keyboard: true, urlReloadAndBack: true, noOverflow: true });

@@ -64,7 +64,10 @@ test('every existing production file is unchanged outside exact reviewed copy, a
     const before = fs.readFileSync(path.join(base, file));
     const after = fs.readFileSync(path.join(root, file));
     if (changes.some(change => change.file === file) || file === deviceFile || file === minecraftFile || file === gamesMdFile || file === ducktoyFile || legacyNavbarFiles.includes(file) || authorChanges.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
-    else assert.deepEqual(after, before, file + ': byte-identical');
+    else if (file === 'assets/css/games-discovery.css') {
+      const palette = require('../games-discovery/palette.cjs');
+      assert.equal(palette.normalize(after.toString()), palette.normalize(before.toString()), 'only the exact additive catalog palette mapping may change');
+    } else assert.deepEqual(after, before, file + ': byte-identical');
   }
   const candidateFiles = execFileSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
   const newProduction = candidateFiles.filter(file => !files.includes(file) && !file.startsWith('tools/') && !file.startsWith('.github/') && !file.startsWith('.local/'));
