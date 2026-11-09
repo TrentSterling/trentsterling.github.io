@@ -57,3 +57,10 @@ test('homepage catalog and itch destinations are separate and unlisted work stay
   assert.ok(!read('index.html').includes('View All My Games on itch.io'));
   for (const file of ['index.html', 'games/index.html', 'sitemap.xml', 'sitemap-pages.xml', 'assets/js/games-discovery.js']) assert.doesNotMatch(read(file), /robot[ -]?life/i, file);
 });
+test('light/custom palette allowance is exact and never hides unrelated edits', () => {
+  const palette = require('./palette.cjs');
+  const css = read('assets/css/games-discovery.css');
+  assert.equal(css.split(palette.addition).length, 2);
+  assert.equal(palette.normalize(css + 'changed'), palette.normalize(css) + 'changed');
+  assert.notEqual(palette.normalize(css.replace('#1d1d1f', '#eeeeee')), palette.normalize(css));
+});
