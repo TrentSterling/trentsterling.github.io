@@ -68,7 +68,7 @@ test('every existing production file is unchanged outside exact reviewed copy, a
   }
   const candidateFiles = execFileSync('git', ['-C', root, 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
   const newProduction = candidateFiles.filter(file => !files.includes(file) && !file.startsWith('tools/') && !file.startsWith('.github/') && !file.startsWith('.local/'));
-  const approvedNew = [...Object.keys(refresh.files), tinyzombies.file].filter(file => !files.includes(file));
+  const approvedNew = [...Object.keys(refresh.files), tinyzombies.file, 'assets/css/games-discovery.css', 'assets/js/games-discovery.js'].filter(file => !files.includes(file));
   assert.deepEqual(newProduction.sort(), approvedNew.sort(), 'only exact reviewed clips, posters and provenance may be new');
   for (const file of Object.keys(refresh.files)) refresh.assertReviewedBytes(file, fs.readFileSync(path.join(root, file)));
   tinyzombies.assertReviewedBytes(tinyzombies.file, fs.readFileSync(path.join(root, tinyzombies.file)));

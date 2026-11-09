@@ -1,7 +1,7 @@
 {
   "index.html": {
     "beforeSha256": "00b51d664cb776d43df0165976625d9f09968329eb5f0e57a7846a42f73d912a",
-    "afterSha256": "0188c7d82fc61d93ac23091a59859ab086ff4689eea1bcbc39f79fedf991d028",
+    "afterSha256": "c3e10bad19b42e9e405436574bb145a7e2c385628d79477e8a5a973f7269a43b",
     "replacements": [
       {
         "before": "content=\"I'm Trent Sterling (Tront), a game developer with over 15 years of experience, specializing in Unity, C#, and multiplayer networking.\"",
@@ -112,6 +112,11 @@
         "before": "\"dateModified\": \"2026-10-28\",",
         "after": "\"dateModified\": \"2026-11-03T07:19:41Z\",",
         "count": 1
+      },
+      {
+        "before": "<li><a class=\"game\" href=\"https://trent.itch.io/\" target=\"_blank\">View All My Games on itch.io</a><p class=\"blurb\"></p></li>",
+        "after": "<li><a class=\"game\" href=\"/games/\">View All My Games</a><p class=\"blurb\"></p></li>\n                    <li><a class=\"game\" href=\"https://trent.itch.io/\" target=\"_blank\" rel=\"noopener\">My itch.io Games</a><p class=\"blurb\"></p></li>",
+        "count": 1
       }
     ],
     "previousVersions": [
@@ -122,12 +127,16 @@
       {
         "afterSha256": "caaaafe2454faf3557ea2d2bb50672ec8f6797edbf9d0de874e440d3adc3f8e8",
         "replacementCount": 21
+      },
+      {
+        "afterSha256": "0188c7d82fc61d93ac23091a59859ab086ff4689eea1bcbc39f79fedf991d028",
+        "replacementCount": 22
       }
     ]
   },
   "games/index.html": {
     "beforeSha256": "113e13b552ea5c5e2345d1c6faa1b7e1a007e36067d7fd3054d0287021008561",
-    "afterSha256": "ce9fe8c1fe18004a63191fc0587a6a1e8621d8cfe7b5c6f52d2d91d71c877de0",
+    "afterSha256": "7579e19f533af1aebd0946ee1fb64dc2291884e2f9189a3e68a22061e9fb759a",
     "replacements": [
       {
         "before": "Production work, games, experiments, and tools by Trent Sterling (Tront), Network Programmer and Unity Generalist on Project Demigod. Building in Unity, C#, VR, multiplayer, and GPU systems since 2009. Most of the browser games here are one self-contained HTML file: nothing to install, nothing to download.",
@@ -273,6 +282,11 @@
         "before": "Cafe game prototype from 2017. The itch page still says the build is incoming.",
         "after": "A restaurant-building prototype I made for Jennifer, inspired by The Sims and Diner Dash. Arrange furniture, stack props, and save your cafe layout.",
         "count": 1
+      },
+      {
+        "before": "    <link rel=\"stylesheet\" href=\"/games/gallery-motion.css\">",
+        "after": "    <link rel=\"stylesheet\" href=\"/games/gallery-motion.css\">\n    <link rel=\"stylesheet\" href=\"/assets/css/games-discovery.css\">\n    <script defer src=\"/assets/js/games-discovery.js\"></script>",
+        "count": 1
       }
     ],
     "previousVersions": [
@@ -287,6 +301,10 @@
       {
         "afterSha256": "daac44f01788eec44e0e1fd762d362ddb1cbf96c3cd1d4c4ffd01e762eb88b60",
         "replacementCount": 28
+      },
+      {
+        "afterSha256": "ce9fe8c1fe18004a63191fc0587a6a1e8621d8cfe7b5c6f52d2d91d71c877de0",
+        "replacementCount": 29
       }
     ]
   }
