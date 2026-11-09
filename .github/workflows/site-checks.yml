@@ -26,6 +26,9 @@ on:
       - discord/**
       - device-history/index.html
       - games/**
+      - assets/css/games-discovery.css
+      - assets/js/games-discovery.js
+      - tools/games-discovery/**
       - assets/css/tront-theme*.css
       - assets/js/tront-theme*.js
       - assets/js/tront-system.js
@@ -102,6 +105,10 @@ jobs:
         run: CRUMPLECAR_BASELINE="$THEME_BASELINE_ROOT/crumplecar/index.html" node --test tools/crumplecar/*.test.cjs
       - name: Verify sitemap and canonical game metadata
         run: node tools/seo/check.cjs
+      - name: Test catalog search data and preservation
+        run: node --test tools/games-discovery/test.cjs
+      - name: Test catalog search and combined filters in Chrome
+        run: timeout 180s node tools/games-discovery/browser.cjs
       - name: Check copy and gallery source preservation
         run: node tools/theme-editor/preserve.cjs
       - name: Test opt-in About discovery component contracts
