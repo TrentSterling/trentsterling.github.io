@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="color-scheme" content="dark"><title>CURRENT 01 — Live Circuit Lab</title>
+<style>html,body{margin:0;background:#06090e;color:#dfeef5;width:100%;height:100%;overflow:hidden}canvas{display:block;width:100vw;height:100vh;outline:none;touch-action:pan-y}#boot{position:absolute;left:10%;top:30%;max-width:80%;font:16px/1.8 system-ui,sans-serif;white-space:pre-wrap}#boot[hidden]{display:none}.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}</style></head>
+<body><canvas id="circuit" tabindex="0" role="application" aria-label="CURRENT live circuit simulator. Space toggles power, P pauses, A toggles pulse mode, R resets, H opens help. Tab selects a control and arrow keys adjust sliders."></canvas><div id="boot">Starting CURRENT…</div><div class="sr">A 5 volt supply feeds a switch and a charge resistor. A capacitor and an LED with a series resistor connect in parallel from that node to ground. Open the switch to see the capacitor discharge through the LED. All visible interface content is rendered on the GPU.</div>
+<script>
+/* CURRENT 01 — small transient circuit core. Original code, MIT.
+   Two unknowns: capacitor node (v) and LED anode (d).
+   Backward Euler capacitor companion + damped Newton diode solve, float64.
+   This is a teaching model, not a validated hardware-design simulator. */
+class Circuit {
+  constructor() {
+    this.vs=5; this.rc=220; this.rl=470; this.c=0.0047;
+    this.ledVf=1.9; this.ledEnabled=true; this.on=false;
+    this.time=0; this.v=0; this.d=0; this.i=0; this.ic=0; this.is=0;
+    this.energy=0; this.residual=0; this.iterations=0; this.failed=false;
+    this.h=0.0005; this.gleak=0;
+  }
+  reset(){this.time=0;this.v=0;this.d=0;this.i=0;this.ic=0;this.is=0;this.energy=0;this.residual=0;this.failed=false;}
+  // Exponential diode calibrated to ledVf at 10 mA. No thermal/breakdown model.
+  diode(d){const a=this.ledVf/Math.log1p(0.01/1e-12), e=Math.exp(Math.min(40,Math.max(-40,d/a)));return [1e-12*(e-1),1e-12*e/a];}
+  step(dt=this.h){
+    const old=this.v, gc=this.c/dt, gs=this.on?1/this.rc:0;
+    const gr=this.ledEnabled?1/this.rl:0, A=gc+gs+gr+this.gleak;
+    const b=gc*old+gs*this.vs;
+    let d=this.d, it=0, residual=0, converged=!this.ledEnabled;
+    if(this.ledEnabled){
+      let lo=0, hi=Math.max(old,this.on?this.vs:0,1e-10);
+      d=Math.max(lo,Math.min(hi,d));
+      for(it=0;it<48;it++){
+        const v=(b+gr*d)/A, [id,gd]=this.diode(d);
+        const f=gr*(d-v)+id;
+        if(Math.abs(f)<1e-12){converged=true;break;}
+        if(f>0)hi=d;else lo=d;
+        const deriv=gr*(1-gr/A)+gd;
+        let next=d-f/Math.max(deriv,1e-18);
+        if(next<=lo || next>=hi || !Number.isFinite(next))next=(lo+hi)*0.5;
+        d=next;
+      }
+    }else d=0;
+    const v=(b+gr*d)/A, i=gr*(v-d), is=gs*(this.vs-v), ic=gc*(v-old);
+    residual=Math.max(Math.abs(is-i-ic-this.gleak*v),this.ledEnabled?Math.abs(i-this.diode(d)[0]):0);
+    if(!converged || !Number.isFinite(v) || !Number.isFinite(i) || residual>1e-8){this.failed=true;return false;}
+    this.v=Math.max(0,v);this.d=d;this.i=Math.max(0,i);this.is=is;this.ic=ic;
+    this.energy=0.5*this.c*v*v;this.time+=dt;this.residual=residual;this.iterations=it+1;
+    return true;
+  }
+  snapshot(){return {t:this.time,v:this.v,d:this.d,i:this.i,is:this.is,ic:this.ic,energy:this.energy,on:this.on,residual:this.residual,failed:this.failed};}
+}
+if(typeof module!=='undefined')module.exports={Circuit};
+
+/* One instanced GPU pass draws every wire, symbol, glyph, control and trace.
+   WebGPU first, WebGL2 fallback. No Canvas2D, external fonts, textures or CDN. */
+const WGSL=`
+struct U {size:vec2<f32>, pad:vec2<f32>}; @group(0) @binding(0) var<uniform> u:U;
+struct V { @builtin(position) pos:vec4<f32>, @location(0) p:vec2<f32>,
+ @location(1) @interpolate(flat) box:vec4<f32>, @location(2) @interpolate(flat) shape:vec4<f32>,
+ @location(3) @interpolate(flat) color:vec4<f32>, @location(4) @interpolate(flat) opts:vec4<f32> };
+@vertex fn vs(@builtin(vertex_index) vi:u32,@location(0) b:vec4<f32>,@location(1) s:vec4<f32>,@location(2) c:vec4<f32>,@location(3) o:vec4<f32>)->V{
+ var corners=array<vec2<f32>,6>(vec2(-1.,-1.),vec2(1.,-1.),vec2(-1.,1.),vec2(-1.,1.),vec2(1.,-1.),vec2(1.,1.));
+ var v:V; let p=b.xy+corners[vi]*b.zw;v.pos=vec4(p.x/u.size.x*2.-1.,1.-p.y/u.size.y*2.,0.,1.);
+ v.p=p;v.box=b;v.shape=s;v.color=c;v.opts=o;return v;
+}
+@fragment fn fs(v:V)->@location(0) vec4<f32>{
+ var d=0.;let kind=v.opts.x;
+ if(kind<0.5){let q=abs(v.p-v.box.xy)-v.shape.xy+vec2<f32>(v.opts.y);d=length(max(q,vec2(0.)))+min(max(q.x,q.y),0.)-v.opts.y;}
+ else if(kind<1.5){d=length(v.p-v.box.xy)-v.opts.y;}
+ else if(kind<2.5){let pa=v.p-v.shape.xy;let ba=v.shape.zw-v.shape.xy;let h=clamp(dot(pa,ba)/max(dot(ba,ba),0.0001),0.,1.);d=length(pa-ba*h)-v.opts.y;}
+ let aa=max(fwidth(d),0.45);var a=(1.-smoothstep(-aa,aa,d))*v.color.a;
+ if(kind>2.5){let r=length((v.p-v.box.xy)/vec2<f32>(v.opts.y));a=exp(-r*r*5.)*(1.-smoothstep(0.7,1.,r))*v.color.a;}
+ return vec4(v.color.rgb,a);
+}`;
+const GLVS=`#version 300 es
+precision highp float;uniform vec2 uSize;
+layout(location=0)in vec4 aBox;layout(location=1)in vec4 aShape;layout(location=2)in vec4 aColor;layout(location=3)in vec4 aOpts;
+out vec2 p;flat out vec4 box;flat out vec4 shape;flat out vec4 color;flat out vec4 opts;
+void main(){vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
+p=aBox.xy+corners[gl_VertexID]*aBox.zw;gl_Position=vec4(p.x/uSize.x*2.-1.,1.-p.y/uSize.y*2.,0,1);box=aBox;shape=aShape;color=aColor;opts=aOpts;}`;
+const GLFS=`#version 300 es
+precision highp float;in vec2 p;flat in vec4 box;flat in vec4 shape;flat in vec4 color;flat in vec4 opts;out vec4 frag;
+void main(){float d=0.;float kind=opts.x;
+if(kind<.5){vec2 q=abs(p-box.xy)-shape.xy+opts.y;d=length(max(q,vec2(0)))+min(max(q.x,q.y),0.)-opts.y;}
+else if(kind<1.5)d=length(p-box.xy)-opts.y;
+else if(kind<2.5){vec2 pa=p-shape.xy,ba=shape.zw-shape.xy;float h=clamp(dot(pa,ba)/max(dot(ba,ba),.0001),0.,1.);d=length(pa-ba*h)-opts.y;}
+else {float r=length((p-box.xy)/opts.y);frag=vec4(color.rgb,exp(-r*r*5.)*(1.-smoothstep(.7,1.,r))*color.a);return;}
+float aa=max(fwidth(d),.45);frag=vec4(color.rgb,(1.-smoothstep(-aa,aa,d))*color.a);}`;
+class GPUDraw {
+  constructor(canvas){this.canvas=canvas;this.data=new Float32Array(16*30000);this.n=0;this.backend='';}
+  async init(){
+    const forceGL=new URLSearchParams(location.search).has('webgl');
+    if(navigator.gpu&&!forceGL){
+      try{
+        const adapter=await navigator.gpu.requestAdapter({powerPreference:'low-power'});
+        if(adapter){
+          const device=await adapter.requestDevice();const context=this.canvas.getContext('webgpu');
+          if(context){
+            device.pushErrorScope('validation');
+            const format=navigator.gpu.getPreferredCanvasFormat(),module=device.createShaderModule({code:WGSL});
+            const pipeline=await device.createRenderPipelineAsync({layout:'auto',vertex:{module,entryPoint:'vs',buffers:[{arrayStride:64,stepMode:'instance',attributes:[0,1,2,3].map((shaderLocation)=>({shaderLocation,offset:shaderLocation*16,format:'float32x4'}))}]},fragment:{module,entryPoint:'fs',targets:[{format,blend:{color:{srcFactor:'src-alpha',dstFactor:'one-minus-src-alpha'},alpha:{srcFactor:'one',dstFactor:'one-minus-src-alpha'}}}]},primitive:{topology:'triangle-list'}});
+            const err=await device.popErrorScope();if(err)throw Error(err.message);
+            this.device=device;this.context=context;this.pipeline=pipeline;this.format=format;
+            this.ub=device.createBuffer({size:16,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+            this.vb=device.createBuffer({size:this.data.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});
+            this.bg=device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.ub}}]});
+            context.configure({device,format,alphaMode:'opaque'});this.backend='WEBGPU';
+            device.addEventListener('uncapturederror',e=>this.onError?.(e.error.message));
+            device.lost.then(info=>this.onError?.('GPU device lost: '+info.message));return this;
+          }
+        }
+      }catch(e){console.warn('WebGPU unavailable; using WebGL2.',String(e));
+        // A canvas cannot switch context types after WebGPU is acquired.
+        if(this.canvas.getContext('webgpu')){const c=this.canvas.cloneNode();this.canvas.replaceWith(c);this.canvas=c;}
+      }
+    }
+    const gl=this.canvas.getContext('webgl2',{alpha:false,antialias:false,preserveDrawingBuffer:false});
+    if(!gl)throw Error('WebGPU and WebGL2 are unavailable. Enable browser hardware acceleration.');
+    this.gl=gl;
+    const compile=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;};
+    const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,GLVS));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,GLFS));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));
+    gl.useProgram(p);this.us=gl.getUniformLocation(p,'uSize');this.vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.vb);gl.bufferData(gl.ARRAY_BUFFER,this.data.byteLength,gl.DYNAMIC_DRAW);
+    this.vao=gl.createVertexArray();gl.bindVertexArray(this.vao);for(let i=0;i<4;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,4,gl.FLOAT,false,64,i*16);gl.vertexAttribDivisor(i,1);}
+    gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);
+    this.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();this.onError?.('Graphics context lost. Reload to reconnect.');});
+    this.backend='WEBGL2';return this;
+  }
+  begin(w,h,pw,ph){this.n=0;this.w=w;this.h=h;const c=this.canvas;if(c.width!==pw||c.height!==ph){c.width=pw;c.height=ph;}}
+  shape(cx,cy,hx,hy,a,b,c,d,col,kind,r){let o=this.n*16;if(o+16>this.data.length)return;const v=this.data;v[o]=cx;v[o+1]=cy;v[o+2]=hx;v[o+3]=hy;v[o+4]=a;v[o+5]=b;v[o+6]=c;v[o+7]=d;v[o+8]=col[0];v[o+9]=col[1];v[o+10]=col[2];v[o+11]=col[3]??1;v[o+12]=kind;v[o+13]=r;v[o+14]=0;v[o+15]=0;this.n++;}
+  rect(x,y,w,h,col,r=0){this.shape(x+w/2,y+h/2,w/2+2,h/2+2,w/2,h/2,0,0,col,0,r);}
+  circle(x,y,r,col){this.shape(x,y,r+2,r+2,0,0,0,0,col,1,r);}
+  line(x1,y1,x2,y2,col,width=1.5){const r=width/2;this.shape((x1+x2)/2,(y1+y2)/2,Math.abs(x2-x1)/2+r+2,Math.abs(y2-y1)/2+r+2,x1,y1,x2,y2,col,2,r);}
+  glow(x,y,r,col){this.shape(x,y,r,r,0,0,0,0,col,3,r);}
+  poly(p,col,width=1.5){for(let i=1;i<p.length;i++)this.line(p[i-1][0],p[i-1][1],p[i][0],p[i][1],col,width);}
+  ring(x,y,r,col,width=1.5){const n=Math.max(24,Math.ceil(r*1.2));let a=[x+r,y];for(let j=1;j<=n;j++){const b=[x+Math.cos(j/n*2*Math.PI)*r,y+Math.sin(j/n*2*Math.PI)*r];this.line(...a,...b,col,width);a=b;}}
+  submit(){
+    const d=this.data.subarray(0,this.n*16);
+    if(this.device){const g=this.device;g.queue.writeBuffer(this.ub,0,new Float32Array([this.w,this.h,0,0]));g.queue.writeBuffer(this.vb,0,d);const e=g.createCommandEncoder();const p=e.beginRenderPass({colorAttachments:[{view:this.context.getCurrentTexture().createView(),clearValue:{r:.024,g:.035,b:.055,a:1},loadOp:'clear',storeOp:'store'}]});p.setPipeline(this.pipeline);p.setBindGroup(0,this.bg);p.setVertexBuffer(0,this.vb);p.draw(6,this.n);p.end();g.queue.submit([e.finish()]);}
+    else{const gl=this.gl;gl.viewport(0,0,this.canvas.width,this.canvas.height);gl.clearColor(.024,.035,.055,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.uniform2f(this.us,this.w,this.h);gl.bindBuffer(gl.ARRAY_BUFFER,this.vb);gl.bufferSubData(gl.ARRAY_BUFFER,0,d);gl.drawArraysInstanced(gl.TRIANGLES,0,6,this.n);}
+  }
+}
+
+const FONT={
+'A':'0,7 2.5,0 5,7|1,4.5 4,4.5','B':'0,7 0,0 3.5,0 5,1 5,2.4 3.5,3.5 0,3.5|3.5,3.5 5,4.6 5,6 3.5,7 0,7',
+'C':'5,1 4,0 1,0 0,1 0,6 1,7 4,7 5,6','D':'0,7 0,0 3,0 5,2 5,5 3,7 0,7','E':'5,0 0,0 0,7 5,7|0,3.5 4,3.5',
+'F':'0,7 0,0 5,0|0,3.5 4,3.5','G':'5,1 4,0 1,0 0,1 0,6 1,7 4,7 5,6 5,3.5 2.8,3.5','H':'0,0 0,7|5,0 5,7|0,3.5 5,3.5',
+'I':'1,0 4,0|2.5,0 2.5,7|1,7 4,7','J':'1,0 5,0 5,5.5 3.5,7 1,7 0,6','K':'0,0 0,7|5,0 0,4 5,7','L':'0,0 0,7 5,7',
+'M':'0,7 0,0 2.5,3.5 5,0 5,7','N':'0,7 0,0 5,7 5,0','O':'1,0 4,0 5,1 5,6 4,7 1,7 0,6 0,1 1,0',
+'P':'0,7 0,0 4,0 5,1 5,2.5 4,3.5 0,3.5','Q':'1,0 4,0 5,1 5,5.5 3.5,7 1,7 0,6 0,1 1,0|3,5 5.5,7.5',
+'R':'0,7 0,0 4,0 5,1 5,2.5 4,3.5 0,3.5|2.5,3.5 5,7','S':'5,1 4,0 1,0 0,1 0,2.5 1,3.5 4,3.5 5,4.5 5,6 4,7 1,7 0,6',
+'T':'0,0 5,0|2.5,0 2.5,7','U':'0,0 0,5.8 1.2,7 3.8,7 5,5.8 5,0','V':'0,0 2.5,7 5,0','W':'0,0 1,7 2.5,3.5 4,7 5,0',
+'X':'0,0 5,7|5,0 0,7','Y':'0,0 2.5,3.5 5,0|2.5,3.5 2.5,7','Z':'0,0 5,0 0,7 5,7',
+'0':'1,0 4,0 5,1 5,6 4,7 1,7 0,6 0,1 1,0|1.1,5.5 3.9,1.5','1':'1,1.5 2.5,0 2.5,7|.5,7 4.5,7',
+'2':'0,1 1,0 4,0 5,1 5,2.5 0,7 5,7','3':'0,0 5,0 2.7,3 4,3 5,4 5,6 4,7 0,7',
+'4':'4,7 4,0 0,4.5 5,4.5','5':'5,0 0,0 0,3.5 4,3.5 5,4.5 5,6 4,7 0,7','6':'4.5,0 1,0 0,1 0,6 1,7 4,7 5,6 5,4 4,3 0,3',
+'7':'0,0 5,0 1.3,7','8':'1,0 4,0 5,1 5,2.5 4,3.5 1,3.5 0,2.5 0,1 1,0|1,3.5 0,4.5 0,6 1,7 4,7 5,6 5,4.5 4,3.5',
+'9':'5,4 1,4 0,3 0,1 1,0 4,0 5,1 5,6 4,7 .5,7',
+'.':'2.5,6.6 2.5,7',',':'2.5,6.5 1.5,8',':':'2.5,1.6 2.5,2|2.5,5.5 2.5,5.9',';':'2.5,1.6 2.5,2|2.5,5.5 1.5,7.5',
+'-':'1,3.5 4,3.5','+':'0,3.5 5,3.5|2.5,1 2.5,6','=':'0,2.5 5,2.5|0,4.8 5,4.8','/':'0,7 5,0','(':'3.7,0 2,1.5 2,5.5 3.7,7',')':'1.3,0 3,1.5 3,5.5 1.3,7',
+'[':'4,0 1,0 1,7 4,7',']':'1,0 4,0 4,7 1,7','<':'4,1 1,3.5 4,6','>':'1,1 4,3.5 1,6','%':'0,7 5,0|.2,.2 1.5,.2 1.5,1.8 .2,1.8 .2,.2|3.5,5.2 4.8,5.2 4.8,6.8 3.5,6.8 3.5,5.2',
+'?':'0,1 1,0 4,0 5,1 5,2.5 2.5,4 2.5,4.8|2.5,6.7 2.5,7','!':'2.5,0 2.5,4.8|2.5,6.7 2.5,7','*':'2.5,.5 2.5,6.5|0,1.8 5,5.2|0,5.2 5,1.8','_':'0,7 5,7',
+};
+FONT.m='0,7 0,2.5 1.5,2.5 2.5,3.5 2.5,7|2.5,3.5 3.5,2.5 4,2.5 5,3.5 5,7';
+FONT.u='0,2.5 0,6 1,7 3.5,7 5,5.5|5,2.5 5,7';
+FONT.s='5,3 4,2.5 1,2.5 0,3.2 0,4 1,4.7 4,4.7 5,5.5 5,6.3 4,7 1,7 0,6.5';
+for(const k in FONT)FONT[k]=FONT[k].split('|').map(s=>s.split(' ').map(p=>p.split(',').map(Number)));
+const C={bg:[.024,.035,.055,1],panel:[.039,.055,.079,1],panel2:[.048,.071,.100,1],border:[.105,.156,.209,1],dim:[.30,.40,.48,1],muted:[.48,.59,.67,1],white:[.88,.94,.96,1],mint:[.32,.94,.75,1],purple:[.64,.59,1,1],gold:[1,.72,.36,1],red:[1,.29,.21,1],blue:[.30,.62,1,1],green:[.40,1,.54,1]};
+const alpha=(c,a)=>[c[0],c[1],c[2],a];
+const mix=(a,b,t)=>a.map((v,i)=>i===3?1:v+(b[i]-v)*Math.max(0,Math.min(1,t)));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+let gpu,canvas,sim=new Circuit(),W=1360,H=860,scale=1,mobile=false,hits=[],hover=null,focusId=null,drag=null;
+let mouse={x:-100,y:-100},paused=false,pulse=false,pulsePeriod=4,started=false,clockRemainder=0,lastNow=0,sampleRemainder=0;
+let history=[],phase={source:0,led:0,cap:0},statusText='READY',notice='',noticeUntil=0,showHelp=false;
+let ledIndex=0,initialReady=false,frames=0,avgFrame=16.7,maxResidual=0,solverCount=0,slow=false,avgRate=1;
+const COLORS=[{name:'RED',vf:1.9,c:C.red},{name:'GREEN',vf:2.2,c:C.green},{name:'BLUE',vf:2.9,c:C.blue}];
+const sliders=[
+ {id:'rc',name:'R1 / CHARGE RESISTOR',min:100,max:2200,log:true,color:C.gold,format:v=>Math.round(v)+' OHM',snap:v=>Math.round(v/10)*10},
+ {id:'c',name:'C1 / CAPACITANCE',min:.0001,max:.022,log:true,color:C.purple,format:v=>Math.round(v*1e6).toLocaleString('en-US')+' uF',snap:v=>Math.max(.0001,Math.round(v*1e6/100)*100/1e6)},
+ {id:'rl',name:'R2 / LED RESISTOR',min:100,max:2200,log:true,color:C.gold,format:v=>Math.round(v)+' OHM',snap:v=>Math.round(v/10)*10},
+ {id:'vs',name:'V1 / SUPPLY VOLTAGE',min:2.5,max:9,log:false,color:C.mint,format:v=>v.toFixed(1)+' V',snap:v=>Math.round(v*10)/10},
+];
+function textWidth(s,h=12){return Math.max(0,s.length*6.4-1.4)*h/7;}
+function text(s,x,y,h=12,col=C.white,align='left',weight=1){s=String(s);if(align==='right')x-=textWidth(s,h);if(align==='center')x-=textWidth(s,h)/2;const z=h/7;for(const ch of s){for(const p of FONT[ch]||FONT[ch.toUpperCase()]||[])for(let j=1;j<p.length;j++)gpu.line(x+p[j-1][0]*z,y+p[j-1][1]*z,x+p[j][0]*z,y+p[j][1]*z,col,Math.max(.72,h*.075)*weight);x+=6.4*z;}}
+function addHit(id,x,y,w,h,action,opts={}){const v={id,x,y,w,h,action,...opts};hits.push(v);return v;}
+function isHover(id){return hover?.id===id;}
+function button(id,x,y,w,h,label,action,active=false,color=C.mint,size=11){
+ const over=isHover(id);gpu.rect(x,y,w,h,active?alpha(color,.14):(over?C.panel2:C.panel),7);
+ const edge=active?alpha(color,.6):(over?C.muted:C.border);strokeRect(x,y,w,h,edge,7,1);
+ text(label,x+w/2,y+(h-size)/2,size,active?color:C.white,'center');addHit(id,x,y,w,h,action,{label});
+ if(focusId===id)strokeRect(x-3,y-3,w+6,h+6,C.white,9,1);
+}
+function strokeRect(x,y,w,h,c,r=0,t=1){if(!r){gpu.line(x,y,x+w,y,c,t);gpu.line(x+w,y,x+w,y+h,c,t);gpu.line(x+w,y+h,x,y+h,c,t);gpu.line(x,y+h,x,y,c,t);return;}const pts=[];for(let j=0;j<4;j++){const cx=x+(j===0||j===3?r:w-r),cy=y+(j<2?r:h-r);const start=[Math.PI,1.5*Math.PI,0,.5*Math.PI][j];for(let k=0;k<=6;k++){const a=start+k/6*Math.PI*.5;pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r]);}}pts.push(pts[0]);gpu.poly(pts,c,t);}
+function panel(x,y,w,h){gpu.rect(x,y,w,h,C.panel,12);strokeRect(x,y,w,h,C.border,12,.8);}
+function flash(s){notice=s;noticeUntil=performance.now()+3500;}
+function togglePower(){pulse=false;sim.on=!sim.on;started=true;clockRemainder=0;flash(sim.on?'SOURCE CONNECTED':'SOURCE ISOLATED / CAPACITOR STILL CONNECTED');}
+function togglePause(){paused=!paused;clockRemainder=0;lastNow=performance.now();}
+function resetAll(){sim.reset();sim.on=false;pulse=false;paused=false;started=false;history=[];clockRemainder=0;sampleRemainder=0;phase={source:0,led:0,cap:0};maxResidual=0;flash('CAPACITOR RESET / SOURCE OPEN');}
+function changeLed(index){ledIndex=index;sim.ledVf=COLORS[index].vf;flash(COLORS[index].name+' LED / MODEL CHANGED; CAPACITOR VOLTAGE KEPT');}
+function preset(name){sim.vs=5;sim.rc=220;sim.rl=470;sim.c=name==='FAST'?.00047:name==='HOLD'?.0047:.01;sim.energy=.5*sim.c*sim.v*sim.v;flash(name+' PRESET / VOLTAGE KEPT');}
+function sliderValue(s,x,rail){const t=clamp((x-rail.x)/rail.w,0,1),raw=s.log?s.min*Math.pow(s.max/s.min,t):s.min+(s.max-s.min)*t;sim[s.id]=clamp(s.snap(raw),s.min,s.max);if(s.id==='c')sim.energy=.5*sim.c*sim.v*sim.v;}
+function slider(s,x,y,w){
+ text(s.name,x,y,9,C.muted);text(s.format(sim[s.id]),x+w,y+19,14,s.color,'right');
+ const rail={x:x+2,y:y+46,w:w-4};let t=s.log?Math.log(sim[s.id]/s.min)/Math.log(s.max/s.min):(sim[s.id]-s.min)/(s.max-s.min);
+ gpu.line(rail.x,rail.y,rail.x+rail.w,rail.y,C.border,4);gpu.line(rail.x,rail.y,rail.x+rail.w*t,rail.y,s.color,4);
+ for(let i=0;i<=4;i++)gpu.circle(rail.x+rail.w*i/4,rail.y,1.8,C.dim);
+ const px=rail.x+rail.w*t;gpu.glow(px,rail.y,17,alpha(s.color,.18));gpu.circle(px,rail.y,7.5,C.panel);gpu.circle(px,rail.y,5,s.color);
+ addHit(s.id,x-5,y+24,w+10,38,()=>{}, {slider:s,rail,label:s.name});if(focusId===s.id)strokeRect(x-7,y-5,w+14,66,C.white,7,1);
+}
+function voltage(v){return mix([.22,.32,.42,1],C.mint,clamp(v/5,0,1));}
+function dots(path,current,id,col,S){
+ if(Math.abs(current)<1e-6)return;
+ let pts=path.map(([x,y])=>S(x,y));let lengths=[],total=0;
+ for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);lengths.push(d);total+=d;}
+ const spacing=26,off=((phase[id]%spacing)+spacing)%spacing;
+ for(let d=off;d<total;d+=spacing){let k=0,u=d;while(k<lengths.length-1&&u>lengths[k])u-=lengths[k++];const t=u/Math.max(lengths[k],.001);gpu.circle(pts[k][0]+(pts[k+1][0]-pts[k][0])*t,pts[k][1]+(pts[k+1][1]-pts[k][1])*t,2.1,alpha(col,clamp(Math.abs(current)/.0015,.2,1)));}
+}
+function drawCircuit(x,y,w,h){
+ panel(x,y,w,h);text('01',x+23,y+22,12,C.mint);text('CAPACITOR HOLD',x+64,y+21,16,C.white);
+ const state=sim.failed?'SOLVER ERROR':paused?'PAUSED':!started?'READY':Math.abs(sim.ic)>.00004?(sim.ic>0?'CHARGING':'DISCHARGING'):(sim.on?'POWERED':sim.i>.000005?'DISCHARGING':'IDLE');statusText=state;
+ const sc=sim.failed?C.red:paused?C.gold:state==='DISCHARGING'?C.purple:C.mint;
+ if(!mobile){gpu.circle(x+w-158,y+28,3,sc);text(state,x+w-145,y+23,10,sc);}
+ text('OPEN THE SWITCH. WATCH THE STORED CHARGE TAKE OVER.',x+24,y+51,mobile?8:10,C.muted);
+ const s=Math.min((w-42)/800,(h-109)/295),ox=x+(w-800*s)/2,oy=y+83;
+ const S=(a,b)=>[ox+a*s,oy+b*s],L=(a,b,c,d,col,width=2.4)=>gpu.line(...S(a,b),...S(c,d),col,width),R=(a,b,r,col)=>gpu.circle(...S(a,b),r*s,col);
+ const T=(str,a,b,size,col,align='left')=>text(str,...S(a,b),Math.max(mobile?8:9,size*s),col,align);
+ const v=voltage(sim.v),src=voltage(sim.vs),diode=voltage(sim.d),gnd=voltage(0),col=COLORS[ledIndex].c;
+ // Subtle drafting grid; all shapes and labels are GPU geometry.
+ for(let a=30;a<790;a+=24)for(let b=4;b<275;b+=24)R(a,b,.65,alpha(C.dim,.28));
+ // Exact connected topology: source -> open/closed S1 -> R1 -> Vc.
+ L(80,125,80,40,src);L(80,40,180,40,src);L(235,40,295,40,sim.on?src:v);
+ L(375,40,690,40,v);L(480,40,480,137,v);L(480,157,480,265,gnd);
+ L(690,40,690,77,v);L(690,137,690,176,diode);L(690,217,690,265,gnd);
+ L(80,182,80,265,gnd);L(80,265,690,265,gnd);
+ dots([[80,182],[80,40],[480,40]],sim.is,'source',C.mint,S);
+ dots([[480,265],[80,265],[80,182]],sim.is,'source',C.mint,S);
+ dots([[480,40],[690,40],[690,265],[480,265]],sim.i,'led',col,S);
+ dots([[480,40],[480,265]],sim.ic,'cap',C.purple,S);
+ // Battery, positive terminal at the long upper plate.
+ gpu.rect(...S(54,123),52*s,64*s,C.panel,0);L(80,110,80,128,src);
+ L(57,128,103,128,C.white,2.8);L(65,141,95,141,C.white,2.8);L(57,154,103,154,C.white,2.8);L(65,167,95,167,C.white,2.8);L(80,167,80,185,gnd);
+ T('+',45,109,11,C.mint);T('-',48,179,11,C.muted);T('V1',116,132,13,C.white);T(sim.vs.toFixed(1)+' V',116,155,12,C.mint);
+ // Switch, its physical opening is visible and clickable.
+ gpu.rect(...S(175,6),70*s,44*s,C.panel,0);L(165,40,180,40,src);L(235,40,250,40,sim.on?src:v);
+ L(180,40,231,sim.on?40:13,sim.on?C.mint:C.white,3);R(180,40,4,C.panel);R(180,40,2,C.mint);R(235,40,4,C.panel);R(235,40,2,sim.on?C.mint:C.muted);
+ T('S1',208,-8,11,C.white,'center');T(sim.on?'CLOSED':'OPEN',208,62,10,sim.on?C.mint:C.muted,'center');
+ const [sx,sy]=S(172,0);addHit('switch',sx-10,sy-10,80*s+20,88*s, togglePower,{label:'Power switch'});
+ if(isHover('switch')){const p=S(168,-1);strokeRect(p[0],p[1],82*s,79*s,alpha(C.mint,.5),5,1);}
+ // R1 horizontal IEC resistor.
+ gpu.rect(...S(296,26),78*s,28*s,C.panel,0);strokeRect(...S(296,26),78*s,28*s,C.gold,2,2);T('R1',335,-8,12,C.gold,'center');T(Math.round(sim.rc)+' OHM',335,68,11,C.white,'center');
+ // C1; plate charge marks communicate voltage without faking dynamics.
+ gpu.rect(...S(447,129),67*s,40*s,C.panel,0);L(450,137,510,137,C.purple,3.5);L(450,157,510,157,C.purple,3.5);
+ const charge=clamp(sim.v/5,0,1);gpu.rect(...S(450,140),60*s,14*s,alpha(C.purple,.05+.2*charge),1);
+ for(let j=0;j<5;j++){const q=455+j*12;T('+',q,121,7,alpha(C.purple,.2+.8*charge),'center');T('-',q,166,7,alpha(C.purple,.2+.8*charge),'center');}
+ T('C1',407,119,12,C.purple,'right');T(Math.round(sim.c*1e6).toLocaleString('en-US')+' uF',407,143,11,C.white,'right');
+ T(sim.v.toFixed(2)+' V',528,149,12,C.purple);T('VC',480,9,11,C.purple,'center');
+ // R2 and real current-driven LED glow.
+ gpu.rect(...S(676,77),28*s,60*s,C.panel,0);strokeRect(...S(676,77),28*s,60*s,C.gold,2,2);
+ T('R2',719,84,12,C.gold);T(Math.round(sim.rl)+' OHM',719,106,10,C.white);
+ const [ex,ey]=S(690,196),bright=clamp(Math.pow(sim.i/.009,.66),0,1);
+ gpu.glow(ex,ey,68*s,alpha(col,bright*.74));gpu.glow(ex,ey,32*s,alpha(col,bright*.28));
+ gpu.circle(ex,ey,24*s,mix(C.panel,col,bright*.16));gpu.ring(ex,ey,24*s,alpha(col,.3+bright*.6),1.4);
+ const ledDraw=mix([.40,.26,.25,1],col,.3+.7*bright);gpu.poly([S(677,182),S(703,182),S(690,206),S(677,182)],ledDraw,2.4);L(676,207,704,207,ledDraw,2.4);
+ L(690,168,690,182,diode);L(690,207,690,230,gnd);
+ L(716,187,729,174,alpha(col,.35+.65*bright),1.7);L(729,174,722,175,col,1.6);L(729,174,728,181,col,1.6);
+ L(720,201,733,188,alpha(col,.35+.65*bright),1.7);L(733,188,726,189,col,1.6);L(733,188,732,195,col,1.6);
+ T('D1',745,168,11,col);T(COLORS[ledIndex].name,745,190,10,C.white);
+ // Joined junctions, reference ground.
+ for(const [a,b] of [[480,40],[480,265]]){R(a,b,5,C.panel);R(a,b,3.2,a===480&&b===40?C.purple:gnd);}
+ L(480,265,480,280,gnd);L(463,280,497,280,gnd);L(468,286,492,286,gnd);L(475,292,485,292,gnd);
+ T('0 V',516,273,10,C.muted);
+ // Hover inspection uses solved node/device values, not pre-authored values.
+ const capP=S(370,109);addHit('capacitor',capP[0],capP[1],195*s,93*s,()=>flash('C1 STORES ENERGY / E = 0.5 C V^2'),{label:'Capacitor inspection'});
+ const ledP=S(660,153);addHit('led',ledP[0],ledP[1],120*s,78*s,()=>changeLed((ledIndex+1)%3),{label:'Change LED color'});
+ const rP=S(293,22);addHit('resistor',rP[0],rP[1],86*s,43*s,()=>flash('R1 LIMITS THE CHARGING CURRENT. R2 LIMITS LED CURRENT.'),{label:'Resistor inspection'});
+}
+function drawMetrics(x,y,w,h){
+ const gap=12,cw=(w-2*gap)/3;const cards=[['CAP VOLTAGE',sim.v.toFixed(2),'V',C.purple,'C1 / NODE VC'],['LED CURRENT',(sim.i*1000).toFixed(2),'mA',COLORS[ledIndex].c,'D1 / FORWARD CURRENT'],['STORED ENERGY',(sim.energy*1000).toFixed(1),'mJ',C.mint,'C1 / 0.5 C V^2']];
+ cards.forEach((c,i)=>{const xx=x+i*(cw+gap);panel(xx,y,cw,h);gpu.rect(xx+1,y+16,2,h-32,c[3],1);text(c[0],xx+17,y+16,mobile?7.2:9,C.muted);text(c[1],xx+17,y+38,mobile?22:29,c[3]);const rw=textWidth(c[1],mobile?22:29);text(c[2],xx+22+rw,y+52,mobile?8:11,C.muted);if(!mobile)text(c[4],xx+17,y+h-18,7.5,C.dim);});
+}
+function drawScope(x,y,w,h){
+ panel(x,y,w,h);text('LIVE SCOPE',x+21,y+18,11,C.white);
+ gpu.line(x+178,y+23,x+194,y+23,C.purple,2);text('VC',x+202,y+19,9,C.purple);
+ gpu.line(x+254,y+23,x+270,y+23,COLORS[ledIndex].c,2);text('LED mA',x+278,y+19,9,COLORS[ledIndex].c);
+ if(!mobile)text('LAST 12 S / 100 SAMPLES PER SECOND',x+w-22,y+20,8,C.muted,'right');
+ const px=x+48,py=y+49,pw=w-95,ph=h-78;let hiCurrent=sim.i;for(const q of history)hiCurrent=Math.max(hiCurrent,q.i);const volts=Math.max(5,Math.ceil(Math.max(sim.v,sim.vs))),imax=Math.max(10,Math.ceil(hiCurrent*1000/10)*10),end=Math.max(12,sim.time),start=end-12;
+ for(let j=0;j<=4;j++){const yy=py+ph*j/4;gpu.line(px,yy,px+pw,yy,alpha(C.border,.65),.8);text((volts*(1-j/4)).toFixed(1),px-12,yy-4,7.5,C.purple,'right');text((imax*(1-j/4)).toFixed(0),px+pw+12,yy-4,7.5,COLORS[ledIndex].c);}
+ for(let j=0;j<=6;j++){const xx=px+pw*j/6;gpu.line(xx,py,xx,py+ph,alpha(C.border,.6),.8);text((start+12*j/6).toFixed(0)+'s',xx,py+ph+11,7,C.dim,'center');}
+ let prev=null;for(const a of history){if(a.t<start-.011)continue;const p=[px+pw*(a.t-start)/12,py+ph*(1-clamp(a.v/volts,0,1)),py+ph*(1-clamp(a.i*1000/imax,0,1))];
+ if(prev&&p[0]>=px&&prev[0]>=px){gpu.line(prev[0],prev[1],p[0],p[1],C.purple,1.9);gpu.line(prev[0],prev[2],p[0],p[2],COLORS[ledIndex].c,1.9);}prev=p;}
+ if(prev){gpu.circle(prev[0],prev[1],3,C.purple);gpu.circle(prev[0],prev[2],2.5,COLORS[ledIndex].c);}
+ if(mouse.x>=px&&mouse.x<=px+pw&&mouse.y>=py&&mouse.y<=py+ph&&history.length){const t=start+(mouse.x-px)/pw*12;let a=history.reduce((b,a)=>Math.abs(a.t-t)<Math.abs(b.t-t)?a:b,history[0]);if(Math.abs(a.t-t)<.15){gpu.line(mouse.x,py,mouse.x,py+ph,C.muted,1);const msg=a.t.toFixed(2)+'s  '+a.v.toFixed(2)+'V  '+(a.i*1000).toFixed(2)+'mA';const tw=textWidth(msg,8)+20;const tx=clamp(mouse.x-tw/2,px,px+pw-tw);gpu.rect(tx,py+6,tw,25,C.panel2,4);text(msg,tx+10,py+14,8,C.white);}}
+}
+function drawControls(x,y,w,h){
+ panel(x,y,w,h);text('LIVE CONTROLS',x+22,y+24,13,C.white);text('TWEAK VALUES. KEEP THE CIRCUIT RUNNING.',x+22,y+50,7.6,C.muted);
+ const ix=x+22,iw=w-44;
+ button('power',ix,y+78,iw,46,sim.on?'SOURCE CONNECTED':'CONNECT SOURCE',togglePower,sim.on,C.mint,11);
+ const bw=(iw-10)/2;
+ button('pulse',ix,y+138,bw,34,pulse?'PULSE ON / 4S':'AUTO PULSE',()=>{pulse=!pulse;started=true;if(!pulse)sim.on=false;},pulse,C.purple,9);
+ button('pause',ix+bw+10,y+138,bw,34,paused?'RESUME':'PAUSE',togglePause,paused,C.gold,10);
+ gpu.line(ix,y+192,ix+iw,y+192,C.border,.8);
+ for(let i=0;i<sliders.length;i++)slider(sliders[i],ix,y+214+i*67,iw);
+ text('CAPACITOR PRESETS',ix,y+496,9,C.muted);
+ const pw=(iw-14)/3;['FAST','HOLD','LONG'].forEach((s,i)=>button('preset'+s,ix+i*(pw+7),y+519,pw,32,s,()=>preset(s),Math.abs(sim.c-[.00047,.0047,.01][i])<1e-8,C.purple,9));
+ text('LED COLOR / DIFFERENT FORWARD DROPS',ix,y+575,7.8,C.muted);
+ COLORS.forEach((c,i)=>button('color'+i,ix+i*(pw+7),y+598,pw,31,c.name,()=>changeLed(i),i===ledIndex,c.c,8.5));
+ button('reset',ix,y+651,iw,33,'RESET CAPACITOR',resetAll,false,C.muted,9);
+ text('IDEAL R + C. SIMPLIFIED DIODE MODEL.',ix,y+695,7.5,C.dim);
+}
+function drawHelp(){
+ gpu.rect(0,0,W,H,[0,0,0,.7]);const w=Math.min(730,W-40),h=410,x=(W-w)/2,y=Math.max(40,(H-h)/2);panel(x,y,w,h);
+ text('A TINY LIVE CIRCUIT LAB',x+28,y+27,20,C.mint);
+ const lines=['SPACE CONNECTS OR ISOLATES THE POWER SUPPLY.','THE CAPACITOR STORES ENERGY WHILE VOLTAGE RISES.','OPEN S1: THE CAPACITOR NOW POWERS THE LED.','R1 LIMITS CHARGING. R2 LIMITS THE LED CURRENT.','TRY FAST VS LONG TO COMPARE HOW LONG IT FADES.','P PAUSES. A AUTO-PULSES. R RESETS THE CAPACITOR.','HOVER THE SCOPE TO READ PAST MEASUREMENTS.'];
+ lines.forEach((l,i)=>text(l,x+28,y+83+i*29,mobile?7.2:10,C.white));
+ text('JAVASCRIPT FLOAT64 / 0.5 ms STEPS / EULER + NEWTON',x+28,y+307,mobile?6.4:9,C.muted);
+ text('VISUAL DOT SPEED IS SCALED. NO THERMAL OR BREAKDOWN MODEL.',x+28,y+334,mobile?5.8:8,C.muted);
+ hits=[];button('closehelp',x+w-157,y+h-49,130,29,'BACK TO CIRCUIT',()=>showHelp=false,true,C.mint,8);addHit('outsidehelp',0,0,0,0,()=>{});
+}
+function render(){
+ const dpr=Math.min(devicePixelRatio||1,2);gpu.begin(W,H,Math.round(W*scale*dpr),Math.round(H*scale*dpr));hits=[];
+ // Bespoke vector brand mark.
+ gpu.rect(25,24,39,39,alpha(C.mint,.12),10);gpu.poly([[34,45],[39,45],[42,35],[47,54],[51,43],[56,43]],C.mint,2.1);
+ text('CURRENT',78,27,25,C.white, 'left',1.08);text('01 / LIVE CIRCUIT LAB',79,61,8.4,C.muted);
+ if(!mobile){text('BUILD A LITTLE INTUITION.',W-83,33,10,C.muted,'right');text('SPACE: POWER   P: PAUSE   A: PULSE',W-83,56,8,C.dim,'right');}
+ button('help',W-59,28,32,32,'?',()=>showHelp=!showHelp,showHelp,C.mint,13);
+ const x=26,y=99,gap=18,right=326,mainW=mobile?W-52:W-52-gap-right,mainH=mobile?250:397;
+ drawCircuit(x,y,mainW,mainH);
+ let my=y+mainH+16;drawMetrics(x,my,mainW,mobile?89:99);
+ let sy=my+(mobile?89:99)+16;const sh=mobile?188:Math.max(160,H-sy-75);drawScope(x,sy,mainW,sh);
+ const cy=mobile?sy+sh+18:y,cx=mobile?x:x+mainW+gap;
+ drawControls(cx,cy,mobile?mainW:right,714);
+ const fy=mobile?cy+735:H-25;
+ const msg=sim.failed?'SOLVER STOPPED / RESULTS FROZEN':noticeUntil>performance.now()?notice:!started?'CONNECT THE SOURCE TO BEGIN.':paused?'PAUSED / ELECTRICAL TIME IS FROZEN.':sim.on?'ENERGY IN: SUPPLY CHARGES C1 AND POWERS D1.':'SOURCE OPEN: C1 DISCHARGES THROUGH R2 AND D1.';
+ text(msg,27,fy,mobile?6.6:9,sim.failed?C.red:C.muted);
+ if(!mobile){gpu.circle(W-231,fy+4,2.5,sim.failed?C.red:C.mint);text(gpu.backend+' / FLOAT64',W-217,fy,8,C.dim);text(sim.time.toFixed(2)+' s'+(avgRate<.94&&!paused?' / '+avgRate.toFixed(2)+'X TIME':''),x+mainW,fy,8,avgRate<.94&&!paused?C.gold:C.dim,'right');}
+ else text(gpu.backend+' / FLOAT64 / SINGLE-FILE PROTOTYPE',27,fy+20,7,C.dim);
+ if(sim.i>.02){const msg='LED CURRENT > 20 mA / NO DAMAGE MODEL';const ww=textWidth(msg,8)+22;gpu.rect(x+mainW-ww-12,y+76,ww,24,alpha(C.red,.12),5);text(msg,x+mainW-ww-2,y+84,8,C.red);}
+ if(showHelp)drawHelp();
+ if(focusId&&['capacitor','led','switch','resistor'].includes(focusId)){const z=hits.find(a=>a.id===focusId);if(z)strokeRect(z.x,z.y,z.w,z.h,C.white,4,.8);}
+ gpu.submit();frames++;
+}
+function resize(){
+ const cw=window.innerWidth,ch=window.innerHeight;mobile=cw<700;
+ if(mobile){W=480;scale=cw/W;H=Math.max(1460,ch/scale);canvas.style.height=(H*scale)+'px';document.body.style.overflow='visible';document.body.style.height='auto';document.documentElement.style.height='auto';document.documentElement.style.overflowY='auto';document.documentElement.style.overflowX='hidden';}
+ else{scale=Math.min(cw/1360,ch/860);W=cw/scale;H=ch/scale;canvas.style.height=ch+'px';document.body.style.overflow='hidden';document.body.style.height='100%';document.documentElement.style.height='100%';document.documentElement.style.overflow='hidden';}
+ canvas.style.width=cw+'px';
+}
+function advance(realDt){
+ if(paused||!started||sim.failed)return;
+ const capped=Math.min(realDt,.05);slow=realDt>.1;clockRemainder+=capped;
+ let steps=0;while(clockRemainder>=sim.h&&steps<120){
+  if(pulse)sim.on=(sim.time%pulsePeriod)<pulsePeriod/2;
+  if(!sim.step()){paused=true;break;}
+  maxResidual=Math.max(maxResidual,sim.residual);solverCount++;clockRemainder-=sim.h;steps++;
+  const speed=(i)=>i===0?0:Math.sign(i)*clamp(Math.sqrt(Math.abs(i)/.005)*72,4,160);
+  phase.source+=speed(sim.is)*sim.h;phase.led+=speed(sim.i)*sim.h;phase.cap+=speed(sim.ic)*sim.h;
+  sampleRemainder+=sim.h;if(sampleRemainder>=.01-1e-10){sampleRemainder-=.01;history.push(sim.snapshot());}
+ }
+ if(history.length>1400)history.splice(0,history.length-1400);
+ if(realDt>.005)avgRate=avgRate*.94+Math.min(1,steps*sim.h/realDt)*.06;
+}
+function loop(now){const dt=lastNow?Math.max(0,(now-lastNow)/1000):0;lastNow=now;avgFrame=avgFrame*.96+dt*1000*.04;advance(dt);render();requestAnimationFrame(loop);}
+function hitAt(x,y){return [...hits].reverse().find(h=>x>=h.x&&y>=h.y&&x<=h.x+h.w&&y<=h.y+h.h);}
+function pointer(e){const r=canvas.getBoundingClientRect();mouse.x=(e.clientX-r.left)/scale;mouse.y=(e.clientY-r.top)/scale;hover=hitAt(mouse.x,mouse.y);canvas.style.cursor=hover?(hover.slider?'ew-resize':'pointer'):'default';}
+function bindInputs(){
+ canvas.addEventListener('pointermove',e=>{pointer(e);if(drag?.slider)sliderValue(drag.slider,mouse.x,drag.rail);});
+ canvas.addEventListener('pointerdown',e=>{pointer(e);const h=hitAt(mouse.x,mouse.y);if(!h)return;e.preventDefault();canvas.focus({preventScroll:true});focusId=h.id;if(h.slider){drag=h;sliderValue(h.slider,mouse.x,h.rail);canvas.setPointerCapture(e.pointerId);}else h.action();});
+ canvas.addEventListener('pointerup',()=>{if(drag?.slider?.id==='c')flash('CAPACITANCE EDITED / VOLTAGE PRESERVED');drag=null;});canvas.addEventListener('pointercancel',()=>drag=null);
+ canvas.addEventListener('pointerleave',()=>{if(!drag){mouse={x:-100,y:-100};hover=null;}});
+ document.addEventListener('keydown',e=>{
+  if(e.key==='Tab'){e.preventDefault();const idx=hits.findIndex(h=>h.id===focusId);focusId=hits[(idx+(e.shiftKey?-1:1)+hits.length)%hits.length]?.id;return;}
+  if(e.key==='Escape'){showHelp=false;focusId=null;return;}
+  if(showHelp){if(e.key==='Enter'||e.key===' '){showHelp=false;e.preventDefault();}return;}
+  const k=e.key.toLowerCase();if(e.repeat&&[' ','p','a','r','h','?'].includes(k)){e.preventDefault();return;}if(k===' '){e.preventDefault();togglePower();}else if(k==='p')togglePause();else if(k==='a'){pulse=!pulse;started=true;if(!pulse)sim.on=false;}
+  else if(k==='r')resetAll();else if(k==='h'||k==='?')showHelp=!showHelp;
+  else if(k==='enter'){hits.find(h=>h.id===focusId)?.action();}
+  else if(['arrowleft','arrowright','arrowup','arrowdown'].includes(k)){const h=hits.find(h=>h.id===focusId);if(h?.slider){e.preventDefault();const s=h.slider,dir=(k==='arrowright'||k==='arrowup')?1:-1;let t=s.log?Math.log(sim[s.id]/s.min)/Math.log(s.max/s.min):(sim[s.id]-s.min)/(s.max-s.min);sliderValue(s,h.rail.x+h.rail.w*clamp(t+dir*.025,0,1),h.rail);}}
+ });
+ window.addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{lastNow=performance.now();clockRemainder=0;});
+}
+function fail(message){const el=document.getElementById('boot');el.hidden=false;el.textContent='CURRENT could not start. '+message+'\nTry enabling browser hardware acceleration, then reopen this file.';console.error(message);}
+async function boot(){
+ try{canvas=document.getElementById('circuit');gpu=await new GPUDraw(canvas).init();canvas=gpu.canvas;gpu.onError=(m)=>{paused=true;fail(m);};resize();bindInputs();document.getElementById('boot').hidden=true;
+  window.CircuitLab={sim,getState:()=>({...sim.snapshot(),paused,pulse,started,backend:gpu.backend,maxResidual,solverCount,frames,avgFrame,history:history.length,primitiveCount:gpu.n,realTimeRatio:avgRate}),
+   testAdvance(seconds){started=true;const n=Math.ceil(seconds/sim.h);for(let j=0;j<n;j++)advance(sim.h);render();return this.getState();},
+   reset:resetAll,togglePower,togglePause,preset,changeLed,setValue(id,value){const s=sliders.find(s=>s.id===id);if(!s)throw Error('Unknown parameter '+id);sim[id]=clamp(value,s.min,s.max);},
+   getHits:()=>hits.map(({id,x,y,w,h})=>({id,x:x*scale,y:y*scale,w:w*scale,h:h*scale})),render,
+   exportState:()=>JSON.stringify({version:1,vs:sim.vs,rc:sim.rc,rl:sim.rl,c:sim.c,led:ledIndex,measurements:sim.snapshot()},null,2)};
+  initialReady=true;render();requestAnimationFrame(loop);
+ }catch(e){fail(e.stack||String(e));}
+}
+boot();
+
+</script></body></html>

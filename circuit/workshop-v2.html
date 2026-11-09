@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>CURRENT / Workshop 02 — Magnetic Circuit Playground</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#0e1920;overflow:hidden}canvas{display:block;width:100vw;height:100vh;outline:0;touch-action:none}#boot{position:absolute;left:8%;top:36%;color:#d9ece5;font:18px/1.8 system-ui;white-space:pre-wrap}#boot[hidden],#import{display:none}</style></head>
+<body><canvas id="workshop" tabindex="0" aria-label="CURRENT first-person magnetic circuit sandbox. WASD move, right click look, 1 to 6 spawn components, click to grab or wire, F use, Space power, H help."></canvas><div id="boot">CURRENT / WORKSHOP
+Assembling the workbench...</div><input id="import" type="file" accept=".json,application/json">
+<script>
+/* CURRENT / WORKSHOP — original code, MIT. No dependencies. */
+const TAU=Math.PI*2,clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),lerp=(a,b,t)=>a+(b-a)*t;
+const V={add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],len:a=>Math.hypot(...a),norm:a=>{const n=Math.hypot(...a)||1;return a.map(v=>v/n)},mix:(a,b,t)=>a.map((v,i)=>lerp(v,b[i],t))};
+function identity(){return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);}
+function mm(a,b){let r=new Float32Array(16);for(let j=0;j<4;j++)for(let i=0;i<4;i++)for(let k=0;k<4;k++)r[j*4+i]+=a[k*4+i]*b[j*4+k];return r;}
+function transform(p,s=[1,1,1],r=0){const c=Math.cos(r),q=Math.sin(r);return new Float32Array([c*s[0],0,-q*s[0],0,0,s[1],0,0,q*s[2],0,c*s[2],0,...p,1]);}
+function basis(p,x,y,z,s=[1,1,1]){return new Float32Array([...V.mul(x,s[0]),0,...V.mul(y,s[1]),0,...V.mul(z,s[2]),0,...p,1]);}
+function perspective(fov,aspect,near,far){const f=1/Math.tan(fov/2),n=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*n,-1,0,0,2*far*near*n,0]);}
+function ortho(l,r,b,t,n,f){return new Float32Array([2/(r-l),0,0,0,0,2/(t-b),0,0,0,0,-2/(f-n),0,-(r+l)/(r-l),-(t+b)/(t-b),-(f+n)/(f-n),1]);}
+function lookAt(eye,target,up=[0,1,0]){const z=V.norm(V.sub(eye,target)),x=V.norm(V.cross(up,z)),y=V.cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-V.dot(x,eye),-V.dot(y,eye),-V.dot(z,eye),1]);}
+function project(p,m,w,h){const x=p[0],y=p[1],z=p[2],q=m[3]*x+m[7]*y+m[11]*z+m[15];return {x:(m[0]*x+m[4]*y+m[8]*z+m[12])/q*w/2+w/2,y:-(m[1]*x+m[5]*y+m[9]*z+m[13])/q*h/2+h/2,z:q};}
+function localPoint(p,base,rot){const c=Math.cos(rot),s=Math.sin(rot);return [base[0]+p[0]*c+p[2]*s,base[1]+p[1],base[2]-p[0]*s+p[2]*c];}
+function raySphere(o,d,c,r){const oc=V.sub(o,c),b=V.dot(oc,d),h=b*b-V.dot(oc,oc)+r*r;if(h<0)return Infinity;const t=-b-Math.sqrt(h);return t>0?t:Infinity;}
+function rayBox(o,d,min,max){let lo=-Infinity,hi=Infinity;for(let i=0;i<3;i++){if(Math.abs(d[i])<1e-9){if(o[i]<min[i]||o[i]>max[i])return Infinity;continue;}let a=(min[i]-o[i])/d[i],b=(max[i]-o[i])/d[i];lo=Math.max(lo,Math.min(a,b));hi=Math.min(hi,Math.max(a,b));}return hi>=Math.max(lo,0)?Math.max(lo,0):Infinity;}
+const rgb=h=>typeof h==='string'?[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255):h;
+
+/* General two-terminal circuit graph. CPU float64; 240 Hz backward Euler.
+   Teaching models: PWL LEDs + series resistance, finite wire/source resistance,
+   10 nS stabilization per node. Not SPICE or a hardware safety tool. */
+class CircuitWorld {
+ constructor(){this.parts=[];this.wires=[];this.time=0;this.nextId=1;this.error='';this.residual=0;this.iterations=0;this.compiled=false;this.events=[];this.recoveryClock=0;}
+ add(type,extra={}){if(this.parts.length>=24)throw Error('24 MODULE LIMIT');const id='M'+this.nextId++;const defaults={battery:5,resistor:220,capacitor:.01,led:1.85,switch:1,junction:0};if(!(type in defaults))throw Error('Unknown module');const p={id,type,value:defaults[type],on:true,color:0,capV:0,v:0,i:0,stress:0,failed:false,peak:0,age:0,failAge:0,safeFor:0,safeCurrent:0,reviveFlash:0,pos:[0,1,0],rot:0,...extra};this.parts.push(p);this.compiled=false;return p;}
+ remove(id){this.parts=this.parts.filter(p=>p.id!==id);this.wires=this.wires.filter(w=>!w.a.startsWith(id+':')&&!w.b.startsWith(id+':'));this.compiled=false;}
+ validPin(k){const [id,pin]=k.split(':');return this.parts.some(p=>p.id===id)&&['0','1'].includes(pin);}
+ connect(a,b){if(!this.validPin(a)||!this.validPin(b)||a===b)return null;if(this.wires.length>=48)return null;if(this.wires.some(w=>(w.a===a&&w.b===b)||(w.a===b&&w.b===a)))return null;const w={id:'W'+this.nextId++,a,b,i:0,v:0};this.wires.push(w);this.compiled=false;return w;}
+ disconnect(id){this.wires=this.wires.filter(w=>w.id!==id);this.compiled=false;}
+ compile(){this.keys=[];for(const p of this.parts)this.keys.push(p.id+':0',p.id+':1');this.index=new Map(this.keys.map((k,i)=>[k,i]));this.n=this.keys.length;this.x=new Float64Array(this.n);this.A=new Float64Array(this.n*this.n);this.b=new Float64Array(this.n);this.work=new Float64Array(this.n*(this.n+1));for(const p of this.parts){p.a=this.index.get(p.id+':0');p.b=this.index.get(p.id+':1');}for(const w of this.wires){w.na=this.index.get(w.a);w.nb=this.index.get(w.b);}this.compiled=true;}
+ stamp(a,b,g,j=0){const n=this.n,A=this.A,B=this.b;A[a*n+a]+=g;A[b*n+b]+=g;A[a*n+b]-=g;A[b*n+a]-=g;B[a]-=j;B[b]+=j;}
+ solve(){const n=this.n,w=this.work,stride=n+1;for(let i=0;i<n;i++){for(let j=0;j<n;j++)w[i*stride+j]=this.A[i*n+j];w[i*stride+n]=this.b[i];}
+  for(let k=0;k<n;k++){let best=k;for(let i=k+1;i<n;i++)if(Math.abs(w[i*stride+k])>Math.abs(w[best*stride+k]))best=i;if(Math.abs(w[best*stride+k])<1e-13)throw Error('SINGULAR CIRCUIT');if(best!==k)for(let j=k;j<=n;j++){const t=w[k*stride+j];w[k*stride+j]=w[best*stride+j];w[best*stride+j]=t;}const pivot=w[k*stride+k];for(let i=k+1;i<n;i++){const q=w[i*stride+k]/pivot;if(q===0)continue;for(let j=k+1;j<=n;j++)w[i*stride+j]-=q*w[k*stride+j];w[i*stride+k]=0;}}
+  const x=new Float64Array(n);for(let i=n-1;i>=0;i--){let v=w[i*stride+n];for(let j=i+1;j<n;j++)v-=w[i*stride+j]*x[j];x[i]=v/w[i*stride+i];if(!Number.isFinite(x[i]))throw Error('NON-FINITE SOLUTION');}return x;
+ }
+ build(dt,active,trialFailed=null){this.A.fill(0);this.b.fill(0);for(let i=0;i<this.n;i++)this.A[i*this.n+i]=1e-8;
+  for(const w of this.wires)this.stamp(w.na,w.nb,1/.03);
+  for(const p of this.parts){let g=1e-9,j=0;switch(p.type){case 'battery':g=p.on?1/12:1e-9;j=p.on?-p.value*g:0;break;case 'resistor':g=1/p.value;break;case 'capacitor':g=p.value/(dt+.5*p.value);j=-g*p.capV;break;case 'switch':g=p.on?1/.08:1e-9;break;case 'junction':g=1/.03;break;case 'led':if((!p.failed||trialFailed?.has(p.id))&&active.has(p.id)){g=1/8;j=-p.value*g;}break;}this.stamp(p.a,p.b,g,j);}
+ }
+ // Pure candidate solve: trialFailed temporarily models failed LEDs as healthy.
+ // It never commits candidate voltages, currents or capacitor state. The real
+ // open-circuit network is solved again after each recovery audit.
+ calculate(dt,trialFailed=null){
+  const enabled=p=>p.type==='led'&&(!p.failed||trialFailed?.has(p.id));
+  const active=new Set(this.parts.filter(p=>enabled(p)&&p.v>p.value).map(p=>p.id));
+  let x=null,converged=false,iterations=0;
+  for(let it=0;it<32;it++){
+   this.build(dt,active,trialFailed);x=this.solve();let changed=false;
+   for(const p of this.parts)if(enabled(p)){
+    const v=x[p.a]-x[p.b],is=active.has(p.id);
+    if(!is&&v>p.value+1e-8){active.add(p.id);changed=true;}
+    else if(is&&v<p.value-1e-8){active.delete(p.id);changed=true;}
+   }
+   iterations=it+1;
+   if(!changed){converged=true;break;}
+  }
+  if(!converged)throw Error('LED SOLVE DID NOT CONVERGE');
+  let residual=0;for(let i=0;i<this.n;i++){
+   let s=-this.b[i];for(let j=0;j<this.n;j++)s+=this.A[i*this.n+j]*x[j];
+   residual=Math.max(residual,Math.abs(s));
+  }
+  if(residual>1e-6)throw Error('EXCESSIVE KCL RESIDUAL');
+  return {x,iterations,residual,active};
+ }
+ step(dt=1/240){if(!this.compiled)this.compile();if(!this.n){this.time+=dt;return true;}
+  try{
+   const failed=this.parts.filter(p=>p.type==='led'&&p.failed);
+   for(const p of failed){p.failAge+=dt;p.stress=Math.max(0,p.stress-dt*1.2);}
+   // At 30Hz, virtually reconnect ALL failed LEDs without affecting the
+   // actual network. This prevents zero open-circuit current being mistaken
+   // for a safe environment, and also catches stored capacitor charge.
+   if(failed.length){
+    this.recoveryClock+=dt;
+    if(this.recoveryClock>=1/30){
+     const elapsed=this.recoveryClock;this.recoveryClock=0;
+     let trial=null;
+     try{trial=this.calculate(dt,new Set(failed.map(p=>p.id)));}
+     catch(e){ // A failed safety probe cannot certify the circuit as safe.
+      for(const p of failed){p.safeFor=0;p.safeCurrent=Infinity;}
+     }
+     if(trial)for(const p of failed){
+      const wouldConduct=Math.max(0,(trial.x[p.a]-trial.x[p.b]-p.value)/8);
+      p.safeCurrent=wouldConduct;
+      p.safeFor=wouldConduct<.026?p.safeFor+elapsed:0; // 26mA recovery < 30mA stress threshold
+      if(p.failAge>=.57&&p.safeFor>=.22){
+       p.failed=false;p.stress=0;p.failAge=0;p.safeFor=0;
+       p.reviveFlash=1;p.peak=0;
+       this.events.push({type:'recovery',id:p.id,current:wouldConduct,time:this.time});
+      }
+     }
+    }
+   }else this.recoveryClock=0;
+   const {x,residual,iterations}=this.calculate(dt);
+   this.iterations=iterations;this.residual=residual;this.x=x;this.error='';
+   for(const w of this.wires){w.v=x[w.na]-x[w.nb];w.i=w.v/.03;}
+   for(const p of this.parts){p.v=x[p.a]-x[p.b];switch(p.type){
+    case 'battery':p.i=p.on?(p.v-p.value)/12:p.v*1e-9;break;
+    case 'resistor':p.i=p.v/p.value;break;
+    case 'capacitor':p.i=p.value/(dt+.5*p.value)*(p.v-p.capV);p.capV+=p.i*dt/p.value;break;
+    case 'switch':p.i=p.v/(p.on?.08:1e9);break;
+    case 'junction':p.i=p.v/.03;break;
+    case 'led':p.i=p.failed?0:Math.max(0,(p.v-p.value)/8);break;
+   }
+    p.peak=Math.max(p.peak,Math.abs(p.i));p.age+=dt;
+    if(p.type==='led'&&!p.failed){
+     const over=Math.abs(p.i)/.03;
+     p.stress=Math.max(0,p.stress+dt*(over>1?Math.min(.7,(over*over-1)*.16):-.26));
+     if(p.stress>=1){
+      p.failed=true;p.stress=1;p.failAge=0;p.safeFor=0;p.safeCurrent=Infinity;
+      this.events.push({type:'failure',id:p.id,current:p.i,time:this.time});
+     }
+    }
+   }
+   this.time+=dt;return true;
+  }catch(e){this.error=e.message;return false;}
+ }
+ resetEnergy(){for(const p of this.parts){p.capV=0;p.stress=0;p.failed=false;p.peak=0;p.v=0;p.i=0;p.failAge=0;p.safeFor=0;p.safeCurrent=0;p.reviveFlash=0;}this.time=0;this.events=[];this.compiled=false;this.recoveryClock=0;}
+ save(){return {version:1,nextId:this.nextId,time:this.time,parts:this.parts.map(p=>{const {a,b,...q}=p;return JSON.parse(JSON.stringify(q));}),wires:this.wires.map(w=>({id:w.id,a:w.a,b:w.b}))};}
+ load(s){if(s?.version!==1||!Array.isArray(s.parts)||!Array.isArray(s.wires)||s.parts.length>24||s.wires.length>48)throw Error('INVALID WORKSHOP FILE');const ids=new Set();for(const p of s.parts){if(!['battery','resistor','capacitor','led','switch','junction'].includes(p.type)||typeof p.id!=='string'||ids.has(p.id)||p.id.includes(':')||!Number.isFinite(p.value)||!Array.isArray(p.pos)||p.pos.length!==3||!p.pos.every(v=>Number.isFinite(v)&&Math.abs(v)<=30)||!Number.isFinite(p.rot))throw Error('INVALID MODULE');ids.add(p.id);if(p.type==='battery'&&(p.value<0||p.value>24)||p.type==='resistor'&&(p.value<1||p.value>1e6)||p.type==='capacitor'&&(p.value<1e-6||p.value>.2)||p.type==='led'&&(p.value<1||p.value>4))throw Error('INVALID COMPONENT VALUE');}
+  for(const w of s.wires)for(const pin of [w.a,w.b]){if(typeof pin!=='string'||!ids.has(pin.split(':')[0])||!['0','1'].includes(pin.split(':')[1]))throw Error('INVALID CONNECTION');}
+  this.parts=s.parts.map(p=>({...p,color:Math.max(0,Math.min(2,Math.trunc(Number(p.color)||0))),rot:p.rot%(2*Math.PI),capV:Number.isFinite(p.capV)?Math.max(-30,Math.min(30,p.capV)):0,stress:Math.max(0,Math.min(1,p.stress||0)),peak:p.peak||0,i:0,v:0,age:0,on:!!p.on,failed:!!p.failed,failAge:Number.isFinite(p.failAge)?Math.max(0,p.failAge):0,safeFor:Number.isFinite(p.safeFor)?Math.max(0,p.safeFor):0,safeCurrent:0,reviveFlash:0}));this.wires=s.wires.map(w=>({...w,i:0,v:0}));this.nextId=Math.max(1,Number(s.nextId)||1,...[...ids,...s.wires.map(w=>w.id)].map(id=>(parseInt(id.slice(1))||0)+1));this.time=Number.isFinite(s.time)?s.time:0;this.compiled=false;this.events=[];this.recoveryClock=0;}
+}
+if(typeof module!=='undefined')module.exports={CircuitWorld};
+
+// Instanced WebGL2 renderer. Geometry, glyphs, materials and effects are procedural.
+function makeGeometry(kind){const v=[];const tri=(a,b,c,na,nb=na,nc=na)=>v.push(...a,...na,...b,...nb,...c,...nc);const quad=(a,b,c,d,n)=>{tri(a,b,c,n);tri(a,c,d,n)};
+ if(kind==='box'){for(let axis=0;axis<3;axis++)for(const sign of [-1,1]){let u=(axis+1)%3,w=(axis+2)%3,points=[];for(const [x,y] of [[-1,-1],[1,-1],[1,1],[-1,1]]){let p=[0,0,0];p[axis]=sign*.5;p[u]=x*.5;p[w]=y*.5;points.push(p);}let n=[0,0,0];n[axis]=sign;if(sign<0)points.reverse();quad(...points,n);}}
+ if(kind==='round'){const N=6,rad=.1;for(let axis=0;axis<3;axis++)for(const sign of [-1,1]){const u=(axis+1)%3,w=(axis+2)%3;const point=(i,j)=>{let p=[0,0,0];p[axis]=sign*.5;p[u]=i/N-0.5;p[w]=j/N-0.5;let q=p.map(a=>clamp(a,-.5+rad,.5-rad)),n=V.norm(V.sub(p,q));return [V.add(q,V.mul(n,rad)),n]};for(let i=0;i<N;i++)for(let j=0;j<N;j++){let q=[point(i,j),point(i+1,j),point(i+1,j+1),point(i,j+1)];if(sign<0)q.reverse();tri(q[0][0],q[1][0],q[2][0],q[0][1],q[1][1],q[2][1]);tri(q[0][0],q[2][0],q[3][0],q[0][1],q[2][1],q[3][1]);}}}
+ if(['sphere','dome','flame','bead'].includes(kind)){const nx=kind==='bead'?8:20,ny=kind==='bead'?6:12;const sample=(i,j)=>{const a=i/nx*TAU,t=j/ny*Math.PI*(kind==='dome'?.5:1);let n=[Math.sin(t)*Math.cos(a),Math.cos(t),Math.sin(t)*Math.sin(a)],p=V.mul(n,.5);if(kind==='flame'){const y=j/ny;p=[Math.sin(t)*Math.cos(a)*.5*(.2+.8*y),.5-y,Math.sin(t)*Math.sin(a)*.5*(.2+.8*y)];}return [p,n]};for(let i=0;i<nx;i++)for(let j=0;j<ny;j++){const a=sample(i,j),b=sample(i+1,j),c=sample(i+1,j+1),d=sample(i,j+1);tri(a[0],c[0],b[0],a[1],c[1],b[1]);tri(a[0],d[0],c[0],a[1],d[1],c[1]);}}
+ if(kind==='cylinder'||kind==='ring'||kind==='rod'){const N=kind==='rod'?8:24;for(let i=0;i<N;i++){const a=i/N*TAU,b=(i+1)/N*TAU,n=[Math.cos(a),0,Math.sin(a)],m=[Math.cos(b),0,Math.sin(b)],p=[n[0]*.5,-.5,n[2]*.5],q=[m[0]*.5,-.5,m[2]*.5],r=[m[0]*.5,.5,m[2]*.5],s=[n[0]*.5,.5,n[2]*.5];tri(p,s,r,n,n,m);tri(p,r,q,n,m,m);if(kind==='cylinder'||kind==='rod'){tri([0,.5,0],r,s,[0,1,0]);tri([0,-.5,0],p,q,[0,-1,0]);}else{for(const y of [-.5,.5]){const u=[n[0]*.34,y,n[2]*.34],w=[m[0]*.34,y,m[2]*.34],z=[m[0]*.5,y,m[2]*.5],k=[n[0]*.5,y,n[2]*.5];if(y>0)quad(u,w,z,k,[0,1,0]);else quad(k,z,w,u,[0,-1,0]);}quad([n[0]*.34,-.5,n[2]*.34],[m[0]*.34,-.5,m[2]*.34],[m[0]*.34,.5,m[2]*.34],[n[0]*.34,.5,n[2]*.34],V.mul(n,-1));}}}
+ return new Float32Array(v);}
+const VS3=`#version 300 es
+precision highp float;
+layout(location=0)in vec3 p;layout(location=1)in vec3 norm;layout(location=2)in mat4 model;layout(location=6)in vec4 tint;layout(location=7)in vec4 param;
+uniform mat4 vp,lightVP;uniform float time;out vec3 wp,N;out vec4 C,P,L;
+void main(){vec3 pos=p;if(param.w>3.5&&param.w<4.5){pos.x+=sin(time*13.+model[3].x*21.+p.y*6.)*.07*(p.y+.5);pos.z+=cos(time*11.+p.y*5.+model[3].z)*.07*(p.y+.5);}vec4 w=model*vec4(pos,1.);wp=w.xyz;N=normalize(mat3(model)* (norm/vec3(dot(model[0].xyz,model[0].xyz),dot(model[1].xyz,model[1].xyz),dot(model[2].xyz,model[2].xyz))));C=tint;P=param;L=lightVP*w;gl_Position=vp*w;}`;
+const FS3=`#version 300 es
+precision highp float;
+in vec3 wp,N;in vec4 C,P,L;uniform vec3 eye;uniform sampler2D shadow;uniform vec4 lamps[8];uniform vec3 lampColors[8];uniform bool shadows;out vec4 frag;
+void main(){vec3 n=normalize(N),v=normalize(eye-wp),ld=normalize(vec3(.45,1.,.35));vec3 al=pow(C.rgb,vec3(2.2));
+ if(P.w>.5&&P.w<1.5){vec2 cell=abs(fract(wp.xz*.6)-.5);float edge=smoothstep(.48,.492,max(cell.x,cell.y));al*=1.-edge*.21;float noise=fract(sin(dot(floor(wp.xz*190.),vec2(12.9898,78.233)))*43758.54);al*=.94+noise*.08;}
+ if(P.w>1.5&&P.w<2.5){vec2 g=abs(fract(wp.xz/.35)-.5);float ln=smoothstep(.475,.49,max(g.x,g.y));al*=1.-ln*.09;}
+ float shade=1.;vec3 uv=L.xyz/L.w*.5+.5;if(shadows&&uv.x>0.&&uv.x<1.&&uv.y>0.&&uv.y<1.&&uv.z<1.){float bias=max(.0020*(1.-dot(n,ld)),.0011);shade=0.;for(int x=-1;x<=1;x++)for(int y=-1;y<=1;y++){float d=texture(shadow,uv.xy+vec2(x,y)/2048.).r;shade+=uv.z-bias>d?.3:1.;}shade/=9.;}
+ float nd=max(0.,dot(n,ld));float hemi=.36+.20*n.y;vec3 ambient=vec3(.72,.88,1.03)*hemi;vec3 col=al*(ambient+vec3(1.45,1.25,.96)*nd*shade);float spec=pow(max(0.,dot(n,normalize(ld+v))),mix(100.,8.,P.y));col+=vec3(1.1,1.,.9)*spec*(1.-P.y)*shade*.6;
+ for(int i=0;i<8;i++){if(lamps[i].w<=.001)continue;vec3 d=lamps[i].xyz-wp;float d2=dot(d,d);col+=al*lampColors[i]*max(0.,dot(n,normalize(d)))*lamps[i].w/(1.+d2*3.);}
+ col+=al*P.x;float fres=pow(1.-max(0.,dot(n,v)),3.);col+=al*fres*(1.-P.y)*.22;if(P.w>5.5&&P.w<6.5){float f=pow(1.-abs(dot(n,v)),2.7);col+=vec3(.48,.7,.88)*f*.8;col=mix(col,vec3(.9,1.05,1.20)*(f+.16)+al*.18,.27);}col=col/(col+vec3(.85));col=pow(col,vec3(1./2.2));float fog=1.-exp(-length(wp-eye)*.010);col=mix(col,vec3(.07,.1,.13),fog);frag=vec4(col,C.a*P.z);
+}`;
+const SHVS=`#version 300 es
+precision highp float;layout(location=0)in vec3 p;layout(location=2)in mat4 model;layout(location=7)in vec4 param;uniform mat4 vp;uniform vec3 eye;void main(){gl_Position=(model[3].y>3.8||param.x>.5||param.w>5.5||distance(model[3].xyz,eye)<1.2)?vec4(2.,2.,2.,1.):vp*model*vec4(p,1.);}`;
+const SHFS=`#version 300 es
+precision highp float;void main(){}`;
+// Lightweight quarter-resolution emissive bloom, composited before GPU glyph UI.
+const POST_VS=`#version 300 es
+precision highp float;out vec2 uv;
+void main(){vec2 p=vec2((gl_VertexID==1||gl_VertexID==4||gl_VertexID==5)?1.:-1.,(gl_VertexID>=2&&gl_VertexID<=4)?1.:-1.);uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}`;
+const BLOOM_EXTRACT_FS=`#version 300 es
+precision highp float;in vec2 uv;uniform sampler2D source;out vec4 frag;
+void main(){vec3 c=texture(source,uv).rgb;float lum=max(c.r,max(c.g,c.b));float q=smoothstep(.56,.95,lum);frag=vec4(c*q*q*.54,1.);}`;
+const BLOOM_BLUR_FS=`#version 300 es
+precision highp float;in vec2 uv;uniform sampler2D source;uniform vec2 offset;out vec4 frag;
+void main(){vec3 c=texture(source,uv).rgb*.227027;
+ c+=(texture(source,uv+offset*1.384615).rgb+texture(source,uv-offset*1.384615).rgb)*.316216;
+ c+=(texture(source,uv+offset*3.230769).rgb+texture(source,uv-offset*3.230769).rgb)*.070270;
+ frag=vec4(c,1.);}`;
+const BLOOM_COMPOSE_FS=`#version 300 es
+precision highp float;in vec2 uv;uniform sampler2D scene;uniform sampler2D blur;out vec4 frag;
+void main(){vec3 s=texture(scene,uv).rgb,b=texture(blur,uv).rgb;
+ vec3 col=1.-(1.-s)*exp(-b*1.50);vec2 p=uv*2.-1.;col*=1.-.075*dot(p,p);
+ frag=vec4(col,1.);}`;
+class Renderer3D{
+ constructor(canvas){this.canvas=canvas;const gl=canvas.getContext('webgl2',{antialias:true,alpha:false,powerPreference:'high-performance'});if(!gl)throw Error('WebGL2 is unavailable. Enable hardware acceleration.');this.gl=gl;this.program=this.programFor(VS3,FS3);this.shadowProgram=this.programFor(SHVS,SHFS);this.groups={};this.drawCalls=0;this.triangles=0;this.shadows=true;this.shadowDirty=true;this.staticMode=false;const info=gl.getExtension('WEBGL_debug_renderer_info');this.rendererName=info?gl.getParameter(info.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);this.softwareRenderer=/SwiftShader|llvmpipe|Software/i.test(this.rendererName||'');this.bloomEnabled=!this.softwareRenderer;this.postWidth=0;this.postHeight=0;this.postReady=false;
+  for(const k of ['box','round','sphere','bead','dome','cylinder','rod','ring','flame']){const data=makeGeometry(k),vao=gl.createVertexArray();gl.bindVertexArray(vao);const vbo=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vbo);gl.bufferData(gl.ARRAY_BUFFER,data,gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,24,12);const ibo=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,ibo);gl.bufferData(gl.ARRAY_BUFFER,24*4*22000,gl.DYNAMIC_DRAW);for(let i=0;i<6;i++){const loc=2+i;gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,4,gl.FLOAT,false,96,i*16);gl.vertexAttribDivisor(loc,1);}this.groups[k]={vao,ibo,count:data.length/6,data:new Float32Array(24*22000),n:0,staticN:0};}
+  this.lightVP=mm(ortho(-11,11,-10,10,.1,36),lookAt([7,14,7],[0,0,0]));this.depth=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,this.depth);gl.texImage2D(gl.TEXTURE_2D,0,gl.DEPTH_COMPONENT24,2048,2048,0,gl.DEPTH_COMPONENT,gl.UNSIGNED_INT,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);this.fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,this.fbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,this.depth,0);gl.drawBuffers([gl.NONE]);gl.readBuffer(gl.NONE);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)this.shadows=false;gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  this.initPost();if(this.softwareRenderer){this.shadows=false;this.shadowDirty=false;}
+ }
+ initPost(){const gl=this.gl;
+  try{
+   this.fullVAO=gl.createVertexArray();
+   this.extractProgram=this.programFor(POST_VS,BLOOM_EXTRACT_FS);
+   this.blurProgram=this.programFor(POST_VS,BLOOM_BLUR_FS);
+   this.composeProgram=this.programFor(POST_VS,BLOOM_COMPOSE_FS);
+   this.msaaFbo=gl.createFramebuffer();this.msaaColor=gl.createRenderbuffer();this.msaaDepth=gl.createRenderbuffer();
+   this.resolveFbo=gl.createFramebuffer();this.sceneTex=gl.createTexture();
+   this.bloomFbo=[gl.createFramebuffer(),gl.createFramebuffer()];
+   this.bloomTex=[gl.createTexture(),gl.createTexture()];
+  }catch(e){console.warn('Bloom pipeline unavailable',e);this.bloomEnabled=false;}
+ }
+ ensurePost(w,h){if(!this.bloomEnabled)return false;if(this.postWidth===w&&this.postHeight===h)return this.postReady;
+  const gl=this.gl;this.postWidth=w;this.postHeight=h;this.postReady=false;
+  try{
+   const samples=Math.min(4,gl.getParameter(gl.MAX_SAMPLES));
+   gl.bindFramebuffer(gl.FRAMEBUFFER,this.msaaFbo);
+   gl.bindRenderbuffer(gl.RENDERBUFFER,this.msaaColor);gl.renderbufferStorageMultisample(gl.RENDERBUFFER,samples,gl.RGBA8,w,h);
+   gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.RENDERBUFFER,this.msaaColor);
+   gl.bindRenderbuffer(gl.RENDERBUFFER,this.msaaDepth);gl.renderbufferStorageMultisample(gl.RENDERBUFFER,samples,gl.DEPTH_COMPONENT24,w,h);
+   gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,this.msaaDepth);
+   if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('MSAA framebuffer incomplete');
+   const tex=(t,tw,th)=>{gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,tw,th,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);};
+   gl.bindFramebuffer(gl.FRAMEBUFFER,this.resolveFbo);tex(this.sceneTex,w,h);
+   gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,this.sceneTex,0);
+   if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Scene resolve incomplete');
+   this.bloomW=Math.max(2,Math.ceil(w/4));this.bloomH=Math.max(2,Math.ceil(h/4));
+   for(let i=0;i<2;i++){gl.bindFramebuffer(gl.FRAMEBUFFER,this.bloomFbo[i]);tex(this.bloomTex[i],this.bloomW,this.bloomH);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,this.bloomTex[i],0);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Bloom framebuffer incomplete');}
+   gl.bindFramebuffer(gl.FRAMEBUFFER,null);this.postReady=true;
+  }catch(e){console.warn('Bloom disabled:',e);this.bloomEnabled=false;gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
+  return this.postReady;
+ }
+ present(){const gl=this.gl,w=this.canvas.width,h=this.canvas.height;
+  if(!this.postReady||!this.bloomEnabled)return;
+  gl.bindFramebuffer(gl.READ_FRAMEBUFFER,this.msaaFbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,this.resolveFbo);
+  gl.blitFramebuffer(0,0,w,h,0,0,w,h,gl.COLOR_BUFFER_BIT,gl.NEAREST);
+  gl.bindVertexArray(this.fullVAO);gl.disable(gl.DEPTH_TEST);gl.depthMask(false);gl.disable(gl.BLEND);
+  const pass=(prog,fbo,vw,vh,texture,offset=null)=>{
+   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.viewport(0,0,vw,vh);gl.useProgram(prog);
+   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(prog,'source'),0);
+   if(offset)gl.uniform2fv(gl.getUniformLocation(prog,'offset'),offset);
+   gl.drawArrays(gl.TRIANGLES,0,6);
+  };
+  pass(this.extractProgram,this.bloomFbo[0],this.bloomW,this.bloomH,this.sceneTex);
+  pass(this.blurProgram,this.bloomFbo[1],this.bloomW,this.bloomH,this.bloomTex[0],[1/this.bloomW,0]);
+  pass(this.blurProgram,this.bloomFbo[0],this.bloomW,this.bloomH,this.bloomTex[1],[0,1/this.bloomH]);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,w,h);gl.useProgram(this.composeProgram);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.sceneTex);gl.uniform1i(gl.getUniformLocation(this.composeProgram,'scene'),0);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,this.bloomTex[0]);gl.uniform1i(gl.getUniformLocation(this.composeProgram,'blur'),1);
+  gl.drawArrays(gl.TRIANGLES,0,6);gl.activeTexture(gl.TEXTURE0);gl.depthMask(true);
+ }
+ programFor(v,f){const gl=this.gl;const shader=(type,src)=>{const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s};const p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,v));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,f));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));return p;}
+ freeze(){for(const g of Object.values(this.groups))g.staticN=g.n;}
+ begin(){for(const g of Object.values(this.groups))g.n=g.staticN;}
+ mesh(k,m,color,em=0,rough=.6,alpha=1,mat=0){const g=this.groups[k],o=g.n*24;if(o+24>g.data.length)return;g.data.set(m,o);g.data.set([...rgb(color),1,em,rough,alpha,mat],o+16);g.n++;}
+ box(p,s,c,rot=0,em=0,rough=.6,rounded=false,mat=0){this.mesh(rounded?'round':'box',transform(p,s,rot),c,em,rough,1,mat);}
+ cyl(p,s,c,rot=0,em=0,rough=.4){this.mesh('cylinder',transform(p,s,rot),c,em,rough);}
+ sphere(p,s,c,em=0,rough=.2,alpha=1){this.mesh(Math.max(...s)<.085?'bead':'sphere',transform(p,s),c,em,rough,alpha);}
+ segment(a,b,width,c,em=0,round=false){const d=V.sub(b,a),len=V.len(d);if(len<1e-6)return;const y=V.mul(d,1/len),x=V.norm(V.cross(Math.abs(y[1])>.99?[1,0,0]:[0,1,0],y)),z=V.cross(x,y);this.mesh(round?(width<.075?'rod':'cylinder'):'box',basis(V.mix(a,b,.5),x,y,z,[width,len,width]),c,em,.5);}
+ draw(vp,eye,lamps,time){const gl=this.gl;this.vp=vp;this.drawCalls=0;this.triangles=0;for(const g of Object.values(this.groups)){gl.bindBuffer(gl.ARRAY_BUFFER,g.ibo);gl.bufferSubData(gl.ARRAY_BUFFER,0,g.data.subarray(0,g.n*24));}gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(true);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);
+  if(this.shadows&&this.shadowDirty){this.shadowDirty=false;gl.bindFramebuffer(gl.FRAMEBUFFER,this.fbo);gl.viewport(0,0,2048,2048);gl.clear(gl.DEPTH_BUFFER_BIT);gl.useProgram(this.shadowProgram);gl.uniformMatrix4fv(gl.getUniformLocation(this.shadowProgram,'vp'),false,this.lightVP);gl.uniform3fv(gl.getUniformLocation(this.shadowProgram,'eye'),eye);gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);for(const [k,g]of Object.entries(this.groups)){if(!g.n||k==='flame')continue;gl.bindVertexArray(g.vao);gl.drawArraysInstanced(gl.TRIANGLES,0,g.count,g.n);}gl.disable(gl.POLYGON_OFFSET_FILL);}
+  const hasPost=this.ensurePost(this.canvas.width,this.canvas.height);gl.bindFramebuffer(gl.FRAMEBUFFER,hasPost?this.msaaFbo:null);gl.viewport(0,0,this.canvas.width,this.canvas.height);gl.clearColor(.055,.077,.10,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);const p=this.program;gl.useProgram(p);gl.uniformMatrix4fv(gl.getUniformLocation(p,'vp'),false,vp);gl.uniformMatrix4fv(gl.getUniformLocation(p,'lightVP'),false,this.lightVP);gl.uniform3fv(gl.getUniformLocation(p,'eye'),eye);gl.uniform1f(gl.getUniformLocation(p,'time'),time);gl.uniform1i(gl.getUniformLocation(p,'shadows'),this.shadows?1:0);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.depth);gl.uniform1i(gl.getUniformLocation(p,'shadow'),0);let lp=new Float32Array(32),lc=new Float32Array(24);lamps.slice(0,8).forEach((l,i)=>{lp.set([...l.pos,l.power],i*4);lc.set(rgb(l.color),i*3)});gl.uniform4fv(gl.getUniformLocation(p,'lamps'),lp);gl.uniform3fv(gl.getUniformLocation(p,'lampColors'),lc);
+  for(const [k,g]of Object.entries(this.groups)){if(!g.n)continue;if(k==='flame'||k==='dome'){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);}else{gl.disable(gl.BLEND);gl.depthMask(true);}gl.bindVertexArray(g.vao);gl.drawArraysInstanced(gl.TRIANGLES,0,g.count,g.n);this.drawCalls++;this.triangles+=g.count*g.n/3;}gl.disable(gl.BLEND);gl.depthMask(true);
+ }
+}
+class VolumeSprites{
+ constructor(r){const gl=this.gl=r.gl;this.p=r.programFor(`#version 300 es
+precision highp float;layout(location=0)in vec4 posSize;layout(location=1)in vec4 color;layout(location=2)in vec4 extra;uniform mat4 vp;uniform vec3 right,up;out vec2 uv;out vec4 C,E;void main(){vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));uv=corners[gl_VertexID];vec3 w=posSize.xyz+(right*uv.x+up*uv.y*extra.y)*posSize.w;C=color;E=extra;gl_Position=vp*vec4(w,1.);}`,`#version 300 es
+precision highp float;in vec2 uv;in vec4 C,E;out vec4 frag;void main(){float d=length(uv),a=exp(-d*d*(E.x>.5?2.8:5.))*(1.-smoothstep(.55,1.,d));if(E.x>.5){a*=.75+.25*sin(uv.x*13.+E.z)*sin(uv.y*10.+E.z*2.); }frag=vec4(C.rgb,a*C.a);}`);
+ this.vao=gl.createVertexArray();gl.bindVertexArray(this.vao);this.buffer=gl.createBuffer();this.data=new Float32Array(12*512);gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);gl.bufferData(gl.ARRAY_BUFFER,this.data.byteLength,gl.DYNAMIC_DRAW);for(let i=0;i<3;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,4,gl.FLOAT,false,48,16*i);gl.vertexAttribDivisor(i,1);}this.n=0;}
+ begin(){this.n=0;}
+ add(p,r,c,a=1,smoke=false,stretch=1,phase=0){if(this.n>=512)return;this.data.set([...p,r,...rgb(c),a,smoke?1:0,stretch,phase,0],this.n++*12);}
+ draw(vp,right,up){if(!this.n)return;const g=this.gl,p=this.p;g.useProgram(p);g.bindVertexArray(this.vao);g.bindBuffer(g.ARRAY_BUFFER,this.buffer);g.bufferSubData(g.ARRAY_BUFFER,0,this.data.subarray(0,this.n*12));g.uniformMatrix4fv(g.getUniformLocation(p,'vp'),false,vp);g.uniform3fv(g.getUniformLocation(p,'right'),right);g.uniform3fv(g.getUniformLocation(p,'up'),up);g.enable(g.DEPTH_TEST);g.depthMask(false);g.enable(g.BLEND);g.blendFunc(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA);g.drawArraysInstanced(g.TRIANGLES,0,6,this.n);g.disable(g.BLEND);g.depthMask(true);}
+}
+
+const FONT={
+'A':'0,7 2.5,0 5,7|1,4.5 4,4.5','B':'0,7 0,0 3.5,0 5,1 5,2.4 3.5,3.5 0,3.5|3.5,3.5 5,4.6 5,6 3.5,7 0,7',
+'C':'5,1 4,0 1,0 0,1 0,6 1,7 4,7 5,6','D':'0,7 0,0 3,0 5,2 5,5 3,7 0,7','E':'5,0 0,0 0,7 5,7|0,3.5 4,3.5',
+'F':'0,7 0,0 5,0|0,3.5 4,3.5','G':'5,1 4,0 1,0 0,1 0,6 1,7 4,7 5,6 5,3.5 2.8,3.5','H':'0,0 0,7|5,0 5,7|0,3.5 5,3.5',
+'I':'1,0 4,0|2.5,0 2.5,7|1,7 4,7','J':'1,0 5,0 5,5.5 3.5,7 1,7 0,6','K':'0,0 0,7|5,0 0,4 5,7','L':'0,0 0,7 5,7',
+'M':'0,7 0,0 2.5,3.5 5,0 5,7','N':'0,7 0,0 5,7 5,0','O':'1,0 4,0 5,1 5,6 4,7 1,7 0,6 0,1 1,0',
+'P':'0,7 0,0 4,0 5,1 5,2.5 4,3.5 0,3.5','Q':'1,0 4,0 5,1 5,5.5 3.5,7 1,7 0,6 0,1 1,0|3,5 5.5,7.5',
+'R':'0,7 0,0 4,0 5,1 5,2.5 4,3.5 0,3.5|2.5,3.5 5,7','S':'5,1 4,0 1,0 0,1 0,2.5 1,3.5 4,3.5 5,4.5 5,6 4,7 1,7 0,6',
+'T':'0,0 5,0|2.5,0 2.5,7','U':'0,0 0,5.8 1.2,7 3.8,7 5,5.8 5,0','V':'0,0 2.5,7 5,0','W':'0,0 1,7 2.5,3.5 4,7 5,0',
+'X':'0,0 5,7|5,0 0,7','Y':'0,0 2.5,3.5 5,0|2.5,3.5 2.5,7','Z':'0,0 5,0 0,7 5,7',
+'0':'1,0 4,0 5,1 5,6 4,7 1,7 0,6 0,1 1,0|1.1,5.5 3.9,1.5','1':'1,1.5 2.5,0 2.5,7|.5,7 4.5,7',
+'2':'0,1 1,0 4,0 5,1 5,2.5 0,7 5,7','3':'0,0 5,0 2.7,3 4,3 5,4 5,6 4,7 0,7',
+'4':'4,7 4,0 0,4.5 5,4.5','5':'5,0 0,0 0,3.5 4,3.5 5,4.5 5,6 4,7 0,7','6':'4.5,0 1,0 0,1 0,6 1,7 4,7 5,6 5,4 4,3 0,3',
+'7':'0,0 5,0 1.3,7','8':'1,0 4,0 5,1 5,2.5 4,3.5 1,3.5 0,2.5 0,1 1,0|1,3.5 0,4.5 0,6 1,7 4,7 5,6 5,4.5 4,3.5',
+'9':'5,4 1,4 0,3 0,1 1,0 4,0 5,1 5,6 4,7 .5,7',
+'.':'2.5,6.6 2.5,7',',':'2.5,6.5 1.5,8',':':'2.5,1.6 2.5,2|2.5,5.5 2.5,5.9',';':'2.5,1.6 2.5,2|2.5,5.5 1.5,7.5',
+'-':'1,3.5 4,3.5','+':'0,3.5 5,3.5|2.5,1 2.5,6','=':'0,2.5 5,2.5|0,4.8 5,4.8','/':'0,7 5,0','(':'3.7,0 2,1.5 2,5.5 3.7,7',')':'1.3,0 3,1.5 3,5.5 1.3,7',
+'[':'4,0 1,0 1,7 4,7',']':'1,0 4,0 4,7 1,7','<':'4,1 1,3.5 4,6','>':'1,1 4,3.5 1,6','%':'0,7 5,0|.2,.2 1.5,.2 1.5,1.8 .2,1.8 .2,.2|3.5,5.2 4.8,5.2 4.8,6.8 3.5,6.8 3.5,5.2',
+'?':'0,1 1,0 4,0 5,1 5,2.5 2.5,4 2.5,4.8|2.5,6.7 2.5,7','!':'2.5,0 2.5,4.8|2.5,6.7 2.5,7','*':'2.5,.5 2.5,6.5|0,1.8 5,5.2|0,5.2 5,1.8','_':'0,7 5,7',
+};
+FONT.m='0,7 0,2.5 1.5,2.5 2.5,3.5 2.5,7|2.5,3.5 3.5,2.5 4,2.5 5,3.5 5,7';
+FONT.u='0,2.5 0,6 1,7 3.5,7 5,5.5|5,2.5 5,7';
+FONT.s='5,3 4,2.5 1,2.5 0,3.2 0,4 1,4.7 4,4.7 5,5.5 5,6.3 4,7 1,7 0,6.5';
+for(const k in FONT)FONT[k]=FONT[k].split('|').map(s=>s.split(' ').map(p=>p.split(',').map(Number)));
+
+const GLVS=`#version 300 es
+precision highp float;uniform vec2 uSize;
+layout(location=0)in vec4 aBox;layout(location=1)in vec4 aShape;layout(location=2)in vec4 aColor;layout(location=3)in vec4 aOpts;
+out vec2 p;flat out vec4 box;flat out vec4 shape;flat out vec4 color;flat out vec4 opts;
+void main(){vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(-1,1),vec2(-1,1),vec2(1,-1),vec2(1,1));
+p=aBox.xy+corners[gl_VertexID]*aBox.zw;gl_Position=vec4(p.x/uSize.x*2.-1.,1.-p.y/uSize.y*2.,0,1);box=aBox;shape=aShape;color=aColor;opts=aOpts;}`;
+const GLFS=`#version 300 es
+precision highp float;in vec2 p;flat in vec4 box;flat in vec4 shape;flat in vec4 color;flat in vec4 opts;out vec4 frag;
+void main(){float d=0.;float kind=opts.x;
+if(kind<.5){vec2 q=abs(p-box.xy)-shape.xy+opts.y;d=length(max(q,vec2(0)))+min(max(q.x,q.y),0.)-opts.y;}
+else if(kind<1.5)d=length(p-box.xy)-opts.y;
+else if(kind<2.5){vec2 pa=p-shape.xy,ba=shape.zw-shape.xy;float h=clamp(dot(pa,ba)/max(dot(ba,ba),.0001),0.,1.);d=length(pa-ba*h)-opts.y;}
+else {float r=length((p-box.xy)/opts.y);frag=vec4(color.rgb,exp(-r*r*5.)*(1.-smoothstep(.7,1.,r))*color.a);return;}
+float aa=max(fwidth(d),.45);frag=vec4(color.rgb,(1.-smoothstep(-aa,aa,d))*color.a);}`;
+class UI{
+ constructor(r){this.gl=r.gl;const gl=this.gl;this.p=r.programFor(GLVS,GLFS);this.us=gl.getUniformLocation(this.p,'uSize');this.data=new Float32Array(16*32000);this.vao=gl.createVertexArray();gl.bindVertexArray(this.vao);this.vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.vb);gl.bufferData(gl.ARRAY_BUFFER,this.data.byteLength,gl.DYNAMIC_DRAW);for(let i=0;i<4;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,4,gl.FLOAT,false,64,i*16);gl.vertexAttribDivisor(i,1);}this.n=0;this.hits=[];}
+ begin(w,h){this.n=0;this.w=w;this.h=h;this.hits=[];}
+ shape(cx,cy,hx,hy,a,b,c,d,col,kind,r){const o=this.n*16;if(o+16>this.data.length)return;const co=typeof col==='string'?rgb(col):col;this.data.set([cx,cy,hx,hy,a,b,c,d,...co.slice(0,3),co[3]??1,kind,r,0,0],o);this.n++;}
+ rect(x,y,w,h,col,r=0){this.shape(x+w/2,y+h/2,w/2+2,h/2+2,w/2,h/2,0,0,col,0,r);}
+ circle(x,y,r,col){this.shape(x,y,r+2,r+2,0,0,0,0,col,1,r);}
+ line(a,b,c,d,col,width=1.5){const r=width/2;this.shape((a+c)/2,(b+d)/2,Math.abs(c-a)/2+r+2,Math.abs(d-b)/2+r+2,a,b,c,d,col,2,r);}
+ glow(x,y,r,col){this.shape(x,y,r,r,0,0,0,0,col,3,r);}
+ text(s,x,y,h=12,col='#dae7ea',align='left',weight=1){s=String(s);const z=h/7;if(align==='center')x-=(s.length*6.4-1.4)*z/2;if(align==='right')x-=(s.length*6.4-1.4)*z;for(const ch of s){for(const p of FONT[ch]||FONT[ch.toUpperCase()]||[])for(let i=1;i<p.length;i++)this.line(x+p[i-1][0]*z,y+p[i-1][1]*z,x+p[i][0]*z,y+p[i][1]*z,col,Math.max(1,h*.083)*weight);x+=6.4*z;}}
+ button(id,label,x,y,w,h,fn,active=false,c='#66efce'){let over=mouse.x>=x&&mouse.x<x+w&&mouse.y>=y&&mouse.y<y+h;this.rect(x,y,w,h,active?[...rgb(c),.22]:over?[.13,.20,.23,.96]:[.035,.055,.071,.90],5);this.line(x,y+h,x+w,y+h,active?c:'#30444f',active?2:1);this.text(label,x+w/2,y+(h-11)/2,11,active?c:'#c4d3d9','center');this.hits.push({id,x,y,w,h,fn});}
+ submit(){const gl=this.gl;gl.useProgram(this.p);gl.bindVertexArray(this.vao);gl.bindBuffer(gl.ARRAY_BUFFER,this.vb);gl.bufferSubData(gl.ARRAY_BUFFER,0,this.data.subarray(0,this.n*16));gl.uniform2f(this.us,this.w,this.h);gl.disable(gl.DEPTH_TEST);gl.depthMask(false);gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.drawArraysInstanced(gl.TRIANGLES,0,6,this.n);gl.disable(gl.BLEND);gl.depthMask(true);}
+}
+function worldText(s,p,h,c='#dae7ea',rot=0,flat=false,weight=1){const z=h/7;let x=-(String(s).length*6.4-1.4)*z/2;for(const ch of String(s)){for(const path of FONT[ch]||FONT[ch.toUpperCase()]||[])for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i],pa=flat?[x+a[0]*z,0,a[1]*z]:[x+a[0]*z,-a[1]*z,0],pb=flat?[x+b[0]*z,0,b[1]*z]:[x+b[0]*z,-b[1]*z,0];R.segment(localPoint(pa,p,rot),localPoint(pb,p,rot),h*.045*weight,c,.55);}x+=6.4*z;}}
+
+const canvas=document.getElementById('workshop'),boot=document.getElementById('boot');
+const PALETTE={mint:'#65edc2',amber:'#f7ae51',cap:'#659de9',red:'#ff5236',ink:'#172731',shell:'#d7d9cc',panel:'#30404a',metal:'#748c96',dark:'#17222b'};
+const kinds=['battery','resistor','capacitor','led','switch','junction'];
+const names={battery:'SUPPLY',resistor:'RESISTOR',capacitor:'CAPACITOR',led:'LED',switch:'SWITCH',junction:'JUNCTION'};
+const partColors={battery:'#79d6af',resistor:'#e8aa4f',capacitor:'#74a3f6',led:'#fc7454',switch:'#e5cc81',junction:'#c4d4de'};
+const ledColors=['#ff5435','#7affad','#64b6ff'];
+let R,ui,sprites,world=new CircuitWorld(),vp,frame=0,realTime=0,simAccumulator=0,sampleTimer=0,lastTime=0,frameMS=16,actualRate=1;
+let camera={pos:[0,2.65,5.6],yaw:0,pitch:-.25},mouse={x:-100,y:-100},keys={},locked=false,hover=null,held=null,wireStart=null,placement=null,paused=false,overlay=true,help=false;
+let notice='',noticeEnd=0,presetName='AFTERGLOW',selectedKind=0,history=[],undoStack=[],rewindFrames=[],particles=[],audio=null,autosaveTimer=0,safety=true,muted=false,booted=false;
+let achievements={light:false,hold:false,burn:false},firedEvents=0,hoverLast=null,interacted=false;
+const STEP=1/240,TOP=1.07,GRID=1.05;
+const allSurfaces=[{x0:-4.2,x1:4.2,z0:-2.8,z1:1.4,y:TOP,id:'main'}];
+function toast(s,t=3.5){notice=s;noticeEnd=realTime+t;}
+function valueText(p){switch(p.type){case'battery':return p.value.toFixed(1)+' V';case'resistor':return p.value>=1000?(p.value/1000).toFixed(p.value%1000?1:0)+' KOHM':Math.round(p.value)+' OHM';case'capacitor':return Math.round(p.value*1e6).toLocaleString('en-US')+' uF';case'led':return ['RED','GREEN','BLUE'][p.color||0];case'switch':return p.on?'CLOSED':'OPEN';default:return '2 WAY';}}
+// Procedural SFX: no files, no network, user-gesture gated WebAudio.
+// All signals share a compressor. The heat loop is continuous and smoothly
+// follows component stress; the same bus can accept motors in future versions.
+let audioBus=null,heatSource=null,heatGain=null,heatFilter=null,noiseBuffer=null;
+function ensureAudio(){
+ try{
+  if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();
+  if(audio.state==='suspended')audio.resume();
+  if(!audioBus){
+   audioBus=audio.createDynamicsCompressor();audioBus.threshold.value=-18;audioBus.ratio.value=3;
+   audioBus.attack.value=.004;audioBus.release.value=.11;audioBus.connect(audio.destination);
+   noiseBuffer=audio.createBuffer(1,8192,audio.sampleRate);
+   const d=noiseBuffer.getChannelData(0);let state=9127;
+   for(let i=0;i<d.length;i++){state=(Math.imul(state,1664525)+1013904223)>>>0;d[i]=(state/2147483648)-1;}
+   heatSource=audio.createBufferSource();heatSource.buffer=noiseBuffer;heatSource.loop=true;
+   heatFilter=audio.createBiquadFilter();heatFilter.type='bandpass';heatFilter.frequency.value=800;heatFilter.Q.value=.45;
+   heatGain=audio.createGain();heatGain.gain.value=0;
+   heatSource.connect(heatFilter).connect(heatGain).connect(audioBus);heatSource.start();
+  }
+  return audio;
+ }catch{return null;}
+}
+function tone(freq=500,len=.08,type='sine',vol=.03,end=null){if(muted)return;
+ try{const a=ensureAudio();if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime;
+  o.type=type;o.frequency.setValueAtTime(freq,t);if(end)o.frequency.exponentialRampToValueAtTime(Math.max(30,end),t+len);
+  g.gain.setValueAtTime(Math.max(.00001,vol),t);g.gain.exponentialRampToValueAtTime(.00001,t+len);
+  o.connect(g).connect(audioBus);o.start(t);o.stop(t+len+.005);
+ }catch{}
+}
+function noiseBurst(pitch=1200,length=.12,loudness=.045){if(muted)return;
+ try{const a=ensureAudio();if(!a)return;const n=a.createBufferSource(),filter=a.createBiquadFilter(),g=a.createGain(),t=a.currentTime;
+  n.buffer=noiseBuffer;n.loop=true;filter.type='bandpass';filter.frequency.setValueAtTime(pitch,t);
+  filter.frequency.exponentialRampToValueAtTime(Math.max(60,pitch*.35),t+length);
+  filter.Q.value=.67;g.gain.setValueAtTime(loudness,t);g.gain.exponentialRampToValueAtTime(.00001,t+length);
+  n.connect(filter).connect(g).connect(audioBus);n.start(t);n.stop(t+length+.01);
+ }catch{}
+}
+function sound(kind){switch(kind){
+ case 'grab':tone(280,.055,'triangle',.024,450);noiseBurst(2100,.042,.013);break;
+ case 'snap':tone(390,.045,'triangle',.038,860);tone(145,.10,'sine',.025,70);noiseBurst(1700,.065,.027);break;
+ case 'wire':tone(670,.045,'triangle',.029,1050);tone(1050,.07,'sine',.021,1370);noiseBurst(2700,.025,.014);break;
+ case 'switch':tone(170,.09,'triangle',.042,83);noiseBurst(700,.065,.035);break;
+ case 'dial':tone(460,.023,'sine',.013,640);break;
+ case 'fire':noiseBurst(1800,.27,.095);tone(125,.28,'sawtooth',.055,32);tone(440,.1,'square',.020,180);break;
+ case 'recover':tone(420,.16,'sine',.035,830);tone(820,.21,'triangle',.029,1520);noiseBurst(3600,.16,.014);break;
+ case 'spark':noiseBurst(3300,.040,.007);break;
+ default:tone(760,.055,'triangle',.023,380);
+ }}
+function clickSound(){sound('snap');}
+function updateAudioHeat(){if(!audio||!heatGain)return;
+ let amount=0;for(const p of world.parts)if(p.type==='led')amount=Math.max(amount,p.failed?Math.max(0,p.stress-.20):Math.max(0,p.stress-.23));
+ const t=audio.currentTime;heatGain.gain.setTargetAtTime(muted||paused?0:Math.min(.033,amount*.032),t,.07);
+ heatFilter.frequency.setTargetAtTime(700+amount*2100,t,.09);
+}
+function pinPos(key){const [id,p]=key.split(':'),part=world.parts.find(c=>c.id===id);return part?localPoint([p==='0'?-.4:.4,.20,.24],part.pos,part.rot):[0,0,0];}
+function pinName(key){const [id,pin]=key.split(':'),p=world.parts.find(p=>p.id===id);if(!p)return '';return names[p.type]+' '+id+' / '+(['battery','capacitor','led'].includes(p.type)?(pin==='0'?'+':'-'):(pin==='0'?'A':'B'));}
+function checkpoint(){if(R)R.shadowDirty=true;undoStack.push(world.save());if(undoStack.length>40)undoStack.shift();rewindFrames=[];}
+function resetTransient(){if(R)R.shadowDirty=true;held=null;wireStart=null;history=[];rewindFrames=[];particles=[];simAccumulator=0;sampleTimer=0;firedEvents=0;world.events=[];}
+function loadPreset(name,announce=true){if(booted)checkpoint();world=new CircuitWorld();presetName=name;if(R)R.shadowDirty=true;resetTransient();paused=false;
+ if(name==='AFTERGLOW'){
+ const b=world.add('battery',{pos:[-2.625,TOP,.875],value:5}),s=world.add('switch',{pos:[-2.625,TOP,-.175],on:true}),r=world.add('resistor',{pos:[-1.575,TOP,-.175],value:100}),c=world.add('capacitor',{pos:[.525,TOP,-.175],value:.01}),r2=world.add('resistor',{pos:[1.575,TOP,-.175],value:220}),d=world.add('led',{pos:[2.625,TOP,.875]});
+ const wire=(p,a,q,b)=>world.connect(p.id+':'+a,q.id+':'+b);wire(b,0,s,0);wire(s,1,r,0);wire(r,1,c,0);wire(c,0,r2,0);wire(r2,1,d,0);wire(d,1,b,1);wire(c,1,b,1);
+ }else if(name==='MELTDOWN'){
+ const b=world.add('battery',{pos:[-1.575,TOP,.875],value:9}),s=world.add('switch',{pos:[-1.575,TOP,-.175],on:false}),r=world.add('resistor',{pos:[-.525,TOP,-.175],value:10}),d=world.add('led',{pos:[1.575,TOP,.875]});world.connect(b.id+':0',s.id+':0');world.connect(s.id+':1',r.id+':0');world.connect(r.id+':1',d.id+':0');world.connect(d.id+':1',b.id+':1');
+ }else if(name==='RGB PARTY'){
+ const b=world.add('battery',{pos:[-2.625,TOP,.875],value:6});for(let i=0;i<3;i++){const r=world.add('resistor',{pos:[-.525+i*1.05,TOP,-.175],value:220}),d=world.add('led',{pos:[-.525+i*1.05,TOP,.875],color:i,value:[1.85,2.2,2.8][i]});world.connect(b.id+':0',r.id+':0');world.connect(r.id+':1',d.id+':0');world.connect(d.id+':1',b.id+':1');}
+ }
+ if(announce){toast(name==='MELTDOWN'?'SPACE POWERS THE MELTDOWN. INCREASE OHMS TO HEAL IT.':name==='EMPTY'?'EMPTY BENCH / PRESS 1-6 TO SPAWN MODULES':name==='RGB PARTY'?'THREE PARALLEL LED BRANCHES': 'LET IT CHARGE. PRESS SPACE TO PULL THE POWER.',5);tone(420,.12,'triangle',.035,650);}
+}
+function staticScene(){const box=(p,s,c,rot=0,e=0,rough=.6,round=false,mat=0)=>R.box(p,s,c,rot,e,rough,round,mat);
+ // Floor / tiled gallery shell. Open walking space around the entire bench.
+ box([0,-.13,0],[16,.26,17],'#38434b',0,0,.95,false,1);
+ box([0,2.2,-6.2],[16,4.4,.3],'#293b45');box([-7.8,2.2,1],[.25,4.4,14.6],'#3b4b51');box([7.8,2.2,1],[.25,4.4,14.6],'#34454e');
+ box([0,.18,-5.99],[15.5,.3,.1],'#172731');box([-7.63,.18,.7],[.08,.3,14.5],'#172731');box([7.63,.18,.7],[.08,.3,14.5],'#172731');
+ for(let x=-7;x<=7;x+=2){box([x,2.3,-6.02],[.06,4.3,.08],'#172b35');box([x,4.42,0],[.13,.18,12.4],'#22323b');}
+ for(const x of [-5.5,5.5]){box([x,2.7,-5.95],[2.55,2.4,.11],'#142531',0,0,.5,true);box([x,2.7,-5.86],[2.28,2.15,.05],'#648fa5',0,.5,.35);for(const k of [-.7,0,.7])box([x+k,2.7,-5.78],[.035,2.1,.05],'#19323e');for(const y of [2.2,3.2])box([x,y,-5.78],[2.3,.04,.07],'#19323e');}
+ box([0,3.16,-5.98],[7.15,1.5,.11],'#182b33',0,0,.6,true);worldText('CURRENT',[0,3.65,-5.88],.52,PALETTE.shell);worldText('MAGNETIC CIRCUIT PLAYGROUND',[0,2.94,-5.86],.135,PALETTE.mint);box([0,2.6,-5.82],[4.5,.018,.025],PALETTE.mint,0,2);
+ // Workshop overhead light housings, supports and visible diffusers.
+ for(const x of [-3,3]){box([x,3.95,-.65],[2.9,.16,.38],'#1e313a',0,0,.5,true);box([x,3.852,-.65],[2.7,.025,.3],'#ffedd0',0,3);for(const dx of [-1,1])box([x+dx,4.2,-.65],[.026,.45,.026],'#72929b');}
+ // Main magnetic work surface, layered aluminum edge and substantial legs.
+ box([0,.95,-.7],[8.65,.18,4.45],'#1d303a',0,0,.5,true);box([0,1.055,-.7],[8.4,.03,4.2],'#adb9ae',0,0,.9,false,2);
+ box([0,1.001,1.535],[8.35,.028,.035],PALETTE.mint,0,1.3);box([0,.865,1.48],[8.45,.15,.06],'#293e48');
+ for(const x of [-3.75,3.75]){for(const z of [-2.35,1.]){box([x,.47,z],[.2,.92,.2],'#2a414b',0,0,.4);box([x,.09,z],[.42,.16,.42],'#19282e',0,0,.8,true);}box([x,.25,-.7],[.15,.14,3.5],'#658088');}
+ box([0,.3,-1.9],[7.55,.15,.14],'#4e626b');
+ // Magnetic studs: fixed mechanical grid, electrically independent.
+ for(let x=-3.675;x<4;x+=GRID)for(let z=-2.275;z<1.4;z+=GRID){for(const dx of [-.32,.32])for(const dz of [-.24,.24]){R.cyl([x+dx,TOP+.004,z+dz],[.048,.008,.048],'#697f7d');R.cyl([x+dx,TOP+.009,z+dz],[.014,.006,.014],'#253f43');}}
+ worldText('01 / MAGNETIC WORKBENCH',[0,1.083,-2.61],.105,'#385457',0,true);worldText('MOUNTING GRID IS NOT ELECTRICAL',[0,1.083,1.20],.075,'#4b6263',0,true);
+ // Rear practical display panels.
+ for(let i=0;i<3;i++){const x=(i-1)*2.0;box([x,1.43,-3.18],[1.8,.76,.11],'#172c36',0,0,.6,true);worldText(['01 / MAKE LIGHT','02 / STORE IT','03 / BURN N HEAL'][i],[x,1.68,-3.105],.09,['#75ebbb','#81afff','#ffb275'][i]);worldText(['A CLOSED LOOP','CAPACITORS HOLD ENERGY','OVERLOADS AUTO HEAL'][i],[x,1.47,-3.105],.067,'#b4cad0');worldText(['WIRE + TO -','PULL THE POWER','FIX THE VOLTAGE.'][i],[x,1.3,-3.105],.065,'#7298a8');box([x,1.02,-3.2],[.05,.4,.05],'#5a727b');}
+ // Part dispenser shelves on left, service props to the right.
+ box([-6.35,.85,-2.1],[1.5,1.7,3.85],'#223844',0,0,.7,true);box([-6.35,1.72,-2.1],[1.65,.12,4.1],'#899c98',0,0,.8);box([-7.22,2.2,-2.1],[.07,1.1,4.15],'#162d37');
+ for(let i=0;i<6;i++){const z=-3.65+i*.62;box([-6.3,1.81,z],[1.24,.14,.5],i%2?'#425962':'#344e58',0,0,.65,true);const type=kinds[i];R.cyl([-6.35,2.01,z],[.26,.26,.26],partColors[type]);worldText((i+1)+' / '+names[type],[-6.35,1.83,z+.27],.055,'#e3e7dc');}
+ worldText('PARTS / INFINITE STOCK',[-6.3,2.67,-4.15],.093,'#c9dddb');
+ box([6.2,.68,-2.65],[2,1.35,2.75],'#293d47',0,0,.7,true);box([6.2,1.42,-2.65],[2.15,.13,2.9],'#99a39c',0,0,.8,true);
+ for(const z of [-3.35,-2.5]){R.cyl([6.22,1.68,z],[.75,.38,.75],'#cd9654');R.cyl([6.22,1.9,z],[.89,.045,.89],'#354a50');R.cyl([6.22,1.465,z],[.89,.045,.89],'#354a50');for(let i=0;i<8;i++)R.mesh('ring',transform([6.22,1.51+i*.045,z],[.74,.019,.74]),i%2?'#304952':'#365760');}
+ box([6.2,1.6,-1.67],[1.55,.14,.56],'#1a3039',0,0,.65,true);worldText('PATCH LEADS',[6.2,1.685,-1.65],.075,PALETTE.mint,0,true);
+ // Drawers and wall cable channels add construction coherence.
+ for(let x=-2.5;x<=2.5;x+=1.25){box([x,.45,-5.2],[1.17,.9,1.25],'#395361',0,0,.7,true);for(const y of [.24,.57,.84]){box([x,y,-4.556],[1.05,.25,.034],'#4b606b',0,0,.7,true);box([x,y+.04,-4.52],[.35,.035,.05],'#a6b9bd');}}
+ box([0,1.05,-5.2],[6.55,.11,1.4],'#9caaa5',0,0,.7);worldText('BUILD. BREAK. UNDERSTAND.',[0,1.7,-5.94],.13,'#729eae');
+ for(const x of [-7.4,7.4]){box([x,3.65,0],[.07,.10,11.9],'#efb760',0,.1);box([x,3.82,0],[.035,.045,11.9],'#647f8c');}
+ // Safety stripes by the workstation feet.
+ for(const x of [-4.65,4.65])for(let z=-2.4;z<1.7;z+=.3)box([x,.009,z],[.22,.014,.13],'#b78849',-.4);
+ R.freeze();
+}
+function partHeight(p){return {battery:.53,resistor:.36,capacitor:.76,led:.63,switch:.65,junction:.27}[p.type];}
+function drawPart(p,highlight=false){const col=partColors[p.type],at=v=>{const q=localPoint(v,p.pos,p.rot);q[1]+Math.pow(p.snapFlash||0,2)*.065;return q;},box=(v,s,c,em=0,rough=.6,rounded=false,extraRot=0)=>R.box(at(v),s,c,p.rot+extraRot,em,rough,rounded),cyl=(v,s,c,em=0,rough=.4)=>R.cyl(at(v),s,c,p.rot,em,rough);
+ // Injection-molded magnetic module base, seam, lid and four fasteners.
+ box([0,.05,0],[.91,.10,.76],'#263b42',0,.7,true);box([0,.105,0],[.87,.095,.73],p.failed?'#666961':PALETTE.shell,0,.6,true);box([0,.151,-.24],[.68,.012,.17],col,0,.55,true);
+ if(highlight||held?.part===p){box([0,.01,0],[.97,.02,.82],placement&&held?.part===p&&!placement.valid?'#ff6546':PALETTE.mint,1,.65,true);}if((p.snapFlash||0)>.02){const pulse=p.snapFlash;R.mesh('ring',transform(at([0,.025,0]),[.98+(1-pulse)*.38,.016,.87+(1-pulse)*.30]),PALETTE.mint,2.4*pulse,.35);}
+ for(const x of [-.33,.33])for(const z of [-.26,.26]){cyl([x,.161,z],[.039,.012,.039],'#536a71');box([x,.17,z],[.022,.005,.006],'#1c323a');}
+ const label=p.type==='capacitor'?'C / '+Math.round(p.value*1000)+' mF':p.type==='resistor'?'R / '+(p.value>=1000?(p.value/1000)+'K':p.value):p.type==='battery'?p.value.toFixed(1)+' V':p.type==='led'?(p.failed?'OVERLOAD / FIX!':'D / '+valueText(p)):names[p.type];
+ worldText(label,at([0,.166,-.30]),.060,'#162f38',p.rot,true,1.25);
+ // Plug sockets stay distinct from the four purely mechanical mounting studs.
+ for(let i=0;i<2;i++){const x=i===0?-.4:.4,pin=p.id+':'+i,isH=hover?.kind==='pin'&&hover.key===pin||wireStart===pin,pinCol=i===0?'#edb653':'#79a2bd';cyl([x,.185,.24],[.165,.06,.165],'#243640');cyl([x,.22,.24],[.133,.028,.133],isH?PALETTE.mint:pinCol,isH?1:0,.25);cyl([x,.238,.24],[.065,.012,.065],'#10252e');worldText(i===0?'+':'-',at([x,.169,.10]),.07,'#334e56',p.rot,true);}
+ if(p.type==='battery'){
+ box([0,.31,-.005],[.56,.30,.31],'#385f56',0,.5,true);box([0,.475,-.005],[.5,.055,.26],'#769787',0,.6,true);box([0,.326,.168],[.40,.20,.027],'#152b31',0,.5,true);worldText(p.value.toFixed(1)+' V',at([0,.392,.185]),.078,p.on?PALETTE.mint:'#537179',p.rot);box([.20,.497,-.005],[.065,.025,.13],p.on?PALETTE.mint:'#644d45',p.on?1:0,.3,true);worldText(p.on?'ON':'OFF',at([0,.245,.185]),.044,p.on?'#9feacb':'#be937b',p.rot);
+ }else if(p.type==='resistor'){
+ // Horizontal ceramic resistor with honest leads and color bands.
+ const a=at([-.25,.295,0]),b=at([.25,.295,0]);R.segment(a,b,.195,'#ccb58a',0,true);
+ for(const [x,c]of [[-.14,'#683729'],[-.065,'#353635'],[.035,'#bc593a'],[.145,'#ba9656']])R.segment(at([x-.015,.295,0]),at([x+.015,.295,0]),.200,c,0,true);
+ for(const sign of [-1,1]){R.segment(at([sign*.27,.295,0]),at([sign*.4,.20,.24]),.032,'#98acb3',0,true);}
+ cyl([0,.17,.23],[.13,.04,.13],'#293e44');box([0,.198,.23],[.067,.015,.015],'#eac481');
+ }else if(p.type==='capacitor'){
+ // Oversized translucent-looking energy tank. Charge level, stored energy
+ // and the direction of real capacitor current all drive the spectacle.
+ const vmax=Math.max(5,...world.parts.filter(k=>k.type==='battery').map(k=>k.value));
+ const level=clamp(Math.abs(p.capV)/vmax,0,1),energy=.5*p.value*p.capV*p.capV;
+ const flow=clamp(Math.abs(p.i)/.025,0,1.5),charging=p.i>.00005,discharging=p.i<-.00005;
+ const active=charging||discharging,glow=charging?'#74f7d6':discharging?'#ffaa60':'#81b3ff';
+ cyl([0,.20,-.03],[.50,.075,.50],'#284957');
+ cyl([0,.445,-.03],[.44,.485,.44],'#335477',0,.25);
+ // Alternating vertical ribs and metallic upper contacts.
+ for(let i=0;i<12;i++){const t=i*TAU/12;R.segment(at([Math.cos(t)*.226,.225,Math.sin(t)*.226-.03]),at([Math.cos(t)*.226,.665,Math.sin(t)*.226-.03]),.009,'#5c88ae',.1,true);}
+ cyl([0,.697,-.03],[.458,.049,.458],'#b2c6c9',0,.20);
+ cyl([0,.733,-.03],[.392,.012,.392],'#8eabae',0,.20);
+ box([0,.742,-.03],[.235,.009,.014],'#35596b');box([0,.742,-.03],[.014,.009,.23],'#35596b');
+ for(const y of [.236,.66])R.mesh('ring',transform(at([0,y,-.03]),[.45,.027,.45]),'#172f47');
+ // Front-facing segmented illuminated voltmeter, plus a sweeping charge ring.
+ box([0,.447,.201],[.23,.43,.024],'#0b2534');
+ for(let i=0;i<9;i++){
+  const on=(i+.5)/9<=level;
+  box([0,.273+i*.041,.217],[.173,.022,.013],on?glow:'#284a63',on?1.8:0,.25);
+ }
+ worldText((p.capV>=0?'+':'')+p.capV.toFixed(1)+'V',at([0,.623,.228]),.044,'#d8f3f6',p.rot);
+ const markerY=.225+level*.44;
+ R.mesh('ring',transform(at([0,markerY,-.03]),[.475,.022,.475]),glow,.9+level*2,.27);
+ // Stored energy creates the halo; real current determines speed and direction.
+ if(energy>.0001){const halo=clamp(Math.sqrt(energy)/.25,0,1.8),speed=active?(charging?1:-1)*(.3+flow*2.6):.07;
+  for(let i=0;i<5;i++){
+   const t=realTime*speed+i*TAU/5,a=t*(i%2?1:-1),h=.26+(i/5)*.35;
+   const center=at([Math.cos(a)*.27,h,Math.sin(a)*.27-.03]);
+   R.sphere(center,[.027,.027,.027],glow,1.4+halo*1.1,.10);
+   if(halo>.25&&i%2===0)sprites.add(center,.08+halo*.023,glow,.08+halo*.11);
+  }
+  if(halo>.2)sprites.add(at([0,.43,-.03]),.34+halo*.14,glow,halo*.095);
+ }
+ if(active&&flow>.035){for(let i=0;i<4;i++){
+  const t=((realTime*flow*(charging?1:-1)*1.5+i*.25)%1+1)%1;
+  R.sphere(at([.292,.26+t*.36,-.03]),[.022,.022,.022],glow,1.9,.22);
+ }}
+ for(const sign of [-1,1])R.segment(at([sign*.15,.20,.01]),at([sign*.4,.20,.24]),.027,'#9eb6b9',0,true);
+ }else if(p.type==='led'){
+ const led=ledColors[p.color||0],intensity=p.failed?0:clamp(p.i/.013,0,2.8);
+ const hot=clamp(p.stress,0,1),flash=clamp(p.reviveFlash||0,0,1);
+ const tint=p.failed?'#363d3b':p.stress>.4?'#ff8b42':led;
+ // LED leadframe, visible bondwire and luminous die sit INSIDE the optical lens.
+ for(const x of [-.115,.115]){
+  R.segment(at([x,.17,.02]),at([x,.465,.02]),.032,p.failed?'#65625d':'#e5d6a9',0,true);
+  cyl([x,.178,.02],[.086,.036,.086],'#aab8ae');
+ }
+ cyl([0,.303,0],[.44,.048,.44],p.failed?'#4b3931':'#c9967a',0,.24);
+ cyl([0,.356,0],[.315,.105,.315],p.failed?'#292c2a':'#68473b',0,.27);
+ // Reflector cone, phosphor package, luminous chip and gold whisker.
+ cyl([0,.39,.028],[.235,.055,.235],p.failed?'#342e29':'#ebba94',intensity*.32,.23);
+ R.segment(at([-.11,.465,.02]),at([.045,.472,.02]),.011,p.failed?'#3a3a37':'#f8dd9b',intensity*.38,true);
+ box([.045,.47,.02],[.105,.032,.10],p.failed?'#252924':intensity>.04?'#fff6d2':'#ad4c3b',intensity*7+flash*4,.15,true);
+ R.sphere(at([.045,.493,.02]),[.09,.09,.09],p.failed?'#242926':led,intensity*8+flash*5,.08);
+ // Semi-transparent dome (actual alpha blending) with strong Fresnel rim.
+ const shell=rgb(tint).map(v=>clamp(v*.72+.21,0,1));
+ R.mesh('dome',transform(at([0,.44,0]),[.67,.70,.67]),shell,p.failed?0:intensity*.37+flash*.95,.055,.51,6);
+ R.mesh('ring',transform(at([0,.319,0]),[.46,.055,.46]),p.failed?'#3e443d':'#efd3b9',0,.25);
+ // Polished catchlights on shell; healthy LEDs bloom from electrical current.
+ if(intensity>.001){const pos=at([0,.54,.11]);
+  sprites.add(pos,.34+intensity*.070,led,.18+Math.sqrt(intensity)*.17);
+  sprites.add(pos,.19+intensity*.024,'#fff8e9',.09+intensity*.12);
+  R.sphere(at([-.118,.565,.116]),[.032,.080,.022],'#f9eff0',intensity*.55,.12);
+ }
+ if(p.failed){for(let k=0;k<4;k++){
+  const x=-.155+k*.095;
+  R.segment(at([x,.51,.20]),at([x+.045,.58,.16]),.012,'#0c1919',0,true);
+  R.segment(at([x+.045,.58,.16]),at([x+.019,.62,.11]),.011,'#182120',0,true);
+ }}
+ if(hot>.14&&!p.failed){
+  R.mesh('ring',transform(at([0,.33,0]),[.53,.03,.53]),'#ff612f',1+hot*3,.22);
+  sprites.add(at([0,.55,.11]),.43+hot*.19,'#ff7a2e',.05+hot*.20);
+ }
+ if(flash>.01){R.mesh('ring',transform(at([0,.34,0]),[.51+flash*.16,.025,.51+flash*.16]),'#8ffff0',3*flash,.21);sprites.add(at([0,.57,.06]),.46+flash*.2,'#88ffdd',.27*flash);}
+ }else if(p.type==='switch'){
+ box([0,.23,-.005],[.41,.15,.30],'#3c5360',0,.3,true);const stem=at([0,.32,0]),tip=at([0,p.on?.55:.51,p.on?-.12:.17]);R.sphere(stem,[.16,.16,.16],'#b8c1b8',0,.22);R.segment(stem,tip,.065,'#a8bcb9',0,true);R.sphere(tip,[.16,.20,.16],p.on?PALETTE.mint:'#dc8354',p.on?.25:0,.45);box([.31,.17,-.02],[.065,.025,.085],p.on?PALETTE.mint:'#71554e',p.on?1:0);
+ }else{box([0,.185,0],[.52,.045,.22],'#3c6973',0,.4,true);R.segment(at([-.22,.22,.02]),at([.22,.22,.02]),.045,'#e1b668',0,true);}
+}
+function wirePinPos(w,key){const slot=world.wires.filter(q=>q.a===key||q.b===key).findIndex(q=>q.id===w.id);return V.add(pinPos(key),[0,Math.max(0,slot)*.058,0]);}
+// Flexible lead profile with deterministic endpoint constraints. A shallow lifted
+// arch prevents cables clipping into the work surface. Wire endpoints are exact;
+// moving/rotating a connected part simply deforms the cable.
+function softCable(a,b,phase=0){
+ const dist=V.len(V.sub(a,b)),rise=Math.min(.52,.18+dist*.065),front=Math.min(.63,.13+dist*.055);
+ const curve=[];for(let j=0;j<=30;j++){
+  const t=j/30,u=Math.sin(Math.PI*t),s=u*u;
+  const q=V.mix(a,b,t);q[1]+=rise*s;q[2]+=front*s;
+  // Very small elastic breathing after insertion; endpoints never move.
+  q[1]+=.009*Math.sin(realTime*4+phase)*s;
+  curve.push(q);
+ }return curve;
+}
+function cablePoints(w,index=0){const a=wirePinPos(w,w.a),b=wirePinPos(w,w.b);return softCable(a,b,index*.62);}
+function cableColor(w){const pa=world.parts.find(p=>p.id===w.a.split(':')[0]),pb=world.parts.find(p=>p.id===w.b.split(':')[0]);return (pa?.type==='battery'&&w.a.endsWith(':1'))||(pb?.type==='battery'&&w.b.endsWith(':1'))?'#5c8098':'#c3924a';}
+function drawCables(){world.wires.forEach((w,idx)=>{
+ const p=cablePoints(w,idx),selected=hover?.kind==='wire'&&hover.wire===w,c=selected?PALETTE.mint:cableColor(w);
+ w.points=p;
+ // Cable sheath and subtle longitudinal thread highlights.
+ for(let i=1;i<p.length;i++){
+  R.segment(p[i-1],p[i],.044,'#182c36',0,true);
+  R.segment(V.add(p[i-1],[0,.007,0]),V.add(p[i],[0,.007,0]),.025,c,selected?1.3:.09,true);
+ }
+ for(const key of [w.a,w.b]){
+  const q=wirePinPos(w,key),lit=wireStart===key||hover?.key===key;
+  R.cyl(V.add(q,[0,.029,0]),[.115,.061,.115],'#283e46',0,.3);
+  R.cyl(V.add(q,[0,.060,0]),[.084,.06,.084],c,lit?1:0,.25);
+  R.cyl(V.add(q,[0,.087,0]),[.046,.013,.046],lit?PALETTE.mint:'#d3d9d0',lit?1.8:0,.18);
+ }
+ if(overlay&&Math.abs(w.i)>.00002){
+  const speed=Math.sign(w.i)*clamp(Math.sqrt(Math.abs(w.i))*1.65,.08,2.2),phase=realTime*speed;
+  for(let k=0;k<5;k++){const t=((phase+k/5)%1+1)%1,u=t*(p.length-1),i=Math.min(p.length-2,Math.floor(u));R.sphere(V.mix(p[i],p[i+1],u-i),[.047,.047,.047],PALETTE.mint,2.7,.22);}
+ }
+ });}
+function drawEffects(dt){
+ for(const p of world.parts){
+  p.snapFlash=Math.max(0,(p.snapFlash||0)-dt*3.5);
+  if(p.type==='led'){
+   p.reviveFlash=Math.max(0,(p.reviveFlash||0)-dt*1.7);
+   const heat=p.stress;
+   if(heat>.17){
+    const pos=localPoint([0,.59,0],p.pos,p.rot),fire=clamp((heat-.30)/.70,0,1);
+    const flames=fire>.02?Math.min(6,Math.ceil(fire*6)):0;
+    for(let i=0;i<flames;i++){
+     const t=realTime*5+i*1.2,a=i*2.399+realTime*.7;
+     const off=[Math.cos(a)*.13,.05+Math.sin(t)*.028,Math.sin(a)*.11],size=.10+fire*.16;
+     R.mesh('flame',transform(V.add(pos,off),[size,.14+fire*.47+Math.sin(t)*.055,size]),i%2?'#ffb646':'#ff5426',2.8,.7,.86,4);
+     R.mesh('flame',transform(V.add(pos,V.mul(off,.65)),[size*.56,.13+fire*.2,size*.56]),'#fff1ab',4.3,.35,.8,4);
+    }
+    if(Math.random()<dt*(2+heat*15)&&particles.length<240){
+     particles.push({pos:V.add(pos,[0,.09,0]),vel:[(Math.random()-.5)*.19,.28+Math.random()*.3,(Math.random()-.5)*.19],age:0,life:1.35+Math.random()*1.5,smoke:true});
+    }
+    if(!p.failed&&fire>.22&&frame%22===0){sound('spark');for(let j=0;j<2;j++)particles.push({pos,vel:[(Math.random()-.5)*1.9,.6+Math.random()*.6,(Math.random()-.5)*1.9],age:0,life:.2+Math.random()*.4});}
+   }
+  }
+ }
+ for(let i=particles.length-1;i>=0;i--){const q=particles[i];q.age+=dt;
+  if(q.age>q.life){particles.splice(i,1);continue;}
+  q.pos=V.add(q.pos,V.mul(q.vel,dt));const t=q.age/q.life;
+  if(q.smoke){q.vel[1]+=.12*dt;sprites.add(q.pos,(.07+t*.19)*1.5,'#88918d',.29*(1-t),true,1.2,q.age*2);}
+  else if(q.cool){q.vel=V.mul(q.vel,Math.max(.5,1-dt*2.6));sprites.add(q.pos,.055*(1-t)+.025,'#7ff9dd',.65*(1-t));}
+  else{q.vel[1]-=dt*2.0;const size=.025*(1-t);R.sphere(q.pos,[size,size,size],'#ffe2a4',4.5,.3);}
+ }
+}
+function failureFX(e){const p=world.parts.find(p=>p.id===e.id);if(!p)return;
+ achievements.burn=true;toast('POP! OVERLOADED. FIX VOLTAGE OR RESISTANCE TO AUTO-HEAL.',5);
+ sound('fire');const pos=localPoint([0,.57,0],p.pos,p.rot);
+ for(let i=0;i<31;i++)particles.push({pos:[...pos],vel:[(Math.random()-.5)*2.2,.35+Math.random()*1.65,(Math.random()-.5)*2.2],age:0,life:.35+Math.random()*.55});
+ for(let i=0;i<9;i++)particles.push({pos:[...pos],vel:[(Math.random()-.5)*.35,.22+Math.random()*.42,(Math.random()-.5)*.35],age:0,life:1.2+Math.random()*1.1,smoke:true});
+}
+function recoveryFX(e){const p=world.parts.find(p=>p.id===e.id);if(!p)return;
+ toast('SELF HEALED! SAME LED / HEALTHY ELECTRICAL VALUES.',4);sound('recover');
+ const pos=localPoint([0,.56,0],p.pos,p.rot);
+ for(let i=0;i<18;i++){const a=i*TAU/18;particles.push({pos:[...pos],vel:[Math.cos(a)*(.4+Math.random()*.65),.3+Math.random()*.8,Math.sin(a)*(.4+Math.random()*.65)],age:0,life:.55+Math.random()*.4,cool:true});}
+}
+function direction(){return [Math.sin(camera.yaw)*Math.cos(camera.pitch),Math.sin(camera.pitch),-Math.cos(camera.yaw)*Math.cos(camera.pitch)];}
+function cameraAxes(){const f=direction(),right=[Math.cos(camera.yaw),0,Math.sin(camera.yaw)],up=V.cross(right,f);return {f,right,up};}
+function pointerRay(){const {f,right,up}=cameraAxes(),aspect=canvas.width/canvas.height,t=Math.tan(Math.PI/6);if(locked)return f;const nx=mouse.x/window.innerWidth*2-1,ny=1-mouse.y/window.innerHeight*2;return V.norm(V.add(f,V.add(V.mul(right,nx*t*aspect),V.mul(up,ny*t))));}
+function updateHover(){hover=null;if(help)return;const d=pointerRay(),o=camera.pos;let best=Infinity;
+ for(const p of world.parts){if(held?.part===p)continue;for(let i=0;i<2;i++){const key=p.id+':'+i,t=raySphere(o,d,V.add(pinPos(key),[0,.04,0]),.115);if(t<best&&t<6.5){best=t;hover={kind:'pin',key,part:p,distance:t};}}
+  const h=partHeight(p);const baseMin=V.add(p.pos,[-.43,0,-.36]),baseMax=V.add(p.pos,[.43,.17,.36]);const wide=p.type==='resistor'?.29:p.type==='battery'?.29:.24;const bodyMin=V.add(p.pos,[-wide,.17,-.22]),bodyMax=V.add(p.pos,[wide,h,.22]);let t=Math.min(rayBox(o,d,baseMin,baseMax),rayBox(o,d,bodyMin,bodyMax));if(t<best-.03&&t<6.8){best=t;hover={kind:'part',part:p,distance:t};}
+ }
+ // Wires are selectable but never steal priority from a plug or component.
+ if(!hover)for(const w of world.wires)for(const p of w.points||[]){const t=raySphere(o,d,p,.075);if(t<best&&t<6.5){best=t;hover={kind:'wire',wire:w,distance:t};}}
+ // The shelf is an infinite physical dispenser too.
+ if(!hover)for(let i=0;i<6;i++){const t=rayBox(o,d,[-6.95,1.75,-3.9+i*.62],[-5.65,2.20,-3.4+i*.62]);if(t<best&&t<6.5){best=t;hover={kind:'stock',type:kinds[i],distance:t};}}
+}
+function updatePlacement(dt){if(held)R.shadowDirty=true;if(!held){placement=null;return;}const ray=pointerRay(),o=camera.pos;let q=null;
+ if(ray[1]<-.03){const t=(TOP-o[1])/ray[1];if(t>0&&t<7){const pt=V.add(o,V.mul(ray,t));if(pt[0]>-4.22&&pt[0]<4.22&&pt[2]>-2.82&&pt[2]<1.42){const x=clamp(Math.round((pt[0]+3.675)/GRID),0,7)*GRID-3.675,z=clamp(Math.round((pt[2]+2.275)/GRID),0,3)*GRID-2.275;q={pos:[x,TOP,z],valid:!world.parts.some(p=>p!==held.part&&Math.abs(p.pos[0]-x)<.85&&Math.abs(p.pos[2]-z)<.8)};}}}
+ if(q){placement=q;held.part.pos=V.mix(held.part.pos,V.add(q.pos,[0,.07,0]),1-Math.exp(-25*dt));}else{placement=null;const pos=V.add(o,V.mul(ray,2.25));pos[1]=Math.max(.5,pos[1]-.30);held.part.pos=V.mix(held.part.pos,pos,1-Math.exp(-15*dt));}
+}
+// Input-independent semantic actions. A VR adapter can pass module IDs / terminal IDs.
+const Actions={
+ spawn(type){if(held)this.cancel();if(world.parts.length>=24){toast('BENCH LIMIT: 24 MODULES');return null;}checkpoint();const p=world.add(type,{pos:V.add(camera.pos,V.mul(direction(),2.2)),on:type!=='switch'});held={part:p,spawned:true};selectedKind=kinds.indexOf(type);interacted=true;toast('AIM AT THE GRID / CLICK TO SNAP / R ROTATES',3);sound('grab');return p.id;},
+ grab(id){const p=world.parts.find(p=>p.id===id);if(!p||held)return false;checkpoint();held={part:p,origin:[...p.pos],rot:p.rot};wireStart=null;sound('grab');return true;},
+ place(pos=null){if(!held)return false;const target=pos?{pos,valid:true}:placement;if(!target?.valid){toast('AIM AT AN EMPTY MAGNETIC GRID CELL');tone(160,.07,'triangle',.03);return false;}held.part.pos=[...target.pos];R.shadowDirty=true;held.part.snapFlash=1;held=null;placement=null;sound('snap');toast('MAGNETIC LOCK / ELECTRICAL CONNECTIONS PRESERVED',2);return true;},
+ cancel(){if(held){if(held.spawned)world.remove(held.part.id);else{held.part.pos=held.origin;held.part.rot=held.rot;}held=null;placement=null;}if(wireStart)wireStart=null;},
+ connect(a,b){checkpoint();const w=world.connect(a,b);if(w){sound('wire');toast('MAGNETIC PATCH CONNECTED / '+world.wires.length+' LEADS',2);}else toast('THAT CONNECTION ALREADY EXISTS OR IS INVALID');return w?.id||null;},
+ toggle(id){const p=world.parts.find(p=>p.id===id);if(!p||!['battery','switch'].includes(p.type))return;checkpoint();p.on=!p.on;sound('switch');toast(p.on?'SOURCE PATH CLOSED':'SOURCE PATH OPEN / STORED CHARGE CAN STILL FLOW',4);},
+ setValue(id,value){if(!Number.isFinite(value))return;const p=world.parts.find(p=>p.id===id);if(!p)return;const range={battery:[1,12],resistor:[5,10000],capacitor:[.0001,.1]};if(!range[p.type])return;checkpoint();p.value=clamp(value,...range[p.type]);sound('dial');},
+ repair(id){const p=world.parts.find(p=>p.id===id);if(!p)return false;if(p.failed){toast('AUTO-HEAL ACTIVE / LOWER VOLTAGE OR INCREASE RESISTANCE',4);return false;}return true;},
+ remove(id){checkpoint();world.remove(id);if(held?.part.id===id)held=null;if(wireStart?.startsWith(id+':'))wireStart=null;clickSound();},
+ disconnect(id){checkpoint();world.disconnect(id);clickSound();toast('PATCH LEAD REMOVED',2);}
+};
+function primary(){if(help)return;interacted=true;if(held){Actions.place();return;}if(hover?.kind==='pin'){if(!wireStart){wireStart=hover.key;toast('LEAD READY / CLICK ANOTHER SOCKET / Q TO CANCEL');tone(650,.06,'triangle',.035);}else{if(wireStart!==hover.key)Actions.connect(wireStart,hover.key);wireStart=null;}return;}
+ if(hover?.kind==='stock'){Actions.spawn(hover.type);return;}if(hover?.kind==='part')Actions.grab(hover.part.id);}
+function use(){const p=hover?.part;if(!p)return;if(p.type==='switch'||p.type==='battery')Actions.toggle(p.id);else if(p.type==='led'){checkpoint();p.color=((p.color||0)+1)%3;p.value=[1.85,2.2,2.8][p.color];toast(valueText(p)+' LED MODEL / SELF HEALS WHEN SAFE');sound('dial');}else adjustValue(1);}
+function togglePower(){const p=(hover?.part&&['switch','battery'].includes(hover.part.type)?hover.part:null)||world.parts.find(p=>p.type==='switch')||world.parts.find(p=>p.type==='battery');if(p)Actions.toggle(p.id);else toast('SPAWN A SUPPLY WITH 1');}
+function adjustValue(sign){const p=hover?.part;if(!p||held)return;const values={battery:[1.5,3,5,6,9,12],resistor:[5,10,22,47,100,220,470,1000,2200,4700,10000],capacitor:[.0001,.00047,.001,.0047,.01,.022,.047,.1]};const list=values[p.type];if(!list)return;let i=0;for(let j=0;j<list.length;j++)if(Math.abs(list[j]-p.value)<Math.abs(list[i]-p.value))i=j;const v=list[clamp(i+sign,0,list.length-1)];if(v!==p.value){Actions.setValue(p.id,v);toast(valueText(p)+' / LIVE COMPONENT UPDATE',2);}}
+function undo(){Actions.cancel();if(!undoStack.length){toast('NOTHING TO UNDO');return;}world.load(undoStack.pop());resetTransient();toast('LAST EDIT UNDONE / CIRCUIT STATE RESTORED');}
+function rewind(){Actions.cancel();if(rewindFrames.length<10){toast('LET THE CIRCUIT RUN FOR A MOMENT');return;}world.load(rewindFrames[0]);resetTransient();toast('REWOUND UP TO FIVE SECONDS / TRY THAT AGAIN');tone(1000,.18,'sine',.025,240);}
+function saveLocal(){try{if(!held)localStorage.setItem('current-workshop-v2',JSON.stringify({name:presetName,world:world.save()}));}catch{}}
+function exportScene(){const blob=new Blob([JSON.stringify({name:presetName,world:world.save()},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='current-workshop-scene.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);toast('SCENE EXPORTED');}
+function importScene(){document.getElementById('import').click();}
+function move(dt){if(help)return;const {right}=cameraAxes(),f=[Math.sin(camera.yaw),0,-Math.cos(camera.yaw)];let d=[0,0,0];if(keys.KeyW||keys.ArrowUp)d=V.add(d,f);if(keys.KeyS||keys.ArrowDown)d=V.sub(d,f);if(keys.KeyD||keys.ArrowRight)d=V.add(d,right);if(keys.KeyA||keys.ArrowLeft)d=V.sub(d,right);if(!V.len(d))return;const step=V.mul(V.norm(d),dt*(keys.ShiftLeft?4:2.7));
+ const collides=(x,z)=>{if(x< -7.35||x>7.35||z< -5.65||z>7.7)return true;return [{a:-4.5,b:4.5,c:-3.03,d:1.78},{a:-7.42,b:-5.20,c:-4.5,d:.25},{a:4.85,b:7.45,c:-4.35,d:-.77},{a:-3.55,b:3.55,c:-6,d:-4.28}].some(b=>x>b.a&&x<b.b&&z>b.c&&z<b.d);};
+ let x=camera.pos[0]+step[0],z=camera.pos[2];if(!collides(x,z))camera.pos[0]=x;z+=step[2];if(!collides(camera.pos[0],z))camera.pos[2]=z;
+}
+function drawTool(){const {f,right,up}=cameraAxes(),origin=V.add(camera.pos,V.add(V.mul(f,.65),V.add(V.mul(right,.33),V.mul(up,-.29)))),pos=p=>V.add(origin,V.add(V.mul(right,p[0]),V.add(V.mul(up,p[1]),V.mul(f,p[2])))),m=(k,p,s,c,e=0)=>R.mesh(k,basis(pos(p),right,up,V.mul(f,-1),s),c,e,.45);
+ m('round',[0,-.035,-.02],[.095,.10,.22],'#b0beb4');m('round',[0,-.115,-.065],[.076,.14,.073],'#344852');m('round',[0,.027,.009],[.075,.014,.11],'#203c43');m('box',[0,.038,.015],[.055,.007,.07],wireStart?'#fbd482':PALETTE.mint,1.3);m('round',[0,-.017,.091],[.11,.065,.035],'#ce9755');for(const x of [-.063,.063]){m('round',[x,-.02,.13],[.025,.025,.12],'#91b0ba');m('sphere',[x,-.02,.19],[.032,.032,.032],held||wireStart?PALETTE.mint:'#497381',held||wireStart?1.4:0);}
+ // A compact gloved palm and curled fingers around the magnetic tool.
+ m('round',[.045,-.145,-.069],[.095,.11,.12],'#495b66');for(let i=0;i<3;i++)m('round',[-.013,-.10-i*.031,-.116],[.082,.024,.038],'#6c7d83');
+}
+function drawGhost(){
+ if(placement&&held){const p=placement.pos,c=placement.valid?PALETTE.mint:'#ff614c';
+  for(const x of [-.5,.5])for(const z of [-.42,.42]){
+   R.segment(V.add(p,[x,.032,z]),V.add(p,[x*.54,.032,z]),.024,c,1.7);
+   R.segment(V.add(p,[x,.032,z]),V.add(p,[x,.032,z*.52]),.024,c,1.7);
+  }
+  const pulse=.5+.5*Math.sin(realTime*11);R.mesh('ring',transform(V.add(p,[0,.032,0]),[.55+pulse*.06,.013,.55+pulse*.06]),c,1.0+pulse,.45);
+ }
+ if(wireStart){
+  const a=pinPos(wireStart),valid=hover?.kind==='pin'&&hover.key!==wireStart;
+  const b=valid?pinPos(hover.key):V.add(camera.pos,V.mul(pointerRay(),2.0)),points=softCable(a,b,2);
+  for(let i=1;i<points.length;i++){
+   const col=valid?'#92ffce':'#eac277';
+   if(i%3!==0)R.segment(points[i-1],points[i],.03,col,1.9,true);
+  }
+  R.sphere(b,[.092,.092,.092],valid?PALETTE.mint:'#f5c870',2.4,.23);
+  if(valid)R.mesh('ring',transform(V.add(b,[0,.05,0]),[.26+.03*Math.sin(realTime*10),.018,.26+.03*Math.sin(realTime*10)]),PALETTE.mint,2);
+ }
+}
+function drawHud(){const W=window.innerWidth,H=window.innerHeight,small=W<1000;ui.begin(W,H);
+ ui.rect(18,17,small?235:287,67,[.028,.047,.061,.92],7);ui.text('CURRENT',34,30,25,'#e1e9dc');ui.text('WORKSHOP / 02  /  SELF-HEALING CIRCUITS',35,67,8,PALETTE.mint);ui.text('BUILD. BREAK. UNDERSTAND.',small?W-22:W-26,25,small?9:11,'#afc5ca','right');
+ const by=96,bw=small?96:111;[['AFTERGLOW','7'],['MELTDOWN','8'],['EMPTY','9']].forEach(([n,k],i)=>ui.button(n,k+' '+n,18+i*(bw+6),by,bw,29,()=>loadPreset(n),presetName===n,n==='MELTDOWN'?'#ffb56b':PALETTE.mint));
+ ui.button('party','RGB',18+3*(bw+6),by,small?46:55,29,()=>loadPreset('RGB PARTY'),presetName==='RGB PARTY','#92bbff');
+ const rightX=W-244;ui.rect(rightX,52,225,92,[.028,.045,.056,.89],6);ui.text(paused?'SIMULATION PAUSED':world.error?'SOLVER STOPPED':'SIMULATION LIVE',rightX+15,65,10,paused?PALETTE.amber:world.error?'#ff624a':PALETTE.mint);ui.circle(rightX+205,70,3,paused?'#dfab6a':PALETTE.mint);ui.text(world.parts.length+' MODULES / '+world.wires.length+' LEADS',rightX+15,88,10,'#c7d9da');ui.text('SIM '+world.time.toFixed(1)+' S / '+(actualRate<.85?actualRate.toFixed(2)+'X SLOW':'240 HZ'),rightX+15,110,9,'#7999a8');ui.text('TOY PHYSICS / AUTO-HEAL / '+(muted?'MUTED':'AUDIO')+'/'+(R.bloomEnabled?'GLOW':'FAST'),rightX+15,130,6.1,'#758c99');
+ const barW=Math.min(W-36,840),slotW=barW/6,barX=(W-barW)/2,barY=H-86;
+ for(let i=0;i<6;i++){const x=barX+i*slotW,picked=held?.part.type===kinds[i];ui.rect(x+2,barY,slotW-4,50,picked?[.12,.22,.24,.95]:[.025,.043,.059,.94],6);ui.text(String(i+1),x+14,barY+10,9,partColors[kinds[i]]);ui.text(names[kinds[i]],x+slotW/2,barY+30,small?8:9,'#d5e2de','center');drawIcon(kinds[i],x+slotW/2,barY+14,partColors[kinds[i]]);ui.hits.push({id:'spawn-'+kinds[i],x:x+2,y:barY,w:slotW-4,h:50,fn:()=>Actions.spawn(kinds[i])});if(picked)ui.line(x+7,barY+49,x+slotW-7,barY+49,PALETTE.mint,2);}
+ ui.text(locked?'WASD MOVE    CLICK GRAB / CONNECT    F USE    SPACE POWER    H HELP    ESC CURSOR':'RIGHT CLICK: LOOK    WASD: MOVE    CLICK: GRAB / CONNECT    F: USE    H: HELP',W/2,H-23,small?8:10,'#c0d2d5','center');
+ if(locked){ui.line(W/2-6,H/2,W/2-2,H/2,'#dfebdf',1.5);ui.line(W/2+2,H/2,W/2+6,H/2,'#dfebdf',1.5);ui.line(W/2,H/2-6,W/2,H/2-2,'#dfebdf',1.5);ui.line(W/2,H/2+2,W/2,H/2+6,'#dfebdf',1.5);}
+ let prompt='',detail='';
+ if(held){prompt=placement?.valid?'CLICK / MAGNETIC SNAP':placement?'CELL OCCUPIED':'AIM AT AN EMPTY GRID CELL';detail='R ROTATE / Q CANCEL / CABLES STAY CONNECTED';}
+ else if(wireStart){prompt='PATCH LEAD / '+(hover?.kind==='pin'?'CLICK TO CONNECT':'PICK A SECOND SOCKET');detail=pinName(wireStart)+' / Q CANCEL';}
+ else if(hover?.kind==='pin'){prompt=pinName(hover.key);detail='CLICK TO START A LEAD / X REMOVE CONNECTED LEADS';}
+ else if(hover?.kind==='part'){const p=hover.part;prompt=names[p.type]+' / '+valueText(p);detail=p.failed?'AUTO-HEALS WHEN SAFE / [ ] ALTER OHMS' :p.type==='switch'||p.type==='battery'?'F TOGGLE / CLICK GRAB':p.type==='led'?'F CHANGE COLOR / CLICK GRAB':'SCROLL OR [ ] ADJUST / CLICK GRAB';}
+ else if(hover?.kind==='wire'){prompt='PATCH LEAD / '+(Math.abs(hover.wire.i)*1000).toFixed(2)+' mA';detail='X UNPLUG / NO FIDDLY PHYSICS';}
+ else if(hover?.kind==='stock'){prompt='INFINITE '+names[hover.type]+' STOCK';detail='CLICK TO TAKE A MODULE';}
+ else if(!interacted){prompt='YOUR FIRST CIRCUIT IS ALREADY ALIVE';detail='LET IT CHARGE. PRESS SPACE TO CUT THE POWER.';}
+ if(prompt){const y=H-151,ww=Math.min(W-36,Math.max(360,prompt.length*9+40));ui.rect((W-ww)/2,y-10,ww,49,[.025,.046,.057,.93],6);ui.text(prompt,W/2,y+2,12,held&&placement&&!placement.valid?'#ff8964':PALETTE.mint,'center');ui.text(detail,W/2,y+24,8.5,'#c3d4d8','center');}
+ if(notice&&noticeEnd>realTime){const ww=Math.min(W-40,notice.length*8+34);ui.rect((W-ww)/2,157,ww,35,[.028,.060,.069,.97],6);ui.text(notice,W/2,170,small?8:10,PALETTE.mint,'center');}
+ if(overlay&&!help){drawScope(18,H-303,248,124);if(hover?.part){const p=hover.part,x=W-245,y=H-315;ui.rect(x,y,226,133,[.025,.046,.062,.95],6);ui.text(p.id+' / '+names[p.type],x+14,y+14,11,partColors[p.type]);ui.text(p.v.toFixed(3)+' V',x+14,y+39,18,'#e8eddf');ui.text((Math.abs(p.i)*1000).toFixed(2)+' mA',x+14,y+68,12,PALETTE.mint);if(p.type==='capacitor')ui.text((.5*p.value*p.capV*p.capV*1000).toFixed(1)+' mJ STORED',x+14,y+91,9,'#9dbcff');else if(p.type==='led'){ui.text(p.failed?(!Number.isFinite(p.safeCurrent)?'TESTING SAFETY...':p.safeCurrent<.026?'SAFE / RECOVERING':'IF RESTORED: '+(p.safeCurrent*1000).toFixed(0)+' mA'):p.i<.00001?'NO FORWARD CURRENT':p.i>.03?'OVER 30 mA MODEL LIMIT':'30 mA MODEL STRESS LIMIT',x+14,y+93,8,p.failed?'#ff9c6a':'#d1cfbf');ui.rect(x+14,y+116,196,4,'#314753');ui.rect(x+14,y+116,196*p.stress,4,p.stress>.5?'#ff6f48':'#d9bc70');}else ui.text((Math.abs(p.v*p.i)*1000).toFixed(1)+' mW',x+14,y+95,10,'#a8bdc6');}}
+ if(!locked&&!help){ui.button('pause',paused?'RESUME':'PAUSE',W-245,151,71,27,()=>paused=!paused,paused);ui.button('rewind','REWIND',W-166,151,71,27,rewind);ui.button('help','?',W-87,151,68,27,()=>help=!help);}
+ if(world.error){ui.rect(W/2-230,H/2-40,460,80,[.20,.03,.02,.97],6);ui.text('SOLVER STOPPED / RESULTS ARE STALE',W/2,H/2-20,12,'#ffb899','center');ui.text(world.error,W/2,H/2+8,11,'#ffb899','center');}
+ if(help)drawHelp(W,H);ui.submit();
+}
+function drawIcon(type,x,y,c){if(type==='battery'){ui.line(x-12,y,x+12,y,c,2);ui.line(x-4,y-7,x-4,y+7,c,2);ui.line(x+4,y-4,x+4,y+4,c,2);}else if(type==='capacitor'){ui.line(x-13,y,x-3,y,c,2);ui.line(x+3,y,x+13,y,c,2);for(const k of [-3,3])ui.line(x+k,y-7,x+k,y+7,c,2);}else if(type==='resistor'){ui.line(x-16,y,x-9,y,c,1.5);for(let i=0;i<5;i++)ui.line(x-9+i*4,y+(i%2?4:-4),x-5+i*4,y+(i%2?-4:4),c,1.5);ui.line(x+11,y,x+17,y,c,1.5);}else if(type==='led'){ui.circle(x,y,5,c);ui.line(x+8,y-4,x+13,y-9,c);ui.line(x+13,y-9,x+9,y-9,c);}else if(type==='switch'){ui.circle(x-10,y,2,c);ui.circle(x+10,y,2,c);ui.line(x-8,y,x+8,y-7,c,2);}else{ui.line(x-14,y,x+14,y,c,2);ui.circle(x-14,y,3,c);ui.circle(x+14,y,3,c);}}
+function drawScope(x,y,w,h){ui.rect(x,y,w,h,[.024,.044,.058,.91],6);ui.text('LIVE / LAST 8 S',x+12,y+12,9,'#adcad3');ui.text('C VOLTS',x+12,y+30,7,'#9abcff');ui.text('LED mA',x+106,y+30,7,'#ff8d65');const cap=world.parts.find(p=>p.type==='capacitor'),led=world.parts.find(p=>p.type==='led');ui.text((cap?.capV||0).toFixed(2)+' V',x+w-10,y+12,9,'#adcaff','right');const gx=x+12,gy=y+49,gw=w-24,gh=h-65;for(let i=0;i<4;i++)ui.line(gx,gy+i*gh/3,gx+gw,gy+i*gh/3,[.18,.26,.30,.7],.7);
+ const start=Math.max(0,world.time-8),vmax=Math.max(5,...world.parts.filter(p=>p.type==='battery').map(p=>p.value)),imax=.05;let last=null;for(const p of history){const px=gx+(p.t-start)/8*gw;if(px<gx||px>gx+gw)continue;const a=[px,gy+gh-clamp(p.v/vmax,0,1)*gh,gy+gh-clamp(p.i/imax,0,1)*gh];if(last){ui.line(last[0],last[1],a[0],a[1],'#94b6ff',1.5);ui.line(last[0],last[2],a[0],a[2],'#ff956b',1.4);}last=a;}ui.text('0 - '+vmax+' V / 0 - 50 mA',x+12,y+h-11,6,'#658b9e');}
+function drawHelp(W,H){ui.rect(0,0,W,H,[.01,.025,.035,.87]);const w=Math.min(770,W-35),x=(W-w)/2,y=Math.max(24,(H-566)/2);ui.rect(x,y,w,546,'#10242e',12);ui.text('WELCOME TO YOUR LITTLE LAB',W/2,y+29,20,'#dce8dc','center');ui.text('BIG COMPONENTS. REAL CONNECTIONS. TINY DISASTERS.',W/2,y+65,10,PALETTE.mint,'center');
+ const rows=[['WASD / SHIFT','WALK / WALK FASTER'],['RIGHT CLICK / ESC','LOCK LOOK / FREE THE CURSOR'],['1 - 6','TAKE A MODULE FROM INFINITE STOCK'],['CLICK BODY / R','GRAB, THEN CLICK GRID TO SNAP / ROTATE'],['CLICK SOCKETS','CLICK TWO SOCKETS TO PATCH A LEAD'],['F / SPACE','USE TARGET / TOGGLE THE FIRST SWITCH'],['SCROLL OR [ ]','CHANGE THE TARGET COMPONENT VALUE'],['X / Q','DELETE TARGET OR LEADS / CANCEL'],['Z / B','UNDO LAST EDIT / REWIND UP TO 5 SECONDS'],['TAB / P / M / K','OVERLAY / PAUSE / MUTE / BLOOM'],['CTRL+S / CTRL+O','EXPORT / IMPORT A WORKSHOP JSON FILE']];rows.forEach((r,i)=>{ui.text(r[0],x+30,y+103+i*26,9,'#ffd092');ui.text(r[1],x+255,y+103+i*26,8.5,'#c3d4d9');});ui.text('TRY AFTERGLOW: CHARGE, THEN CUT POWER. THE LED FADES.',W/2,y+414,9,PALETTE.mint,'center');ui.text('TRY MELTDOWN: CLOSE SWITCH; RAISE OHMS TO AUTO-HEAL.',W/2,y+436,9,'#ffb578','center');ui.text('SIMPLIFIED ELECTRICAL MODELS. NO PERMANENT DAMAGE.',W/2,y+461,8,'#83a0ad','center');ui.button('closehelp','BACK TO THE WORKBENCH',W/2-146,y+491,292,34,()=>help=false,true);}
+function attachInput(){canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('mousedown',e=>{mouse.x=e.clientX;mouse.y=e.clientY;if(e.button===2){if(!locked){try{const p=canvas.requestPointerLock();if(p?.catch)p.catch(()=>toast('POINTER LOCK BLOCKED / HOLD RIGHT MOUSE TO LOOK'));}catch{toast('HOLD RIGHT MOUSE TO LOOK');}}return;}if(e.button!==0)return;if(!locked){const hit=ui.hits.find(h=>mouse.x>=h.x&&mouse.x<h.x+h.w&&mouse.y>=h.y&&mouse.y<h.y+h.h);if(hit){hit.fn();return;}}updateHover();primary();});
+ document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;keys={};if(locked){help=false;interacted=true;}});document.addEventListener('pointerlockerror',()=>toast('POINTER LOCK UNAVAILABLE / RIGHT-DRAG TO LOOK'));
+ document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;if(locked||(e.buttons&2)){camera.yaw+=e.movementX*.0020;camera.pitch=clamp(camera.pitch-e.movementY*.002,-1.3,1.2);}});
+ canvas.addEventListener('wheel',e=>{e.preventDefault();adjustValue(e.deltaY<0?1:-1);},{passive:false});
+ document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey){if(e.code==='KeyS'){e.preventDefault();exportScene();}else if(e.code==='KeyO'){e.preventDefault();importScene();}return;}keys[e.code]=true;if(['Space','Tab','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();if(e.repeat)return;if(e.code==='Escape'){if(document.pointerLockElement)document.exitPointerLock();help=false;Actions.cancel();return;}if(e.code==='KeyH'){help=!help;return;}if(help&&e.code==='Escape'){help=false;return;}if(help)return;
+ if(/^Digit[1-6]$/.test(e.code)){Actions.spawn(kinds[+e.code.slice(-1)-1]);return;}switch(e.code){case'Space':interacted=true;togglePower();break;case'KeyE':primary();break;case'KeyG':if(hover?.part)Actions.grab(hover.part.id);break;case'KeyF':use();break;case'KeyQ':Actions.cancel();break;case'KeyR':if(held){held.part.rot+=Math.PI/2;R.shadowDirty=true;clickSound();}break;case'KeyX':case'Delete':if(held)Actions.remove(held.part.id);else if(hover?.kind==='wire')Actions.disconnect(hover.wire.id);else if(hover?.kind==='pin'){checkpoint();world.wires=world.wires.filter(w=>w.a!==hover.key&&w.b!==hover.key);world.compiled=false;clickSound();toast('SOCKET UNPLUGGED');}else if(hover?.part)Actions.remove(hover.part.id);break;case'KeyZ':undo();break;case'KeyB':rewind();break;case'BracketLeft':adjustValue(-1);break;case'BracketRight':adjustValue(1);break;case'KeyP':paused=!paused;break;case'Tab':overlay=!overlay;break;case'KeyM':muted=!muted;toast(muted?'SOUND MUTED':'SOUND ON');break;case'Digit7':loadPreset('AFTERGLOW');break;case'Digit8':loadPreset('MELTDOWN');break;case'Digit9':loadPreset('EMPTY');break;case'KeyK':R.bloomEnabled=!R.bloomEnabled;toast(R.bloomEnabled?'BLOOM ON':'BLOOM OFF');break;case'KeyL':R.shadows=!R.shadows;R.shadowDirty=true;toast(R.shadows?'SHADOWS ON':'SHADOWS OFF');break;}}
+ );document.addEventListener('keyup',e=>{keys[e.code]=false});window.addEventListener('blur',()=>{keys={};});document.addEventListener('visibilitychange',()=>{lastTime=0;simAccumulator=0;keys={};});document.getElementById('import').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{if(f.size>200000)throw Error('FILE TOO LARGE');const obj=JSON.parse(await f.text());const test=new CircuitWorld();test.load(obj.world||obj);checkpoint();world=test;presetName=obj.name||'IMPORTED';resetTransient();toast('WORKSHOP IMPORTED');}catch(err){toast('IMPORT FAILED / '+err.message,5);}e.target.value='';});
+ canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();boot.hidden=false;boot.textContent='Graphics context lost. Your scene is autosaved. Reload this file to reconnect.';});
+}
+function loop(now){const rawDt=lastTime?(now-lastTime)/1000:1/60,dt=Math.min(.20,rawDt);lastTime=now;realTime+=Math.min(rawDt,1);frame++;frameMS=lerp(frameMS,rawDt*1000,.04);actualRate=lerp(actualRate,Math.min(1,dt/Math.max(rawDt,.001)),.08);move(dt);updateHover();updatePlacement(dt);
+ if(!paused&&!document.hidden&&!world.error){simAccumulator+=dt;let steps=0;while(simAccumulator>=STEP&&steps<48){world.step(STEP);simAccumulator-=STEP;steps++;sampleTimer+=STEP;if(sampleTimer>=1/30){sampleTimer-=1/30;const cap=world.parts.find(p=>p.type==='capacitor'),led=world.parts.find(p=>p.type==='led');history.push({t:world.time,v:cap?.capV||0,i:led?.i||0});if(history.length>245)history.shift();if(!held){rewindFrames.push(world.save());if(rewindFrames.length>150)rewindFrames.shift();}}}if(simAccumulator>.5){paused=true;toast('SIMULATION FELL BEHIND / PAUSED WITHOUT SKIPPING ELECTRICAL TIME',6);}}
+ else simAccumulator=0;
+ for(const e of world.events.splice(0)){if(e.type==='failure')failureFX(e);else if(e.type==='recovery')recoveryFX(e);}
+ if(world.parts.some(p=>p.type==='led'&&p.i>.001))achievements.light=true;
+ if(world.parts.some(p=>p.type==='switch'&&!p.on)&&world.parts.some(p=>p.type==='led'&&p.i>.0005)&&world.parts.some(p=>p.type==='capacitor'&&p.capV>1.9))achievements.hold=true;
+ const dpr=Math.min(devicePixelRatio||1,1.5)*(R.softwareRenderer?.66:1),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+ vp=mm(perspective(Math.PI/3,canvas.width/canvas.height,.06,80),lookAt(camera.pos,V.add(camera.pos,direction())));R.begin();sprites.begin();for(const p of world.parts)drawPart(p,hover?.part===p&&hover.kind==='part');drawCables();drawGhost();drawEffects(dt);drawTool();updateAudioHeat();const lamps=[];for(const p of world.parts)if(p.type==='led'&&(!p.failed||p.stress>.2))lamps.push({pos:localPoint([0,.70,0],p.pos,p.rot),color:p.stress>.25?'#ff702b':ledColors[p.color||0],power:clamp(p.i/.005,0,4)+p.stress*3});R.draw(vp,camera.pos,lamps,realTime);const axes=cameraAxes();sprites.draw(vp,axes.right,axes.up);R.present();drawHud();if(realTime-autosaveTimer>3){autosaveTimer=realTime;saveLocal();}if(!window.__CURRENT_CAPTURE)requestAnimationFrame(loop);
+}
+function bootApp(){try{R=new Renderer3D(canvas);ui=new UI(R);sprites=new VolumeSprites(R);staticScene();loadPreset('AFTERGLOW',false);try{if(!new URLSearchParams(location.search).has('fresh')){const s=JSON.parse((localStorage.getItem('current-workshop-v2')||localStorage.getItem('current-workshop-v1'))||'null');if(s){world.load(s.world);presetName=s.name||'SAVED';toast('BENCH RESTORED / 7 LOADS THE STARTER CIRCUIT',5);}}}catch{}attachInput();boot.hidden=true;booted=true;window.CURRENT={version:'2.0.0',renderStep(dt=1/30){loop((lastTime||0)+dt*1000);},actions:Actions,get world(){return world;},get camera(){return camera;},get state(){return {frame,help,locked,hover:hover?.kind,held:held?.part.id,wireStart,placement,paused,preset:presetName,achievements,renderer:{drawCalls:R.drawCalls,triangles:R.triangles,frameMS,bloom:R.bloomEnabled&&R.postReady},error:world.error};},preset:loadPreset,project:p=>project(p,vp,innerWidth,innerHeight),pinPos,lookAt(p){const d=V.norm(V.sub(p,camera.pos));camera.yaw=Math.atan2(d[0],-d[2]);camera.pitch=Math.asin(d[1]);},setCamera(pos,target){camera.pos=[...pos];this.lookAt(target);},save:()=>world.save(),getUI:()=>ui.hits.map(h=>({id:h.id,x:h.x,y:h.y,w:h.w,h:h.h})),setPaused(v){paused=v;},step(seconds){for(let i=0;i<Math.round(seconds/STEP);i++)world.step(STEP);},getStats:()=>({residual:world.residual,iterations:world.iterations,glError:R.gl.getError(),drawCalls:R.drawCalls,triangles:R.triangles,bloom:R.bloomEnabled&&R.postReady,renderer:R.rendererName})};requestAnimationFrame(loop);}catch(e){boot.hidden=false;boot.textContent='CURRENT could not start.\n'+e.message+'\nA desktop browser with WebGL2 is required.';console.error(e);}}
+bootApp();
+
+</script></body></html>
