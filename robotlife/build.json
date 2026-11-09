@@ -1,9 +1,9 @@
 {
   "format": "robotlife-public-runtime/v1",
   "title": "Robot Life: sauce bottles, glass cups, water and steadier ragdolls",
-  "sourceCommit": "4a10c1dbfbcb8a77e96a6bee96f8c9d67d7e3281",
-  "sha256": "b38494f129bf7a67564a11e651e015699d7b064da79b8f3b5ff303bbcd7e851a",
-  "bytes": 4668040,
+  "sourceCommit": "90e9e13129d3698629e86d4253a7170cffca1262",
+  "sha256": "e8758c4aeb5c27f294f3e75bd5c5f6cf52c76f3369795e05532fe91e69b03992",
+  "bytes": 3094334,
   "target": "https://tront.xyz/robotlife/",
   "scope": "Grabbable ketchup and mustard that squirt, transparent glass cups with 8 smoothie colors, working water that returns thrown objects to shore, ragdolls no longer teleport home, depth-flicker fixes. Compiled runtime and license notices only.",
   "verification": {
