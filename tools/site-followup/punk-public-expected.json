@@ -1,0 +1,41 @@
+{
+  "candidate": "ad0302421536ee33dca8999ebdb8220af4f98a99",
+  "merge": "33c62cf44ef0340d2c11e99d190062fd3ec2f8aa",
+  "files": {
+    "/": {
+      "sha256": "2f82d197b3c5e1d151c4d2e28f22a4a96f276d7d400ec5913b4d729491ebc526",
+      "bytes": 28911,
+      "kind": "html"
+    },
+    "/assets/css/tront-theme-editor.css": {
+      "sha256": "6f904f09386aef31ffab190200a6eb78a00aab57c681c3092cecc377c826c6f5",
+      "bytes": 20326,
+      "kind": "css"
+    },
+    "/assets/css/tront-navbar.css": {
+      "sha256": "4f4b34bea4ac0c74959c9873bdf8f25b65ddb3b0ef148003d46f3e9e6bca8550",
+      "bytes": 3413,
+      "kind": "css"
+    },
+    "/assets/css/project-theme.css": {
+      "sha256": "f48269ae2ae0630993e4d0a531c2b6ed43de48df8b372ffaa0e527de29e71737",
+      "bytes": 4797,
+      "kind": "css"
+    },
+    "/assets/js/tront-system.js": {
+      "sha256": "bc226ce78fbd6267b47038554c31dae34c7652d9d7fb5901544867f51485ae6d",
+      "bytes": 35057,
+      "kind": "js"
+    },
+    "/assets/js/tront-theme-editor.js": {
+      "sha256": "65076382a13f156a4bce91f8f0361b95db84fc27721c965093a24d957850108b",
+      "bytes": 29358,
+      "kind": "js"
+    },
+    "/assets/js/project-theme.js": {
+      "sha256": "84b6a920aadacf164d21af9a90651020d555fe8b4197bc823d50ef5f22c05dbf",
+      "bytes": 1084,
+      "kind": "js"
+    }
+  }
+}

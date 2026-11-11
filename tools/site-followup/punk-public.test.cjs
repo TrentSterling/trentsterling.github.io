@@ -1,0 +1,7 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const P=require('./punk-public.cjs');
+test('the public audit has seven exact HTTPS targets and no discovery',()=>{assert.equal(Object.keys(P.EXPECTED.files).length,7);for(const route of Object.keys(P.EXPECTED.files))assert.equal(P.allowed(P.ORIGIN+route),P.ORIGIN+route);for(const url of ['http://punk.tront.xyz/','https://tront.xyz/','https://punk.tront.xyz/?extra=1','https://punk.tront.xyz/index.htm','https://punk.tront.xyz/assets/js/other.js'])assert.throws(()=>P.allowed(url));});
+test('wrong status, intermediary/error and altered source bytes fail',()=>{for(const status of [200,301,404])assert.throws(()=>P.checkBody(P.ORIGIN+'/',status,'text/html',Buffer.from('<html>Site Unavailable</html>')));assert.throws(()=>P.checkBody(P.ORIGIN+'/',200,'text/html',Buffer.alloc(P.MAX_BYTES+1)));});
+test('the source pin and exact body declarations are complete',()=>{assert.match(P.EXPECTED.candidate,/^[0-9a-f]{40}$/);for(const expected of Object.values(P.EXPECTED.files)){assert.match(expected.sha256,/^[0-9a-f]{64}$/);assert.ok(expected.bytes>100&&expected.bytes<P.MAX_BYTES);assert.ok(['html','css','js'].includes(expected.kind));}});
+test('only GET with forbidden redirects and a bounded body is issued',async()=>{let options;await assert.rejects(P.publicGet(P.ORIGIN+'/',async(url,o)=>{options=o;return {status:301};}));assert.equal(options.method,'GET');assert.equal(options.redirect,'error');assert.ok(options.signal instanceof AbortSignal);});
