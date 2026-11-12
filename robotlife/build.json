@@ -1,14 +1,15 @@
 {
   "format": "robotlife-public-runtime/v1",
-  "title": "Robot Life: habitat dome and toon space scenery",
-  "sourceCommit": "b090d6955787a74010550fe3524b966922955341",
-  "sha256": "539dafb8119a8560f8414912f2a7083a5e2002324bfef408028bd8bfb7bd53e3",
-  "bytes": 3101035,
+  "title": "Robot Life: selected character vocoders and habitat dome",
+  "sourceCommit": "2114c5d7882d20b8bbab6f04e840cdcc9b02b2eb",
+  "sha256": "3a6583367637cdd820f36b6f79aa5389a241a748d70f9347955656770d89ddf4",
+  "bytes": 3355502,
   "target": "https://tront.xyz/robotlife/",
-  "scope": "Art-only update: habitat dome, cannon pad, sky, toon space palette and conservative robot culling. Existing voices preserved.",
+  "scope": "Latest habitat/cannon art preserved. Pip vocoder +80Hz, Boogie electronic vocoder, Boss GLaDOS stepped. 69 selected-role clips replaced; 155 other clips unchanged. Offline DSP, original raw takes preserved.",
   "verification": {
-    "browser": "PC1 Chrome NVIDIA RTX 5070 Ti; desktop and 390x844 screenshots; no JS errors",
-    "rules": "72/73 pass; known object-grip right wrist assertion remains",
-    "performance": "Cannon draws 1136 to 933; triangles 2304724 to 1376788. Space draws 920 to 667; triangles 2095038 to 977828. Fixed camera high quality, not mobile FPS."
+    "voiceTests": "6/6 pass",
+    "browser": "PC1 Chrome: three selected character buttons and actual in-game speaker routing verified",
+    "referenceMatch": "All three reference sentence WAVs exactly match selected audition WAVs before Opus encode",
+    "rules": "Art base 72/73, known object-grip assertion remains"
   }
 }
