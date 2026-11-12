@@ -12,7 +12,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RuntimeCSG - Real-time CSG for Unity</title>
-    <meta name="description" content="Non-destructive CSG brush modeling for Unity. Boolean operations on brush primitives in real-time, in-editor and at runtime.">
+    <meta name="description" content="Non-destructive CSG brush modeling for Unity. Boolean operations on brush primitives in real-time, in-editor and at runtime. Private beta: early access on Discord.">
     <link rel="canonical" href="https://tront.xyz/runtimecsg/" />
     <meta property="og:type" content="website">
     <meta property="og:title" content="RuntimeCSG">
@@ -167,6 +167,26 @@
             color: var(--text-dim);
             font-size: 14px;
         }
+
+        /* ===== FUNNEL / GALLERY / PERF ===== */
+        .beta-badge {
+            display: inline-block; margin-bottom: 14px; padding: 4px 12px; border-radius: 999px;
+            border: 1px solid #7db4ff; color: #7db4ff; font-size: 13px; letter-spacing: .04em;
+        }
+        .btn-ghost { background: transparent; border: 1px solid #2a2a2a; color: inherit; }
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px; max-width: 1100px; margin: 24px auto 0;
+        }
+        .gallery-grid figure { margin: 0; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 12px; padding: 10px; }
+        .gallery-grid img { width: 100%; border-radius: 8px; cursor: pointer; display: block; }
+        .gallery-grid figcaption { margin-top: 8px; color: var(--text-dim, #888); font-size: 14px; text-align: center; }
+        .perf-table { width: 100%; max-width: 760px; margin: 24px auto 0; border-collapse: collapse; font-size: 15px; }
+        .perf-table th, .perf-table td { padding: 10px 14px; border-bottom: 1px solid #1a1a1a; text-align: left; }
+        .perf-table th { color: var(--text-dim, #888); font-weight: 500; }
+        .perf-note { max-width: 760px; margin: 12px auto 0; color: var(--text-dim, #888); font-size: 13px; text-align: center; }
+        .beta-steps { max-width: 760px; margin: 20px auto 0; padding-left: 22px; line-height: 1.7; }
+        .beta-cta { text-align: center; margin-top: 24px; }
 
         /* Lightbox */
         .lightbox {
@@ -498,10 +518,12 @@
     <!-- ===== HERO ===== -->
     <section class="hero">
         <img src="icon.png" alt="RuntimeCSG" class="hero-icon">
+        <div class="beta-badge">PRIVATE BETA</div>
         <h1>RuntimeCSG</h1>
         <p class="tagline">Non-destructive CSG brush modeling for Unity. Build geometry with boolean operations in real-time.</p>
         <div class="buttons">
-            <a href="#install" class="btn btn-primary">Get Access</a>
+            <a href="https://tront.xyz/discord/" class="btn btn-primary">Join the Discord for early access</a>
+            <a href="#gallery" class="btn btn-ghost">See what it makes</a>
         </div>
     </section>
 
@@ -570,6 +592,31 @@
                 <img src="screenshot-editor-mockup.png" alt="RuntimeCSG editor with wireframe overlays and toolbar" onclick="openLightbox(this)">
             </div>
         </div>
+    </section>
+
+    <!-- ===== GALLERY ===== -->
+    <section class="section" id="gallery">
+        <h2>Made with Boolean Brushes</h2>
+        <p class="sub">Every shape below is a handful of box, cylinder, wedge and sphere brushes. Carving a hole is just a subtractive brush.</p>
+        <div class="gallery-grid">
+            <figure><img src="shots/blockout.png" alt="Level blockout carved from one slab" onclick="openLightbox(this)"><figcaption>Level blockout: one slab, rooms and doorways subtracted</figcaption></figure>
+            <figure><img src="shots/machine-part.png" alt="Machine part with teeth and bores" onclick="openLightbox(this)"><figcaption>Machine part: cylinder, sphere, teeth and three bores</figcaption></figure>
+            <figure><img src="shots/archway.png" alt="Arched wall with battlements" onclick="openLightbox(this)"><figcaption>Arched wall: boxes and a cylinder per arch</figcaption></figure>
+        </div>
+    </section>
+
+    <!-- ===== PERFORMANCE ===== -->
+    <section class="section" id="performance">
+        <h2>Fast Enough to Edit Live</h2>
+        <p class="sub">Measured in Unity 6000.3 with headless benchmarks.</p>
+        <table class="perf-table">
+            <tr><th>Scene</th><th>Load</th><th>Edit one brush</th></tr>
+            <tr><td>240-brush room grid</td><td>28 ms</td><td>0.7 ms</td></tr>
+            <tr><td>1,560-brush level</td><td>255 ms</td><td>2 ms</td></tr>
+            <tr><td>60 cylinders and spheres</td><td>86 ms</td><td>1 ms</td></tr>
+            <tr><td>240 heavily overlapping boxes</td><td>125 ms</td><td>20 ms</td></tr>
+        </table>
+        <p class="perf-note">Edits recompute only the brushes and chunks they touch. The worst case is a dense pile where every box overlaps dozens of others.</p>
     </section>
 
     <!-- ===== FEATURES ===== -->
@@ -691,17 +738,24 @@ model.<span class="fn">RebuildAll</span>();
 
     <!-- ===== INSTALL ===== -->
     <section class="section" id="install">
-        <h2>Install</h2>
-        <div class="install-options">
+        <h2>Private Beta: Get Early Access</h2>
+        <p class="sub">RuntimeCSG's repository is private for now. It goes public when it's ready, and public builds are on the way. Until then, early access happens in the Discord.</p>
+        <ol class="beta-steps">
+            <li>Join the <a href="https://tront.xyz/discord/">Discord</a>.</li>
+            <li>Say you want RuntimeCSG early access and which Unity version you use.</li>
+            <li>You get the package to try, and a direct line for feedback and bug reports.</li>
+        </ol>
+        <div class="beta-cta"><a href="https://tront.xyz/discord/" class="btn btn-primary">Join the Discord</a></div>
+        <div class="install-options" style="margin-top:32px">
             <div class="install-card">
-                <h3>Unity Asset Store</h3>
+                <h3>Public release</h3>
                 <span class="coming-soon">Coming Soon</span>
-                <p>RuntimeCSG will be available on the Unity Asset Store. Stay tuned for the release.</p>
+                <p>Public repo and builds when it's ready. Beta members hear first.</p>
             </div>
             <div class="install-card">
-                <h3>Early Access</h3>
-                <span class="coming-soon">Request Access</span>
-                <p>Interested in trying RuntimeCSG now? Reach out on <a href="https://tront.xyz/discord/">Discord</a> for early access.</p>
+                <h3>Unity Asset Store</h3>
+                <span class="coming-soon">Planned</span>
+                <p>An Asset Store listing is planned after the public release.</p>
             </div>
         </div>
     </section>
