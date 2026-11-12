@@ -1,14 +1,13 @@
 {
   "format": "robotlife-public-runtime/v1",
-  "title": "Robot Life: Dalek-inspired robot voices",
-  "sourceCommit": "4ee286280fc6ae5065d64e3b6954d366b381b806",
-  "sha256": "d5e60ceb83876bbaf396670d0e57f73a15448b06ca1b42bf645c3390edba35b3",
-  "bytes": 3099793,
+  "title": "Robot Life: bigger world, swimming, day and night, districts, cannons",
+  "sourceCommit": "fc4b34c33de3d821b14653c5e8c384c612641330",
+  "sha256": "beb98c930811f0a8356411771c90ec81f7125dd217ae6015da54e7d398eed6ef",
+  "bytes": 3098600,
   "target": "https://tront.xyz/robotlife/",
-  "scope": "Existing latest gameplay preserved; non-destructive 32Hz ring modulation, speaker EQ, saturation and compression on Chatterbox performances. Runtime only.",
+  "scope": "Wave 2: loose physics objects, swimmable water, day and night sky, outer district (restrooms, doctor, donuts, police, courthouse, mall, zoo, pier), Ring Planet and Snow Peak by cannon, family row, trimmed audio. Compiled runtime and license notices only.",
   "verification": {
-    "voiceTests": "6/6 pass",
-    "browser": "PC1 Chrome loaded; 3 voice A/B offline renders finite, no clipping; no JS errors",
-    "rules": "Existing object-grip wrist-position assertion fails; Windows path issue fixed"
+    "rules": "67 of 68 passed (known Windows-path failure in object-grips test)",
+    "browser": "Scripted Chrome runs of sauce squirt, glass cup render, water return"
   }
 }
