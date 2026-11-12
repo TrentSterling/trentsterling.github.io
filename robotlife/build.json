@@ -1,13 +1,14 @@
 {
   "format": "robotlife-public-runtime/v1",
-  "title": "Robot Life: bigger world, swimming, day and night, districts, cannons",
-  "sourceCommit": "fc4b34c33de3d821b14653c5e8c384c612641330",
-  "sha256": "beb98c930811f0a8356411771c90ec81f7125dd217ae6015da54e7d398eed6ef",
-  "bytes": 3098600,
+  "title": "Robot Life: habitat dome and toon space scenery",
+  "sourceCommit": "b090d6955787a74010550fe3524b966922955341",
+  "sha256": "539dafb8119a8560f8414912f2a7083a5e2002324bfef408028bd8bfb7bd53e3",
+  "bytes": 3101035,
   "target": "https://tront.xyz/robotlife/",
-  "scope": "Wave 2: loose physics objects, swimmable water, day and night sky, outer district (restrooms, doctor, donuts, police, courthouse, mall, zoo, pier), Ring Planet and Snow Peak by cannon, family row, trimmed audio. Compiled runtime and license notices only.",
+  "scope": "Art-only update: habitat dome, cannon pad, sky, toon space palette and conservative robot culling. Existing voices preserved.",
   "verification": {
-    "rules": "67 of 68 passed (known Windows-path failure in object-grips test)",
-    "browser": "Scripted Chrome runs of sauce squirt, glass cup render, water return"
+    "browser": "PC1 Chrome NVIDIA RTX 5070 Ti; desktop and 390x844 screenshots; no JS errors",
+    "rules": "72/73 pass; known object-grip right wrist assertion remains",
+    "performance": "Cannon draws 1136 to 933; triangles 2304724 to 1376788. Space draws 920 to 667; triangles 2095038 to 977828. Fixed camera high quality, not mobile FPS."
   }
 }
