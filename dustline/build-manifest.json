@@ -1,12 +1,12 @@
 {
   "format_version": 2,
   "game_version": "0.7.2",
-  "source_sha": "9a188084f37c4dbc671ec8713140ac10131b7497",
-  "workflow_sha": "9a188084f37c4dbc671ec8713140ac10131b7497",
-  "artifact_branch": "build/dustline-9a188084f37c-41606669917-1",
-  "build_run_id": "41606669917",
+  "source_sha": "daab3fce18d90064d30a26123a213297e3d4be05",
+  "workflow_sha": "daab3fce18d90064d30a26123a213297e3d4be05",
+  "artifact_branch": "build/dustline-daab3fce18d9-41739459357-1",
+  "build_run_id": "41739459357",
   "build_run_attempt": "1",
-  "built_at_utc": "2026-11-03T09:22:45.075023+00:00",
+  "built_at_utc": "2026-11-03T23:39:24.414676+00:00",
   "toolchain": {
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
@@ -80,9 +80,9 @@
     },
     {
       "path": "pkg/dustline_bg.wasm",
-      "bytes": 4442071,
-      "sha256": "4c5b6fd2af5e5c083d83035e995276bd5b0483cbad9a1e3aedc94637cb4c1cf0",
-      "git_blob_sha1": "c017f75555cbaa875108229061e60df57a67eeff"
+      "bytes": 4447088,
+      "sha256": "22873d755ab0fcbfbd7559694dcf845a4d191c32e1da954eac39f8fe2721c161",
+      "git_blob_sha1": "6c8da0017699717ed7ee41c9517f1bab010e7dbe"
     },
     {
       "path": "vendor/network.js",
@@ -105,9 +105,9 @@
   ],
   "deployment": {
     "target": "TrentSterling/trentsterling.github.io master:dustline/",
-    "artifact_commit": "0695fd8a5a1ef6600cc23267cbe699117e14a7a3",
-    "source_merge_commit": "0efd0fb85aedb0f066be2735e7d00c62c5d87104",
-    "source_manifest_git_blob_sha1": "5f0760af3586b6402d947551efdc9db28f47e778",
+    "artifact_commit": "a15c21aaa62b00780af901740a5f3dcd319fa35e",
+    "source_merge_commit": "daab3fce18d90064d30a26123a213297e3d4be05",
+    "source_manifest_git_blob_sha1": "7f47546a7518e9a3cc9eb91244b27cfe6b947945",
     "note": "Asset hashes describe exact tested artifact bytes; QA diagnostics are not deployed."
   }
 }
