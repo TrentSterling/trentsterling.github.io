@@ -6,7 +6,7 @@
   // Desktop downloads, devlogs, store pages, and unlisted projects are excluded.
   const browserPaths = new Set([
     'craftmine2', 'megabutt', 'dustline', 'jetgame', 'lastrun', 'scrapyard',
-    'vectorrush', 'hearthwild', 'machinelearning', 'tinyzombies', 'crumplecar',
+    'vectorrush', 'hearthwild', 'machinelearning', 'games/tiny-zombies', 'crumplecar',
     'gemstogether', 'voxelheroes', 'smear', 'deadends', 'buttloads2', 'biomass',
     'tunnelrat', 'campfire', 'slopeloop', 'ringriot', 'ltc', 'froxel', 'aqua-empire',
     'fellswoop', 'inkride', 'tinytreads', 'senddudes', 'breakmass', 'buddy',

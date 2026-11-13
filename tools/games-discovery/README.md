@@ -16,6 +16,11 @@ Never infer browser availability from a hostname, a preview, or the `Game` class
   `recorded-previews.json` document the browser implementations. Local published
   pages additionally contain the runtimes or play/demo links. Splitter4GPT is
   explicitly described as a web utility in the existing card.
+- Tiny Zombies uses the current `/games/tiny-zombies/` storefront, whose Play
+  links launch the existing `/tinyzombies/` browser game.
+- Jenn's Farm keeps its `/jennsfarm/` landing and routes both Play buttons to the
+  already-published `/farm/` successor. The historical `/jennsfarm/play/` build
+  remains available. The successor reads the legacy save without overwriting it.
 - Browser landings that lead to a web `play/` or `demo/` page count. Native app
   landing pages, extensions, Unity packages, blog posts, Steam pages, and unverified
   itch builds do not. Browser availability does not mean mobile support: the UI
