@@ -16,3 +16,15 @@ test('duplicate old, new and mixed cards are rejected',()=>{for(const e of entri
 test('current assertion rejects missing cards and historical media',()=>{for(const e of entries){assert.throws(()=>refresh.assertCurrent(html.replace(e.after,'')),/exact current/);assert.throws(()=>refresh.assertCurrent(html.replace(e.after,e.before)),/exact current/);}});
 test('reviewed bytes reject corruption, truncation and unknown assets',()=>{for(const [name]of Object.entries(refresh.files)){const bytes=fs.readFileSync(path.join(root,name)),changed=Buffer.from(bytes);changed[10]^=1;refresh.assertReviewedBytes(name,bytes);assert.throws(()=>refresh.assertReviewedBytes(name,changed),/exact reviewed content/);assert.throws(()=>refresh.assertReviewedBytes(name,bytes.subarray(1)),/reviewed byte count/);assert.throws(()=>refresh.assertReviewedBytes(name+'.other',bytes),/only exact reviewed/);}});
 test('all four new videos and posters fully decode and match exact hashes and format specs',()=>{refresh.assertMedia(root);});
+
+test('Tiny storefront preserves the exact previously released card and rejects other route changes', () => {
+  const entry = entries.find(entry => entry.slug === 'tinyzombies');
+  assert.equal(entry.href, '/games/tiny-zombies/');
+  assert.equal(entry.after, entry.previousAfter.replace('href="https://tront.xyz/tinyzombies/"', 'href="/games/tiny-zombies/"'));
+  assert.equal(refresh.normalizeForPreservation(entry.previousAfter), entry.before);
+  for (const card of [entry.previousAfter, entry.after]) {
+    assert.throws(() => refresh.normalizeForPreservation(card.replace('tiny squad', 'changed squad')), /exact reviewed/);
+    assert.throws(() => refresh.normalizeForPreservation(card.replace(/href="[^"]+"/, 'href="/unreviewed/"')), /exact reviewed/);
+  }
+  assert.throws(() => refresh.normalizeForPreservation(entry.previousAfter + entry.after), /at most one/);
+});
