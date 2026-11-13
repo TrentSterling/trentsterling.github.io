@@ -36,6 +36,12 @@ const expectedCards = baseline.cards.map(original => {
 expectedCards.splice(1, 0, ...released.cards.map(card => readCards(card.markup)[0]));
 expectedCards.splice(1 + released.cards.length, 0, ...recovered.cards.map(card => readCards(card.markup)[0]));
 expectedCards.splice(1, 0, craftmine2.expectedCard); // Demigod stays first; every historical card retains its relative position.
+// Tiny's already-published storefront changes only its destination. Keep the
+// recovered historical markup frozen for the 117-card comparison above.
+const tinyStorefront = require('../game-media/four-game-refresh-20261019.json').entries.find(entry => entry.slug === 'tinyzombies');
+const tinyExpected = expectedCards.find(card => card.href === 'https://tront.xyz/tinyzombies/');
+assert.deepEqual(tinyExpected, readCards(tinyStorefront.previousAfter)[0], 'Tiny storefront retains every recovered title, year, description, tag and class');
+tinyExpected.href = tinyStorefront.href;
 const currentMissingYearHrefs = expectedCards.filter(card => !card.yearSpans.length).map(card => card.href);
 function normalizeReleasedForPreservation(html) {
     html = require('../game-media/recorded-previews.cjs').normalizeForPreservation(html);

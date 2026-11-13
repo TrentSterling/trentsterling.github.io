@@ -11,9 +11,10 @@ assert.ok(baseline, 'actual PR base required');
 const output = process.env.THEME_SCREENSHOTS || path.join(root, '.local/theme-review');
 fs.mkdirSync(output, { recursive: true });
 const report = { status: 'running', cases: [], browser: process.env.GAMES_TEST_BROWSER || 'chromium' };
-const started = Date.now(), origin = 'https://tront.xyz', destination = 'https://tront.xyz/tinyzombies/';
-const selector = '.grid a[href="' + destination + '"]';
+const started = Date.now(), origin = 'https://tront.xyz';
 const reviewed = require('./four-game-refresh.cjs').release.entries.find(entry => entry.slug === 'tinyzombies');
+const destination = new URL(reviewed.href, origin).href;
+const selector = '#card-tiny-zombies-2026';
 const clipPath = '/' + reviewed.media[0].path;
 const clipUrl = clipPath + '?v=' + reviewed.media[0].sha256.slice(0,12);
 const posterUrl = '/' + reviewed.media[1].path + '?v=' + reviewed.media[1].sha256.slice(0,12);
@@ -138,7 +139,7 @@ const measure = card => {
       assert.equal(await t.card.locator('video').count(),0);
       if(kind==='failed-media')assert.ok(t.requested.includes(clipPath));else assert.equal(t.requested.length,0);
       assert.equal(await t.card.locator('img').evaluate(i=>getComputedStyle(i).opacity),'1');
-      assert.equal(await t.card.getAttribute('href'),destination);assert.deepEqual(t.errors,[]);
+      assert.equal(await t.card.evaluate(card=>card.href),destination);assert.deepEqual(t.errors,[]);
       await shot(t,kind);report.cases.push({kind,width:390,originalPoster:true,clipRequests:t.requested.filter(p=>p===clipPath).length});await t.context.close();console.log('PASS Tiny Zombies',kind);
     }
     report.status='passed';

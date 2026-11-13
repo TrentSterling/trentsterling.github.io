@@ -599,3 +599,14 @@ test('four concurrent master cards keep their exact released content and order',
         assert.throws(()=>galleryContent.normalizeReleasedForPreservation(html.replace(entry.markup,entry.markup.replace('(2026)','(2025)'))),/stays exact/);
     }
 });
+
+test('current Tiny card uses the released storefront without altering its recovered content', () => {
+    const entry = require('../game-media/four-game-refresh-20261019.json').entries.find(entry => entry.slug === 'tinyzombies');
+    const expected = galleryContent.expectedCards.find(card => card.href === '/games/tiny-zombies/');
+    assert.deepEqual(expected, galleryContent.readCards(entry.after)[0]);
+    for (const href of ['https://tront.xyz/tinyzombies/', '/unreviewed/']) {
+        const cards = plain(galleryContent.expectedCards);
+        cards.find(card => card.href === '/games/tiny-zombies/').href = href;
+        assert.throws(() => galleryContent.assertCards(cards), /preserved/);
+    }
+});

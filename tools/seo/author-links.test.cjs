@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { personId, products, articles, projectArticles, changes, normalize, jsonLd } = require('./author-links.cjs');
+const { normalize: normalizeCatalogRoutes } = require('../games-discovery/routes.cjs');
 const { normalize: normalizeLegacyNavbar } = require('../navigation/legacy-navbar.cjs');
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
@@ -19,7 +20,7 @@ for (const article of articles) test(article.file + ': contextual published devl
   const html = read(article.file), footer = html.match(/<footer class="page-footer">([\s\S]*?)<\/footer>/)[1];
   assert.equal(footer.split('<a href="' + article.target + '">' + article.label + '</a>').length, 2);
   assert.ok(footer.includes('Built by <a href="https://tront.xyz">Trent Sterling</a>.'));
-  assert.equal([...html.matchAll(/<a\b[^>]*href="play\/"/g)].length, 2);
+  assert.equal([...normalizeCatalogRoutes(html, article.file).matchAll(/<a\b[^>]*href="play\/"/g)].length, 2);
   assert.equal(jsonLd(html).find(value => value['@type'] === 'VideoGame').author['@id'], personId);
   assert.doesNotMatch(footer, /farmvr|HARDPOINT|WIPtutorial/);
 });
@@ -40,7 +41,7 @@ test('all reviewed files preserve every original byte outside their exact additi
   for (const change of changes) {
     const html = read(change.file);
     assert.equal(html.split(change.after).length, 2, change.file + ': one exact addition');
-    assert.equal(normalizeLegacyNavbar(normalize(html, change.file), change.file), normalizeLegacyNavbar(normalize(read(change.file, base), change.file), change.file));
+    assert.equal(normalizeCatalogRoutes(normalizeLegacyNavbar(normalize(html, change.file), change.file), change.file), normalizeCatalogRoutes(normalizeLegacyNavbar(normalize(read(change.file, base), change.file), change.file), change.file));
   }
 });
 test('new project article additions preserve all schema values and cannot hide changed credits', () => {

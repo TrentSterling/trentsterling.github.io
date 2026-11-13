@@ -136,7 +136,7 @@
   },
   "games/index.html": {
     "beforeSha256": "113e13b552ea5c5e2345d1c6faa1b7e1a007e36067d7fd3054d0287021008561",
-    "afterSha256": "7579e19f533af1aebd0946ee1fb64dc2291884e2f9189a3e68a22061e9fb759a",
+    "afterSha256": "5b04b110307bfa88402bead670f3b9d74374cea1375f66258fc6c6bb3d2780bb",
     "replacements": [
       {
         "before": "Production work, games, experiments, and tools by Trent Sterling (Tront), Network Programmer and Unity Generalist on Project Demigod. Building in Unity, C#, VR, multiplayer, and GPU systems since 2009. Most of the browser games here are one self-contained HTML file: nothing to install, nothing to download.",
@@ -287,6 +287,12 @@
         "before": "    <link rel=\"stylesheet\" href=\"/games/gallery-motion.css\">",
         "after": "    <link rel=\"stylesheet\" href=\"/games/gallery-motion.css\">\n    <link rel=\"stylesheet\" href=\"/assets/css/games-discovery.css\">\n    <script defer src=\"/assets/js/games-discovery.js\"></script>",
         "count": 1
+      },
+      {
+        "before": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tinyzombies-5070-20261019.mp4?v=62f636425f3e\"><img class=\"bg-image\" src=\"/games/media/tinyzombies-5070-20261019.webp?v=42c1a257bb91\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+        "after": "<a id=\"card-tiny-zombies-2026\" href=\"/games/tiny-zombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tinyzombies-5070-20261019.mp4?v=62f636425f3e\"><img class=\"bg-image\" src=\"/games/media/tinyzombies-5070-20261019.webp?v=42c1a257bb91\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+        "count": 1,
+        "reason": "Already-published Tiny Zombies storefront route at master 1e6622d419932997cffe750d7febc4919dbc54a2; exact card bytes and media preserved."
       }
     ],
     "previousVersions": [
@@ -305,6 +311,10 @@
       {
         "afterSha256": "ce9fe8c1fe18004a63191fc0587a6a1e8621d8cfe7b5c6f52d2d91d71c877de0",
         "replacementCount": 29
+      },
+      {
+        "afterSha256": "7579e19f533af1aebd0946ee1fb64dc2291884e2f9189a3e68a22061e9fb759a",
+        "replacementCount": 30
       }
     ]
   }

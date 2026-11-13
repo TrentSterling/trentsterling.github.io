@@ -61,9 +61,9 @@
     {
       "slug": "tinyzombies",
       "previewId": "preview-tiny-zombies-2026",
-      "href": "https://tront.xyz/tinyzombies/",
+      "href": "/games/tiny-zombies/",
       "before": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tiny-zombies-2026.mp4?v=92b08b1effb8\"><img class=\"bg-image\" src=\"/games/media/tiny-zombies-2026.png?v=e7ea5b211d4b\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
-      "after": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tinyzombies-5070-20261019.mp4?v=62f636425f3e\"><img class=\"bg-image\" src=\"/games/media/tinyzombies-5070-20261019.webp?v=42c1a257bb91\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
+      "after": "<a id=\"card-tiny-zombies-2026\" href=\"/games/tiny-zombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tinyzombies-5070-20261019.mp4?v=62f636425f3e\"><img class=\"bg-image\" src=\"/games/media/tinyzombies-5070-20261019.webp?v=42c1a257bb91\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>",
       "media": [
         {
           "path": "games/media/tinyzombies-5070-20261019.mp4",
@@ -75,7 +75,8 @@
           "bytes": 48578,
           "sha256": "42c1a257bb91ea01cf61b024a5c42c3547d9300c4cbc8583039d8f6b807549b5"
         }
-      ]
+      ],
+      "previousAfter": "<a id=\"card-tiny-zombies-2026\" href=\"https://tront.xyz/tinyzombies/\" target=\"_blank\" rel=\"noopener\" class=\"item tag-game tag-prototype\" style=\"--highlight-color: #6af0bd;\"><div class=\"image-container\" id=\"preview-tiny-zombies-2026\" data-preview=\"/games/media/tinyzombies-5070-20261019.mp4?v=62f636425f3e\"><img class=\"bg-image\" src=\"/games/media/tinyzombies-5070-20261019.webp?v=42c1a257bb91\" alt=\"Tiny Zombies: No One Left (2026) voxel horde gameplay\" loading=\"lazy\" decoding=\"async\" width=\"640\" height=\"360\"></div><div class=\"card-content\"><h3 class=\"card-title\">Tiny Zombies: No One Left <span>(2026)</span></h3><p class=\"blurb\">A WebGPU voxel zombie shooter with a tiny squad, destructible walls, flying debris, and a quiet centered HUD. Desktop WebGPU browser required.</p><div class=\"tags\"><span class=\"tag\">Game</span><span class=\"tag\">Prototype</span></div></div></a>"
     }
   ],
   "provenance": {

@@ -8,7 +8,7 @@ const {execFileSync} = require('node:child_process');
 const release = require('./four-game-refresh-20261019.json');
 const files = Object.fromEntries([...release.entries.flatMap(entry => entry.media), release.provenance].map(file => [file.path, file]));
 const cards = html => [...html.matchAll(/<a\b[^>]*class="item\b[^>]*>[\s\S]*?<\/a>/g)].map(match => match[0]);
-const matches = (html, entry) => cards(html).filter(card => card.includes('id="'+entry.previewId+'"') || card.includes('href="'+entry.href+'"'));
+const matches = (html, entry) => cards(html).filter(card => card.includes('id="'+entry.previewId+'"') || card.includes('href="'+entry.href+'"') || card.includes(entry.before.match(/href="[^"]+"/)[0]));
 function normalizeForPreservation(html, file = 'games/index.html') {
   if (file !== 'games/index.html') return html;
   for (const entry of release.entries) {
@@ -16,8 +16,9 @@ function normalizeForPreservation(html, file = 'games/index.html') {
     assert.ok(found.length <= 1, 'at most one exact reviewed refresh card; historical markup stays exact');
     if (!found.length) continue;
     if (entry.slug === 'tinyzombies' && found[0] === require('./tinyzombies-preview.cjs').originalCard) continue;
-    assert.ok(found[0] === entry.before || found[0] === entry.after, 'only the exact reviewed refresh card is normalized; historical markup stays exact');
+    assert.ok(found[0] === entry.before || found[0] === entry.after || found[0] === entry.previousAfter, 'only the exact reviewed refresh card is normalized; historical markup stays exact');
     html = html.replace(entry.after, entry.before);
+    if (entry.previousAfter) html = html.replace(entry.previousAfter, entry.before);
   }
   return html;
 }

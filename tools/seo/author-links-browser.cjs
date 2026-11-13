@@ -20,7 +20,7 @@ const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascrip
 const started = Date.now(), report = { status: 'running', cases: [], interceptedDestinations: [], downloads: 0, runtimeRequests: 0, zoomMethod: 'CSS zoom: 2 reflow stress, not native browser zoom', animationFixture: 'Existing infinite animations paused at time zero on both sources; exact appearance comparisons retained.', fontAssets: [] };
 const measure = () => {
   const box = e => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return { x:r.x,y:r.y,width:r.width,height:r.height,color:s.color,background:s.background,font:s.font }; };
-  return { scrollWidth: document.documentElement.scrollWidth, heading: box(document.querySelector('h1')), nav: box(document.querySelector('nav')), actions: [...document.querySelectorAll('a[href="play/"]')].map(a => ({ href:a.getAttribute('href'), ...box(a) })) };
+  return { scrollWidth: document.documentElement.scrollWidth, heading: box(document.querySelector('h1')), nav: box(document.querySelector('nav')), actions: [...document.querySelectorAll('a.btn-play')].map(a => ({ href:a.getAttribute('href'), ...box(a) })) };
 };
 (async () => {
   if (process.env.AUTHOR_FONT_CACHE) for (const [url, value] of Object.entries(JSON.parse(fs.readFileSync(process.env.AUTHOR_FONT_CACHE)))) {
@@ -105,7 +105,8 @@ const measure = () => {
   async function articleState(page, article) {
     const link = page.locator('.page-footer a[href="' + article.target + '"]');
     assert.equal(await link.textContent(), article.label); assert.equal(await link.getAttribute('target'), null);
-    assert.equal(await page.locator('a[href="play/"]').count(), 2);
+    const playHref = article.file === 'jennsfarm/index.html' ? '/farm/' : 'play/';
+    assert.equal(await page.locator('a.btn-play[href="' + playHref + '"]').count(), 2);
     assert.match(await page.locator('.page-footer p').nth(1).textContent(), /Built by Trent Sterling\./);
     return link;
   }
@@ -182,6 +183,11 @@ const measure = () => {
       const animations = await animationParity(before.page,after.page);
       const name='devlog-'+article.file.split('/')[0]+'-'+width+'-'+zoom+'-'+javaScriptEnabled;
       await screenshot(before.page,name+'-top-before');const beforeMeasure=await before.page.evaluate(measure);
+      if (article.file === 'jennsfarm/index.html') {
+        assert.equal(beforeMeasure.actions.length, 2);
+        assert.ok(beforeMeasure.actions.every(action => ['play/', '/farm/'].includes(action.href)));
+        beforeMeasure.actions = beforeMeasure.actions.map(action => ({ ...action, href: '/farm/' }));
+      }
       await screenshot(after.page,name+'-top-after');assert.deepEqual(await after.page.evaluate(measure),beforeMeasure,'existing heading, navigation and primary play controls unchanged');
       await before.page.locator('.page-footer').evaluate(e=>e.scrollIntoView({behavior:'instant',block:'end'}));await screenshot(before.page,name+'-footer-before');
       await after.page.bringToFront();

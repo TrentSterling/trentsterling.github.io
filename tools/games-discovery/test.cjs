@@ -31,6 +31,38 @@ test('browser capability is an explicit list with one current card per route', (
   for (const slug of browserPaths) assert.equal(browserCards.filter(c => new URL(c.href, 'https://tront.xyz').pathname.replace(/^\/|\/$/g, '') === slug).length, 1, slug);
   for (const href of ['/ducktoy/', '/speedslap/', '/audiobounce/', '/powershellmanager/', '/device-history/', '/spaceview/', '/tronteq/', '/ytdl/', '/blog/posts/magic-archer/', 'https://example.com/craftmine/', 'javascript:void(0);']) assert.equal(browserProject(href), false, href);
 });
+test('Tiny Zombies browser capability follows its current storefront link', () => {
+  const tiny = cards.find(card => card.titleText.startsWith('Tiny Zombies: No One Left'));
+  assert.ok(tiny, 'The current Tiny Zombies card remains in the catalog');
+  assert.equal(tiny.href, '/games/tiny-zombies/');
+  assert.equal(browserProject(tiny.href), true);
+  assert.equal(browserProject('https://tront.xyz' + tiny.href), true);
+  assert.equal(browserProject('https://example.com' + tiny.href), false);
+});
+test('Farm landing launches the published successor without removing the legacy route', () => {
+  const landing = read('jennsfarm/index.html');
+  assert.equal((landing.match(/href="\/farm\/" class="btn btn-play"/g) || []).length, 2);
+  assert.doesNotMatch(landing, /href="play\/"/);
+  assert.match(read('farm/index.html'), /<title>Jenn's Farm<\/title>/);
+  const legacy = read('jennsfarm/play/index.html');
+  assert.match(legacy, /<title>Jenn's Farm<\/title>/);
+  assert.equal(legacy, fs.readFileSync(path.join(process.env.THEME_BASELINE_ROOT, 'jennsfarm/play/index.html'), 'utf8'));
+});
+test('route preservation only allows the exact Tiny and Farm repairs', () => {
+  const routes = require('./routes.cjs');
+  for (const file of new Set(routes.changes.map(change => change.file))) {
+    const current = read(file);
+    const before = fs.readFileSync(path.join(process.env.THEME_BASELINE_ROOT, file), 'utf8');
+    assert.equal(routes.normalize(current, file), routes.normalize(before, file));
+    assert.equal(routes.normalize(current + 'changed', file), routes.normalize(current, file) + 'changed');
+    assert.equal(routes.normalize(current, 'unrelated.html'), current);
+  }
+  for (const change of routes.changes) {
+    assert.equal(read(change.file).split(change.after).length, 2);
+    assert.throws(() => routes.normalize(change.after + change.after, change.file), /duplicate reviewed route/);
+    assert.notEqual(routes.normalize(change.after.replace('/farm/', '/unreviewed/').replace('games/tiny-zombies', 'games/unreviewed'), change.file), change.before);
+  }
+});
 test('multiplayer claims have explicit evidence in the unchanged descriptions', () => {
   for (const title of multiplayerTitles) {
     const card = cards.find(c => c.titleText.replace(/\s*\([^)]*\)\s*$/, '') === title);

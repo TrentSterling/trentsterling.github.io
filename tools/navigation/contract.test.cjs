@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { execFileSync } = require('node:child_process');
+const { normalize: normalizeCatalogRoutes } = require('../games-discovery/routes.cjs');
 const { normalize: normalizeCopy } = require('../seo/copy-review.cjs');
 const { changes, pages, normalize: normalizeNavigation, links, assertPrimary } = require('./contract.cjs');
 const { normalize: normalizeInvites } = require('./discord-invites.cjs');
@@ -18,7 +19,7 @@ const { files: legacyNavbarFiles, normalize: normalizeLegacyNavbar } = require('
 const { file: gamesMdFile, normalize: normalizeGamesMd } = require('./games-md.cjs');
 const normalizeExisting = (html, file) => normalizeLegacyNavbar(tinyzombies.normalize(normalizeMinecraft(normalizeAuthors(normalizeResponsive(normalizeDevice(normalizeInvites(normalizeNavigation(html, file), file), file), file), file), file), file), file);
 const { file: ducktoyFile, normalize: normalizeDucktoy } = require('./ducktoy-fallback.cjs');
-const normalize = (html, file) => normalizeDucktoy(normalizeGamesMd(normalizeExisting(refresh.normalizeForPreservation(normalizeCopy(html, file), file), file), file), file);
+const normalize = (html, file) => normalizeCatalogRoutes(normalizeDucktoy(normalizeGamesMd(normalizeExisting(refresh.normalizeForPreservation(normalizeCopy(html, file), file), file), file), file), file);
 const root = path.resolve(__dirname, '../..');
 const read = (file, dir = root) => fs.readFileSync(path.join(dir, file), 'utf8');
 const context = { window: {} };
@@ -63,7 +64,7 @@ test('every existing production file is unchanged outside exact reviewed copy, a
   for (const file of production) {
     const before = fs.readFileSync(path.join(base, file));
     const after = fs.readFileSync(path.join(root, file));
-    if (changes.some(change => change.file === file) || file === deviceFile || file === minecraftFile || file === gamesMdFile || file === ducktoyFile || legacyNavbarFiles.includes(file) || authorChanges.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
+    if (file === 'assets/js/games-discovery.js' || changes.some(change => change.file === file) || file === deviceFile || file === minecraftFile || file === gamesMdFile || file === ducktoyFile || legacyNavbarFiles.includes(file) || authorChanges.some(change => change.file === file)) assert.equal(normalize(after.toString(), file), normalize(before.toString(), file), file + ': exact allowed anchor only');
     else if (file === 'assets/css/games-discovery.css') {
       const palette = require('../games-discovery/palette.cjs');
       assert.equal(palette.normalize(after.toString()), palette.normalize(before.toString()), 'only the exact additive catalog palette mapping may change');
@@ -75,7 +76,9 @@ test('every existing production file is unchanged outside exact reviewed copy, a
   assert.deepEqual(newProduction.sort(), approvedNew.sort(), 'only exact reviewed clips, posters and provenance may be new');
   for (const file of Object.keys(refresh.files)) refresh.assertReviewedBytes(file, fs.readFileSync(path.join(root, file)));
   tinyzombies.assertReviewedBytes(tinyzombies.file, fs.readFileSync(path.join(root, tinyzombies.file)));
-  assert.equal(production.filter(file => file.endsWith('.mp4') && file !== tinyzombies.file && !Object.hasOwn(refresh.files, file)).length, 98, 'retain all 98 earlier MP4 files outside the exact hash-checked refreshes');
+  const storefrontClip = 'games/tiny-zombies/media/current-gameplay.mp4';
+  assert.ok(production.includes(storefrontClip), 'retain the already-published Tiny Zombies storefront clip');
+  assert.equal(production.filter(file => file.endsWith('.mp4') && file !== tinyzombies.file && file !== storefrontClip && !Object.hasOwn(refresh.files, file)).length, 98, 'retain all 98 earlier MP4 files outside the exact hash-checked refreshes and storefront addition');
 });
 
 test('exact anchor normalization does not hide unreviewed changes', () => {
