@@ -55,10 +55,11 @@ function assertReviewedBytes(name, bytes) {
     assert.equal(digest(bytes), expected.sha256, `${name}: exact reviewed content`);
 }
 function assertMedia(root) {
-    const html = require('./six-game-refresh.cjs').normalizeForPreservation(fs.readFileSync(path.join(root, 'games/index.html'), 'utf8'));
+    const source = fs.readFileSync(path.join(root, 'games/index.html'), 'utf8');
+    const html = require('./six-game-refresh.cjs').normalizeForPreservation(source);
     normalizeForPreservation(html);
     assert.ok(html.includes(approvedCard), 'the approved Isaac preview is integrated');
-    assertSource(html); // Frozen card-content contract plus the independently reviewed year overlay.
+    assertSource(source); // Check current card destinations before historical media normalization.
     assert.equal((html.match(/data-preview=/g) || []).length, 94 + require('./recorded-previews.json').length, 'existing previews plus exact reviewed recordings');
     assert.equal((html.match(/<img[^>]*class="bg-image"/g) || []).length, 116 + recovered.cards.length, 'fallback posters include all retained recovered cards');
     for (const [name, expected] of Object.entries(files)) {
