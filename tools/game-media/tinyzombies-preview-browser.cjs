@@ -139,7 +139,7 @@ const measure = card => {
       assert.equal(await t.card.locator('video').count(),0);
       if(kind==='failed-media')assert.ok(t.requested.includes(clipPath));else assert.equal(t.requested.length,0);
       assert.equal(await t.card.locator('img').evaluate(i=>getComputedStyle(i).opacity),'1');
-      assert.equal(await t.card.getAttribute('href'),destination);assert.deepEqual(t.errors,[]);
+      assert.equal(await t.card.evaluate(card=>card.href),destination);assert.deepEqual(t.errors,[]);
       await shot(t,kind);report.cases.push({kind,width:390,originalPoster:true,clipRequests:t.requested.filter(p=>p===clipPath).length});await t.context.close();console.log('PASS Tiny Zombies',kind);
     }
     report.status='passed';
