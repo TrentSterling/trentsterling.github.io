@@ -1,12 +1,8 @@
 {
   "format_version": 2,
   "game_version": "0.7.2",
-  "source_sha": "daab3fce18d90064d30a26123a213297e3d4be05",
-  "workflow_sha": "daab3fce18d90064d30a26123a213297e3d4be05",
-  "artifact_branch": "build/dustline-daab3fce18d9-41739459357-1",
-  "build_run_id": "41739459357",
-  "build_run_attempt": "1",
-  "built_at_utc": "2026-11-03T23:39:24.414676+00:00",
+  "source_sha": "2baedf383bec5ded7b46b21fa3a3993fbe4bd37f",
+  "built_at_utc": "2026-11-14T09:53:17.801455+00:00",
   "toolchain": {
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
@@ -15,14 +11,11 @@
     "wasm_bindgen": "wasm-bindgen 0.2.118"
   },
   "verification": {
-    "native_command": "cargo test --locked --lib --test free_roam_progression",
-    "native_tests": "success",
-    "javascript_syntax": "success",
-    "chrome_setup": "success",
-    "software_render": "success",
-    "scope": "Software-render functional/visual checks; not a hardware performance or multiplayer acceptance claim.",
-    "diagnostics": "QA receipt and diagnostics are retained in the private build artifact, not published with the website."
+    "native_tests": "66 passed",
+    "production_smoke": "43 checks passed; boot, native drive/fire, moving cargo, garage, vehicle switch, audio decode, GPU completion",
+    "scope": "Controlled pickup comparison plus ordinary-input smoke; not full-chase or performance acceptance"
   },
+  "public_deployment": true,
   "assets": [
     {
       "path": "index.html",
@@ -74,15 +67,15 @@
     },
     {
       "path": "pkg/dustline.js",
-      "bytes": 83751,
-      "sha256": "c0b7a976972d56ea6e3a3b79a0a4718f8521227cb5ee43179fdd1701145252f9",
-      "git_blob_sha1": "b562b272cc41f5e097a760d24f3819da0677ddcd"
+      "bytes": 82104,
+      "sha256": "2199e2cf3267526dfd6d6cb5ff18db99d9550504a9108d826011f1cdf211d432",
+      "git_blob_sha1": "77390ea4b6cf0c64d3a192197be849012395020e"
     },
     {
       "path": "pkg/dustline_bg.wasm",
-      "bytes": 4447088,
-      "sha256": "22873d755ab0fcbfbd7559694dcf845a4d191c32e1da954eac39f8fe2721c161",
-      "git_blob_sha1": "6c8da0017699717ed7ee41c9517f1bab010e7dbe"
+      "bytes": 4189375,
+      "sha256": "a68f28277dda16eaa44dd56818354e9dbf4fe46f4833c9335a2dbab56fa43f6f",
+      "git_blob_sha1": "8e2d72f161d2205080a5d9b7d2fea8b235c5b2c9"
     },
     {
       "path": "vendor/network.js",
@@ -103,11 +96,9 @@
       "git_blob_sha1": "691e111e1191791ced1752a003a52c6b5eea26cf"
     }
   ],
+  "build_method": "Clean local Rust release build; checkpoint instrumentation absent",
   "deployment": {
     "target": "TrentSterling/trentsterling.github.io master:dustline/",
-    "artifact_commit": "a15c21aaa62b00780af901740a5f3dcd319fa35e",
-    "source_merge_commit": "daab3fce18d90064d30a26123a213297e3d4be05",
-    "source_manifest_git_blob_sha1": "7f47546a7518e9a3cc9eb91244b27cfe6b947945",
-    "note": "Asset hashes describe exact tested artifact bytes; QA diagnostics are not deployed."
+    "note": "Runtime assets only; source, tests, fixtures and proof are not deployed. Local clean production build verified by 43 smoke checks."
   }
 }
