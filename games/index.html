@@ -154,6 +154,40 @@
     <script src="/assets/js/tront-theme-editor.js"></script>
     <link rel="stylesheet" href="/games/gallery-motion.css">
     <link rel="stylesheet" href="/assets/css/games-discovery.css">
+    <style>
+        .main-header{align-items:flex-start;text-align:left;padding:0;margin:0 0 .85rem}
+        .main-header h1{font-size:clamp(1.65rem,3.2vw,2.4rem);line-height:1.18;margin:0 0 .3rem}
+        .main-header p{font-size:1rem;line-height:1.45;max-width:105ch}
+        .catalog-tools{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:.3rem .85rem;margin-bottom:.65rem}
+        .catalog-tools .filter-nav{grid-column:1;grid-row:1;justify-content:flex-start;gap:.35rem;padding:0}
+        .catalog-tools .filter-nav label{display:inline-flex;align-items:center;min-height:40px;padding:.25rem .67rem}
+        .catalog-tools .games-discovery{grid-column:2;grid-row:1;display:flex;flex-wrap:wrap;align-items:center;gap:.2rem .7rem;max-width:none;min-width:0;margin:0;padding:0}
+        .catalog-tools .games-search-row{flex:1 1 14rem;min-width:0;flex-wrap:nowrap;gap:.35rem}
+        .catalog-tools #games-search{flex:1 1 0;min-height:44px;padding:.3rem .65rem}
+        .catalog-tools #games-reset{flex:none;margin:0;padding:.3rem .65rem}
+        .catalog-tools .games-refinements{display:flex;flex-wrap:wrap;gap:0 .65rem;margin:0;min-inline-size:0}
+        .catalog-tools .games-refinements label{font-size:.9rem;gap:.35rem}
+        .catalog-tools .games-search-label,.catalog-tools #games-search-help,.catalog-tools .games-refinements legend{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+        .catalog-tools .games-result-count{grid-column:1;grid-row:2;margin:0;text-align:left}
+        .catalog-tools .preview-controls{grid-column:2;grid-row:2;justify-self:end;margin:0}
+        .catalog-tools .preview-toggle{min-height:36px}
+        @media(max-width:54rem){
+            .catalog-tools{grid-template-columns:minmax(0,1fr) auto}
+            .catalog-tools .filter-nav,.catalog-tools .games-discovery{grid-column:1/-1}
+            .catalog-tools .games-discovery{grid-row:2}
+            .catalog-tools .games-result-count,.catalog-tools .preview-controls{grid-row:3}
+        }
+        @media(max-width:360px){
+            .catalog-tools .games-discovery{display:grid;grid-template-columns:minmax(0,1fr) auto}
+            .catalog-tools .games-search-row{display:contents}
+            .catalog-tools #games-search{grid-column:1/-1;grid-row:1}
+            .catalog-tools .games-refinements{grid-column:1;grid-row:2}
+            .catalog-tools #games-reset{grid-column:2;grid-row:2}
+        }
+        @media(pointer:coarse){
+            .catalog-tools .filter-nav label,.catalog-tools .preview-toggle{min-height:44px}
+        }
+    </style>
     <script defer src="/assets/js/games-discovery.js"></script>
     <script defer src="/games/gallery-motion.js"></script>
     <noscript><style>body{opacity:1;visibility:visible}</style></noscript>
@@ -183,16 +217,17 @@
     
     <div class="main-container">
         <header class="main-header">
-            <a href="/"><img src="/blog/assets/img/tront.png" alt="Tront Logo" class="logo"></a>
             <h1>Tront's Games</h1>
-            <p>These are games I've worked on and tools I've built, from my contract work on Project Demigod to multiplayer experiments and weekend prototypes. Many run straight in your browser. For the development notes, see <a href="/blog/">my blog</a>; the <a href="https://github.com/TrentSterling">public code is on GitHub</a>.</p>
+            <p>A wall of games, tools, and experiments from 10+ years of making stuff. I do netcode and Unity work on Project Demigod. A bunch of these run right in your browser. <a href="/blog/">Devlogs</a> · <a href="https://github.com/TrentSterling">GitHub</a></p>
         </header>
 
-        <nav class="filter-nav">
-            <label for="filter-all">All</label> <label for="filter-vr">VR</label> <label for="filter-game-jam">Game Jam</label> <label for="filter-tool">Tool</label> <label for="filter-prototype">Prototype</label> <label for="filter-mod">Mod</label> <label for="filter-game">Game</label> <label for="filter-flash-game">Flash Game</label>
-        </nav>
+        <div class="catalog-tools">
+            <nav class="filter-nav">
+                <label for="filter-all">All</label> <label for="filter-vr">VR</label> <label for="filter-game-jam">Game Jam</label> <label for="filter-tool">Tool</label> <label for="filter-prototype">Prototype</label> <label for="filter-mod">Mod</label> <label for="filter-game">Game</label> <label for="filter-flash-game">Flash Game</label>
+            </nav>
 
-        <div class="preview-controls"><button id="preview-toggle" class="preview-toggle" type="button" aria-pressed="false" hidden>Pause previews</button></div>
+            <div class="preview-controls"><button id="preview-toggle" class="preview-toggle" type="button" aria-pressed="false" hidden>Pause previews</button></div>
+        </div>
         <main class="grid">
             <a href="https://store.steampowered.com/app/1646580/Project_Demigod/" target="_blank" class="item tag-game tag-vr" style="--highlight-color: #4682B4;"><div class="image-container" id="preview-project-demigod-2025-present" data-preview="/games/media/project-demigod-2025-present.mp4?v=6e4c39fd82ee"><img class="bg-image" src="/games/media/project-demigod-2025-present.webp?v=3c6e91c8b27d" alt="Project Demigod (2025-Present) gameplay" loading="lazy" decoding="async" width="640" height="360"></div><div class="card-content"><h3 class="card-title">Project Demigod <span>(2025-Present)</span></h3><p class="blurb">Contract Network Programmer + Unity Generalist for Omnifarious Studios on the physics-driven VR superhero sandbox; netcode, gameplay, menus, IK, ragdoll, shaders, and performance.</p><div class="tags"><span class="tag">Game</span><span class="tag">VR</span></div></div></a>
             <a href="https://tront.xyz/craftmine2/" target="_blank" rel="noopener" class="item tag-game" style="--highlight-color: #70bdd0;"><div class="image-container" id="preview-craftmine2-2026" data-preview="/games/media/craftmine2-5070-20261019.mp4?v=df92ca09c105"><img class="bg-image" src="/games/media/craftmine2-5070-20261019.webp?v=0e3670824881" alt="CraftMine 2 (2026) waterfall and rocket gameplay" loading="lazy" decoding="async" width="640" height="360"></div><div class="card-content"><h3 class="card-title">CraftMine 2 <span>(2026)</span></h3><p class="blurb">A new browser voxel sandbox with shimmering water, sunlit cliffs, and terrain you can blast apart. Explore the valley, build something, or reach for the rocket launcher.</p><div class="tags"><span class="tag">Game</span></div></div></a>
