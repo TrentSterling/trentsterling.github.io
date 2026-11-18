@@ -1,20 +1,14 @@
 {
   "format_version": 2,
   "game_version": "0.7.2",
-  "source_sha": "35b1e2dfe28e4d1e6a910d35633cf9b0126a60ae",
-  "base_source_sha": "f4323f18d190954b01ecfe2ef52d36d3a0e7fe0a",
+  "source_sha": "3f191c80b1e1314658f5574cc0df10cf134f7a8e",
+  "base_source_sha": "35b1e2dfe28e4d1e6a910d35633cf9b0126a60ae",
   "source_changes": [
     {
-      "path": "web/main.js",
-      "bytes": 8526,
-      "git_blob_sha1": "f81c4c32d0e94bbf790b2fa03e0de9a35edde706",
-      "sha256": "0d6f673fcb6b799d3572528894b8cbd60b1f6ebd562148d72316b5265a38337f"
-    },
-    {
-      "path": "tools/join-intent-test.mjs",
-      "bytes": 4255,
-      "git_blob_sha1": "8529b8e3c85de1d16a76d6587df8fe78c5356a81",
-      "sha256": "303bc632194fe6ba37a5e852a2b5f60564a48a2b52dc6cc8cd73a670aa42a960"
+      "path": "web/index.html",
+      "bytes": 1764,
+      "sha256": "17407c1fd66ec2f34c98727385a2df574da9eb3be8bbe55903b1763e63cbe050",
+      "git_blob_sha1": "bd09af53025d0d8cd90d39274aa24aa70ccbbd3c"
     }
   ],
   "built_at_utc": "2026-11-18T04:49:48.145693+00:00",
@@ -30,9 +24,9 @@
   "assets": [
     {
       "path": "index.html",
-      "bytes": 464,
-      "sha256": "e57b5c529e9e751606702bd338c99a793f8c8c9d4ec8eade94b8b8089ead8779",
-      "git_blob_sha1": "0ab3c124fa9bf9e780c3330928666f1f997ad2da"
+      "bytes": 1781,
+      "sha256": "a9c12e592403866e73eeeab963a030d90072ee47dc1d97e935c1c194bcf31b60",
+      "git_blob_sha1": "6be6e99b5d80e04557907bf63f7648d1353db6cd"
     },
     {
       "path": "style.css",
@@ -107,16 +101,18 @@
       "git_blob_sha1": "691e111e1191791ced1752a003a52c6b5eea26cf"
     }
   ],
-  "build_method": "JavaScript-only join intent patch; unchanged compiled runtime/assets verified against deployed 8fec395e manifest. No WASM rebuild. Staging-only cache stamping.",
+  "build_method": "HTML metadata edit only. Existing runtime bytes, tools, test provenance, and token retained.",
   "verification": {
-    "source_integrity": "One production JS file changed plus new regression test; Rust/locks/assets unchanged from f4323f18",
+    "source_integrity": "Only web/index.html head metadata differs from runtime source. Public index is byte-identical outside inserted tags.",
     "join_races": "10 extracted production callback tests pass: Leave during load/failure, overlapping order, restart, stale status, current failure/retry, sync interruption, normal join",
     "recover_callbacks": "48 baseline/candidate scenarios pass against stamped main.js",
     "javascript_syntax": "Stamped main.js syntax passed",
     "inherited_native_tests": "75 tests passed for unchanged compiled Rust f4323f18; not rerun for this JS-only patch",
     "browser_render": "not run; no browser/relay/PC1 attempted",
     "scope": "Mocked module loading, game/network/history callbacks; no real multiplayer connection or rendered gameplay proof.",
-    "hosted_verification": "Browser/relay not tested. Check GitHub Pages status for this exact hosting commit."
+    "hosted_verification": "GitHub Pages checked separately per public commit; direct host/unfurl not verified.",
+    "share_metadata": "Validated 16 unique head fields and reused an existing verified 640x360 WebP gameplay poster. No rendered share card verified."
   },
-  "source_tree_sha": "8cb1111ba42f0b725acc89de9dac019da40a5fa5"
+  "source_tree_sha": "c7e4e050097527e67e68b6c54a403e15333181e9",
+  "runtime_source_sha": "35b1e2dfe28e4d1e6a910d35633cf9b0126a60ae"
 }
