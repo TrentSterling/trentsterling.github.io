@@ -177,6 +177,13 @@
             .catalog-tools .games-discovery{grid-row:2}
             .catalog-tools .games-result-count,.catalog-tools .preview-controls{grid-row:3}
         }
+        @media(max-width:360px){
+            .catalog-tools .games-discovery{display:grid;grid-template-columns:minmax(0,1fr) auto}
+            .catalog-tools .games-search-row{display:contents}
+            .catalog-tools #games-search{grid-column:1/-1;grid-row:1}
+            .catalog-tools .games-refinements{grid-column:1;grid-row:2}
+            .catalog-tools #games-reset{grid-column:2;grid-row:2}
+        }
         @media(pointer:coarse){
             .catalog-tools .filter-nav label,.catalog-tools .preview-toggle{min-height:44px}
         }
