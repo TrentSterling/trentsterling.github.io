@@ -1,5 +1,5 @@
 import {Sound} from './audio.mjs';
-import init,{boot} from './pkg/dustline.js?v=0.7.2-5837db1b6c1a956f';
+import init,{boot} from './pkg/dustline.js?v=0.7.2-393cb3ae059b59f8';
 const canvas=document.getElementById('world'),keys=new Set(),params=new URLSearchParams(location.search);
 const seed=(Number(params.get('seed'))||73421)>>>0,placeKey=`dustline-places-${seed}`;
 const careerKey='dustline-career-v1';
@@ -34,7 +34,7 @@ window.addEventListener('keydown',e=>{if(!game)return;sound.unlock();if(game.tex
 window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();endPointerGesture();});
 document.addEventListener('visibilitychange',()=>{if(telemetry&&game)sound.update(telemetry,game.volume(),game.paused,false);saveCareer(true);keys.clear();endPointerGesture();previous=0;resizePending=true;});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.focus();canvas.setPointerCapture(e.pointerId);sound.unlock();if(!game)return;const r=canvas.getBoundingClientRect();const action=game.ui_click((e.clientX-r.left)*canvas.width/r.width,(e.clientY-r.top)*canvas.height/r.height);if(action){endPointerGesture();bridge(action);saveCareer(true);try{localStorage.setItem(placeKey,game.places_json());}catch{}return;}if(game.paused){endPointerGesture();return;}pointerActive=true;fire=(e.buttons&1)!==0;game.set_manual_aim((e.buttons&2)!==0);});
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.focus();canvas.setPointerCapture(e.pointerId);sound.unlock();if(!game)return;const r=canvas.getBoundingClientRect();const action=game.ui_click((e.clientX-r.left)*canvas.width/r.width,(e.clientY-r.top)*canvas.height/r.height);if(action){if(action==='recover-handled')keys.clear();endPointerGesture();bridge(action);saveCareer(true);try{localStorage.setItem(placeKey,game.places_json());}catch{}return;}if(game.paused){endPointerGesture();return;}pointerActive=true;fire=(e.buttons&1)!==0;game.set_manual_aim((e.buttons&2)!==0);});
 canvas.addEventListener('pointermove',e=>{
  if(!pointerActive)return;
  // Chorded presses/releases arrive as pointermove even without physical motion.
@@ -57,7 +57,7 @@ function tick(now){const dt=previous?(now-previous)/1000:1/60;previous=now;frame
 
   if(network&&now-netSend>66){netSend=now;network.send(JSON.parse(game.snapshot()));}requestAnimationFrame(tick);
 }
-try{if(!navigator.gpu)throw Error('DUSTLINE requires WebGPU.');resize(true);const wasmStarted=performance.now();await init({module_or_path:new URL('./pkg/dustline_bg.wasm?v=0.7.2-5837db1b6c1a956f',import.meta.url)});startup.wasmInitMs=performance.now()-wasmStarted;startup.phase='initializing-gpu-and-world';const bootStarted=performance.now();game=await boot(canvas,seed);startup.rustBootMs=performance.now()-bootStarted;startup.renderer=JSON.parse(game.startup_json());resize(true);try{const profile=localStorage.getItem(careerKey);if(profile&&!game.load_career(profile)){localStorage.setItem(careerKey+'-unreadable-backup',profile);console.warn('Unreadable career profile backed up. Starting a new career.');}}catch(e){console.warn('Career loading unavailable:',e.message);}try{game.load_places(localStorage.getItem(placeKey)||'[]');game.best_score=Number(localStorage.getItem('dustline-best-raid')||0);}catch{}game.set_room(params.get('room')||'global');
+try{if(!navigator.gpu)throw Error('DUSTLINE requires WebGPU.');resize(true);const wasmStarted=performance.now();await init({module_or_path:new URL('./pkg/dustline_bg.wasm?v=0.7.2-393cb3ae059b59f8',import.meta.url)});startup.wasmInitMs=performance.now()-wasmStarted;startup.phase='initializing-gpu-and-world';const bootStarted=performance.now();game=await boot(canvas,seed);startup.rustBootMs=performance.now()-bootStarted;startup.renderer=JSON.parse(game.startup_json());resize(true);try{const profile=localStorage.getItem(careerKey);if(profile&&!game.load_career(profile)){localStorage.setItem(careerKey+'-unreadable-backup',profile);console.warn('Unreadable career profile backed up. Starting a new career.');}}catch(e){console.warn('Career loading unavailable:',e.message);}try{game.load_places(localStorage.getItem(placeKey)||'[]');game.best_score=Number(localStorage.getItem('dustline-best-raid')||0);}catch{}game.set_room(params.get('room')||'global');
 window.dustline={game,errors,frameTimes,startup,command,get telemetry(){return JSON.parse(game.telemetry());},get peers(){return network?.count()||0;},join,leave};canvas.focus();requestAnimationFrame(tick);join();}
 catch(e){startup.phase='failed';startup.error=String(e);errors.push(String(e));console.error('DUSTLINE boot failed:',e);}
 

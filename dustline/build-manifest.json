@@ -1,8 +1,30 @@
 {
   "format_version": 2,
   "game_version": "0.7.2",
-  "source_sha": "ee5989c9828d4c0461ce20da0dba7c047d2c63fc",
-  "built_at_utc": "2026-11-18T00:04:54.610899+00:00",
+  "source_sha": "f4323f18d190954b01ecfe2ef52d36d3a0e7fe0a",
+  "base_source_sha": "ee5989c9828d4c0461ce20da0dba7c047d2c63fc",
+  "source_changes": [
+    {
+      "path": "src/browser.rs",
+      "sha256": "099e8511085e6ba696cc27a42bc996de5c581c20f0e23a6fd11ad428ce8a2ff8",
+      "git_blob_sha1": "b423e6f106bddeeb62511a4cebe6086a6d0e3008",
+      "bytes": 55126
+    },
+    {
+      "path": "web/main.js",
+      "sha256": "0413769d241547225a4eaa1e71cabb4cddff1f9e9db2ce23754003b07a4f8ca7",
+      "git_blob_sha1": "04731d3c79ebd63f643b45771c471b11c13d787a",
+      "bytes": 8216
+    },
+    {
+      "path": "tools/recover-click-parity-test.mjs",
+      "sha256": "9ee331637bccb3c6aab1f695dc4e417b831ca832a68e0ec7e041fa6c5d34bf7a",
+      "git_blob_sha1": "7951c84528e5260f1be5f2f6b887f923d4be2fcb",
+      "bytes": 3843,
+      "added": true
+    }
+  ],
+  "built_at_utc": "2026-11-18T01:32:37.901332+00:00",
   "toolchain": {
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
@@ -10,14 +32,14 @@
     "npm": "11.9.0",
     "wasm_bindgen": "wasm-bindgen 0.2.118"
   },
-  "release_asset_token": "0.7.2-5837db1b6c1a956f",
+  "release_asset_token": "0.7.2-393cb3ae059b59f8",
   "public_deployment": true,
   "assets": [
     {
       "path": "index.html",
       "bytes": 464,
-      "sha256": "2e6da16ad4747d88b37c59c67c4c11e805a170d2161c201b708d89996767ce6d",
-      "git_blob_sha1": "0d072486b796eeea6d6ce07877e696b328d7b4d4"
+      "sha256": "50cacaf7a98515735d3d9ba6c48f37b09bdabb3184fd73cd1605f00bea494392",
+      "git_blob_sha1": "277002e330303dd1edcb078d3e1c8a1954972e30"
     },
     {
       "path": "style.css",
@@ -27,9 +49,9 @@
     },
     {
       "path": "main.js",
-      "bytes": 8207,
-      "sha256": "e1748385fb856275687adc949cd7499c90e6d4baa4d4c8c4b4696a511e7e67c4",
-      "git_blob_sha1": "a28232bbcc5492aac617efaa943be90fad7f8b8d"
+      "bytes": 8250,
+      "sha256": "8ad03a7b261ad5d1e0443d25c5adb3d1fdcac24c4075c7d96f0576c115f21560",
+      "git_blob_sha1": "45d961552005910c0576152b7074e25b49ac39d2"
     },
     {
       "path": "audio.mjs",
@@ -69,9 +91,9 @@
     },
     {
       "path": "pkg/dustline_bg.wasm",
-      "bytes": 4461828,
-      "sha256": "e2fdb8fde19a8aa3b85622ac0fce926559bd7994995ebf1fbea8c96e74a8c794",
-      "git_blob_sha1": "87e43dadecb85a9feb747d845091e1b9ed0a6e29"
+      "bytes": 4461939,
+      "sha256": "2dd94556cb8372eb523ca9d390e75f32500c3fa3e9900b5162623b2f33520610",
+      "git_blob_sha1": "10f3dee97b772708a0637b1126410ea5970e98a0"
     },
     {
       "path": "vendor/network.js",
@@ -92,16 +114,17 @@
       "git_blob_sha1": "691e111e1191791ced1752a003a52c6b5eea26cf"
     }
   ],
-  "build_method": "Exact connector-materialized source; isolated Linux pinned Rust release build; staging-only content-derived child asset cache stamp.",
+  "build_method": "Exact three-file Recover click parity change committed atop ee5989c; isolated pinned Rust build; staging-only child asset cache stamp.",
   "verification": {
-    "source_integrity": "112 files match exact source Git blobs; source and lockfiles unchanged",
+    "source_integrity": "110 original files unchanged; two production files modified plus one new test; exact candidate blobs recorded; lockfiles unchanged",
     "native_command": "cargo test --locked --lib --tests -j 2",
     "native_tests": "75 passed; 0 failed (60 library and 15 integration)",
     "browser_render": "not run; prior browser permission restriction not bypassed",
+    "js_callback_tests": "48 baseline and candidate scenarios passed; mocked DOM/WASM",
+    "rust_ui_click_contract": "4 compiled tests passed using extracted production method with command/hit stubs",
+    "wasm_node_initialization": "Passed actual generated glue initialization, 76 WASM exports; no WebGPU boot",
     "scope": "Compilation and static validation only; clickable Recover and ordinary-input recovery remain unverified.",
-    "wasm_node_initialization": "Passed: actual generated glue initialized compiled WASM, 76 exports, Game/boot/initSync/default exposed, initial memory 1835008 bytes; no WebGPU boot",
-    "javascript_syntax": "Passed: stamped main.js, generated pkg/dustline.js and bundled vendor/network.js",
-    "hosted_verification": "Pending Pages deployment; browser playtest not yet performed"
+    "hosted_verification": "Browser playtest not performed. Verify GitHub Pages for the exact publishing commit."
   },
-  "rollback_public_commit": "4535691c5da1756b0dab8ab19465b34a9fd95b03"
+  "source_tree_sha": "a29eb8d1a4e94b8f33f72b166761af2ce828ff67"
 }
