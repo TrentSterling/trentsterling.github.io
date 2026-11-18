@@ -1,5 +1,5 @@
 import {Sound} from './audio.mjs';
-import init,{boot} from './pkg/dustline.js?v=0.7.2-393cb3ae059b59f8';
+import init,{boot} from './pkg/dustline.js?v=0.7.2-eef8557dfddcf242';
 const canvas=document.getElementById('world'),keys=new Set(),params=new URLSearchParams(location.search);
 const seed=(Number(params.get('seed'))||73421)>>>0,placeKey=`dustline-places-${seed}`;
 const careerKey='dustline-career-v1';
@@ -23,8 +23,24 @@ function resize(force=false){
 const resizeObserver=new ResizeObserver(()=>{resizePending=true;});resizeObserver.observe(canvas);
 function saveCareer(force=false){if(!game)return;const revision=game.career_revision();if(revision===savedCareerRevision||!force&&performance.now()-lastCareerSave<500)return;try{localStorage.setItem(careerKey,game.career_json());savedCareerRevision=revision;lastCareerSave=performance.now();}catch(e){console.warn('Career save unavailable:',e.message);}}
 window.addEventListener('pagehide',()=>saveCareer(true));
-async function join(room){if(!game)return;if(room)game.set_room(room);try{network??=await import('./vendor/network.js');game.set_peer_id(network.selfId);network.connect(game.room()||'global',seed,s=>game.network_status(s));params.set('room',game.room()||'global');params.set('seed',seed);history.replaceState(null,'',`?${params}`);}catch(e){game.network_status(`Connection failed: ${e.message}`);}}
-function leave(){network?.disconnect();game.set_remotes('[]');game.network_status('Solo drive. Bots remain available.');params.delete('room');history.replaceState(null,'',`?${params}`);}
+// Only the newest Join/Leave intent may update the connection or its status.
+let joinIntent=0;
+async function join(room){
+ if(!game)return;
+ const intent=++joinIntent;
+ if(room)game.set_room(room);
+ const roomId=game.room()||'global';
+ try{
+  const loaded=network??await import('./vendor/network.js');
+  if(intent!==joinIntent)return;
+  network=loaded;
+  game.set_peer_id(network.selfId);
+  network.connect(roomId,seed,s=>{if(intent===joinIntent)game.network_status(s);});
+  if(intent!==joinIntent)return;
+  params.set('room',roomId);params.set('seed',seed);history.replaceState(null,'',`?${params}`);
+ }catch(e){if(intent===joinIntent)game.network_status(`Connection failed: ${e.message}`);}
+}
+function leave(){++joinIntent;network?.disconnect();game.set_remotes('[]');game.network_status('Solo drive. Bots remain available.');params.delete('room');history.replaceState(null,'',`?${params}`);}
 async function bridge(action){if(action==='join')await join();if(action==='leave')leave();if(action==='invite'){const url=new URL(location.href);url.searchParams.set('room',game.room()||'global');url.searchParams.set('seed',seed);try{await navigator.clipboard.writeText(url.href);game.network_status('Invite copied.');}catch{game.network_status('Clipboard unavailable; copy the address bar.');}}}
 // Recentring the camera must not cancel held driving, boost or fire controls.
 function endPointerGesture(){pointerActive=false;fire=false;game?.set_manual_aim(false);}
@@ -57,7 +73,7 @@ function tick(now){const dt=previous?(now-previous)/1000:1/60;previous=now;frame
 
   if(network&&now-netSend>66){netSend=now;network.send(JSON.parse(game.snapshot()));}requestAnimationFrame(tick);
 }
-try{if(!navigator.gpu)throw Error('DUSTLINE requires WebGPU.');resize(true);const wasmStarted=performance.now();await init({module_or_path:new URL('./pkg/dustline_bg.wasm?v=0.7.2-393cb3ae059b59f8',import.meta.url)});startup.wasmInitMs=performance.now()-wasmStarted;startup.phase='initializing-gpu-and-world';const bootStarted=performance.now();game=await boot(canvas,seed);startup.rustBootMs=performance.now()-bootStarted;startup.renderer=JSON.parse(game.startup_json());resize(true);try{const profile=localStorage.getItem(careerKey);if(profile&&!game.load_career(profile)){localStorage.setItem(careerKey+'-unreadable-backup',profile);console.warn('Unreadable career profile backed up. Starting a new career.');}}catch(e){console.warn('Career loading unavailable:',e.message);}try{game.load_places(localStorage.getItem(placeKey)||'[]');game.best_score=Number(localStorage.getItem('dustline-best-raid')||0);}catch{}game.set_room(params.get('room')||'global');
+try{if(!navigator.gpu)throw Error('DUSTLINE requires WebGPU.');resize(true);const wasmStarted=performance.now();await init({module_or_path:new URL('./pkg/dustline_bg.wasm?v=0.7.2-eef8557dfddcf242',import.meta.url)});startup.wasmInitMs=performance.now()-wasmStarted;startup.phase='initializing-gpu-and-world';const bootStarted=performance.now();game=await boot(canvas,seed);startup.rustBootMs=performance.now()-bootStarted;startup.renderer=JSON.parse(game.startup_json());resize(true);try{const profile=localStorage.getItem(careerKey);if(profile&&!game.load_career(profile)){localStorage.setItem(careerKey+'-unreadable-backup',profile);console.warn('Unreadable career profile backed up. Starting a new career.');}}catch(e){console.warn('Career loading unavailable:',e.message);}try{game.load_places(localStorage.getItem(placeKey)||'[]');game.best_score=Number(localStorage.getItem('dustline-best-raid')||0);}catch{}game.set_room(params.get('room')||'global');
 window.dustline={game,errors,frameTimes,startup,command,get telemetry(){return JSON.parse(game.telemetry());},get peers(){return network?.count()||0;},join,leave};canvas.focus();requestAnimationFrame(tick);join();}
 catch(e){startup.phase='failed';startup.error=String(e);errors.push(String(e));console.error('DUSTLINE boot failed:',e);}
 

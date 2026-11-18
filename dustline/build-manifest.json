@@ -1,30 +1,23 @@
 {
   "format_version": 2,
   "game_version": "0.7.2",
-  "source_sha": "f4323f18d190954b01ecfe2ef52d36d3a0e7fe0a",
-  "base_source_sha": "ee5989c9828d4c0461ce20da0dba7c047d2c63fc",
+  "source_sha": "35b1e2dfe28e4d1e6a910d35633cf9b0126a60ae",
+  "base_source_sha": "f4323f18d190954b01ecfe2ef52d36d3a0e7fe0a",
   "source_changes": [
     {
-      "path": "src/browser.rs",
-      "sha256": "099e8511085e6ba696cc27a42bc996de5c581c20f0e23a6fd11ad428ce8a2ff8",
-      "git_blob_sha1": "b423e6f106bddeeb62511a4cebe6086a6d0e3008",
-      "bytes": 55126
-    },
-    {
       "path": "web/main.js",
-      "sha256": "0413769d241547225a4eaa1e71cabb4cddff1f9e9db2ce23754003b07a4f8ca7",
-      "git_blob_sha1": "04731d3c79ebd63f643b45771c471b11c13d787a",
-      "bytes": 8216
+      "bytes": 8526,
+      "git_blob_sha1": "f81c4c32d0e94bbf790b2fa03e0de9a35edde706",
+      "sha256": "0d6f673fcb6b799d3572528894b8cbd60b1f6ebd562148d72316b5265a38337f"
     },
     {
-      "path": "tools/recover-click-parity-test.mjs",
-      "sha256": "9ee331637bccb3c6aab1f695dc4e417b831ca832a68e0ec7e041fa6c5d34bf7a",
-      "git_blob_sha1": "7951c84528e5260f1be5f2f6b887f923d4be2fcb",
-      "bytes": 3843,
-      "added": true
+      "path": "tools/join-intent-test.mjs",
+      "bytes": 4255,
+      "git_blob_sha1": "8529b8e3c85de1d16a76d6587df8fe78c5356a81",
+      "sha256": "303bc632194fe6ba37a5e852a2b5f60564a48a2b52dc6cc8cd73a670aa42a960"
     }
   ],
-  "built_at_utc": "2026-11-18T01:32:37.901332+00:00",
+  "built_at_utc": "2026-11-18T04:49:48.145693+00:00",
   "toolchain": {
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
@@ -32,14 +25,14 @@
     "npm": "11.9.0",
     "wasm_bindgen": "wasm-bindgen 0.2.118"
   },
-  "release_asset_token": "0.7.2-393cb3ae059b59f8",
+  "release_asset_token": "0.7.2-eef8557dfddcf242",
   "public_deployment": true,
   "assets": [
     {
       "path": "index.html",
       "bytes": 464,
-      "sha256": "50cacaf7a98515735d3d9ba6c48f37b09bdabb3184fd73cd1605f00bea494392",
-      "git_blob_sha1": "277002e330303dd1edcb078d3e1c8a1954972e30"
+      "sha256": "e57b5c529e9e751606702bd338c99a793f8c8c9d4ec8eade94b8b8089ead8779",
+      "git_blob_sha1": "0ab3c124fa9bf9e780c3330928666f1f997ad2da"
     },
     {
       "path": "style.css",
@@ -49,9 +42,9 @@
     },
     {
       "path": "main.js",
-      "bytes": 8250,
-      "sha256": "8ad03a7b261ad5d1e0443d25c5adb3d1fdcac24c4075c7d96f0576c115f21560",
-      "git_blob_sha1": "45d961552005910c0576152b7074e25b49ac39d2"
+      "bytes": 8560,
+      "sha256": "1f491c20cc02a9c4fc9d497b97597b88cefcf0da594a83e63ff1cd3e010a33e9",
+      "git_blob_sha1": "7749f356e3614a076b1207322da270c2b97b4542"
     },
     {
       "path": "audio.mjs",
@@ -114,17 +107,16 @@
       "git_blob_sha1": "691e111e1191791ced1752a003a52c6b5eea26cf"
     }
   ],
-  "build_method": "Exact three-file Recover click parity change committed atop ee5989c; isolated pinned Rust build; staging-only child asset cache stamp.",
+  "build_method": "JavaScript-only join intent patch; unchanged compiled runtime/assets verified against deployed 8fec395e manifest. No WASM rebuild. Staging-only cache stamping.",
   "verification": {
-    "source_integrity": "110 original files unchanged; two production files modified plus one new test; exact candidate blobs recorded; lockfiles unchanged",
-    "native_command": "cargo test --locked --lib --tests -j 2",
-    "native_tests": "75 passed; 0 failed (60 library and 15 integration)",
-    "browser_render": "not run; prior browser permission restriction not bypassed",
-    "js_callback_tests": "48 baseline and candidate scenarios passed; mocked DOM/WASM",
-    "rust_ui_click_contract": "4 compiled tests passed using extracted production method with command/hit stubs",
-    "wasm_node_initialization": "Passed actual generated glue initialization, 76 WASM exports; no WebGPU boot",
-    "scope": "Compilation and static validation only; clickable Recover and ordinary-input recovery remain unverified.",
-    "hosted_verification": "Browser playtest not performed. Verify GitHub Pages for the exact publishing commit."
+    "source_integrity": "One production JS file changed plus new regression test; Rust/locks/assets unchanged from f4323f18",
+    "join_races": "10 extracted production callback tests pass: Leave during load/failure, overlapping order, restart, stale status, current failure/retry, sync interruption, normal join",
+    "recover_callbacks": "48 baseline/candidate scenarios pass against stamped main.js",
+    "javascript_syntax": "Stamped main.js syntax passed",
+    "inherited_native_tests": "75 tests passed for unchanged compiled Rust f4323f18; not rerun for this JS-only patch",
+    "browser_render": "not run; no browser/relay/PC1 attempted",
+    "scope": "Mocked module loading, game/network/history callbacks; no real multiplayer connection or rendered gameplay proof.",
+    "hosted_verification": "Browser/relay not tested. Check GitHub Pages status for this exact hosting commit."
   },
-  "source_tree_sha": "a29eb8d1a4e94b8f33f72b166761af2ce828ff67"
+  "source_tree_sha": "8cb1111ba42f0b725acc89de9dac019da40a5fa5"
 }
