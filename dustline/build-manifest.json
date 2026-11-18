@@ -1,27 +1,23 @@
 {
   "format_version": 2,
   "game_version": "0.7.2",
-  "source_sha": "2baedf383bec5ded7b46b21fa3a3993fbe4bd37f",
-  "built_at_utc": "2026-11-14T09:53:17.801455+00:00",
+  "source_sha": "ee5989c9828d4c0461ce20da0dba7c047d2c63fc",
+  "built_at_utc": "2026-11-18T00:04:54.610899+00:00",
   "toolchain": {
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
-    "node": "v22.23.4",
-    "npm": "10.9.9",
+    "node": "v24.22.1",
+    "npm": "11.9.0",
     "wasm_bindgen": "wasm-bindgen 0.2.118"
   },
-  "verification": {
-    "native_tests": "66 passed",
-    "production_smoke": "43 checks passed; boot, native drive/fire, moving cargo, garage, vehicle switch, audio decode, GPU completion",
-    "scope": "Controlled pickup comparison plus ordinary-input smoke; not full-chase or performance acceptance"
-  },
+  "release_asset_token": "0.7.2-5837db1b6c1a956f",
   "public_deployment": true,
   "assets": [
     {
       "path": "index.html",
-      "bytes": 447,
-      "sha256": "b7d4ad3ab49da679752d814711e4bee60089c07339bdbbfde4d463c86836faf1",
-      "git_blob_sha1": "3ef8ec724cd5373f1a655682e74cbc192bc3d942"
+      "bytes": 464,
+      "sha256": "2e6da16ad4747d88b37c59c67c4c11e805a170d2161c201b708d89996767ce6d",
+      "git_blob_sha1": "0d072486b796eeea6d6ce07877e696b328d7b4d4"
     },
     {
       "path": "style.css",
@@ -31,9 +27,9 @@
     },
     {
       "path": "main.js",
-      "bytes": 8173,
-      "sha256": "16426cf39a5b640252c3e88aec1948e6c95d086d714e5a08aef86954545d4248",
-      "git_blob_sha1": "c58ecfa5a5afcd2d3b1c09bde2b1c9f4a923696b"
+      "bytes": 8207,
+      "sha256": "e1748385fb856275687adc949cd7499c90e6d4baa4d4c8c4b4696a511e7e67c4",
+      "git_blob_sha1": "a28232bbcc5492aac617efaa943be90fad7f8b8d"
     },
     {
       "path": "audio.mjs",
@@ -67,15 +63,15 @@
     },
     {
       "path": "pkg/dustline.js",
-      "bytes": 82104,
-      "sha256": "2199e2cf3267526dfd6d6cb5ff18db99d9550504a9108d826011f1cdf211d432",
-      "git_blob_sha1": "77390ea4b6cf0c64d3a192197be849012395020e"
+      "bytes": 83751,
+      "sha256": "c0b7a976972d56ea6e3a3b79a0a4718f8521227cb5ee43179fdd1701145252f9",
+      "git_blob_sha1": "b562b272cc41f5e097a760d24f3819da0677ddcd"
     },
     {
       "path": "pkg/dustline_bg.wasm",
-      "bytes": 4189375,
-      "sha256": "a68f28277dda16eaa44dd56818354e9dbf4fe46f4833c9335a2dbab56fa43f6f",
-      "git_blob_sha1": "8e2d72f161d2205080a5d9b7d2fea8b235c5b2c9"
+      "bytes": 4461828,
+      "sha256": "e2fdb8fde19a8aa3b85622ac0fce926559bd7994995ebf1fbea8c96e74a8c794",
+      "git_blob_sha1": "87e43dadecb85a9feb747d845091e1b9ed0a6e29"
     },
     {
       "path": "vendor/network.js",
@@ -96,9 +92,16 @@
       "git_blob_sha1": "691e111e1191791ced1752a003a52c6b5eea26cf"
     }
   ],
-  "build_method": "Clean local Rust release build; checkpoint instrumentation absent",
-  "deployment": {
-    "target": "TrentSterling/trentsterling.github.io master:dustline/",
-    "note": "Runtime assets only; source, tests, fixtures and proof are not deployed. Local clean production build verified by 43 smoke checks."
-  }
+  "build_method": "Exact connector-materialized source; isolated Linux pinned Rust release build; staging-only content-derived child asset cache stamp.",
+  "verification": {
+    "source_integrity": "112 files match exact source Git blobs; source and lockfiles unchanged",
+    "native_command": "cargo test --locked --lib --tests -j 2",
+    "native_tests": "75 passed; 0 failed (60 library and 15 integration)",
+    "browser_render": "not run; prior browser permission restriction not bypassed",
+    "scope": "Compilation and static validation only; clickable Recover and ordinary-input recovery remain unverified.",
+    "wasm_node_initialization": "Passed: actual generated glue initialized compiled WASM, 76 exports, Game/boot/initSync/default exposed, initial memory 1835008 bytes; no WebGPU boot",
+    "javascript_syntax": "Passed: stamped main.js, generated pkg/dustline.js and bundled vendor/network.js",
+    "hosted_verification": "Pending Pages deployment; browser playtest not yet performed"
+  },
+  "rollback_public_commit": "4535691c5da1756b0dab8ab19465b34a9fd95b03"
 }
